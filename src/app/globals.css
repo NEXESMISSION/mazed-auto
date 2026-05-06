@@ -202,9 +202,24 @@ select {
   scrollbar-width: none;
 }
 
-/* Safe area for iOS bottom bar */
+/* Safe area utilities — used by the bottom tab bar + the body shell.
+   `viewport-fit=cover` (set in layout.tsx) lets content extend under the
+   notch / home indicator on iOS PWAs. We pad the top of the body and the
+   bottom of the tab bar so nothing actually GETS hidden by them. */
 .pb-safe {
   padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+
+/* Push every page below the iOS notch automatically. Pages with a topbar
+   already paint under it; this also covers the noTopBar pages where the
+   page's own header would otherwise crash into the status bar. */
+body {
+  padding-top: env(safe-area-inset-top);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
 /* No tap blue on iOS */

@@ -71,6 +71,12 @@ export default function RootLayout({
       dir="ltr"
       className={`${cairo.variable} h-full antialiased`}
     >
+      <head>
+        {/* Preload the splash logo so it paints with the very first frame
+            instead of waiting for the SplashScreen component's <img> to
+            request it. Tiny (~138 KB) so the cost is negligible. */}
+        <link rel="preload" as="image" href="/logo.png" fetchPriority="high" />
+      </head>
       <body className="min-h-full bg-background text-foreground font-sans">
         <SplashScreen />
         <ToastProvider>{children}</ToastProvider>
