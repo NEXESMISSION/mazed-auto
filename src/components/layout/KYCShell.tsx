@@ -1,0 +1,61 @@
+import Link from "next/link";
+import { ChevronLeft, X } from "lucide-react";
+import { Stepper } from "./Stepper";
+
+const steps = [
+  { label: "Recto de la carte" },
+  { label: "Verso de la carte" },
+  { label: "Selfie" },
+  { label: "Vérification" },
+];
+
+interface Props {
+  /** 0 = front, 1 = back, 2 = selfie, 3 = verify. -1 hides stepper (intro/status). */
+  current: number;
+  children: React.ReactNode;
+  backHref?: string;
+  title?: string;
+}
+
+export function KYCShell({
+  current,
+  children,
+  backHref = "/",
+  title = "Vérification d'identité",
+}: Props) {
+  const showStepper = current >= 0;
+  return (
+    <div className="min-h-screen flex flex-col bg-background">
+      <header className="flex items-center justify-between px-4 pt-4 pb-3">
+        <Link
+          href={backHref}
+          aria-label="Retour"
+          className="h-10 w-10 rounded-full bg-[var(--surface)] border border-[var(--border)] flex items-center justify-center hover:border-[var(--gold-soft)] transition-colors"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </Link>
+        <div className="font-bold text-sm">{title}</div>
+        <Link
+          href="/"
+          aria-label="Annuler"
+          className="h-10 w-10 rounded-full bg-[var(--surface)] border border-[var(--border)] flex items-center justify-center hover:border-[var(--danger)]/40 hover:text-[var(--danger)] transition-colors"
+        >
+          <X className="h-4 w-4" />
+        </Link>
+      </header>
+
+      {showStepper && (
+        <div className="px-4 pb-4">
+          <Stepper steps={steps} current={current} />
+          <div className="text-[10px] text-center text-[var(--foreground-muted)] mt-2 tabular-nums">
+            Étape {current + 1} sur {steps.length}
+          </div>
+        </div>
+      )}
+
+      <main className="flex-1 px-4 py-2 max-w-[var(--max-w)] mx-auto w-full">
+        {children}
+      </main>
+    </div>
+  );
+}

@@ -1,0 +1,83 @@
+"use client";
+
+import { useState } from "react";
+import { ChevronLeft, ChevronRight, Maximize2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface Props {
+  images: string[];
+  alt?: string;
+}
+
+export function ImageGallery({ images, alt = "" }: Props) {
+  const [active, setActive] = useState(0);
+
+  const prev = () => setActive((i) => (i - 1 + images.length) % images.length);
+  const next = () => setActive((i) => (i + 1) % images.length);
+
+  return (
+    <div className="space-y-2">
+      {/* Main image */}
+      <div className="relative aspect-[4/3] md:aspect-[16/10] overflow-hidden rounded-[var(--radius-md)] bg-[var(--surface-2)] border border-[var(--border)]">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={images[active]}
+          alt={`${alt} ${active + 1}`}
+          className="h-full w-full object-cover"
+        />
+
+        {/* Counter */}
+        <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-black/70 backdrop-blur text-xs font-semibold tabular-nums">
+          {active + 1} / {images.length}
+        </div>
+
+        {/* Fullscreen button */}
+        <button
+          className="absolute top-3 right-3 h-9 w-9 rounded-full bg-black/70 backdrop-blur flex items-center justify-center hover:bg-black/90 transition-colors"
+          aria-label="Plein écran"
+        >
+          <Maximize2 className="h-4 w-4" />
+        </button>
+
+        {/* Prev / Next */}
+        <button
+          onClick={prev}
+          className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-black/70 backdrop-blur flex items-center justify-center hover:bg-black/90 transition-colors"
+          aria-label="Précédent"
+        >
+          <ChevronRight className="h-5 w-5" />
+        </button>
+        <button
+          onClick={next}
+          className="absolute left-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-black/70 backdrop-blur flex items-center justify-center hover:bg-black/90 transition-colors"
+          aria-label="Suivant"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </button>
+      </div>
+
+      {/* Thumbnails */}
+      <div className="flex gap-2 overflow-x-auto hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0 pb-1">
+        {images.map((src, i) => (
+          <button
+            key={i}
+            onClick={() => setActive(i)}
+            className={cn(
+              "shrink-0 h-16 w-20 rounded-md overflow-hidden border-2 transition-all",
+              i === active
+                ? "border-[var(--gold)] opacity-100"
+                : "border-transparent opacity-60 hover:opacity-100",
+            )}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={src}
+              alt={`thumb-${i}`}
+              className="h-full w-full object-cover"
+            />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}

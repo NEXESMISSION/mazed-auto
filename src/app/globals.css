@@ -1,26 +1,271 @@
 @import "tailwindcss";
 
+/* ============================================
+   Mazed Auto — Design Tokens
+   Theme: Black + Gold (clean, mobile-first)
+   ============================================ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Surfaces */
+  --background: #0a0a0a;          /* deep black */
+  --surface: #141414;              /* card / panel */
+  --surface-2: #1c1c1c;            /* elevated */
+  --surface-3: #262626;            /* hover / pressed */
+  --border: #2a2a2a;
+  --border-strong: #3a3a3a;
+
+  /* Text */
+  --foreground: #f5f5f5;
+  --foreground-muted: #a1a1a1;
+  --foreground-subtle: #707070;
+
+  /* Brand — Gold */
+  --gold: #d4af37;                 /* accent primary */
+  --gold-bright: #e8c668;          /* hover */
+  --gold-soft: #b8941f;            /* pressed */
+  --gold-faint: rgba(212, 175, 55, 0.12);
+  --gold-glow: rgba(212, 175, 55, 0.35);
+
+  /* States */
+  --success: #4ade80;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #60a5fa;
+
+  /* Sizing */
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
+  --shadow-gold: 0 6px 20px -4px rgba(212, 175, 55, 0.35), 0 2px 6px rgba(212, 175, 55, 0.2);
+
+  /* Layout — mobile-app feel: narrow phone-sized container, even on desktop */
+  --topbar-h: 56px;
+  --bottombar-h: 72px;
+  --max-w: 480px;
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-muted: var(--foreground-muted);
+  --color-subtle: var(--foreground-subtle);
+
+  --color-gold: var(--gold);
+  --color-gold-bright: var(--gold-bright);
+  --color-gold-soft: var(--gold-soft);
+  --color-gold-faint: var(--gold-faint);
+
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+
+  --font-sans: var(--font-cairo), "Cairo", system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-cairo), "Cairo", system-ui, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ============================================
+   Base
+   ============================================ */
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+  font-feature-settings: "ss01", "cv11", "kern", "liga";
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Tabular figures for prices, countdowns, scores — keeps digits aligned. */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* The app shipped in French (LTR). Keeping the Cairo family across the
+   board for visual continuity with the original design. */
+
+/* iOS Safari auto-zooms on focus when a form field's font-size is < 16px.
+   Force 16px on every input/textarea/select so focus doesn't cause the
+   viewport to jump. Tailwind text-* classes can still override for visual
+   sizing — anything ≥ text-base (16px) is fine. */
+input,
+textarea,
+select {
+  font-size: 16px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gold-soft);
+}
+
+/* Selection */
+::selection {
+  background: var(--gold-faint);
+  color: var(--gold-bright);
+}
+
+/* Focus */
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ============================================
+   Utility classes
+   ============================================ */
+
+/* Premium metallic gold — bright top → mid → deep, with a 4-stop highlight
+   so it reads like brushed metal instead of a flat hue. */
+.gradient-gold {
+  background:
+    linear-gradient(
+      135deg,
+      #f7e07a 0%,
+      var(--gold-bright) 30%,
+      var(--gold) 55%,
+      var(--gold-soft) 100%
+    );
+}
+
+/* Slightly tighter range for text — keeps the contrast strong on dark bg. */
+.gradient-gold-text {
+  background: linear-gradient(
+    135deg,
+    #f4d03f 0%,
+    var(--gold-bright) 50%,
+    var(--gold) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  letter-spacing: -0.01em;
+}
+
+.glass {
+  background: rgba(20, 20, 20, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.gold-shadow {
+  box-shadow: var(--shadow-gold);
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Safe area for iOS bottom bar */
+.pb-safe {
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+
+/* No tap blue on iOS */
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+/* Subtle pulse for live indicators */
+@keyframes pulse-gold {
+  0%, 100% { box-shadow: 0 0 0 0 var(--gold-glow); }
+  50% { box-shadow: 0 0 0 8px transparent; }
+}
+.pulse-gold {
+  animation: pulse-gold 2s ease-in-out infinite;
+}
+
+/* Skeleton — soft pulse on a single tone. Quieter than the wide-band
+   shimmer so it sits well inside the new dark+gold cards without competing
+   with the actual UI. */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+.skeleton {
+  background: var(--surface-2);
+  border-radius: var(--radius);
+  animation: skeleton-pulse 1.6s ease-in-out infinite;
+}
+
+/* Number tick animation */
+@keyframes tick {
+  0% { transform: translateY(0); opacity: 1; }
+  50% { transform: translateY(-4px); opacity: 0.5; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+.tick {
+  animation: tick 0.3s ease-out;
+}
+
+/* Drawer slide-in (RTL: comes from the right, exits to the right) */
+@keyframes slide-in-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+.animate-slide-in-right {
+  animation: slide-in-right 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-fade-in {
+  animation: fade-in 180ms ease-out;
+}
+
+/* Mobile-app body framing — soft neutral page bg around the phone-width app
+   container so on desktop the dark surface reads like a mock-up. */
+body {
+  background:
+    radial-gradient(circle at top, #181818 0%, #0a0a0a 60%);
 }
