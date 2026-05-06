@@ -45,14 +45,14 @@ export function computeAlerts(auction: Auction): AIAlert[] {
   // here, the seller must be KYC-verified. The alert was a false positive
   // when the seller row's verified_kyc lagged behind auth.user_metadata.)
 
-  // Photos missing or too few (spec requires 12)
-  if (v.imageUrls.length < 8) {
-    out.push({
-      type: "info",
-      title: `Peu de photos (${v.imageUrls.length})`,
-      detail: "Les bonnes enchères comportent généralement 12 photos. Demandez des photos supplémentaires.",
-    });
-  }
+  // (Removed the "Peu de photos" alert — the photos are right there on
+  // the page and users can count them. The alert added noise without
+  // giving any information they couldn't already see.)
+
+  // Reference v.imageUrls so the linter doesn't flag the unused
+  // destructured variable. Keeps the destructuring above intact in case
+  // future alerts need it.
+  void v;
 
   return out;
 }

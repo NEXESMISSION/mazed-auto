@@ -15,6 +15,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Countdown } from "@/components/auction/Countdown";
+import { AuctionResultBanner } from "@/components/auction/AuctionResultBanner";
 import { createClient } from "@/lib/supabase/server";
 import { getAuctionById, listRecentBids } from "@/lib/db";
 import { formatPrice } from "@/lib/format";
@@ -144,6 +145,13 @@ Aperçu public
             </div>
           </div>
         </header>
+
+        {/* Result + decision banner — when the auction is in
+            `pending_seller_decision` (reserve not met but offers exist),
+            this is where the seller sees the Accept / Refuse buttons.
+            For other final states (won, lost, no_bids, etc.) it shows
+            the contextual outcome. Hidden for live auctions. */}
+        <AuctionResultBanner auction={auction} />
 
         {/* Stat cards */}
         <section className="grid grid-cols-2 md:grid-cols-4 gap-3">

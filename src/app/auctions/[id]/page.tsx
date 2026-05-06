@@ -5,10 +5,6 @@ import {
   Check,
   Crown,
   Gavel,
-  Clock,
-  XCircle,
-  Hourglass,
-  Trophy,
   MessageSquare,
   Heart,
 } from "lucide-react";
@@ -75,10 +71,6 @@ export default async function AuctionDetailPage({ params }: Props) {
   const isLive =
     !expired &&
     (auction.status === "active" || auction.status === "ending");
-  const effectiveStatus: Auction["status"] =
-    expired && (auction.status === "active" || auction.status === "ending")
-      ? "ended"
-      : auction.status;
 
   return (
     <AppShell noTopBar>
@@ -181,13 +173,11 @@ export default async function AuctionDetailPage({ params }: Props) {
           <AIAlerts alerts={auction.alerts} />
         )}
 
-        {/* Two-pill price/timer panel — matches the reference's side-by-side
-            "Starting Bid" + "Auction will start at" layout. */}
-        {isLive ? (
-          <BidPills auction={auction} />
-        ) : (
-          <EndedNotice status={effectiveStatus} />
-        )}
+        {/* Two-pill price/timer panel — only shown while the auction is
+            live. Once it's over, AuctionResultBanner (rendered above)
+            already explains the state, so we drop the EndedNotice card to
+            avoid duplicating the same information twice on the page. */}
+        {isLive && <BidPills auction={auction} />}
 
         {/* Big rounded primary CTA — full-width, blue-grey accent (gold remix) */}
         {isLive && (
@@ -292,96 +282,3 @@ function BidPills({ auction }: { auction: Auction }) {
   );
 }
 
-function EndedNotice({ status }: { status: Auction["status"] }) {
-  const meta = (() => {
-    switch (status) {
-      case "ended":
-        return {
-          icon: <Trophy className="h-5 w-5" />,
-          title: "Enchère terminée",
-          subtitle: "La voiture a été vendue au meilleur enchérisseur",
-          tone: "muted" as const,
-        };
-      case "cancelled":
-        return {
-          icon: <XCircle className="h-5 w-5" />,
-          title: "Enchère annulée",
-          subtitle: "Cette enchère n'est plus disponible",
-          tone: "danger" as const,
-        };
-      case "reserve_not_met":
-        return {
-          icon: <XCircle className="h-5 w-5" />,
-          title: "L'enchère n'a pas atteint le prix de réserve",
-          subtitle: "Le vendeur n'a pas accepté l'offre la plus haute",
-          tone: "warning" as const,
-        };
-      case "pending_seller_decision":
-        return {
-          icon: <Clock className="h-5 w-5" />,
-          title: "En attente de la décision du vendeur",
-          subtitle: "Le vendeur décide d'accepter ou de refuser",
-          tone: "warning" as const,
-        };
-      case "scheduled":
-        return {
-          icon: <Hourglass className="h-5 w-5" />,
-          title: "Enchère pas encore commencée",
-          subtitle: "Vous pourrez enchérir au démarrage",
-          tone: "muted" as const,
-        };
-      case "pending_review":
-        return {
-          icon: <Hourglass className="h-5 w-5" />,
-          title: "En cours de modération",
-          subtitle: "Sera publiée après vérification des données",
-          tone: "warning" as const,
-        };
-      default:
-        return {
-          icon: <XCircle className="h-5 w-5" />,
-          title: "Indisponible aux enchères",
-          subtitle: "Le statut de cette enchère ne permet pas d'accepter de nouvelles offres actuellement.",
-          tone: "muted" as const,
-        };
-    }
-  })();
-
-  const palette = {
-    muted: {
-      ring: "border-[var(--border)]",
-      bg: "bg-[var(--surface)]",
-      iconBg: "bg-[var(--surface-2)] text-[var(--foreground-muted)]",
-    },
-    warning: {
-      ring: "border-amber-500/40",
-      bg: "bg-amber-500/10",
-      iconBg: "bg-amber-500/20 text-amber-400",
-    },
-    danger: {
-      ring: "border-[var(--danger)]/40",
-      bg: "bg-red-500/10",
-      iconBg: "bg-red-500/20 text-[var(--danger)]",
-    },
-  }[meta.tone];
-
-  return (
-    <div
-      className={`rounded-2xl border ${palette.ring} ${palette.bg} p-4 flex items-start gap-3`}
-    >
-      <div
-        className={`h-10 w-10 rounded-full ${palette.iconBg} flex items-center justify-center shrink-0`}
-      >
-        {meta.icon}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="font-bold text-sm">{meta.title}</div>
-        {meta.subtitle && (
-          <div className="text-[11px] text-[var(--foreground-muted)] mt-0.5 leading-relaxed">
-            {meta.subtitle}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}

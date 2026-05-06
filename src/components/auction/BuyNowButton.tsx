@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { Zap } from "lucide-react";
-import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/components/ui/Toast";
 import { formatPrice } from "@/lib/format";
@@ -12,6 +11,12 @@ interface Props {
   auction: Auction;
 }
 
+/**
+ * Buy-now button — same pill shape as the "Rejoindre l'enchère" primary
+ * CTA so the two stack cleanly, but visually distinct: outlined gold on
+ * a transparent surface instead of filled gold. Communicates "secondary
+ * action of equal weight" without competing with the primary CTA.
+ */
 export function BuyNowButton({ auction }: Props) {
   const router = useRouter();
   const { user } = useAuth();
@@ -48,15 +53,14 @@ export function BuyNowButton({ auction }: Props) {
   }
 
   return (
-    <Button
-      size="md"
-      variant="outline"
-      fullWidth
+    <button
+      type="button"
       onClick={handleClick}
       disabled={isOwnAuction}
+      className="block w-full h-14 rounded-full bg-transparent border-2 border-[var(--gold)] text-[var(--gold)] font-extrabold text-[15px] flex items-center justify-center gap-2 hover:bg-[var(--gold-faint)] active:scale-[0.99] transition-[background,transform] disabled:opacity-50 disabled:pointer-events-none"
     >
-      <Zap className="h-4 w-4" />
+      <Zap className="h-5 w-5" />
       Achat immédiat à {formatPrice(auction.buyNowPrice)}
-    </Button>
+    </button>
   );
 }

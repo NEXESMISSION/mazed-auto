@@ -13,6 +13,15 @@ const MAX_PULL_PX = 140;
 // indicator's vertical offset. Without this the pull would feel 1:1, which
 // is too eager.
 const RESISTANCE = 0.6;
+// Only activate PTR when the touch STARTS within this many pixels of the
+// top of the viewport. Without this guard, taps on buttons mid-page that
+// shift slightly during touch get hijacked into a pull, and the button
+// click is suppressed. This is the standard fix for "buttons sometimes
+// don't fire" when a global PTR listener is in play.
+const TOP_ZONE_PX = 80;
+// Minimum dy before we steal the gesture. Keeps tiny finger jitter on
+// regular taps from registering as a pull.
+const ACTIVATION_DY_PX = 12;
 
 /**
  * Native-feeling pull-to-refresh. Wraps page content (mounted in AppShell).
@@ -38,23 +47,29 @@ export function PullToRefresh() {
 
   useEffect(() => {
     function onTouchStart(e: TouchEvent) {
-      // Only arm when the page is at the very top — otherwise the user is
-      // doing a normal scroll-down inside content and we mustn't intercept.
-      if (window.scrollY > 0) {
+      // Only arm when:
+      //  1. the page is at the very top (scrollY = 0), AND
+      //  2. the touch STARTS in the top zone of the viewport.
+      // Without (2), tapping a button anywhere on the page can be
+      // interpreted as the start of a pull if the finger jitters, which
+      // suppresses the click event. This is the root cause of "buttons
+      // sometimes don't work."
+      const y = e.touches[0].clientY;
+      if (window.scrollY > 0 || y > TOP_ZONE_PX) {
         armed.current = false;
         startY.current = null;
         return;
       }
       armed.current = true;
-      startY.current = e.touches[0].clientY;
+      startY.current = y;
     }
 
     function onTouchMove(e: TouchEvent) {
       if (!armed.current || startY.current === null || refreshing) return;
       const dy = e.touches[0].clientY - startY.current;
-      if (dy <= 0) {
-        // Finger moved up or stayed — bail and let the browser handle scroll.
-        setPull(0);
+      // Don't steal the gesture until the user has moved meaningfully.
+      // Otherwise tap-jitter on a button registers as a pull start.
+      if (dy < ACTIVATION_DY_PX) {
         return;
       }
       // Damp the pull and clamp to MAX_PULL_PX so it never feels rubbery.
@@ -62,7 +77,7 @@ export function PullToRefresh() {
       setPull(damped);
       // Once we're actively pulling, prevent the document from also
       // bounce-scrolling — the indicator IS the affordance.
-      if (damped > 4) e.preventDefault();
+      e.preventDefault();
     }
 
     async function onTouchEnd() {

@@ -194,9 +194,23 @@ export function AuctionResultBanner({ auction }: Props) {
 
   if (outcome.kind === "loading" || outcome.kind === "live") return null;
 
+  // Unrelated bidders should NOT see the "waiting for seller decision"
+  // banner — that's a private matter between the seller and the top
+  // bidder. Hide it for everyone else.
+  if (outcome.kind === "seller_decision_other") return null;
+
   return (
     <>
       {renderBanner()}
+
+      {/* Winner-only popup — fires once per auction per session so the
+          top bidder is told their offer is under review the moment they
+          enter the page. The inline banner below is a quieter reminder
+          for return visits. */}
+      {outcome.kind === "seller_decision_top_bidder" && (
+        <WinnerPopup auction={auction} outcome={outcome} />
+      )}
+
       <Modal
         open={decisionOpen !== null}
         onClose={() => setDecisionOpen(null)}
@@ -363,19 +377,8 @@ export function AuctionResultBanner({ auction }: Props) {
         );
 
       case "seller_decision_other":
-        return (
-          <Banner
-            tone="muted"
-            icon={<Clock className="h-6 w-6" />}
-            title="Enchère terminée — En attente de la décision du vendeur"
-            body={
-              <>
-                L'offre la plus haute ({formatPrice(outcome.topBid)}) n'a pas atteint le prix de réserve.
-                Le vendeur décidera sous <Countdown deadline={outcome.deadline} />.
-              </>
-            }
-          />
-        );
+        // Unrelated bidders see nothing — handled by the early return above.
+        return null;
 
       default:
         return null;
@@ -431,6 +434,65 @@ function Banner({
       </div>
       {action && <div className="shrink-0">{action}</div>}
     </div>
+  );
+}
+
+/**
+ * One-shot popup for the top bidder when the seller hasn't yet decided
+ * whether to accept their below-reserve offer. Pops on first entry per
+ * session per auction (sessionStorage flag), so they're informed loud
+ * and clear without it nagging on every refresh.
+ */
+function WinnerPopup({
+  auction,
+  outcome,
+}: {
+  auction: Auction;
+  outcome: { kind: "seller_decision_top_bidder"; topBid: number; reserve: number; deadline: Date };
+}) {
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    const key = `mazed_winner_popup_${auction.id}`;
+    try {
+      if (sessionStorage.getItem(key) === "1") return;
+      sessionStorage.setItem(key, "1");
+    } catch {
+      // sessionStorage unavailable — pop anyway
+    }
+    setOpen(true);
+  }, [auction.id]);
+
+  return (
+    <Modal
+      open={open}
+      onClose={() => setOpen(false)}
+      title="Votre offre est en cours d'examen"
+      description="Le vendeur a quelques jours pour décider"
+    >
+      <div className="space-y-3 text-sm text-[var(--foreground-muted)] leading-relaxed">
+        <p>
+          L&apos;enchère pour <strong className="text-foreground">
+            {auction.vehicle.make} {auction.vehicle.model} {auction.vehicle.year}
+          </strong>{" "}
+          s&apos;est terminée à <strong className="text-foreground tabular-nums">{formatPrice(outcome.topBid)}</strong>{" "}
+          — sous le prix de réserve ({formatPrice(outcome.reserve)}).
+        </p>
+        <p>
+          Le vendeur a jusqu&apos;à <Countdown deadline={outcome.deadline} /> pour
+          accepter ou refuser votre offre. Vous serez notifié dès la décision.
+        </p>
+        <p className="text-[12px] text-[var(--foreground-subtle)] pt-1">
+          Votre caution reste bloquée jusqu&apos;à la décision. En cas de
+          refus, elle sera intégralement remboursée sous 24 heures.
+        </p>
+      </div>
+      <ModalFooter>
+        <Button size="md" onClick={() => setOpen(false)}>
+          Compris
+        </Button>
+      </ModalFooter>
+    </Modal>
   );
 }
 
