@@ -1,16 +1,16 @@
 import type { Metadata, Viewport } from "next";
-import { Cairo } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import { ToastProvider } from "@/components/ui/Toast";
 import { SplashScreen } from "@/components/layout/SplashScreen";
 import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
 import "./globals.css";
 
-const cairo = Cairo({
-  variable: "--font-cairo",
-  // Latin only now — the app shipped in French. Keeping the Cairo family
-  // so Tunisian buyers used to the previous look still recognize it.
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
+// Plus Jakarta Sans — modern, clean, slightly elegant geometric sans.
+// Pairs well with the dark + gold palette and reads great at every size.
+const jakarta = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
+  subsets: ["latin", "latin-ext"],
+  weight: ["300", "400", "500", "600", "700", "800"],
   display: "swap",
 });
 
@@ -69,15 +69,19 @@ export default function RootLayout({
     <html
       lang="fr"
       dir="ltr"
-      className={`${cairo.variable} h-full antialiased`}
+      className={`${jakarta.variable} h-full antialiased`}
     >
       <head>
-        {/* Preload the splash logo so it paints with the very first frame
-            instead of waiting for the SplashScreen component's <img> to
-            request it. Tiny (~138 KB) so the cost is negligible. */}
-        <link rel="preload" as="image" href="/logo.png" fetchPriority="high" />
+        {/* Preload the splash image at the highest priority so it paints
+            with the very first frame. The black splash container is
+            painted instantly via inline CSS regardless — this just gets
+            the image visible faster. */}
+        <link rel="preload" as="image" href="/loading.png" fetchPriority="high" />
       </head>
       <body className="min-h-full bg-background text-foreground font-sans">
+        {/* SplashScreen FIRST — server-rendered so it paints with the very
+            first HTML byte, BEFORE any per-route loading skeleton. Plays
+            on every refresh / fresh entry (no session gate). */}
         <SplashScreen />
         <ToastProvider>{children}</ToastProvider>
         <ServiceWorkerRegister />

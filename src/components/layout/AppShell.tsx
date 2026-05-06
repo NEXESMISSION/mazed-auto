@@ -1,5 +1,6 @@
 import { TopBar } from "./TopBar";
 import { BottomTabBar } from "./BottomTabBar";
+import { PullToRefresh } from "./PullToRefresh";
 
 interface Props {
   children: React.ReactNode;
@@ -11,6 +12,7 @@ interface Props {
 export function AppShell({ children, noTopBar }: Props) {
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <PullToRefresh />
       {!noTopBar && <TopBar />}
       <main className="flex-1 pb-[calc(var(--bottombar-h)+env(safe-area-inset-bottom))]">
         {children}
