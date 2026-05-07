@@ -48,7 +48,7 @@
 
   /* Layout — mobile-app feel: narrow phone-sized container, even on desktop */
   --topbar-h: 56px;
-  --bottombar-h: 72px;
+  --bottombar-h: 80px;
   --max-w: 480px;
 }
 

@@ -66,14 +66,14 @@ export function BottomTabBar() {
             >
               <span
                 className={cn(
-                  "relative h-12 w-12 -translate-y-3 rounded-full",
+                  "relative h-14 w-14 -translate-y-4 rounded-full",
                   "bg-gradient-to-b from-[#f7e07a] via-[var(--gold-bright)] to-[var(--gold-soft)]",
                   "shadow-[var(--shadow-gold),inset_0_1px_0_0_rgba(255,255,255,0.35),inset_0_-1px_0_0_rgba(0,0,0,0.15)]",
                   "flex items-center justify-center transition-transform active:scale-95",
                   active ? "scale-105" : "hover:scale-[1.03]",
                 )}
               >
-                <Plus className="h-5 w-5 text-black" strokeWidth={3} />
+                <Plus className="h-6 w-6 text-black" strokeWidth={3} />
               </span>
             </Link>
           );
@@ -84,7 +84,7 @@ export function BottomTabBar() {
             key={tab.href}
             href={tab.href}
             className={cn(
-              "relative flex flex-col items-center justify-center gap-1 h-full transition-colors",
+              "relative flex flex-col items-center justify-center gap-1.5 h-full transition-colors",
               active
                 ? "text-[var(--gold)]"
                 : "text-[var(--foreground-muted)] hover:text-foreground",
@@ -93,16 +93,18 @@ export function BottomTabBar() {
             aria-current={active ? "page" : undefined}
           >
             {active && (
-              <span className="absolute top-0 h-1 w-8 rounded-b-full bg-[var(--gold)] shadow-[0_0_12px_var(--gold-glow)]" />
+              <span className="absolute top-0 h-1 w-10 rounded-b-full bg-[var(--gold)] shadow-[0_0_12px_var(--gold-glow)]" />
             )}
             <Icon
               className={cn(
-                "h-5 w-5 transition-transform",
+                "h-6 w-6 transition-transform",
                 active && "scale-110",
               )}
               strokeWidth={active ? 2.5 : 2}
             />
-            <span className="text-[10px] font-semibold">{tab.label}</span>
+            <span className="text-[11px] font-semibold whitespace-nowrap">
+              {tab.label}
+            </span>
           </Link>
         );
       })}
