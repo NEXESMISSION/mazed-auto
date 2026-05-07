@@ -313,31 +313,28 @@ body {
   z-index: 1000;
   background: #0a0a0a;
   overflow: hidden;
-  /* Whole-lifecycle animation: paint instantly, hold, fade out at end. */
-  animation: mazed-splash-life 3700ms ease-out forwards;
+  /* Total splash life: paint instant → hold ~800ms → fade ~300ms = 1100ms.
+     Tight first-impression — slow enough to feel intentional, short enough
+     not to delay every reload. */
+  animation: mazed-splash-life 1100ms ease-out forwards;
 }
 #mazed-splash img {
-  /* Fill the viewport, center the focal point. Source image is 1440×3040
-     (vertical phone canvas) — on phones it fills cleanly; on desktop the
-     sides crop but the centered logo stays visible. */
+  /* Fill the viewport, center the focal point. Image is preloaded via the
+     <link rel="preload"> in <head>, so it's visible from t=0 — no fade-in
+     needed (the 800ms image fade was the source of the "splash appears
+     suddenly" complaint, since the black panel was solid for 800ms before
+     the image materialised). */
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
   object-position: center;
-  /* Slow 800ms fade-in — black panel first, then the image gently
-     materialises. */
-  opacity: 0;
-  animation: mazed-splash-img-in 800ms ease-out forwards;
 }
 
-@keyframes mazed-splash-img-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
 @keyframes mazed-splash-life {
-  /* Paint, hold (~3000ms), fade out (~700ms), end invisible + non-interactive. */
-  0%, 81%   { opacity: 1; pointer-events: auto; }
+  /* Hold (~800ms = 73%), then fade ~300ms (27%). Final state is invisible
+     + non-interactive so the splash element stops blocking taps. */
+  0%, 73%   { opacity: 1; pointer-events: auto; }
   100%      { opacity: 0; pointer-events: none; }
 }

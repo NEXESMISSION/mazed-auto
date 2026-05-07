@@ -74,6 +74,9 @@ export default async function RootLayout({
       lang={locale}
       dir={dir}
       className={`${jakarta.variable} h-full antialiased`}
+      // Inline bg kills the white FOUC flash — paints with the very first
+      // HTML byte, before globals.css needs to resolve.
+      style={{ background: "#0a0a0a" }}
     >
       <head>
         {/* Preload the splash image at the highest priority so it paints
@@ -82,7 +85,10 @@ export default async function RootLayout({
             the image visible faster. */}
         <link rel="preload" as="image" href="/loading.png" fetchPriority="high" />
       </head>
-      <body className="min-h-full bg-background text-foreground font-sans">
+      <body
+        className="min-h-full bg-background text-foreground font-sans"
+        style={{ background: "#0a0a0a" }}
+      >
         {/* SplashScreen FIRST — server-rendered so it paints with the very
             first HTML byte, BEFORE any per-route loading skeleton. Plays
             on every refresh / fresh entry (no session gate). */}
