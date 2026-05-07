@@ -18,14 +18,11 @@ const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ||
   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined);
 
+// Locale-agnostic metadata only. The localized title/description/OG live
+// in app/[locale]/layout.tsx#generateMetadata so /fr/* serves French copy
+// in the <title>, OG cards, and meta description, and /ar/* serves Arabic.
 export const metadata: Metadata = {
   metadataBase: SITE_URL ? new URL(SITE_URL) : undefined,
-  title: {
-    default: "Mazed Auto — منصة المزادات الذكية للسيارات",
-    template: "%s — Mazed Auto",
-  },
-  description:
-    "منصة موثوقة للمزادات على السيارات في تونس — توثيق متعدد الطبقات، مزادات لحظية، شفافية كاملة.",
   applicationName: "Mazed Auto",
   appleWebApp: {
     capable: true,
@@ -34,18 +31,6 @@ export const metadata: Metadata = {
   },
   formatDetection: {
     telephone: false,
-  },
-  openGraph: {
-    type: "website",
-    siteName: "Mazed Auto",
-    title: "Mazed Auto — منصة المزادات الذكية للسيارات",
-    description:
-      "منصة موثوقة للمزادات على السيارات في تونس — توثيق متعدد الطبقات، مزادات لحظية، شفافية كاملة.",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Mazed Auto",
-    description: "منصة موثوقة للمزادات على السيارات في تونس.",
   },
 };
 
