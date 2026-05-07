@@ -55,8 +55,9 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   // Resolve the active locale via the next-intl request context so the html
-  // tag matches the rendered content. Defaults to "ar" when the request did
-  // not pass through the i18n middleware (api/auth route handlers).
+  // tag matches the rendered content. Falls back to the routing default
+  // ("fr") when the request did not pass through the i18n middleware
+  // (api/auth route handlers don't run it).
   const locale = await getLocale();
   const dir = locale === "ar" ? "rtl" : "ltr";
 
