@@ -71,10 +71,11 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Strip the locale prefix (only "fr" gets one with localePrefix:as-needed)
-  // so the gate logic stays locale-agnostic. Arabic URLs are unprefixed.
+  // Strip the locale prefix (with localePrefix:"always" both /ar and /fr
+  // are present) so the gate logic stays locale-agnostic. The path the
+  // gates check is always the unprefixed page path.
   const rawPath = request.nextUrl.pathname;
-  const localeMatch = rawPath.match(/^\/(fr)(\/.*|$)/);
+  const localeMatch = rawPath.match(/^\/(ar|fr)(\/.*|$)/);
   const localePrefix = localeMatch ? `/${localeMatch[1]}` : "";
   const path = localeMatch ? localeMatch[2] || "/" : rawPath;
 
