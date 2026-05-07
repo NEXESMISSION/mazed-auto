@@ -18,7 +18,8 @@ export type AuctionStatus =
   | "cancelled"
   | "reserve_not_met"
   | "pending_review"
-  | "pending_seller_decision";
+  | "pending_seller_decision"
+  | "re_offered";
 
 export type TrustLevel =
   | "new"
@@ -92,6 +93,11 @@ export interface Auction {
   isVip: boolean;
   alerts?: AIAlert[];
   reserveDecisionDeadline?: Date;
+  /** Set when status='ended' or 're_offered' — the user whose payment we're
+   *  waiting on. Forfeit re-points this to the next bidder. (PLAN §21.4) */
+  currentWinnerId?: string;
+  /** When the current winner must complete final_payment by, else forfeit. */
+  paymentDeadline?: Date;
 }
 
 export interface Bid {

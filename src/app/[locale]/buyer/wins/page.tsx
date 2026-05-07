@@ -9,6 +9,7 @@ import { formatPrice } from "@/lib/format";
 import { RateSellerButton } from "@/components/auction/RateSellerButton";
 import { MessageSellerButton } from "@/components/auction/MessageSellerButton";
 import type { Auction } from "@/lib/types";
+import { RenounceButton } from "./RenounceButton";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -29,11 +30,18 @@ export default async function WinsPage() {
   let wins: Win[] = [];
 
   if (user) {
-    // Two ways to win: be the top bidder on an ended auction, OR have a
-    // completed final_payment (covers buy-now where the buyer never placed
-    // a bid). Union the auction ids from both sources.
-    const [{ data: myBids }, { data: paidTx }] = await Promise.all([
-      supabase.from("bids").select("auction_id").eq("user_id", user.id),
+    // Two ways to be a winner:
+    //  1. The auction's current_winner_id == me (set by finalize_auction
+    //     when status='ended', or by forfeit_winner_deposit when status
+    //     advances to 're_offered' and I'm the next bidder up).
+    //  2. I have a completed final_payment (covers buy-now where the
+    //     buyer never placed a bid — auction stays 'ended' but I paid).
+    const [{ data: byWinner }, { data: paidTx }] = await Promise.all([
+      supabase
+        .from("auctions")
+        .select("*, seller:sellers(*)")
+        .eq("current_winner_id", user.id)
+        .in("status", ["ended", "re_offered"]),
       supabase
         .from("transactions")
         .select("auction_id")
@@ -45,53 +53,56 @@ export default async function WinsPage() {
     const paidAuctionIds = new Set(
       (paidTx ?? []).map((t) => t.auction_id).filter(Boolean) as string[],
     );
-    const auctionIds = Array.from(
-      new Set([
-        ...(myBids ?? []).map((b) => b.auction_id),
-        ...paidAuctionIds,
-      ]),
+
+    // Pull any "paid but not currentWinner" auctions (buy-now from someone
+    // who isn't the bid winner) to round out the list.
+    const winnerIds = new Set(
+      (byWinner ?? []).map((r) => (r as unknown as AuctionRow).id),
+    );
+    const paidOnly = Array.from(paidAuctionIds).filter(
+      (id) => !winnerIds.has(id),
     );
 
-    if (auctionIds.length > 0) {
-      const { data: ended } = await supabase
+    let paidOnlyRows: unknown[] = [];
+    if (paidOnly.length > 0) {
+      const { data } = await supabase
         .from("auctions")
         .select("*, seller:sellers(*)")
-        .in("id", auctionIds)
+        .in("id", paidOnly)
         .eq("status", "ended");
-
-      const checks = await Promise.all(
-        (ended ?? []).map(async (row) => {
-          const a = mapAuction(row as unknown as AuctionRow);
-          const { data: top } = await supabase
-            .from("bids")
-            .select("user_id, amount")
-            .eq("auction_id", a.id)
-            .order("amount", { ascending: false })
-            .order("placed_at", { ascending: true })
-            .limit(1);
-
-          const isTopBidder = top?.[0]?.user_id === user.id;
-          const hasPaid = paidAuctionIds.has(a.id);
-
-          // Not a winner unless they're the top bidder OR paid the final.
-          if (!isTopBidder && !hasPaid) return null;
-
-          // For buy-now where there's no bid from the user, use current_price
-          // (which the buy_now RPC set to buy_now_price).
-          const myWinningBid = isTopBidder
-            ? Number(top![0].amount)
-            : a.currentPrice;
-
-          return {
-            auction: a,
-            myWinningBid,
-            finalPaid: hasPaid,
-            deposit: a.participationDeposit,
-          } as Win;
-        }),
-      );
-      wins = checks.filter((w): w is Win => w !== null);
+      paidOnlyRows = data ?? [];
     }
+
+    const allRows = [...(byWinner ?? []), ...paidOnlyRows];
+
+    wins = await Promise.all(
+      allRows.map(async (row) => {
+        const a = mapAuction(row as AuctionRow);
+        const hasPaid = paidAuctionIds.has(a.id);
+
+        // Find the user's actual winning bid amount (might differ from
+        // current_price if there were higher bids that later forfeited).
+        const { data: myBid } = await supabase
+          .from("bids")
+          .select("amount")
+          .eq("auction_id", a.id)
+          .eq("user_id", user.id)
+          .order("amount", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        const myWinningBid = myBid
+          ? Number(myBid.amount)
+          : a.currentPrice; // buy-now path: no bid row
+
+        return {
+          auction: a,
+          myWinningBid,
+          finalPaid: hasPaid,
+          deposit: a.participationDeposit,
+        } satisfies Win;
+      }),
+    );
   }
 
   return (
@@ -100,7 +111,7 @@ export default async function WinsPage() {
         <div>
           <h1 className="text-2xl font-extrabold flex items-center gap-2">
             <Trophy className="h-6 w-6 text-[var(--gold)]" />
-Mes ventes gagnées
+            Mes ventes gagnées
           </h1>
           <p className="text-sm text-[var(--foreground-muted)] mt-1">
             Félicitations ! Payez et contactez le vendeur pour finaliser la vente
@@ -126,6 +137,7 @@ Mes ventes gagnées
           <div className="space-y-3">
             {wins.map((w) => {
               const remaining = Math.max(0, w.myWinningBid - w.deposit);
+              const auctionLabel = `${w.auction.vehicle.make} ${w.auction.vehicle.model} ${w.auction.vehicle.year}`;
               return (
                 <div
                   key={w.auction.id}
@@ -139,10 +151,7 @@ Mes ventes gagnées
                       className="h-24 w-32 rounded-[var(--radius-sm)] object-cover shrink-0"
                     />
                     <div className="flex-1 min-w-0">
-                      <div className="font-bold">
-                        {w.auction.vehicle.make} {w.auction.vehicle.model}{" "}
-                        {w.auction.vehicle.year}
-                      </div>
+                      <div className="font-bold">{auctionLabel}</div>
                       <div className="text-xs text-[var(--foreground-muted)] mt-0.5">
                         {w.auction.seller.displayName}
                       </div>
@@ -163,9 +172,13 @@ Mes ventes gagnées
                             <Badge variant="success" size="sm">
                               Payé
                             </Badge>
+                          ) : w.auction.status === "re_offered" ? (
+                            <Badge variant="warning" size="sm">
+                              Re-proposée à votre prix
+                            </Badge>
                           ) : (
                             <Badge variant="warning" size="sm">
-En attente
+                              En attente
                             </Badge>
                           )}
                         </div>
@@ -191,6 +204,12 @@ En attente
                         <div className="text-xs text-[var(--foreground-muted)]">
                           Montant restant : {formatPrice(remaining)} (après déduction
                           de la caution {formatPrice(w.deposit)})
+                          {w.auction.paymentDeadline && (
+                            <>
+                              {" · "}
+                              <DeadlineHint deadline={w.auction.paymentDeadline} />
+                            </>
+                          )}
                         </div>
                       </div>
                       <div className="p-3 flex flex-col sm:flex-row gap-2">
@@ -209,10 +228,11 @@ En attente
                           size="md"
                           variant="secondary"
                         />
-                        <Button size="md" variant="ghost" disabled>
-                          <AlertTriangle className="h-4 w-4 text-[var(--danger)]" />
-                          <span className="text-[var(--danger)]">Se retirer</span>
-                        </Button>
+                        <RenounceButton
+                          auctionId={w.auction.id}
+                          deposit={w.deposit}
+                          auctionLabel={auctionLabel}
+                        />
                       </div>
                     </div>
                   )}
@@ -223,6 +243,24 @@ En attente
         )}
       </div>
     </AppShell>
+  );
+}
+
+function DeadlineHint({ deadline }: { deadline: Date }) {
+  const ms = deadline.getTime() - Date.now();
+  if (ms <= 0) {
+    return (
+      <span className="font-semibold text-[var(--danger)] inline-flex items-center gap-1">
+        <AlertTriangle className="h-3 w-3" />
+        Délai dépassé
+      </span>
+    );
+  }
+  const days = Math.ceil(ms / (1000 * 60 * 60 * 24));
+  return (
+    <span className="font-semibold text-amber-400">
+      Délai : {days} jour{days > 1 ? "s" : ""}
+    </span>
   );
 }
 

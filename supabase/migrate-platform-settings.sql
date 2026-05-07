@@ -129,6 +129,11 @@ insert into public.platform_settings (key, value, type, category, description, s
   ('auction.anti_sniping.window_minutes',    '5'::jsonb,     'number',  'auction',    'A bid placed within this many minutes of end_time triggers extension', false, false),
   ('auction.anti_sniping.extension_minutes', '5'::jsonb,     'number',  'auction',    'How many minutes to push end_time forward when anti-sniping fires', false, false),
 
+  -- Winner forfeit (PLAN §21.4)
+  ('auction.payment.deadline_days',          '7'::jsonb,     'number',  'auction',    'Days the winner has to complete the final payment before forfeit', false, true),
+  ('auction.forfeit.seller_share',           '0.7'::jsonb,   'number',  'auction',    'Fraction of forfeited deposit paid to the seller (0.7 = 70%)', true,  true),
+  ('auction.forfeit.platform_share',         '0.3'::jsonb,   'number',  'auction',    'Fraction of forfeited deposit kept by the platform (0.3 = 30%)', true,  true),
+
   -- Buy-now (decisions #3 and #4)
   ('auction.buy_now.min_multiplier',         '1.30'::jsonb,  'number',  'auction',    'buy_now_price must be >= starting_price * this multiplier', false, false),
   ('auction.buy_now.payment_mode',           '"deposit_then_full"'::jsonb, 'string', 'auction', 'Either "full_immediate" or "deposit_then_full"', false, true),

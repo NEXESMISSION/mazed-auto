@@ -91,6 +91,7 @@ declare
   v_winning_amount numeric;
   v_make text; v_model text; v_year int;
   v_status text;
+  v_deadline_days int;
 begin
   select status, make, model, year into v_status, v_make, v_model, v_year
     from public.auctions where id = p_auction_id;
@@ -104,9 +105,21 @@ begin
     limit 1;
 
     if v_winner is not null then
+      -- Stamp current_winner_id + payment_deadline so the forfeit pipeline
+      -- (PLAN §21.4) has both pointers it needs. Default 7 days, configurable
+      -- via auction.payment.deadline_days. Safe to call before the column
+      -- exists in older schemas — the migrate-winner-forfeit migration
+      -- adds the column and this update becomes effective from then on.
+      v_deadline_days := public.get_setting_num('auction.payment.deadline_days', 7)::int;
+      update public.auctions
+         set current_winner_id = v_winner,
+             payment_deadline  = now() + make_interval(days => v_deadline_days)
+       where id = p_auction_id;
+
       insert into public.notifications (user_id, auction_id, kind, title, body)
       values (v_winner, p_auction_id, 'won', 'Félicitations ! Vous avez gagné l''enchère',
-              v_make || ' ' || v_model || ' ' || v_year || ' à ' || v_winning_amount::text || ' DT — complétez le paiement final');
+              v_make || ' ' || v_model || ' ' || v_year || ' à ' || v_winning_amount::text
+              || ' DT — complétez le paiement final dans les ' || v_deadline_days || ' jours');
 
       -- Notify every other bidder that they lost + refund their deposit
       insert into public.notifications (user_id, auction_id, kind, title, body)
@@ -157,7 +170,10 @@ begin
   end if;
 end; $$;
 
--- 3) Hook finalize_auction into end_expired_auctions
+-- 3) Hook finalize_auction into end_expired_auctions, then run the
+--    payment-deadline sweep so any winner whose 7-day window has lapsed
+--    forfeits at the same lazy-evaluation moment. Both passes are
+--    idempotent and cheap when there's nothing to do.
 create or replace function public.end_expired_auctions()
 returns void language plpgsql security definer as $$
 declare
@@ -178,6 +194,16 @@ begin
 
     perform public.finalize_auction(r.id);
   end loop;
+
+  -- Forfeit any winner past their payment_deadline. Function is defined
+  -- in migrate-winner-forfeit.sql; if that migration hasn't been applied
+  -- yet the call no-ops via the begin/exception block.
+  begin
+    perform public.process_expired_payment_deadlines();
+  exception when undefined_function then
+    -- migrate-winner-forfeit.sql not applied yet — skip silently.
+    null;
+  end;
 end; $$;
 
 -- 4) Reports auto-action ladder (§16.2)

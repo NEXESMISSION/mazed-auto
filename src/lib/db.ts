@@ -70,6 +70,8 @@ export interface AuctionRow {
   is_vip: boolean;
   alerts: AIAlert[] | null;
   reserve_decision_deadline?: string | null;
+  current_winner_id?: string | null;
+  payment_deadline?: string | null;
   seller?: SellerRow | null;
 }
 
@@ -166,6 +168,10 @@ export function mapAuction(r: AuctionRow): Auction {
     alerts: r.alerts ?? undefined,
     reserveDecisionDeadline: r.reserve_decision_deadline
       ? new Date(r.reserve_decision_deadline)
+      : undefined,
+    currentWinnerId: r.current_winner_id ?? undefined,
+    paymentDeadline: r.payment_deadline
+      ? new Date(r.payment_deadline)
       : undefined,
   };
   // Merge DB-stored alerts with heuristic ones derived from auction signals

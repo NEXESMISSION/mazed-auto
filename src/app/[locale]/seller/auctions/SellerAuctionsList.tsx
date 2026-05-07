@@ -33,6 +33,7 @@ const statusBadge: Record<
   pending_seller_decision: { label: "En attente de votre décision", variant: "warning" },
   reserve_not_met: { label: "Prix de réserve non atteint", variant: "warning" },
   pending_review: { label: "En cours de modération", variant: "warning" },
+  re_offered: { label: "Re-proposée (gagnant a renoncé)", variant: "warning" },
 };
 
 export function SellerAuctionsList({ list }: { list: Auction[] }) {
