@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
-import { Search, Plus, Gavel, User } from "lucide-react";
+import { Search, Heart, Plus, Gavel, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function BottomTabBar() {
@@ -10,14 +10,22 @@ export function BottomTabBar() {
   const t = useTranslations("nav");
   const tCommon = useTranslations("common");
 
-  // Home tab removed — `/` 308-redirects to `/auctions`, so Browse covers
-  // the same intent. Down to 4 cells; the Sell FAB stays as the CTA.
+  // 5 cells with the Sell FAB perfectly centered (cell 3). Browse +
+  // Watchlist on the discovery side, MyBids + Profile on the activity
+  // side. The 4-cell layout from the previous iteration put the FAB
+  // off-center, which read as "messed up".
   const tabs = [
     {
       href: "/auctions",
       label: t("browseShort"),
       icon: Search,
       match: (p: string) => p === "/" || p.startsWith("/auctions"),
+    },
+    {
+      href: "/buyer/watchlist",
+      label: t("watchlist"),
+      icon: Heart,
+      match: (p: string) => p.startsWith("/buyer/watchlist"),
     },
     {
       href: "/seller/new/step-1",
@@ -30,7 +38,8 @@ export function BottomTabBar() {
       href: "/buyer/bids",
       label: t("myBids"),
       icon: Gavel,
-      match: (p: string) => p.startsWith("/buyer"),
+      match: (p: string) =>
+        p.startsWith("/buyer") && !p.startsWith("/buyer/watchlist"),
     },
     {
       href: "/profile",
@@ -46,7 +55,7 @@ export function BottomTabBar() {
         "md:hidden sticky bottom-0 z-40 h-[var(--bottombar-h)] pb-safe",
         "bg-[#0e0e0e] border-t border-[var(--border-strong)]",
         "shadow-[0_-8px_24px_rgba(0,0,0,0.5)]",
-        "grid grid-cols-4 items-center px-1",
+        "grid grid-cols-5 items-center px-1",
       )}
       aria-label={tCommon("primaryNav")}
     >
