@@ -35,6 +35,7 @@ export function TopBar() {
   const t = useTranslations("nav");
   const tAuth = useTranslations("auth");
   const tCommon = useTranslations("common");
+  const tBrand = useTranslations("brand");
 
   const NAV: { href: string; label: string }[] = [
     { href: "/auctions", label: t("auctions") },
@@ -81,9 +82,9 @@ export function TopBar() {
         <Link
           href="/"
           className="hidden md:inline font-bold tracking-tight text-base gradient-gold-text"
-          aria-label="Mazed Auto"
+          aria-label={tBrand("name")}
         >
-          Mazed Auto
+          {tBrand("name")}
         </Link>
 
         {/* Desktop nav */}
@@ -118,14 +119,14 @@ export function TopBar() {
               <Link
                 href="/messages"
                 className="h-9 w-9 flex items-center justify-center rounded-full hover:bg-[var(--surface)] transition-colors"
-                aria-label="Messages"
+                aria-label={t("messages")}
               >
                 <MessageSquare className="h-[18px] w-[18px]" />
               </Link>
               <Link
                 href="/notifications"
                 className="h-9 w-9 flex items-center justify-center rounded-full hover:bg-[var(--surface)] transition-colors relative"
-                aria-label="Notifications"
+                aria-label={t("notifications")}
               >
                 <Bell className="h-[18px] w-[18px]" />
                 {unread !== null && unread > 0 && (
@@ -149,7 +150,7 @@ export function TopBar() {
                     ? "bg-[var(--gold-faint)] ring-1 ring-[var(--gold)]"
                     : "bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--gold)]/40",
                 )}
-                aria-label="Compte"
+                aria-label={tCommon("account")}
                 aria-expanded={open}
               >
                 {(user.firstName?.[0] || user.email?.[0] || "U").toUpperCase()}
@@ -250,7 +251,7 @@ export function TopBar() {
                 <X className="h-5 w-5" />
               </button>
               <div className="text-[10px] uppercase tracking-[0.3em] font-bold gradient-gold-text">
-                Mazed · Auto
+                {tBrand("name")}
               </div>
             </div>
 

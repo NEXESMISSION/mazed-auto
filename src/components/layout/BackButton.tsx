@@ -1,6 +1,7 @@
 "use client";
 
-import { useRouter, usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useRouter, usePathname } from "@/i18n/navigation";
 import { ChevronLeft } from "lucide-react";
 
 /**
@@ -16,6 +17,7 @@ import { ChevronLeft } from "lucide-react";
 export function BackButton() {
   const router = useRouter();
   const pathname = usePathname();
+  const tCommon = useTranslations("common");
   if (pathname === "/") return null;
 
   const parent = parentPath(pathname);
@@ -23,7 +25,7 @@ export function BackButton() {
   return (
     <button
       onClick={() => router.push(parent)}
-      aria-label="Retour"
+      aria-label={tCommon("back")}
       className="
         group relative h-10 w-10 rounded-full shrink-0
         bg-[var(--surface)] border border-[var(--border)]

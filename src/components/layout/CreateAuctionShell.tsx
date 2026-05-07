@@ -1,6 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
 import { ChevronLeft, X } from "lucide-react";
 import { Stepper } from "./Stepper";
 
@@ -19,13 +20,14 @@ interface Props {
 
 export function CreateAuctionShell({ current, children }: Props) {
   const router = useRouter();
+  const tCommon = useTranslations("common");
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <header className="flex items-center justify-between px-4 pt-4 pb-3">
         <button
           onClick={() => router.back()}
-          aria-label="Retour"
+          aria-label={tCommon("back")}
           className="h-10 w-10 rounded-full bg-[var(--surface)] border border-[var(--border)] flex items-center justify-center hover:border-[var(--gold-soft)] transition-colors"
         >
           <ChevronLeft className="h-5 w-5" />
@@ -33,7 +35,7 @@ export function CreateAuctionShell({ current, children }: Props) {
         <div className="font-bold text-sm">Créer une nouvelle enchère</div>
         <button
           onClick={() => router.push("/seller/dashboard")}
-          aria-label="Annuler"
+          aria-label={tCommon("cancel")}
           className="h-10 w-10 rounded-full bg-[var(--surface)] border border-[var(--border)] flex items-center justify-center hover:border-[var(--danger)]/40 hover:text-[var(--danger)] transition-colors"
         >
           <X className="h-4 w-4" />

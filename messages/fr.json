@@ -36,7 +36,9 @@
     "menu": "Menu",
     "close": "Fermer",
     "account": "Compte",
-    "primaryNav": "Navigation principale"
+    "primaryNav": "Navigation principale",
+    "back": "Retour",
+    "cancel": "Annuler"
   },
   "offline": {
     "title": "Aucune connexion Internet",

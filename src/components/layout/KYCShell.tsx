@@ -1,4 +1,5 @@
-import Link from "next/link";
+import { getTranslations } from "next-intl/server";
+import { Link } from "@/i18n/navigation";
 import { ChevronLeft, X } from "lucide-react";
 import { Stepper } from "./Stepper";
 
@@ -17,19 +18,20 @@ interface Props {
   title?: string;
 }
 
-export function KYCShell({
+export async function KYCShell({
   current,
   children,
   backHref = "/",
   title = "Vérification d'identité",
 }: Props) {
+  const tCommon = await getTranslations("common");
   const showStepper = current >= 0;
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <header className="flex items-center justify-between px-4 pt-4 pb-3">
         <Link
           href={backHref}
-          aria-label="Retour"
+          aria-label={tCommon("back")}
           className="h-10 w-10 rounded-full bg-[var(--surface)] border border-[var(--border)] flex items-center justify-center hover:border-[var(--gold-soft)] transition-colors"
         >
           <ChevronLeft className="h-5 w-5" />
@@ -37,7 +39,7 @@ export function KYCShell({
         <div className="font-bold text-sm">{title}</div>
         <Link
           href="/"
-          aria-label="Annuler"
+          aria-label={tCommon("cancel")}
           className="h-10 w-10 rounded-full bg-[var(--surface)] border border-[var(--border)] flex items-center justify-center hover:border-[var(--danger)]/40 hover:text-[var(--danger)] transition-colors"
         >
           <X className="h-4 w-4" />

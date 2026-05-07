@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import {
   LayoutDashboard,
   Users,
@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
-import { useRouter } from "next/navigation";
 
 const items = [
   { href: "/admin/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
@@ -35,6 +34,7 @@ export function AdminShell({ children }: Props) {
   const pathname = usePathname();
   const router = useRouter();
   const { signOut } = useAuth();
+  const t = useTranslations("nav");
   async function handleSignOut() {
     await signOut();
     router.push("/");
@@ -55,7 +55,7 @@ export function AdminShell({ children }: Props) {
           </Link>
           <button
             className="h-9 w-9 rounded-full hover:bg-[var(--surface-2)] flex items-center justify-center md:hidden"
-            aria-label="Notifications"
+            aria-label={t("notifications")}
           >
             <Bell className="h-4 w-4" />
           </button>

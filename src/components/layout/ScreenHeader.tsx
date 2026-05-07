@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { Link, useRouter } from "@/i18n/navigation";
 import { ChevronLeft } from "lucide-react";
 
 interface Props {
@@ -25,6 +25,7 @@ interface Props {
  */
 export function ScreenHeader({ title, subtitle, backHref, action }: Props) {
   const router = useRouter();
+  const tCommon = useTranslations("common");
 
   return (
     <header className="px-4 pt-4 pb-3 flex items-center gap-3">
@@ -33,7 +34,7 @@ export function ScreenHeader({ title, subtitle, backHref, action }: Props) {
       ) : backHref ? (
         <Link
           href={backHref}
-          aria-label="Retour"
+          aria-label={tCommon("back")}
           className="h-10 w-10 shrink-0 rounded-full bg-[var(--surface)] border border-[var(--border)] flex items-center justify-center hover:border-[var(--gold-soft)] transition-colors"
         >
           <ChevronLeft className="h-5 w-5" />
@@ -41,7 +42,7 @@ export function ScreenHeader({ title, subtitle, backHref, action }: Props) {
       ) : (
         <button
           onClick={() => router.back()}
-          aria-label="Retour"
+          aria-label={tCommon("back")}
           className="h-10 w-10 shrink-0 rounded-full bg-[var(--surface)] border border-[var(--border)] flex items-center justify-center hover:border-[var(--gold-soft)] transition-colors"
         >
           <ChevronLeft className="h-5 w-5" />

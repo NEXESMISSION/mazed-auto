@@ -1,4 +1,5 @@
-import Link from "next/link";
+import { getTranslations } from "next-intl/server";
+import { Link } from "@/i18n/navigation";
 import { ChevronLeft } from "lucide-react";
 
 interface Props {
@@ -15,19 +16,21 @@ interface Props {
  * left-aligned (matches the reference home composition), card-less body so
  * the form fields breathe in the narrow phone column.
  */
-export function AuthShell({ title, subtitle, children, footer, backHref = "/" }: Props) {
+export async function AuthShell({ title, subtitle, children, footer, backHref = "/" }: Props) {
+  const tCommon = await getTranslations("common");
+  const tBrand = await getTranslations("brand");
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* Top — back + brand */}
       <div className="flex items-center justify-between px-4 pt-4">
         <Link
           href={backHref}
-          aria-label="Retour"
+          aria-label={tCommon("back")}
           className="h-10 w-10 rounded-full bg-[var(--surface)] border border-[var(--border)] flex items-center justify-center hover:border-[var(--gold-soft)] transition-colors"
         >
           <ChevronLeft className="h-5 w-5" />
         </Link>
-        <Link href="/" className="flex items-center gap-2" aria-label="Mazed Auto">
+        <Link href="/" className="flex items-center gap-2" aria-label={tBrand("name")}>
           <div className="h-8 w-8 rounded-[var(--radius)] overflow-hidden ring-1 ring-[var(--gold)]/30 shadow-[var(--shadow-gold)]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo.png" alt="" className="h-full w-full object-cover" />
