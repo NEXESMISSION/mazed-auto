@@ -3,6 +3,7 @@
 import { useState, Suspense } from "react";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
+import { stripLocalePrefix } from "@/i18n/routing";
 import { Mail, Lock, ArrowRight } from "lucide-react";
 import { AuthShell } from "@/components/layout/AuthShell";
 import { Input } from "@/components/ui/Input";
@@ -39,7 +40,11 @@ function LoginForm() {
       return;
     }
     toast("Bon retour", "success");
-    const redirect = params.get("redirect") || "/";
+    // Strip any leading /fr or /ar so the locale-aware router doesn't
+    // double-prefix old redirect URLs (e.g. /fr/profile → /fr/fr/profile).
+    // Defends against bookmarks + browser history that pre-date the
+    // proxy fix that now writes locale-stripped paths.
+    const redirect = stripLocalePrefix(params.get("redirect") || "/");
     router.push(redirect);
     router.refresh();
   }

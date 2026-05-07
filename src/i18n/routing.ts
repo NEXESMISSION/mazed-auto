@@ -17,3 +17,19 @@ export const routing = defineRouting({
 });
 
 export type Locale = (typeof routing.locales)[number];
+
+/**
+ * Strip a leading `/ar/` or `/fr/` (or bare `/ar` / `/fr`) from a path so
+ * it can be safely fed to the locale-aware router, which always prepends
+ * the active locale itself. Without this, `router.push("/fr/profile")`
+ * produces `/fr/fr/profile` (double-prefix → 404).
+ *
+ * Idempotent on already-stripped paths.
+ */
+export function stripLocalePrefix(path: string): string {
+  for (const locale of routing.locales) {
+    if (path === `/${locale}`) return "/";
+    if (path.startsWith(`/${locale}/`)) return path.slice(locale.length + 1);
+  }
+  return path;
+}
