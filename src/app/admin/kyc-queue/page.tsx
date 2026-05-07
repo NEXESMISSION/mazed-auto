@@ -2,6 +2,10 @@ import { AdminShell } from "@/components/layout/AdminShell";
 import { Badge } from "@/components/ui/Badge";
 import { createClient } from "@/lib/supabase/server";
 import { listSellers } from "@/lib/db";
+import {
+  getKycFaceMatchThreshold,
+  getKycOcrConfidenceThreshold,
+} from "@/lib/config";
 import { KycQueueList } from "./KycQueueList";
 
 export const dynamic = "force-dynamic";
@@ -9,7 +13,11 @@ export const revalidate = 0;
 
 export default async function KYCQueuePage() {
   const supabase = await createClient();
-  const all = await listSellers(supabase);
+  const [all, faceThreshold, ocrThreshold] = await Promise.all([
+    listSellers(supabase),
+    getKycFaceMatchThreshold(),
+    getKycOcrConfidenceThreshold(),
+  ]);
   const items = all.filter((s) => !s.verifiedKyc);
 
   return (
@@ -30,7 +38,11 @@ export default async function KYCQueuePage() {
             ✓ Aucune demande à examiner
           </div>
         ) : (
-          <KycQueueList items={items} />
+          <KycQueueList
+            items={items}
+            faceThreshold={faceThreshold}
+            ocrThreshold={ocrThreshold}
+          />
         )}
       </div>
     </AdminShell>

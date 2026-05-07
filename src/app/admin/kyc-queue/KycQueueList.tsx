@@ -8,7 +8,15 @@ import { useToast } from "@/components/ui/Toast";
 import { createClient } from "@/lib/supabase/client";
 import type { Seller } from "@/lib/types";
 
-export function KycQueueList({ items: initial }: { items: Seller[] }) {
+export function KycQueueList({
+  items: initial,
+  faceThreshold,
+  ocrThreshold,
+}: {
+  items: Seller[];
+  faceThreshold: number;
+  ocrThreshold: number;
+}) {
   const { toast } = useToast();
   const [items, setItems] = useState(initial);
 
@@ -56,8 +64,8 @@ export function KycQueueList({ items: initial }: { items: Seller[] }) {
             </div>
 
             <div className="grid grid-cols-2 gap-3 text-sm">
-              <Score label="Face Match" value={faceMatch} threshold={95} />
-              <Score label="OCR Confidence" value={ocr} threshold={95} />
+              <Score label="Face Match" value={faceMatch} threshold={faceThreshold} />
+              <Score label="OCR Confidence" value={ocr} threshold={ocrThreshold} />
             </div>
 
             <div className="flex flex-wrap gap-2">
