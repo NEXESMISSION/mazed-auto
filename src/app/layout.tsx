@@ -71,11 +71,13 @@ export default async function RootLayout({
       style={{ background: "#0a0a0a" }}
     >
       <head>
-        {/* Preload the splash image at the highest priority so it paints
+        {/* Preload the splash logo at the highest priority so it paints
             with the very first frame. The black splash container is
             painted instantly via inline CSS regardless — this just gets
-            the image visible faster. */}
-        <link rel="preload" as="image" href="/loading.png" fetchPriority="high" />
+            the logo visible faster. Was /loading.png (2.9 MB); switched
+            to /logo.png (~135 KB) so it actually arrives before the
+            splash holds finish. */}
+        <link rel="preload" as="image" href="/logo.png" fetchPriority="high" />
       </head>
       <body
         className="min-h-full bg-background text-foreground font-sans"
