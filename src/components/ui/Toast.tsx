@@ -33,9 +33,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     (message: string, variant: ToastVariant = "info") => {
       const newId = ++id;
       setToasts((prev) => [...prev, { id: newId, message, variant }]);
+      // Short auto-dismiss — toast is feedback, not a banner. 900ms is
+      // long enough to read a short message but short enough not to
+      // linger over the content.
       setTimeout(() => {
         setToasts((prev) => prev.filter((t) => t.id !== newId));
-      }, 3500);
+      }, 900);
     },
     [],
   );
@@ -46,9 +49,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={{ toast }}>
       {children}
-      {/* Bottom-anchored stack — sits above the bottom tab bar with safe-area
-          padding. Mobile-app convention: notifications appear above the nav. */}
-      <div className="fixed inset-x-0 bottom-0 z-[100] flex flex-col items-center gap-2 px-4 pb-[calc(var(--bottombar-h)+env(safe-area-inset-bottom)+12px)] pointer-events-none">
+      {/* Top-anchored stack — sits below the status bar with safe-area
+          padding so notifications never collide with the bottom tab bar. */}
+      <div className="fixed inset-x-0 top-0 z-[100] flex flex-col items-center gap-2 px-4 pt-[calc(env(safe-area-inset-top)+12px)] pointer-events-none">
         {toasts.map((t) => (
           <ToastItem key={t.id} toast={t} onClose={() => dismiss(t.id)} />
         ))}
