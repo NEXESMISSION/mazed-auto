@@ -18,7 +18,10 @@ export function BackButton() {
   const router = useRouter();
   const pathname = usePathname();
   const tCommon = useTranslations("common");
-  if (pathname === "/") return null;
+  // Both `/` and `/auctions` are "home" — `/` 308-redirects to /auctions
+  // and the bottom-tab landing is /auctions. A back arrow on either would
+  // loop the user back to themselves.
+  if (pathname === "/" || pathname === "/auctions") return null;
 
   const parent = parentPath(pathname);
 
