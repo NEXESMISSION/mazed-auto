@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { Link, useRouter, usePathname } from "@/i18n/navigation";
 import {
   Bell,
   Menu,
@@ -27,17 +27,20 @@ import { useAuth } from "@/lib/auth";
 import { useRealtimeNotifications } from "@/lib/realtime";
 import { BackButton } from "./BackButton";
 
-const NAV: { href: string; label: string }[] = [
-  { href: "/auctions", label: "Enchères" },
-  { href: "/how-it-works", label: "Comment ça marche" },
-  { href: "/help", label: "Aide" },
-];
-
 export function TopBar() {
   const { user, loaded, signOut } = useAuth();
   const { unread } = useRealtimeNotifications(user?.id);
   const router = useRouter();
   const pathname = usePathname();
+  const t = useTranslations("nav");
+  const tAuth = useTranslations("auth");
+  const tCommon = useTranslations("common");
+
+  const NAV: { href: string; label: string }[] = [
+    { href: "/auctions", label: t("auctions") },
+    { href: "/how-it-works", label: t("howItWorks") },
+    { href: "/help", label: t("help") },
+  ];
   const [open, setOpen] = useState(false);
   const [drawer, setDrawer] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -69,7 +72,7 @@ export function TopBar() {
         <button
           onClick={() => setDrawer(true)}
           className="md:hidden h-9 w-9 flex items-center justify-center rounded-full hover:bg-[var(--surface)] transition-colors"
-          aria-label="Menu"
+          aria-label={tCommon("menu")}
         >
           <Menu className="h-5 w-5" />
         </button>
@@ -164,7 +167,7 @@ export function TopBar() {
                     {user.kycStatus === "verified" && (
                       <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-[var(--gold-faint)] text-[10px] font-bold text-[var(--gold)] uppercase tracking-wider">
                         <ShieldCheck className="h-3 w-3" />
-                        Vérifié
+                        {tAuth("verified")}
                       </div>
                     )}
                   </div>
@@ -180,28 +183,28 @@ export function TopBar() {
                       icon={<LayoutDashboard className="h-4 w-4" />}
                       onClick={() => setOpen(false)}
                     >
-                      Tableau de bord
+                      {t("dashboard")}
                     </DropItem>
                     <DropItem
                       href="/buyer/watchlist"
                       icon={<Heart className="h-4 w-4" />}
                       onClick={() => setOpen(false)}
                     >
-                      Favoris
+                      {t("watchlist")}
                     </DropItem>
                     <DropItem
                       href="/buyer/bids"
                       icon={<Gavel className="h-4 w-4" />}
                       onClick={() => setOpen(false)}
                     >
-                      Mes enchères
+                      {t("myBids")}
                     </DropItem>
                     <DropItem
                       href="/settings"
                       icon={<Settings className="h-4 w-4" />}
                       onClick={() => setOpen(false)}
                     >
-                      Paramètres
+                      {t("settings")}
                     </DropItem>
                   </nav>
                   <div className="border-t border-[var(--border)]">
@@ -210,7 +213,7 @@ export function TopBar() {
                       className="w-full px-4 py-3 flex items-center gap-3 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
                     >
                       <LogOut className="h-4 w-4" />
-                      Se déconnecter
+                      {tAuth("signOut")}
                     </button>
                   </div>
                 </div>
@@ -222,7 +225,7 @@ export function TopBar() {
               className="h-9 px-4 ms-1 flex items-center gap-1.5 rounded-full gradient-gold text-black font-bold text-sm shadow-[var(--shadow-gold)] hover:scale-[1.02] active:scale-[0.98] transition-transform"
             >
               <User className="h-4 w-4" />
-              <span className="hidden sm:inline">Connexion</span>
+              <span className="hidden sm:inline">{tAuth("signIn")}</span>
             </Link>
           )}
         </div>
@@ -242,7 +245,7 @@ export function TopBar() {
               <button
                 onClick={() => setDrawer(false)}
                 className="h-9 w-9 rounded-full hover:bg-[var(--surface)] flex items-center justify-center transition-colors"
-                aria-label="Fermer"
+                aria-label={tCommon("close")}
               >
                 <X className="h-5 w-5" />
               </button>
@@ -262,7 +265,7 @@ export function TopBar() {
                     {user.kycStatus === "verified" && (
                       <span
                         className="absolute -bottom-0.5 -end-0.5 h-5 w-5 rounded-full bg-[var(--gold)] border-2 border-[#0a0a0a] flex items-center justify-center"
-                        title="Identité vérifiée"
+                        title={tAuth("verified")}
                       >
                         <ShieldCheck className="h-3 w-3 text-black" strokeWidth={3} />
                       </span>
@@ -285,7 +288,7 @@ export function TopBar() {
                   {user.kycStatus === "verified" ? (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 text-[11px] font-bold">
                       <ShieldCheck className="h-3 w-3" />
-                      Compte vérifié
+                      {tAuth("verifiedAccount")}
                     </span>
                   ) : (
                     <Link
@@ -294,7 +297,7 @@ export function TopBar() {
                       className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-400 text-[11px] font-bold hover:bg-amber-500/25 transition-colors"
                     >
                       <ShieldCheck className="h-3 w-3" />
-                      Terminer la vérification
+                      {tAuth("completeVerification")}
                     </Link>
                   )}
                   <Link
@@ -302,7 +305,7 @@ export function TopBar() {
                     onClick={() => setDrawer(false)}
                     className="text-[11px] text-[var(--gold)] font-bold inline-flex items-center gap-0.5 hover:underline"
                   >
-                    Voir le profil
+                    {tAuth("viewProfile")}
                     <ChevronRight className="h-3 w-3" />
                   </Link>
                 </div>
@@ -314,7 +317,7 @@ export function TopBar() {
                   className="mt-4 h-11 w-full rounded-[var(--radius)] gradient-gold text-black font-bold text-sm shadow-[var(--shadow-gold)] flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99] transition-transform"
                 >
                   <Plus className="h-4 w-4" />
-                  Vendre votre voiture
+                  {t("sellCar")}
                 </Link>
               </div>
             ) : (
@@ -324,10 +327,10 @@ export function TopBar() {
                 </div>
                 <div>
                   <div className="font-extrabold text-base">
-                    La plateforme d'<span className="gradient-gold-text">enchères intelligentes</span>
+                    <span className="gradient-gold-text">{tAuth("intelligentAuctions")}</span>
                   </div>
                   <p className="text-[11px] text-[var(--foreground-muted)] mt-0.5">
-                    Connectez-vous pour enchérir et enregistrer vos favoris
+                    {tAuth("loginPrompt")}
                   </p>
                 </div>
                 <div className="grid grid-cols-2 gap-2 pt-1">
@@ -337,14 +340,14 @@ export function TopBar() {
                     className="h-10 rounded-[var(--radius)] gradient-gold text-black font-bold text-sm flex items-center justify-center gap-1.5 shadow-[var(--shadow-gold)]"
                   >
                     <User className="h-4 w-4" />
-                    Connexion
+                    {tAuth("signIn")}
                   </Link>
                   <Link
                     href="/register"
                     onClick={() => setDrawer(false)}
                     className="h-10 rounded-[var(--radius)] bg-[var(--surface-2)] border border-[var(--border)] text-sm font-semibold flex items-center justify-center"
                   >
-                    Créer un compte
+                    {tAuth("signUp")}
                   </Link>
                 </div>
               </div>
@@ -359,7 +362,7 @@ export function TopBar() {
                   active={pathname === "/"}
                   onClick={() => setDrawer(false)}
                 >
-                  Accueil
+                  {t("home")}
                 </DrawerLink>
                 <DrawerLink
                   href="/auctions"
@@ -367,12 +370,12 @@ export function TopBar() {
                   active={pathname.startsWith("/auctions")}
                   onClick={() => setDrawer(false)}
                 >
-                  Parcourir Enchères
+                  {t("browse")}
                 </DrawerLink>
               </DrawerSection>
 
               {user && (
-                <DrawerSection label="Mon compte">
+                <DrawerSection label={t("myAccount")}>
                   <DrawerLink
                     href={
                       user.role === "admin"
@@ -389,7 +392,7 @@ export function TopBar() {
                     }
                     onClick={() => setDrawer(false)}
                   >
-                    Tableau de bord
+                    {t("dashboard")}
                   </DrawerLink>
                   <DrawerLink
                     href="/buyer/bids"
@@ -397,7 +400,7 @@ export function TopBar() {
                     active={pathname === "/buyer/bids"}
                     onClick={() => setDrawer(false)}
                   >
-                    Mes enchères
+                    {t("myBids")}
                   </DrawerLink>
                   <DrawerLink
                     href="/buyer/watchlist"
@@ -405,7 +408,7 @@ export function TopBar() {
                     active={pathname === "/buyer/watchlist"}
                     onClick={() => setDrawer(false)}
                   >
-                    Favoris
+                    {t("watchlist")}
                   </DrawerLink>
                   <DrawerLink
                     href="/messages"
@@ -413,7 +416,7 @@ export function TopBar() {
                     active={pathname.startsWith("/messages")}
                     onClick={() => setDrawer(false)}
                   >
-                    Messages
+                    {t("messages")}
                   </DrawerLink>
                   <DrawerLink
                     href="/notifications"
@@ -428,7 +431,7 @@ export function TopBar() {
                         : undefined
                     }
                   >
-                    Notifications
+                    {t("notifications")}
                   </DrawerLink>
                   <DrawerLink
                     href="/settings"
@@ -436,19 +439,19 @@ export function TopBar() {
                     active={pathname === "/settings"}
                     onClick={() => setDrawer(false)}
                   >
-                    Paramètres
+                    {t("settings")}
                   </DrawerLink>
                 </DrawerSection>
               )}
 
-              <DrawerSection label="Informations">
+              <DrawerSection label={t("info")}>
                 <DrawerLink
                   href="/how-it-works"
                   icon={<HelpCircle className="h-4 w-4" />}
                   active={pathname === "/how-it-works"}
                   onClick={() => setDrawer(false)}
                 >
-                  Comment ça marche
+                  {t("howItWorks")}
                 </DrawerLink>
                 <DrawerLink
                   href="/help"
@@ -456,7 +459,7 @@ export function TopBar() {
                   active={pathname === "/help"}
                   onClick={() => setDrawer(false)}
                 >
-                  Aide
+                  {t("help")}
                 </DrawerLink>
                 <DrawerLink
                   href="/terms"
@@ -464,7 +467,7 @@ export function TopBar() {
                   active={pathname === "/terms"}
                   onClick={() => setDrawer(false)}
                 >
-                  Conditions et confidentialité
+                  {t("terms")}
                 </DrawerLink>
               </DrawerSection>
             </nav>
@@ -479,7 +482,7 @@ export function TopBar() {
                   className="w-full px-3 py-2.5 flex items-center justify-center gap-2 text-sm font-semibold text-[var(--danger)] hover:bg-red-500/10 rounded-[var(--radius)] transition-colors"
                 >
                   <LogOut className="h-4 w-4" />
-                  Se déconnecter
+                  {tAuth("signOut")}
                 </button>
               </div>
             )}

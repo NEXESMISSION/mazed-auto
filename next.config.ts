@@ -1,5 +1,8 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
+import createNextIntlPlugin from "next-intl/plugin";
+
+const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 const nextConfig: NextConfig = {
   // Pin Turbopack to this app dir so it doesn't pick up a stray lockfile
@@ -46,8 +49,9 @@ const nextConfig: NextConfig = {
 };
 
 // Sentry wrapper. Only does anything when SENTRY_AUTH_TOKEN + project/org are
-// set in Vercel — otherwise it's a no-op so local builds still work.
-export default withSentryConfig(nextConfig, {
+// set in Vercel — otherwise it's a no-op so local builds still work. The
+// next-intl plugin must wrap the inner config so its loader runs first.
+export default withSentryConfig(withNextIntl(nextConfig), {
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT || "mazed-auto-web",
   silent: !process.env.CI,

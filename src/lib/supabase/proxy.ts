@@ -71,7 +71,13 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const path = request.nextUrl.pathname;
+  // Strip the locale prefix (only "fr" gets one with localePrefix:as-needed)
+  // so the gate logic stays locale-agnostic. Arabic URLs are unprefixed.
+  const rawPath = request.nextUrl.pathname;
+  const localeMatch = rawPath.match(/^\/(fr)(\/.*|$)/);
+  const localePrefix = localeMatch ? `/${localeMatch[1]}` : "";
+  const path = localeMatch ? localeMatch[2] || "/" : rawPath;
+
   const isProtected =
     PROTECTED_PREFIXES.some((p) => path.startsWith(p)) ||
     PROTECTED_EXACT.includes(path);
@@ -79,8 +85,8 @@ export async function updateSession(request: NextRequest) {
 
   if (isProtected && !user) {
     const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    url.searchParams.set("redirect", path);
+    url.pathname = `${localePrefix}/login`;
+    url.searchParams.set("redirect", rawPath);
     return NextResponse.redirect(url);
   }
 
@@ -90,14 +96,14 @@ export async function updateSession(request: NextRequest) {
     const role = (user.user_metadata as { role?: string } | null)?.role;
     if (role !== "admin") {
       const url = request.nextUrl.clone();
-      url.pathname = "/";
+      url.pathname = localePrefix || "/";
       return NextResponse.redirect(url);
     }
   }
 
   if (isAuthOnly && user) {
     const url = request.nextUrl.clone();
-    url.pathname = "/";
+    url.pathname = localePrefix || "/";
     return NextResponse.redirect(url);
   }
 

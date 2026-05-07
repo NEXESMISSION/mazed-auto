@@ -1,9 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
-import { ToastProvider } from "@/components/ui/Toast";
+import { getLocale } from "next-intl/server";
 import { SplashScreen } from "@/components/layout/SplashScreen";
 import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
-import { OfflineOverlay } from "@/components/pwa/OfflineOverlay";
 import "./globals.css";
 
 // Plus Jakarta Sans — modern, clean, slightly elegant geometric sans.
@@ -22,11 +21,11 @@ const SITE_URL =
 export const metadata: Metadata = {
   metadataBase: SITE_URL ? new URL(SITE_URL) : undefined,
   title: {
-    default: "Mazed Auto — La plateforme intelligente d'enchères automobiles",
+    default: "Mazed Auto — منصة المزادات الذكية للسيارات",
     template: "%s — Mazed Auto",
   },
   description:
-    "Plateforme d'enchères automobiles de confiance en Tunisie — vérification multi-couches, enchères en temps réel, transparence totale.",
+    "منصة موثوقة للمزادات على السيارات في تونس — توثيق متعدد الطبقات، مزادات لحظية، شفافية كاملة.",
   applicationName: "Mazed Auto",
   appleWebApp: {
     capable: true,
@@ -39,16 +38,14 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: "Mazed Auto",
-    title: "Mazed Auto — La plateforme intelligente d'enchères automobiles",
+    title: "Mazed Auto — منصة المزادات الذكية للسيارات",
     description:
-      "Plateforme d'enchères automobiles de confiance en Tunisie — vérification multi-couches, enchères en temps réel, transparence totale.",
-    locale: "fr_TN",
+      "منصة موثوقة للمزادات على السيارات في تونس — توثيق متعدد الطبقات، مزادات لحظية، شفافية كاملة.",
   },
   twitter: {
     card: "summary_large_image",
     title: "Mazed Auto",
-    description:
-      "Plateforme d'enchères automobiles de confiance en Tunisie.",
+    description: "منصة موثوقة للمزادات على السيارات في تونس.",
   },
 };
 
@@ -61,15 +58,21 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Resolve the active locale via the next-intl request context so the html
+  // tag matches the rendered content. Defaults to "ar" when the request did
+  // not pass through the i18n middleware (api/auth route handlers).
+  const locale = await getLocale();
+  const dir = locale === "ar" ? "rtl" : "ltr";
+
   return (
     <html
-      lang="fr"
-      dir="ltr"
+      lang={locale}
+      dir={dir}
       className={`${jakarta.variable} h-full antialiased`}
     >
       <head>
@@ -84,8 +87,7 @@ export default function RootLayout({
             first HTML byte, BEFORE any per-route loading skeleton. Plays
             on every refresh / fresh entry (no session gate). */}
         <SplashScreen />
-        <ToastProvider>{children}</ToastProvider>
-        <OfflineOverlay />
+        {children}
         <ServiceWorkerRegister />
       </body>
     </html>

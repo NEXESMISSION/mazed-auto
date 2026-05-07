@@ -1,41 +1,43 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { Link, usePathname } from "@/i18n/navigation";
 import { Home, Search, Plus, Gavel, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const tabs = [
-  { href: "/", label: "Accueil", icon: Home, match: (p: string) => p === "/" },
-  {
-    href: "/auctions",
-    label: "Parcourir",
-    icon: Search,
-    match: (p: string) => p.startsWith("/auctions"),
-  },
-  {
-    href: "/seller/new/step-1",
-    label: "Vendre votre voiture",
-    icon: Plus,
-    match: (p: string) => p.startsWith("/seller/new"),
-    isCenter: true,
-  },
-  {
-    href: "/buyer/bids",
-    label: "Mes enchères",
-    icon: Gavel,
-    match: (p: string) => p.startsWith("/buyer"),
-  },
-  {
-    href: "/profile",
-    label: "Mon compte",
-    icon: User,
-    match: (p: string) => p.startsWith("/profile") || p.startsWith("/settings"),
-  },
-];
-
 export function BottomTabBar() {
   const pathname = usePathname();
+  const t = useTranslations("nav");
+  const tCommon = useTranslations("common");
+
+  const tabs = [
+    { href: "/", label: t("home"), icon: Home, match: (p: string) => p === "/" },
+    {
+      href: "/auctions",
+      label: t("browseShort"),
+      icon: Search,
+      match: (p: string) => p.startsWith("/auctions"),
+    },
+    {
+      href: "/seller/new/step-1",
+      label: t("sellCar"),
+      icon: Plus,
+      match: (p: string) => p.startsWith("/seller/new"),
+      isCenter: true,
+    },
+    {
+      href: "/buyer/bids",
+      label: t("myBids"),
+      icon: Gavel,
+      match: (p: string) => p.startsWith("/buyer"),
+    },
+    {
+      href: "/profile",
+      label: t("myAccount"),
+      icon: User,
+      match: (p: string) => p.startsWith("/profile") || p.startsWith("/settings"),
+    },
+  ] as const;
 
   return (
     <nav
@@ -45,13 +47,13 @@ export function BottomTabBar() {
         "shadow-[0_-8px_24px_rgba(0,0,0,0.5)]",
         "grid grid-cols-5 items-center px-1",
       )}
-      aria-label="Navigation principale"
+      aria-label={tCommon("primaryNav")}
     >
       {tabs.map((tab) => {
         const Icon = tab.icon;
         const active = tab.match(pathname);
 
-        if (tab.isCenter) {
+        if ("isCenter" in tab && tab.isCenter) {
           // Floating circular gold button — icon only, no label. The whole
           // center cell is the tap target so it stays accessible.
           return (

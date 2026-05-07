@@ -1,0 +1,47 @@
+{
+  "brand": {
+    "name": "مَزاد أوتو",
+    "tagline": "منصة المزادات الذكية للسيارات"
+  },
+  "nav": {
+    "home": "الرئيسية",
+    "browse": "تصفح المزادات",
+    "browseShort": "تصفح",
+    "sellCar": "بِع سيارتك",
+    "myBids": "مزاداتي",
+    "myAccount": "حسابي",
+    "dashboard": "لوحة التحكم",
+    "watchlist": "المفضلة",
+    "messages": "الرسائل",
+    "notifications": "الإشعارات",
+    "settings": "الإعدادات",
+    "howItWorks": "كيف تعمل",
+    "help": "المساعدة",
+    "terms": "الشروط والخصوصية",
+    "info": "معلومات",
+    "auctions": "المزادات"
+  },
+  "auth": {
+    "signIn": "تسجيل الدخول",
+    "signUp": "إنشاء حساب",
+    "signOut": "تسجيل الخروج",
+    "verified": "موثَّق",
+    "verifiedAccount": "حساب موثَّق",
+    "completeVerification": "إكمال التوثيق",
+    "viewProfile": "عرض الملف الشخصي",
+    "loginPrompt": "ادخل لتقديم العروض وحفظ المفضلة",
+    "intelligentAuctions": "المزادات الذكية"
+  },
+  "common": {
+    "menu": "القائمة",
+    "close": "إغلاق",
+    "account": "الحساب",
+    "primaryNav": "التنقل الرئيسي"
+  },
+  "offline": {
+    "title": "لا يوجد اتصال بالإنترنت",
+    "description": "تحقّق من اتصالك بالشبكة وحاول مجدداً. ستستأنف الصفحة عملها فور عودة الاتصال.",
+    "retry": "إعادة المحاولة",
+    "checking": "جارٍ التحقق..."
+  }
+}

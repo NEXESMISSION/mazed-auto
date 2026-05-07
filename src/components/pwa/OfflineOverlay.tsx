@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
@@ -12,6 +13,7 @@ import { Button } from "@/components/ui/Button";
  * offline; this handles users who are mid-session when the connection dies.
  */
 export function OfflineOverlay() {
+  const t = useTranslations("offline");
   // Start as online to avoid SSR/CSR mismatch flashes; the effect below
   // syncs to the real value on mount.
   const [online, setOnline] = useState(true);
@@ -66,15 +68,14 @@ export function OfflineOverlay() {
         </div>
         <div>
           <h1 id="offline-title" className="text-2xl font-extrabold">
-            Aucune connexion Internet
+            {t("title")}
           </h1>
           <p className="text-sm text-[var(--foreground-muted)] mt-2 leading-relaxed">
-            Vérifiez votre connexion réseau et réessayez. La page reprendra
-            automatiquement dès que la connexion sera rétablie.
+            {t("description")}
           </p>
         </div>
         <Button size="md" fullWidth onClick={retry} disabled={retrying}>
-          {retrying ? "Vérification..." : "Réessayer"}
+          {retrying ? t("checking") : t("retry")}
         </Button>
       </div>
     </div>

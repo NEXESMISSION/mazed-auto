@@ -1,0 +1,47 @@
+{
+  "brand": {
+    "name": "Mazed Auto",
+    "tagline": "La plateforme intelligente d'enchères automobiles"
+  },
+  "nav": {
+    "home": "Accueil",
+    "browse": "Parcourir Enchères",
+    "browseShort": "Parcourir",
+    "sellCar": "Vendre votre voiture",
+    "myBids": "Mes enchères",
+    "myAccount": "Mon compte",
+    "dashboard": "Tableau de bord",
+    "watchlist": "Favoris",
+    "messages": "Messages",
+    "notifications": "Notifications",
+    "settings": "Paramètres",
+    "howItWorks": "Comment ça marche",
+    "help": "Aide",
+    "terms": "Conditions et confidentialité",
+    "info": "Informations",
+    "auctions": "Enchères"
+  },
+  "auth": {
+    "signIn": "Connexion",
+    "signUp": "Créer un compte",
+    "signOut": "Se déconnecter",
+    "verified": "Vérifié",
+    "verifiedAccount": "Compte vérifié",
+    "completeVerification": "Terminer la vérification",
+    "viewProfile": "Voir le profil",
+    "loginPrompt": "Connectez-vous pour enchérir et enregistrer vos favoris",
+    "intelligentAuctions": "enchères intelligentes"
+  },
+  "common": {
+    "menu": "Menu",
+    "close": "Fermer",
+    "account": "Compte",
+    "primaryNav": "Navigation principale"
+  },
+  "offline": {
+    "title": "Aucune connexion Internet",
+    "description": "Vérifiez votre connexion réseau et réessayez. La page reprendra automatiquement dès que la connexion sera rétablie.",
+    "retry": "Réessayer",
+    "checking": "Vérification..."
+  }
+}
