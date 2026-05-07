@@ -44,6 +44,18 @@ const nextConfig: NextConfig = {
           { key: "Service-Worker-Allowed", value: "/" },
         ],
       },
+      {
+        // Splash + brand assets are content-stable; let browsers (and
+        // intermediaries) cache them for a year. Pair with the SW
+        // precache so installed PWAs paint the splash from cache too.
+        source: "/(loading.jpg|logo.png)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
     ];
   },
 };

@@ -329,9 +329,6 @@ body {
   overflow: hidden;
   opacity: 1;
   pointer-events: auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   /* JS-driven fade: SplashScreen.tsx flips data-hidden after a 1000ms
      hold and the transition runs the visual change. Deterministic across
      cold loads, no dependency on CSS animation start-time variance. */
@@ -347,22 +344,23 @@ body {
   animation: none;
 }
 #mazed-splash img {
-  /* Centered brand mark, fixed pixel size — the previous full-bleed
-     loading.png was 2.9 MB and didn't paint reliably before the panel,
-     which produced the "image pops in suddenly" complaint. The logo is
-     ~135 KB and arrives in one HTTP round-trip. */
-  width: 140px;
-  height: 140px;
-  object-fit: contain;
-  /* Quick fade-in (200ms after a 50ms delay) so the mark eases in
-     instead of popping in even on a cold cache. */
+  /* Full-bleed branded splash — covers the viewport with the designed
+     loading.jpg (70 KB, was 2.94 MB PNG). Tall phone canvas (720x1520);
+     on landscape/desktop the sides crop but the center stays visible. */
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  /* Quick fade-in covers the case where the image hasn't fully decoded
+     before the panel paints (rare with 70 KB + preload, but free). */
   opacity: 0;
-  transform: scale(0.96);
-  animation: mazed-splash-mark-in 200ms ease-out 50ms forwards;
+  animation: mazed-splash-mark-in 200ms ease-out forwards;
 }
 
 @keyframes mazed-splash-mark-in {
-  to { opacity: 1; transform: scale(1); }
+  to { opacity: 1; }
 }
 
 @keyframes mazed-splash-fallback {

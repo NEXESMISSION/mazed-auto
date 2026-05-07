@@ -57,7 +57,7 @@ export default function Step3Page() {
     setRecording(false);
     if (seconds >= 45) {
       setDone(true);
-      update({ videoUrl: "/loading.png" }); // mock URL until storage is wired
+      update({ videoUrl: "/loading.jpg" }); // mock URL until storage is wired
       toast("Enregistrement vidéo réussi ✓", "success");
     } else {
       toast(`Durée trop courte (${seconds}s), minimum 45s`, "warning");
@@ -198,7 +198,7 @@ Commencer l'enregistrement
         {IS_DEV && !done && (
           <button
             onClick={() => {
-              update({ videoUrl: "/loading.png" });
+              update({ videoUrl: "/loading.jpg" });
               router.push("/seller/new/step-4");
             }}
             className="w-full rounded-[var(--radius)] border border-dashed border-amber-500/40 bg-amber-500/5 hover:bg-amber-500/10 text-amber-300 py-2.5 text-xs font-bold flex items-center justify-center gap-2 transition-colors"

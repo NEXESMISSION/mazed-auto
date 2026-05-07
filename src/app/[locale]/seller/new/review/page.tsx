@@ -137,7 +137,7 @@ export default function ReviewPage() {
         city: draft.city,
         region: draft.region,
         image_urls: finalImages,
-        video_url: draft.videoUrl ?? (IS_DEV ? "/loading.png" : null),
+        video_url: draft.videoUrl ?? (IS_DEV ? "/loading.jpg" : null),
         starting_price: startingPrice,
         reserve_price: draft.reservePrice ?? null,
         buy_now_price: draft.buyNowPrice ?? null,

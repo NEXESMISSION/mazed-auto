@@ -5,9 +5,14 @@
 // Bump this version any time you ship UI changes that depend on new JS
 // chunks. The activate handler below deletes every cache whose key isn't
 // CACHE_VERSION, so users get a fresh load on their next visit.
-const CACHE_VERSION = "mazed-v2-redesign";
+// Bump on any change to the precache list or the splash asset so all
+// installed clients refresh on next visit.
+const CACHE_VERSION = "mazed-v3-splash-jpg";
 const OFFLINE_URL = "/offline";
-const PRECACHE = [OFFLINE_URL, "/logo.png", "/manifest.webmanifest"];
+// /loading.jpg is the branded splash. Precaching it means subsequent
+// loads — including the installed PWA on cold start — paint the splash
+// from cache without a network round-trip.
+const PRECACHE = [OFFLINE_URL, "/logo.png", "/loading.jpg", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

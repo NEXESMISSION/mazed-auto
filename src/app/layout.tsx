@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     // doesn't match the source aspect; for proper per-device assets
     // run pwa-asset-generator (see scripts/pwa-splash.md) and replace
     // this with the full media-query array.
-    startupImage: ["/loading.png"],
+    startupImage: ["/loading.jpg"],
   },
   formatDetection: {
     telephone: false,
@@ -71,13 +71,13 @@ export default async function RootLayout({
       style={{ background: "#0a0a0a" }}
     >
       <head>
-        {/* Preload the splash logo at the highest priority so it paints
+        {/* Preload the splash image at the highest priority so it paints
             with the very first frame. The black splash container is
             painted instantly via inline CSS regardless — this just gets
-            the logo visible faster. Was /loading.png (2.9 MB); switched
-            to /logo.png (~135 KB) so it actually arrives before the
-            splash holds finish. */}
-        <link rel="preload" as="image" href="/logo.png" fetchPriority="high" />
+            the image visible faster. Was 2.94 MB PNG → now 70 KB JPG
+            (~42× smaller). The service worker also precaches it so
+            subsequent loads (including the installed PWA) paint instantly. */}
+        <link rel="preload" as="image" href="/loading.jpg" fetchPriority="high" />
       </head>
       <body
         className="min-h-full bg-background text-foreground font-sans"

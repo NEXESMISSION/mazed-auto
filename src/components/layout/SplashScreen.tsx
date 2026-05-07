@@ -2,27 +2,25 @@
 
 import { useEffect, useRef } from "react";
 
-// Minimum time the splash stays visible regardless of how fast hydration
-// finishes. Keeps the brand moment from feeling like a flicker.
 const MIN_DISPLAY_MS = 1000;
 
 /**
- * Splash screen rendered with the very first HTML byte. The image is the
- * compact /logo.png (~135 KB) instead of the previous full-bleed
- * /loading.png (~2.9 MB) — the big asset didn't reliably finish loading
- * before the dark panel painted, which is what caused the "image pops in
- * suddenly" complaint. Logo arrives in one HTTP round-trip and gets a
- * 200ms fade-in (CSS) on top of the instantly-painted black panel.
+ * Full-bleed branded splash that paints with the very first HTML byte.
+ * Uses /loading.jpg — a 70 KB JPG (was 2.94 MB PNG) so it actually
+ * arrives before the splash holds expire on a cold cache. The service
+ * worker also precaches the file (see public/sw.js), so subsequent
+ * loads — including the installed PWA — paint instantly from cache.
  *
- * Lifecycle (mostly CSS, MIN_DISPLAY_MS gate in JS):
- *   t=0           panel painted opaque + image starts fade-in
- *   t=50..250ms   image fades 0 → 1
- *   t=1000ms      effect flips data-hidden=true, panel transitions
- *                 opacity 1 → 0 over 300ms (CSS transition)
+ * Lifecycle:
+ *   t=0           panel + image painted
+ *   t=0..200ms    image fades in (CSS, in case the image hasn't fully
+ *                 decoded yet on the very first cold visit)
+ *   t=1000ms      effect flips data-hidden=true
+ *   t=1000..1300ms panel transitions opacity 1 → 0 (CSS)
  *   t=1300ms      panel invisible + non-interactive
  *
- * Belt-and-braces: if JS never hydrates (rare), a 5s CSS fallback
- * animation forces the panel to fade so users aren't trapped.
+ * Belt-and-braces: a 5s no-JS CSS animation drops the panel even if
+ * the effect never runs.
  */
 export function SplashScreen() {
   const ref = useRef<HTMLDivElement>(null);
@@ -37,10 +35,8 @@ export function SplashScreen() {
     <div id="mazed-splash" ref={ref} aria-hidden="true">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="/logo.png"
+        src="/loading.jpg"
         alt="Mazed Auto"
-        width={140}
-        height={140}
         decoding="sync"
         fetchPriority="high"
       />
