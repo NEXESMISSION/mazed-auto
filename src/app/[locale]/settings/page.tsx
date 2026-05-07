@@ -1,13 +1,37 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { Lock, Mail, Phone, Globe, Bell, Shield, Trash2, ChevronRight } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import { useRouter, usePathname } from "@/i18n/navigation";
 import { AppShell } from "@/components/layout/AppShell";
 import { ScreenHeader } from "@/components/layout/ScreenHeader";
+import { createClient } from "@/lib/supabase/client";
+import type { Locale } from "@/i18n/routing";
 
 export default function SettingsPage() {
-  const [language, setLanguage] = useState<"ar" | "fr">("fr");
+  const router = useRouter();
+  const pathname = usePathname();
+  const currentLocale = useLocale() as Locale;
+  const tLang = useTranslations("settings.language");
+  const [, startTransition] = useTransition();
   const [notif, setNotif] = useState({ email: true, sms: false, push: true });
+
+  function switchLocale(next: Locale) {
+    if (next === currentLocale) return;
+    // 1) Cookie + URL: next-intl router rewrites pathname under the new
+    //    locale and writes NEXT_LOCALE so future requests stay there.
+    startTransition(() => {
+      router.replace(pathname, { locale: next });
+    });
+    // 2) Persist to user_metadata (option ب) so the choice follows the
+    //    account across devices and is available to email/push later.
+    //    Fire-and-forget — the cookie is authoritative for this session,
+    //    and guests (no session) will simply 401 here without disruption.
+    createClient()
+      .auth.updateUser({ data: { locale: next } })
+      .catch(() => {});
+  }
 
   return (
     <AppShell noTopBar>
@@ -22,28 +46,28 @@ export default function SettingsPage() {
         </Section>
 
         {/* Language */}
-        <Section title="Langue">
+        <Section title={tLang("title")}>
           <div className="p-4">
             <div className="grid grid-cols-2 gap-2">
               <button
-                onClick={() => setLanguage("ar")}
+                onClick={() => switchLocale("ar")}
                 className={`h-12 rounded-[var(--radius)] border-2 font-bold transition-colors ${
-                  language === "ar"
+                  currentLocale === "ar"
                     ? "bg-[var(--gold)] text-black border-[var(--gold)]"
                     : "border-[var(--border)] hover:border-[var(--gold-soft)]"
                 }`}
               >
-🇹🇳 Arabe
+                🇹🇳 {tLang("arabic")}
               </button>
               <button
-                onClick={() => setLanguage("fr")}
+                onClick={() => switchLocale("fr")}
                 className={`h-12 rounded-[var(--radius)] border-2 font-bold transition-colors ${
-                  language === "fr"
+                  currentLocale === "fr"
                     ? "bg-[var(--gold)] text-black border-[var(--gold)]"
                     : "border-[var(--border)] hover:border-[var(--gold-soft)]"
                 }`}
               >
-                🇫🇷 Français
+                🇫🇷 {tLang("french")}
               </button>
             </div>
           </div>

@@ -45,5 +45,12 @@
     "description": "Vérifiez votre connexion réseau et réessayez. La page reprendra automatiquement dès que la connexion sera rétablie.",
     "retry": "Réessayer",
     "checking": "Vérification..."
+  },
+  "settings": {
+    "language": {
+      "title": "Langue",
+      "arabic": "Arabe",
+      "french": "Français"
+    }
   }
 }
