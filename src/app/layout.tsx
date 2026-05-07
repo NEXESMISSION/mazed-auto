@@ -28,6 +28,12 @@ export const metadata: Metadata = {
     capable: true,
     title: "Mazed Auto",
     statusBarStyle: "black-translucent",
+    // Single fallback startup image so the iOS PWA launch screen isn't
+    // a white flash. Will stretch/crop on any device whose viewport
+    // doesn't match the source aspect; for proper per-device assets
+    // run pwa-asset-generator (see scripts/pwa-splash.md) and replace
+    // this with the full media-query array.
+    startupImage: ["/loading.png"],
   },
   formatDetection: {
     telephone: false,
