@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/Badge";
 import { createClient } from "@/lib/supabase/server";
 import { mapAuction, type AuctionRow } from "@/lib/db";
 import { formatPrice } from "@/lib/format";
+import { getCommissionConfig } from "@/lib/config";
 import type { Auction } from "@/lib/types";
 import { ExportCsvButton } from "./ExportCsvButton";
 
@@ -22,20 +23,14 @@ interface SaleRow {
   paid: boolean;
 }
 
-const COMMISSION_RATE = 0.07;
-const COMMISSION_CAP = 15000;
-const TVA_RATE = 0.19; // PLAN §21.5
-
-function commissionFor(sale: number): number {
-  return Math.min(Math.round(sale * COMMISSION_RATE), COMMISSION_CAP);
-}
-
-function tvaFor(commission: number): number {
-  return Math.round(commission * TVA_RATE);
-}
-
 export default async function EarningsPage() {
   const supabase = await createClient();
+  const { sellerPct, sellerCap, tvaRate } = await getCommissionConfig();
+
+  const commissionFor = (sale: number) =>
+    Math.min(Math.round(sale * sellerPct), sellerCap);
+  const tvaFor = (commission: number) => Math.round(commission * tvaRate);
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -142,7 +137,7 @@ export default async function EarningsPage() {
           </div>
           <div className="rounded-[var(--radius)] bg-[var(--surface)] border border-[var(--border)] p-4">
             <div className="text-xs text-[var(--foreground-muted)] mb-2">
-              Commissions (7%, plafond {formatPrice(COMMISSION_CAP)})
+              Commissions ({Math.round(sellerPct * 100)}%, plafond {formatPrice(sellerCap)})
             </div>
             <div className="text-xl font-bold tabular-nums text-[var(--foreground-muted)]">
               {formatPrice(totalCommission)}
@@ -150,7 +145,7 @@ export default async function EarningsPage() {
           </div>
           <div className="rounded-[var(--radius)] bg-[var(--surface)] border border-[var(--border)] p-4">
             <div className="text-xs text-[var(--foreground-muted)] mb-2">
-              TVA (19% sur la commission)
+              TVA ({Math.round(tvaRate * 100)}% sur la commission)
             </div>
             <div className="text-xl font-bold tabular-nums text-[var(--foreground-muted)]">
               {formatPrice(totalTva)}
