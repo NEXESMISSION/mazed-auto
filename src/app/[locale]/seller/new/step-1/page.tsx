@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { ArrowRight, Zap, Car, Gauge, Mountain, Sparkles } from "lucide-react";
 import { CreateAuctionShell } from "@/components/layout/CreateAuctionShell";
 import { Input } from "@/components/ui/Input";

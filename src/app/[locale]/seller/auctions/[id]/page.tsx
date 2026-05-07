@@ -1,5 +1,5 @@
-import { notFound, redirect } from "next/navigation";
-import Link from "next/link";
+import { notFound } from "next/navigation";
+import { Link, redirect } from "@/i18n/navigation";
 import {
   ArrowLeft,
   Eye,
@@ -25,7 +25,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 interface Props {
-  params: Promise<{ id: string }>;
+  params: Promise<{ id: string; locale: string }>;
 }
 
 const statusBadge: Record<
@@ -52,13 +52,13 @@ function bidderLabel(userId: string | null, idx: number): string {
 }
 
 export default async function SellerAuctionDetailPage({ params }: Props) {
-  const { id } = await params;
+  const { id, locale } = await params;
   const supabase = await createClient();
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect(`/login?redirect=/seller/auctions/${id}`);
+  if (!user) return redirect({ href: `/login?redirect=/seller/auctions/${id}`, locale });
 
   const auction = await getAuctionById(supabase, id);
   if (!auction) notFound();
@@ -66,7 +66,7 @@ export default async function SellerAuctionDetailPage({ params }: Props) {
   // Only the owning seller (or admin) may see this dashboard view.
   const role = (user.user_metadata as { role?: string } | null)?.role;
   if (auction.seller.id !== user.id && role !== "admin") {
-    redirect(`/auctions/${id}`);
+    redirect({ href: `/auctions/${id}`, locale });
   }
 
   const sb = statusBadge[auction.status];

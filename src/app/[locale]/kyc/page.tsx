@@ -1,5 +1,10 @@
-import { redirect } from "next/navigation";
+import { redirect } from "@/i18n/navigation";
 
-export default function KYCIndex() {
-  redirect("/kyc/start");
+export default async function KYCIndex({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  redirect({ href: "/kyc/start", locale });
 }

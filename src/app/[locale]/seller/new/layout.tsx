@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { redirect } from "next/navigation";
+import { Link, redirect } from "@/i18n/navigation";
 import {
   ShieldCheck,
   ShieldAlert,
@@ -20,16 +19,19 @@ export const revalidate = 0;
  */
 export default async function NewAuctionGateLayout({
   children,
+  params,
 }: {
   children: React.ReactNode;
+  params: Promise<{ locale: string }>;
 }) {
+  const { locale } = await params;
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login?redirect=/seller/new/step-1");
+    return redirect({ href: "/login?redirect=/seller/new/step-1", locale });
   }
 
   const meta = (user.user_metadata ?? {}) as {

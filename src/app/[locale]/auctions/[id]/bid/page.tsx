@@ -1,5 +1,5 @@
-import { notFound, redirect } from "next/navigation";
-import Link from "next/link";
+import { notFound } from "next/navigation";
+import { Link, redirect } from "@/i18n/navigation";
 import { ChevronLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getAuctionById, listRecentBids } from "@/lib/db";
@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 interface Props {
-  params: Promise<{ id: string }>;
+  params: Promise<{ id: string; locale: string }>;
   searchParams: Promise<{ action?: string }>;
 }
 
@@ -25,7 +25,7 @@ const NON_BIDDABLE = new Set([
 ]);
 
 export default async function BidPage({ params, searchParams }: Props) {
-  const { id } = await params;
+  const { id, locale } = await params;
   const { action } = await searchParams;
   const supabase = await createClient();
 
@@ -68,7 +68,7 @@ export default async function BidPage({ params, searchParams }: Props) {
   // eslint-disable-next-line react-hooks/purity
   const expired = auction.endTime.getTime() <= Date.now();
   if (expired || NON_BIDDABLE.has(auction.status)) {
-    redirect(`/auctions/${id}`);
+    redirect({ href: `/auctions/${id}`, locale });
   }
 
   // The user is "in" the auction (cleared every gate) iff:

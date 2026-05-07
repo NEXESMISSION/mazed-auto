@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { Search, ChevronLeft, Filter } from "lucide-react";
 import { AdminShell } from "@/components/layout/AdminShell";
 import { Input } from "@/components/ui/Input";

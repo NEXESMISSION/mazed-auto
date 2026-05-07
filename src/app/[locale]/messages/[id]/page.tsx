@@ -1,5 +1,5 @@
-import { notFound, redirect } from "next/navigation";
-import Link from "next/link";
+import { notFound } from "next/navigation";
+import { Link, redirect } from "@/i18n/navigation";
 import { ChevronLeft, MessageSquare } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -16,16 +16,18 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 interface Props {
-  params: Promise<{ id: string }>;
+  params: Promise<{ id: string; locale: string }>;
 }
 
 export default async function ConversationPage({ params }: Props) {
-  const { id } = await params;
+  const { id, locale } = await params;
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect(`/login?redirect=/messages/${id}`);
+  if (!user) {
+    return redirect({ href: `/login?redirect=/messages/${id}`, locale });
+  }
 
   // RLS will already block non-participants — but check explicitly so we can
   // 404 gracefully instead of returning an empty page.
