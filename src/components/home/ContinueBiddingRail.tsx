@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { ArrowRight, Gavel } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { mapAuction, type AuctionRow, type BidRow } from "@/lib/db";

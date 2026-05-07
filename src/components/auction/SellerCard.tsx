@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { Star, MapPin, ChevronRight, ShieldCheck } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import type { Seller } from "@/lib/types";

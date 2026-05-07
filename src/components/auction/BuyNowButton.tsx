@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { Zap } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/components/ui/Toast";

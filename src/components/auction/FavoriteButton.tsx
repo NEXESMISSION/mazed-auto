@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter } from "@/i18n/navigation";
 import { Heart } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/client";

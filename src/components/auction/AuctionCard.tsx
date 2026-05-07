@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { ArrowUpRight, Clock, Heart, MessageSquare } from "lucide-react";
 import { Countdown } from "./Countdown";
 import { FavoriteButton } from "./FavoriteButton";
