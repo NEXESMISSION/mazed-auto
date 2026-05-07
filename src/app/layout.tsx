@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import { ToastProvider } from "@/components/ui/Toast";
 import { SplashScreen } from "@/components/layout/SplashScreen";
 import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
+import { OfflineOverlay } from "@/components/pwa/OfflineOverlay";
 import "./globals.css";
 
 // Plus Jakarta Sans — modern, clean, slightly elegant geometric sans.
@@ -84,6 +85,7 @@ export default function RootLayout({
             on every refresh / fresh entry (no session gate). */}
         <SplashScreen />
         <ToastProvider>{children}</ToastProvider>
+        <OfflineOverlay />
         <ServiceWorkerRegister />
       </body>
     </html>
