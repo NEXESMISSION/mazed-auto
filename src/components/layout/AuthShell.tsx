@@ -1,4 +1,6 @@
-import { getTranslations } from "next-intl/server";
+"use client";
+
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { ChevronLeft } from "lucide-react";
 
@@ -15,10 +17,18 @@ interface Props {
  * Mobile-app auth shell — back arrow + brand row at the top, big headline
  * left-aligned (matches the reference home composition), card-less body so
  * the form fields breathe in the narrow phone column.
+ *
+ * Client component: the auth pages that use this shell (login, register,
+ * forgot-password, reset-password) are themselves "use client" because
+ * they manage form state with useState/useRouter. Rendering an async
+ * server shell from a client tree triggers the "async Client Component"
+ * error in Next 16, so this stays a client component and reads strings
+ * via useTranslations (works because NextIntlClientProvider wraps the
+ * whole [locale] subtree).
  */
-export async function AuthShell({ title, subtitle, children, footer, backHref = "/" }: Props) {
-  const tCommon = await getTranslations("common");
-  const tBrand = await getTranslations("brand");
+export function AuthShell({ title, subtitle, children, footer, backHref = "/" }: Props) {
+  const tCommon = useTranslations("common");
+  const tBrand = useTranslations("brand");
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* Top — back + brand */}

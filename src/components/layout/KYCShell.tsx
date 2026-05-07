@@ -1,4 +1,6 @@
-import { getTranslations } from "next-intl/server";
+"use client";
+
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { ChevronLeft, X } from "lucide-react";
 import { Stepper } from "./Stepper";
@@ -18,13 +20,19 @@ interface Props {
   title?: string;
 }
 
-export async function KYCShell({
+/**
+ * Client component for the same reason as AuthShell — the KYC step pages
+ * (id-front, id-back, selfie, processing) are "use client" because they
+ * use useState/useRouter for the camera flow, and rendering an async
+ * server shell from a client tree breaks Next 16.
+ */
+export function KYCShell({
   current,
   children,
   backHref = "/",
   title = "Vérification d'identité",
 }: Props) {
-  const tCommon = await getTranslations("common");
+  const tCommon = useTranslations("common");
   const showStepper = current >= 0;
   return (
     <div className="min-h-screen flex flex-col bg-background">
