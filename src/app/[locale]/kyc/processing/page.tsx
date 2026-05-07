@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { Check } from "lucide-react";
 import { KYCShell } from "@/components/layout/KYCShell";
 import { useAuth } from "@/lib/auth";

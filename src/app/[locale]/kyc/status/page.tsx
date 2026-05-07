@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { CheckCircle2, ShieldCheck } from "lucide-react";
 import { KYCShell } from "@/components/layout/KYCShell";
 import { Button } from "@/components/ui/Button";

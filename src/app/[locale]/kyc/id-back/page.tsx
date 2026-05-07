@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { CheckCircle2 } from "lucide-react";
 import { KYCShell } from "@/components/layout/KYCShell";
 import { CameraCapture } from "@/components/auction/CameraCapture";
