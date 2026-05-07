@@ -30,22 +30,22 @@ export function ScreenHeader({ title, subtitle, backHref, action }: Props) {
   return (
     <header className="px-4 pt-4 pb-3 flex items-center gap-3">
       {backHref === null ? (
-        <span className="h-10 w-10 shrink-0" />
+        <span className="h-12 w-12 shrink-0" />
       ) : backHref ? (
         <Link
           href={backHref}
           aria-label={tCommon("back")}
-          className="h-10 w-10 shrink-0 rounded-full bg-[var(--surface)] border border-[var(--border)] flex items-center justify-center hover:border-[var(--gold-soft)] transition-colors"
+          className="h-12 w-12 shrink-0 rounded-full bg-[var(--surface)] border-2 border-[var(--gold-soft)] text-[var(--gold)] flex items-center justify-center shadow-[var(--shadow-md)] hover:bg-[var(--gold-faint)] hover:border-[var(--gold)] active:scale-95 transition-all"
         >
-          <ChevronLeft className="h-5 w-5" />
+          <ChevronLeft className="h-6 w-6" strokeWidth={2.5} />
         </Link>
       ) : (
         <button
           onClick={() => router.back()}
           aria-label={tCommon("back")}
-          className="h-10 w-10 shrink-0 rounded-full bg-[var(--surface)] border border-[var(--border)] flex items-center justify-center hover:border-[var(--gold-soft)] transition-colors"
+          className="h-12 w-12 shrink-0 rounded-full bg-[var(--surface)] border-2 border-[var(--gold-soft)] text-[var(--gold)] flex items-center justify-center shadow-[var(--shadow-md)] hover:bg-[var(--gold-faint)] hover:border-[var(--gold)] active:scale-95 transition-all"
         >
-          <ChevronLeft className="h-5 w-5" />
+          <ChevronLeft className="h-6 w-6" strokeWidth={2.5} />
         </button>
       )}
 

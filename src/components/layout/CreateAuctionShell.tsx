@@ -28,9 +28,9 @@ export function CreateAuctionShell({ current, children }: Props) {
         <button
           onClick={() => router.back()}
           aria-label={tCommon("back")}
-          className="h-10 w-10 rounded-full bg-[var(--surface)] border border-[var(--border)] flex items-center justify-center hover:border-[var(--gold-soft)] transition-colors"
+          className="h-12 w-12 rounded-full bg-[var(--surface)] border-2 border-[var(--gold-soft)] text-[var(--gold)] flex items-center justify-center shadow-[var(--shadow-md)] hover:bg-[var(--gold-faint)] hover:border-[var(--gold)] active:scale-95 transition-all"
         >
-          <ChevronLeft className="h-5 w-5" />
+          <ChevronLeft className="h-6 w-6" strokeWidth={2.5} />
         </button>
         <div className="font-bold text-sm">Créer une nouvelle enchère</div>
         <button

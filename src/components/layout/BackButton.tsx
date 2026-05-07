@@ -27,18 +27,18 @@ export function BackButton() {
       onClick={() => router.push(parent)}
       aria-label={tCommon("back")}
       className="
-        group relative h-10 w-10 rounded-full shrink-0
-        bg-[var(--surface)] border border-[var(--border)]
-        text-foreground
+        group relative h-12 w-12 rounded-full shrink-0
+        bg-[var(--surface)] border-2 border-[var(--gold-soft)]
+        text-[var(--gold)]
         flex items-center justify-center
-        shadow-[var(--shadow-sm)]
-        hover:bg-[var(--surface-2)] hover:border-[var(--gold-soft)]
-        hover:shadow-[0_0_0_3px_var(--gold-faint),var(--shadow-sm)]
+        shadow-[var(--shadow-md)]
+        hover:bg-[var(--gold-faint)] hover:border-[var(--gold)]
+        hover:shadow-[0_0_0_4px_var(--gold-faint),var(--shadow-md)]
         active:scale-95
         transition-all duration-150
       "
     >
-      <ChevronLeft className="h-5 w-5 transition-transform group-hover:-translate-x-[1.5px]" />
+      <ChevronLeft className="h-6 w-6 transition-transform group-hover:-translate-x-[2px]" strokeWidth={2.5} />
     </button>
   );
 }
