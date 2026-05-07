@@ -39,6 +39,9 @@ export interface AuctionDraft {
   // step 4 (carte grise)
   ownerName?: string;
   ownershipException?: string;
+  // True when the seller picked the "other" exception — the auction needs
+  // a manual admin review before it can go live (PLAN §11.3 Golden Lock).
+  requiresOwnershipReview?: boolean;
 
   // step 5
   startingPrice?: number;

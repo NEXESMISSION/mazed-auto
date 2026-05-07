@@ -14,13 +14,34 @@ import { useAuth } from "@/lib/auth";
 
 const IS_DEV = process.env.NODE_ENV !== "production";
 
+// Mock-OCR fixture pool. The whole point of the Golden Lock check is to
+// detect a mismatch between the carte grise's owner field and the seller's
+// KYC name; the previous mock generated `ownerName` from `user.firstName +
+// user.lastName`, so the check was self-fulfilling and always green.
+// Picking from this pool means the OCR result is independent of who's
+// signed in — the typical run produces a mismatch and exercises the
+// exception flow (PLAN §11.3), which is what we actually need to validate.
+// In production this is replaced by real OCR; the fixture only ships in
+// dev/preview builds.
+const OCR_OWNER_FIXTURES = [
+  "Karim Trabelsi",
+  "Faten Bouazizi",
+  "Anis Khaldi",
+  "Mariem Gharbi",
+  "Slim Mestiri",
+  "Yasmine Chouchane",
+];
+
+// Exceptions per PLAN §11.3. The first five cover legitimate name
+// mismatches; "other" is the catch-all and forces an admin review before
+// the auction can be published.
 const exceptions = [
-  { v: "", l: "Voiture à mon nom" },
   { v: "company", l: "Voiture au nom d'une société" },
   { v: "agent", l: "Mandataire du propriétaire" },
   { v: "inheritance", l: "Héritage" },
   { v: "spouse", l: "Conjoint(e)" },
   { v: "recent_purchase", l: "Achat récent (carte non encore mise à jour)" },
+  { v: "other", l: "Autre cas (révision admin requise)" },
 ];
 
 interface OCR {
@@ -30,6 +51,18 @@ interface OCR {
   year: string;
   fuel: string;
   registrationDate: string;
+}
+
+// Lowercase, trim, collapse interior whitespace before equality. Matches
+// "Mohamed Ben Ali" with "  mohamed  ben ali ". Doesn't strip diacritics —
+// production OCR should normalise on its side.
+function normalizeName(name: string): string {
+  return name.toLowerCase().trim().replace(/\s+/g, " ");
+}
+
+function namesMatch(a: string, b: string): boolean {
+  if (!a || !b) return false;
+  return normalizeName(a) === normalizeName(b);
 }
 
 export default function Step4Page() {
@@ -55,6 +88,9 @@ export default function Step4Page() {
   );
   const [exception, setException] = useState(draft.ownershipException ?? "");
 
+  const kycName = [user?.firstName, user?.lastName].filter(Boolean).join(" ");
+  const matched = ocr ? namesMatch(ocr.ownerName, kycName) : false;
+
   function onCaptured(url: string) {
     if (activeShoot === "front") setFront(url);
     if (activeShoot === "back") setBack(url);
@@ -72,9 +108,12 @@ export default function Step4Page() {
   async function runOCR() {
     setAnalyzing(true);
     await new Promise((r) => setTimeout(r, 1800));
+    // Mock OCR: pick a fixture name independent of the signed-in user so
+    // the Golden Lock comparison can actually fail. With 6 fixtures the
+    // mismatch flow fires for ~all sessions where the seller isn't named
+    // after one of the fixture entries.
     const owner =
-      [user?.firstName, user?.lastName].filter(Boolean).join(" ") ||
-      "Mohamed Ben Ali";
+      OCR_OWNER_FIXTURES[Math.floor(Math.random() * OCR_OWNER_FIXTURES.length)];
     const result: OCR = {
       ownerName: owner,
       plate: draft.registration ?? "123 Tunis 4567",
@@ -91,10 +130,28 @@ export default function Step4Page() {
       registrationDate: new Date().toISOString().slice(0, 10),
     };
     setOcr(result);
-    update({ ownerName: result.ownerName });
+    // New OCR run resets any previous exception choice — if the new result
+    // matches the KYC name, no exception is needed; if it still mismatches,
+    // the user re-picks.
+    setException("");
+    update({
+      ownerName: result.ownerName,
+      ownershipException: "",
+      requiresOwnershipReview: false,
+    });
     setAnalyzing(false);
-    toast("Données extraites ✓", "success");
+    if (namesMatch(result.ownerName, kycName)) {
+      toast("Données extraites — propriétaire confirmé", "success");
+    } else {
+      toast("Données extraites — vérifiez le propriétaire", "info");
+    }
   }
+
+  // Continue is disabled when:
+  //  - no OCR yet (dev can fast-forward; prod cannot)
+  //  - OCR returned a mismatch but no exception is selected
+  const canContinue = ocr ? matched || Boolean(exception) : IS_DEV;
+  const requiresAdminReview = exception === "other";
 
   return (
     <CreateAuctionShell current={3}>
@@ -158,8 +215,8 @@ export default function Step4Page() {
           </div>
         )}
 
-        {/* Golden Lock check */}
-        {ocr && (
+        {/* Golden Lock — green when names match, red when they don't */}
+        {ocr && matched && (
           <div className="rounded-[var(--radius)] bg-green-500/10 border border-green-500/30 p-4 flex gap-3 items-start">
             <Check className="h-5 w-5 text-green-400 shrink-0 mt-0.5" />
             <div className="flex-1 text-sm">
@@ -170,30 +227,64 @@ export default function Step4Page() {
             </div>
           </div>
         )}
+        {ocr && !matched && (
+          <div className="rounded-[var(--radius)] bg-red-500/10 border border-red-500/30 p-4 flex gap-3 items-start">
+            <AlertTriangle className="h-5 w-5 text-red-400 shrink-0 mt-0.5" />
+            <div className="flex-1 text-sm">
+              <div className="font-bold text-red-400">
+                Verrou doré ✗ — noms différents
+              </div>
+              <div className="text-[var(--foreground-muted)] text-xs mt-0.5 leading-relaxed">
+                La carte grise est au nom de <b>{ocr.ownerName}</b>, votre KYC
+                est au nom de <b>{kycName || "—"}</b>. Choisissez le motif
+                ci-dessous pour continuer.
+              </div>
+            </div>
+          </div>
+        )}
 
-        {/* Exception selector */}
-        {ocr && (
+        {/* Exception selector — only shown when names don't match */}
+        {ocr && !matched && (
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-[var(--foreground-muted)]">
-Cas particulier ? (optionnel)
+              Motif de la différence <span className="text-red-400">*</span>
             </label>
             <select
               value={exception}
               onChange={(e) => {
-                setException(e.target.value);
-                update({ ownershipException: e.target.value });
+                const v = e.target.value;
+                setException(v);
+                update({
+                  ownershipException: v,
+                  requiresOwnershipReview: v === "other",
+                });
               }}
               className="h-11 w-full px-4 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--surface)] focus:border-[var(--gold)] focus:outline-none cursor-pointer"
             >
+              <option value="" disabled>
+                Choisir un motif…
+              </option>
               {exceptions.map((e) => (
-                <option key={e.v} value={e.v}>{e.l}</option>
+                <option key={e.v} value={e.v}>
+                  {e.l}
+                </option>
               ))}
             </select>
-            {exception && (
+            {exception && exception !== "other" && (
               <div className="rounded-[var(--radius-sm)] bg-amber-500/10 border border-amber-500/30 p-3 flex gap-2">
                 <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
                 <div className="text-xs text-[var(--foreground-muted)]">
-                  Vous devrez téléverser un document juridique supplémentaire prouvant votre autorisation de vendre.
+                  Vous devrez téléverser un document juridique supplémentaire
+                  prouvant votre autorisation de vendre.
+                </div>
+              </div>
+            )}
+            {requiresAdminReview && (
+              <div className="rounded-[var(--radius-sm)] bg-amber-500/10 border border-amber-500/30 p-3 flex gap-2">
+                <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                <div className="text-xs text-[var(--foreground-muted)]">
+                  Cas non standard — votre annonce sera publiée après
+                  vérification manuelle par un administrateur.
                 </div>
               </div>
             )}
@@ -212,15 +303,12 @@ Cas particulier ? (optionnel)
           <Button
             size="lg"
             fullWidth
-            disabled={!IS_DEV && !ocr}
+            disabled={!canContinue}
             onClick={() => {
               // Dev: synthesize a minimal OCR payload so the saved draft
               // has the fields downstream pages may peek at.
               if (IS_DEV && !ocr) {
-                const fullName =
-                  [user?.firstName, user?.lastName]
-                    .filter(Boolean)
-                    .join(" ") || "Test";
+                const fullName = kycName || "Test";
                 update({
                   ownerName: fullName,
                   registration: "TEST-1234",
