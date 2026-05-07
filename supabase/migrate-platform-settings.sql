@@ -155,6 +155,7 @@ insert into public.platform_settings (key, value, type, category, description, s
    '{"kyc":20,"ownership":15,"successful_deals":25,"ratings":15,"account_age":10,"reports":-15}'::jsonb,
    'json', 'trust', 'Weights summed to compute trust_score (max 100)', true, true),
   ('trust.kick_threshold',                   '20'::jsonb,    'number',  'trust',      'Sellers below this trust score are kicked off the platform', true, true),
+  ('trust.report_cancellation_penalty',      '30'::jsonb,    'number',  'trust',      'Trust Score points deducted when auction is auto-cancelled by reports (handle_new_report)', true, true),
 
   -- Payment provider (decision #2)
   ('payment.active_provider',                '"simulation"'::jsonb, 'string', 'payment', 'Active payment provider: "simulation" | "konnect" | "clictopay"', true, true),

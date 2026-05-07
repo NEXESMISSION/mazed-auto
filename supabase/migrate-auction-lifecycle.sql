@@ -182,16 +182,25 @@ end; $$;
 
 -- 4) Reports auto-action ladder (§16.2)
 --    on each new report, count open+reviewing reports for the auction
---    1 → notify seller (handled at app layer)
---    3 → flip auction status to pending_review
---    5 → cancel auction + Trust Score deduction
+--    1                              → notify seller (handled at app layer)
+--    auto_review_threshold (3)      → flip auction status to pending_review
+--    auto_remove_threshold (7)      → cancel auction + Trust Score deduction
+--    Thresholds and the cancellation penalty come from platform_settings
+--    so admins can tune them without a redeploy (PLAN §16.2).
 create or replace function public.handle_new_report()
 returns trigger language plpgsql security definer as $$
 declare
   v_count int;
   v_seller uuid;
   v_make text; v_model text; v_year int;
+  v_review_threshold int;
+  v_remove_threshold int;
+  v_penalty int;
 begin
+  v_review_threshold := public.get_setting_num('report.auto_review_threshold', 3)::int;
+  v_remove_threshold := public.get_setting_num('report.auto_remove_threshold', 7)::int;
+  v_penalty          := public.get_setting_num('trust.report_cancellation_penalty', 30)::int;
+
   select count(*) into v_count
   from public.reports
   where auction_id = new.auction_id and status in ('open','reviewing');
@@ -207,20 +216,21 @@ begin
             v_make || ' ' || v_model || ' ' || v_year || ' — Un signalement a été reçu, veuillez vérifier');
   end if;
 
-  if v_count >= 5 then
+  if v_count >= v_remove_threshold then
     update public.auctions
        set status = 'cancelled'
      where id = new.auction_id and status in ('active','ending','pending_review');
     update public.sellers
-       set trust_score = greatest(0, trust_score - 30)
+       set trust_score = greatest(0, trust_score - v_penalty)
      where id = v_seller;
     if v_seller is not null then
       insert into public.notifications (user_id, auction_id, kind, title, body)
       values (v_seller, new.auction_id, 'rejected',
               'Votre enchère a été annulée',
-              'Le nombre de signalements a dépassé la limite autorisée. 30 points ont été déduits du Trust Score.');
+              'Le nombre de signalements a dépassé la limite autorisée. '
+              || v_penalty || ' points ont été déduits du Trust Score.');
     end if;
-  elsif v_count >= 3 then
+  elsif v_count >= v_review_threshold then
     update public.auctions
        set status = 'pending_review'
      where id = new.auction_id and status in ('active','ending');
