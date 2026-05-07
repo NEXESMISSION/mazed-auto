@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
   // Pin Turbopack to this app dir so it doesn't pick up a stray lockfile
@@ -44,4 +45,16 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Sentry wrapper. Only does anything when SENTRY_AUTH_TOKEN + project/org are
+// set in Vercel — otherwise it's a no-op so local builds still work.
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT || "mazed-auto-web",
+  silent: !process.env.CI,
+  // Source maps are uploaded but kept off the public bundle so stack traces
+  // resolve in Sentry without leaking source to the browser.
+  widenClientFileUpload: true,
+  sourcemaps: { deleteSourcemapsAfterUpload: true },
+  disableLogger: true,
+});
+
