@@ -319,17 +319,23 @@ body {
   z-index: 1000;
   background: #0a0a0a;
   overflow: hidden;
-  /* Total splash life: paint instant → hold ~800ms → fade ~300ms = 1100ms.
-     Tight first-impression — slow enough to feel intentional, short enough
-     not to delay every reload. */
-  animation: mazed-splash-life 1100ms ease-out forwards;
+  opacity: 1;
+  pointer-events: auto;
+  /* JS-driven fade: SplashScreen.tsx flips data-hidden after a 1000ms
+     hold and the transition runs the visual change. Deterministic across
+     cold loads, no dependency on CSS animation start-time variance. */
+  transition: opacity 300ms ease-out, visibility 0s linear 300ms;
+  /* Belt-and-braces fallback: if JS fails to hydrate, force the splash
+     to drop after 5s so users aren't trapped. */
+  animation: mazed-splash-fallback 5000ms forwards;
+}
+#mazed-splash[data-hidden="true"] {
+  opacity: 0;
+  pointer-events: none;
+  /* Once JS triggers hide, cancel the fallback so the transition wins. */
+  animation: none;
 }
 #mazed-splash img {
-  /* Fill the viewport, center the focal point. Image is preloaded via the
-     <link rel="preload"> in <head>, so it's visible from t=0 — no fade-in
-     needed (the 800ms image fade was the source of the "splash appears
-     suddenly" complaint, since the black panel was solid for 800ms before
-     the image materialised). */
   position: absolute;
   inset: 0;
   width: 100%;
@@ -338,9 +344,9 @@ body {
   object-position: center;
 }
 
-@keyframes mazed-splash-life {
-  /* Hold (~800ms = 73%), then fade ~300ms (27%). Final state is invisible
-     + non-interactive so the splash element stops blocking taps. */
-  0%, 73%   { opacity: 1; pointer-events: auto; }
+@keyframes mazed-splash-fallback {
+  /* Hold for 4.7s, then fade over 300ms. Only fires if JS never flips
+     data-hidden — typical happy path lifespan is 1300ms via JS. */
+  0%, 94%   { opacity: 1; pointer-events: auto; }
   100%      { opacity: 0; pointer-events: none; }
 }

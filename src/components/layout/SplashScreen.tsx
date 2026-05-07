@@ -1,16 +1,33 @@
-// Server component — emits a fixed-position black overlay with the splash
-// image inside. Lifecycle is 100% CSS-driven (animation runs once and
-// ends with opacity:0 + pointer-events:none), so there's no React state
-// or inline <script> to trip the hydrator.
+"use client";
+
+import { useEffect, useState } from "react";
+
+// JS-driven splash. Server-renders visible (so it paints with the very
+// first HTML byte, no white flash) and a useEffect timer flips
+// data-hidden after a fixed minimum hold so the fade timing is
+// deterministic across cold loads — instead of relying on CSS-animation
+// timing which varies based on when CSS parses (cached vs fresh).
 //
-// Lifecycle (CSS, total 1100ms):
-//   t=0          black panel + preloaded image both visible at full opacity
-//   t=0..800ms   hold
-//   t=800..1100ms whole panel fades 1 → 0 (300ms)
-//   t=1100ms+    opacity 0, pointer-events none (still in DOM, invisible)
+// Fallback: a CSS keyframe in globals.css forces opacity:0 at 5s
+// regardless of JS, so a hydration failure can't trap users behind
+// the splash.
+//
+// Lifecycle:
+//   t=0       splash visible, app paints behind it
+//   t=1000ms  data-hidden flips → CSS transition starts
+//   t=1300ms  fully invisible + pointer-events:none
+const MIN_DISPLAY_MS = 1000;
+
 export function SplashScreen() {
+  const [hidden, setHidden] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setHidden(true), MIN_DISPLAY_MS);
+    return () => clearTimeout(t);
+  }, []);
+
   return (
-    <div id="mazed-splash" aria-hidden="true">
+    <div id="mazed-splash" aria-hidden="true" data-hidden={hidden}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src="/loading.png"
