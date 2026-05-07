@@ -84,7 +84,7 @@ export function BottomTabBar() {
             key={tab.href}
             href={tab.href}
             className={cn(
-              "relative flex flex-col items-center justify-center gap-1.5 h-full transition-colors",
+              "relative flex flex-col items-center justify-center gap-1 h-full min-w-0 px-1 transition-colors",
               active
                 ? "text-[var(--gold)]"
                 : "text-[var(--foreground-muted)] hover:text-foreground",
@@ -102,7 +102,7 @@ export function BottomTabBar() {
               )}
               strokeWidth={active ? 2.5 : 2}
             />
-            <span className="text-[11px] font-semibold whitespace-nowrap">
+            <span className="text-[10px] font-semibold leading-tight max-w-full truncate">
               {tab.label}
             </span>
           </Link>

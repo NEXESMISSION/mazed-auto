@@ -87,7 +87,12 @@ export async function updateSession(request: NextRequest) {
   if (isProtected && !user) {
     const url = request.nextUrl.clone();
     url.pathname = `${localePrefix}/login`;
-    url.searchParams.set("redirect", rawPath);
+    // Store the LOCALE-STRIPPED path. The login page reads this and calls
+    // the locale-aware router, which re-prepends the active locale. If we
+    // stored `rawPath` (already prefixed), the router would double-prefix
+    // and produce e.g. /fr/fr/profile → 404. (Reproduced: /fr/profile,
+    // unauthed → /fr/login?redirect=/fr/profile → 404 on success.)
+    url.searchParams.set("redirect", path);
     return NextResponse.redirect(url);
   }
 
