@@ -92,6 +92,11 @@ html {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  /* Stop iOS Safari from consuming downward swipes at the top of the page
+     for its native rubber-band overscroll. Without this, the global
+     touchmove listener in PullToRefresh never gets a chance to claim the
+     gesture (the OS moves the page out from under it instead). */
+  overscroll-behavior-y: none;
 }
 
 body {
@@ -102,6 +107,7 @@ body {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior-y: none;
 }
 
 /* Tabular figures for prices, countdowns, scores — keeps digits aligned. */
