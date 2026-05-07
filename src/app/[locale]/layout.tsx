@@ -5,6 +5,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
 import { ToastProvider } from "@/components/ui/Toast";
 import { OfflineOverlay } from "@/components/pwa/OfflineOverlay";
+import { ScrollToTop } from "@/components/layout/ScrollToTop";
 
 // Pre-render both locales at build so navigations between them feel instant.
 export function generateStaticParams() {
@@ -54,6 +55,7 @@ export default async function LocaleLayout({ children, params }: Props) {
 
   return (
     <NextIntlClientProvider>
+      <ScrollToTop />
       <ToastProvider>{children}</ToastProvider>
       <OfflineOverlay />
     </NextIntlClientProvider>
