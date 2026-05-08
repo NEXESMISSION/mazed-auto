@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { useToast } from "@/components/ui/Toast";
+import { LegalLink } from "@/components/legal/LegalLink";
 import { useAuth } from "@/lib/auth";
 import { scrollToFirstInvalid } from "@/lib/validation";
 
@@ -163,13 +164,9 @@ Numéro de téléphone
         />
         <span className="text-xs text-[var(--foreground-muted)] leading-relaxed">
           J&apos;accepte les{" "}
-          <Link href="/terms" className="text-[var(--gold)] hover:underline">
-            Conditions d&apos;utilisation
-          </Link>{" "}
+          <LegalLink kind="terms">Conditions d&apos;utilisation</LegalLink>{" "}
           et la{" "}
-          <Link href="/privacy" className="text-[var(--gold)] hover:underline">
-            Politique de confidentialité
-          </Link>
+          <LegalLink kind="privacy">Politique de confidentialité</LegalLink>
         </span>
       </label>
 

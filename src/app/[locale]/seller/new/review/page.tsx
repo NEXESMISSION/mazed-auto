@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Modal, ModalFooter } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
+import { LegalLink } from "@/components/legal/LegalLink";
 import { useAuth } from "@/lib/auth";
 import { useDraft, clearDraft } from "@/lib/draft";
 import { createClient } from "@/lib/supabase/client";
@@ -311,9 +312,7 @@ export default function ReviewPage() {
           />
           <span className="text-xs text-[var(--foreground-muted)] leading-relaxed">
             J&apos;accepte les{" "}
-            <Link href="/terms" className="text-[var(--gold)] hover:underline">
-              conditions de publication
-            </Link>{" "}
+            <LegalLink kind="terms">conditions de publication</LegalLink>{" "}
             et je confirme que toutes les informations sont exactes. Toute information erronée peut entraîner
             la désactivation de mon compte.
           </span>
