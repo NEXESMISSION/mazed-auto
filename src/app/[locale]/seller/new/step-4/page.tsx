@@ -1,35 +1,20 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "@/i18n/navigation";
-import { Camera, Check, AlertTriangle, ArrowRight, Loader2 } from "lucide-react";
+import {
+  Check,
+  AlertTriangle,
+  ArrowRight,
+  Camera,
+  RotateCcw,
+} from "lucide-react";
 import { CreateAuctionShell } from "@/components/layout/CreateAuctionShell";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { useToast } from "@/components/ui/Toast";
 import { useDraft } from "@/lib/draft";
 import { useAuth } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/client";
-
-const IS_DEV = process.env.NODE_ENV !== "production";
-
-// Mock-OCR fixture pool. The whole point of the Golden Lock check is to
-// detect a mismatch between the carte grise's owner field and the seller's
-// KYC name; the previous mock generated `ownerName` from `user.firstName +
-// user.lastName`, so the check was self-fulfilling and always green.
-// Picking from this pool means the OCR result is independent of who's
-// signed in — the typical run produces a mismatch and exercises the
-// exception flow (PLAN §11.3), which is what we actually need to validate.
-// In production this is replaced by real OCR; the fixture only ships in
-// dev/preview builds.
-const OCR_OWNER_FIXTURES = [
-  "Karim Trabelsi",
-  "Faten Bouazizi",
-  "Anis Khaldi",
-  "Mariem Gharbi",
-  "Slim Mestiri",
-  "Yasmine Chouchane",
-];
+import { LivePhotoCapture } from "@/components/auction/LivePhotoCapture";
 
 // Exceptions per PLAN §11.3. The first five cover legitimate name
 // mismatches; "other" is the catch-all and forces an admin review before
@@ -43,18 +28,6 @@ const exceptions = [
   { v: "other", l: "Autre cas (révision admin requise)" },
 ];
 
-interface OCR {
-  ownerName: string;
-  plate: string;
-  vin: string;
-  year: string;
-  fuel: string;
-  registrationDate: string;
-}
-
-// Lowercase, trim, collapse interior whitespace before equality. Matches
-// "Mohamed Ben Ali" with "  mohamed  ben ali ". Doesn't strip diacritics —
-// production OCR should normalise on its side.
 function normalizeName(name: string): string {
   return name.toLowerCase().trim().replace(/\s+/g, " ");
 }
@@ -66,129 +39,42 @@ function namesMatch(a: string, b: string): boolean {
 
 export default function Step4Page() {
   const router = useRouter();
-  const { toast } = useToast();
   const { draft, update } = useDraft();
   const { user } = useAuth();
-  const inputRef = useRef<HTMLInputElement>(null);
+
   const [front, setFront] = useState<string | null>(null);
   const [back, setBack] = useState<string | null>(null);
-  const [activeShoot, setActiveShoot] = useState<"front" | "back" | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [ocr, setOcr] = useState<OCR | null>(
-    draft.ownerName
-      ? {
-          ownerName: draft.ownerName,
-          plate: draft.registration ?? "—",
-          vin: draft.vin ?? "—",
-          year: String(draft.year ?? ""),
-          fuel: draft.fuelType ?? "",
-          registrationDate: "",
-        }
-      : null,
-  );
+  // Per side: "idle" = nothing yet, "active" = camera is live for this side.
+  const [active, setActive] = useState<"front" | "back" | null>(null);
+
+  const [ownerName, setOwnerName] = useState(draft.ownerName ?? "");
+  const [plate, setPlate] = useState(draft.registration ?? "");
+  const [vin, setVin] = useState(draft.vin ?? "");
+  const [year, setYear] = useState(draft.year ? String(draft.year) : "");
   const [exception, setException] = useState(draft.ownershipException ?? "");
 
   const kycName = [user?.firstName, user?.lastName].filter(Boolean).join(" ");
-  const matched = ocr ? namesMatch(ocr.ownerName, kycName) : false;
-
-  function pickShoot(side: "front" | "back") {
-    if (uploading || analyzing) return;
-    setActiveShoot(side);
-    if (inputRef.current) {
-      inputRef.current.value = "";
-      inputRef.current.click();
-    }
-  }
-
-  async function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0];
-    const side = activeShoot;
-    if (!f || !side) return;
-    if (!user) {
-      toast("Connectez-vous d'abord", "warning");
-      return;
-    }
-
-    setUploading(true);
-    const supabase = createClient();
-    const ext = (f.name.split(".").pop() || "jpg").toLowerCase();
-    const path = `${user.id}/carte-grise/${Date.now()}-${side}-${Math.random()
-      .toString(36)
-      .slice(2, 8)}.${ext}`;
-
-    const { error } = await supabase.storage
-      .from("auction-media")
-      .upload(path, f, {
-        contentType: f.type || "image/jpeg",
-        upsert: false,
-      });
-
-    if (error) {
-      setUploading(false);
-      setActiveShoot(null);
-      toast("Échec du téléversement : " + error.message, "error");
-      return;
-    }
-
-    const { data } = supabase.storage.from("auction-media").getPublicUrl(path);
-    const url = data.publicUrl;
-    if (side === "front") setFront(url);
-    else setBack(url);
-    setUploading(false);
-    setActiveShoot(null);
-
-    const otherDone = side === "front" ? back : front;
-    if (otherDone) runOCR();
-  }
-
-  async function runOCR() {
-    setAnalyzing(true);
-    await new Promise((r) => setTimeout(r, 1800));
-    // Mock OCR: pick a fixture name independent of the signed-in user so
-    // the Golden Lock comparison can actually fail. With 6 fixtures the
-    // mismatch flow fires for ~all sessions where the seller isn't named
-    // after one of the fixture entries.
-    const owner =
-      OCR_OWNER_FIXTURES[Math.floor(Math.random() * OCR_OWNER_FIXTURES.length)];
-    const result: OCR = {
-      ownerName: owner,
-      plate: draft.registration ?? "123 Tunis 4567",
-      vin: draft.vin ?? "VF1XXXXXXX12345",
-      year: String(draft.year ?? "2022"),
-      fuel:
-        draft.fuelType === "diesel"
-          ? "Diesel"
-          : draft.fuelType === "hybrid"
-            ? "Hybride"
-            : draft.fuelType === "electric"
-              ? "Électrique"
-              : "Essence",
-      registrationDate: new Date().toISOString().slice(0, 10),
-    };
-    setOcr(result);
-    // New OCR run resets any previous exception choice — if the new result
-    // matches the KYC name, no exception is needed; if it still mismatches,
-    // the user re-picks.
-    setException("");
-    update({
-      ownerName: result.ownerName,
-      ownershipException: "",
-      requiresOwnershipReview: false,
-    });
-    setAnalyzing(false);
-    if (namesMatch(result.ownerName, kycName)) {
-      toast("Données extraites — propriétaire confirmé", "success");
-    } else {
-      toast("Données extraites — vérifiez le propriétaire", "info");
-    }
-  }
-
-  // Continue is disabled when:
-  //  - no OCR yet (dev can fast-forward; prod cannot)
-  //  - OCR returned a mismatch but no exception is selected
-  const canContinue = ocr ? matched || Boolean(exception) : IS_DEV;
+  const matched = ownerName ? namesMatch(ownerName, kycName) : false;
   const requiresAdminReview = exception === "other";
+
+  const bothCaptured = Boolean(front && back);
+  const canContinue =
+    bothCaptured &&
+    ownerName.trim().length > 0 &&
+    plate.trim().length > 0 &&
+    (matched || Boolean(exception));
+
+  function commit() {
+    update({
+      ownerName: ownerName.trim(),
+      registration: plate.trim(),
+      vin: vin.trim() || undefined,
+      year: year ? Number(year) : undefined,
+      ownershipException: matched ? "" : exception,
+      requiresOwnershipReview: !matched && exception === "other",
+    });
+    router.push("/seller/new/step-5");
+  }
 
   return (
     <CreateAuctionShell current={3}>
@@ -196,88 +82,122 @@ export default function Step4Page() {
         <div>
           <h1 className="text-2xl font-extrabold">Carte grise</h1>
           <p className="text-sm text-[var(--foreground-muted)] mt-1">
-            Pour confirmer que la voiture est à votre nom
+            La caméra s&apos;ouvre directement — aucun fichier à téléverser.
+            Photographiez le recto puis le verso.
           </p>
         </div>
-
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          onChange={onFileChange}
-          className="hidden"
-        />
 
         {/* Two scans side by side */}
         <div className="grid grid-cols-2 gap-3">
           <ScanSlot
             label="Recto"
             url={front}
-            uploading={uploading && activeShoot === "front"}
-            disabled={uploading}
-            onClick={() => pickShoot("front")}
+            isActive={active === "front"}
+            onStart={() => setActive("front")}
+            onClear={() => setFront(null)}
           />
           <ScanSlot
             label="Verso"
             url={back}
-            uploading={uploading && activeShoot === "back"}
-            disabled={uploading}
-            onClick={() => pickShoot("back")}
+            isActive={active === "back"}
+            onStart={() => setActive("back")}
+            onClear={() => setBack(null)}
           />
         </div>
 
-        {/* Analyzing */}
-        {analyzing && (
-          <div className="rounded-[var(--radius)] bg-[var(--surface)] border border-[var(--border)] p-4 text-center">
-            <div className="mx-auto h-8 w-8 border-3 border-[var(--gold)] border-t-transparent rounded-full animate-spin mb-2" />
-            <div className="text-sm font-semibold">Extraction des données en cours...</div>
+        {/* Live camera for the active side */}
+        {active === "front" && (
+          <div className="rounded-[var(--radius-md)] bg-[var(--surface)] border border-[var(--border)] p-3">
+            <div className="text-xs font-bold text-[var(--gold)] mb-2">
+              Recto — placez la carte dans le cadre
+            </div>
+            <LivePhotoCapture
+              frame="id-card"
+              hint="Bon éclairage, sans reflets"
+              upload
+              folder="carte-grise"
+              onCapture={(url) => {
+                setFront(url);
+                setActive(null);
+              }}
+            />
           </div>
         )}
 
-        {/* OCR results */}
-        {ocr && !analyzing && (
-          <div className="rounded-[var(--radius-md)] bg-[var(--surface)] border border-[var(--border)] overflow-hidden">
-            <div className="px-4 py-2.5 bg-[var(--gold-faint)] border-b border-[var(--border)] text-xs font-bold text-[var(--gold-bright)]">
-              ✓ Données extraites
+        {active === "back" && (
+          <div className="rounded-[var(--radius-md)] bg-[var(--surface)] border border-[var(--border)] p-3">
+            <div className="text-xs font-bold text-[var(--gold)] mb-2">
+              Verso — placez la carte dans le cadre
             </div>
-            <div className="p-4 space-y-3">
-              <Field label="Nom du propriétaire">
-                <Input value={ocr.ownerName} />
+            <LivePhotoCapture
+              frame="id-card"
+              hint="Vérifiez la netteté du texte"
+              upload
+              folder="carte-grise"
+              onCapture={(url) => {
+                setBack(url);
+                setActive(null);
+              }}
+            />
+          </div>
+        )}
+
+        {/* Manual entry once both photos exist. No mock OCR — the seller
+            types the data they read off the carte grise; the admin verifies
+            it later against the photos. */}
+        {bothCaptured && !active && (
+          <div className="rounded-[var(--radius-md)] bg-[var(--surface)] border border-[var(--border)] p-4 space-y-3">
+            <div className="text-xs font-bold text-[var(--gold)]">
+              Renseignez les informations de la carte grise
+            </div>
+            <Field label="Nom du propriétaire">
+              <Input
+                value={ownerName}
+                onChange={(e) => setOwnerName(e.target.value)}
+                placeholder="Tel qu'inscrit sur la carte grise"
+              />
+            </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Numéro de plaque">
+                <Input
+                  value={plate}
+                  onChange={(e) => setPlate(e.target.value)}
+                  placeholder="123 Tunis 4567"
+                />
               </Field>
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Numéro de plaque">
-                  <Input value={ocr.plate} />
-                </Field>
-                <Field label="VIN">
-                  <Input value={ocr.vin} />
-                </Field>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Année">
-                  <Input value={ocr.year} />
-                </Field>
-                <Field label="Carburant">
-                  <Input value={ocr.fuel} />
-                </Field>
-              </div>
+              <Field label="VIN (optionnel)">
+                <Input
+                  value={vin}
+                  onChange={(e) => setVin(e.target.value)}
+                  placeholder="VF1XXXXXXX12345"
+                />
+              </Field>
             </div>
+            <Field label="Année (optionnel)">
+              <Input
+                value={year}
+                onChange={(e) => setYear(e.target.value.replace(/\D/g, ""))}
+                placeholder="2022"
+                inputMode="numeric"
+              />
+            </Field>
           </div>
         )}
 
-        {/* Golden Lock — green when names match, red when they don't */}
-        {ocr && matched && (
+        {/* Golden Lock — checks the name the seller entered against the
+            verified KYC name. */}
+        {bothCaptured && ownerName && matched && (
           <div className="rounded-[var(--radius)] bg-green-500/10 border border-green-500/30 p-4 flex gap-3 items-start">
             <Check className="h-5 w-5 text-green-400 shrink-0 mt-0.5" />
             <div className="flex-1 text-sm">
               <div className="font-bold text-green-400">Verrou doré ✓</div>
               <div className="text-[var(--foreground-muted)] text-xs mt-0.5">
-                Le nom du propriétaire correspond à votre carte d'identité
+                Le nom du propriétaire correspond à votre identité vérifiée
               </div>
             </div>
           </div>
         )}
-        {ocr && !matched && (
+        {bothCaptured && ownerName && !matched && kycName && (
           <div className="rounded-[var(--radius)] bg-red-500/10 border border-red-500/30 p-4 flex gap-3 items-start">
             <AlertTriangle className="h-5 w-5 text-red-400 shrink-0 mt-0.5" />
             <div className="flex-1 text-sm">
@@ -285,30 +205,22 @@ export default function Step4Page() {
                 Verrou doré ✗ — noms différents
               </div>
               <div className="text-[var(--foreground-muted)] text-xs mt-0.5 leading-relaxed">
-                La carte grise est au nom de <b>{ocr.ownerName}</b>, votre KYC
-                est au nom de <b>{kycName || "—"}</b>. Choisissez le motif
-                ci-dessous pour continuer.
+                La carte grise est au nom de <b>{ownerName}</b>, votre KYC est
+                au nom de <b>{kycName}</b>. Choisissez le motif ci-dessous
+                pour continuer.
               </div>
             </div>
           </div>
         )}
 
-        {/* Exception selector — only shown when names don't match */}
-        {ocr && !matched && (
+        {bothCaptured && ownerName && !matched && (
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-[var(--foreground-muted)]">
               Motif de la différence <span className="text-red-400">*</span>
             </label>
             <select
               value={exception}
-              onChange={(e) => {
-                const v = e.target.value;
-                setException(v);
-                update({
-                  ownershipException: v,
-                  requiresOwnershipReview: v === "other",
-                });
-              }}
+              onChange={(e) => setException(e.target.value)}
               className="h-11 w-full px-4 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--surface)] focus:border-[var(--gold)] focus:outline-none cursor-pointer"
             >
               <option value="" disabled>
@@ -350,30 +262,12 @@ export default function Step4Page() {
           >
             Retour
           </Button>
-          <Button
-            size="lg"
-            fullWidth
-            disabled={!canContinue}
-            onClick={() => {
-              // Dev: synthesize a minimal OCR payload so the saved draft
-              // has the fields downstream pages may peek at.
-              if (IS_DEV && !ocr) {
-                const fullName = kycName || "Test";
-                update({
-                  ownerName: fullName,
-                  registration: "TEST-1234",
-                  vin: "TESTVIN0000000001",
-                });
-              }
-              router.push("/seller/new/step-5");
-            }}
-          >
+          <Button size="lg" fullWidth disabled={!canContinue} onClick={commit}>
             Continuer
             <ArrowRight className="h-5 w-5" />
           </Button>
         </div>
       </div>
-
     </CreateAuctionShell>
   );
 }
@@ -381,47 +275,50 @@ export default function Step4Page() {
 function ScanSlot({
   label,
   url,
-  uploading,
-  disabled,
-  onClick,
+  isActive,
+  onStart,
+  onClear,
 }: {
   label: string;
   url: string | null;
-  uploading: boolean;
-  disabled: boolean;
-  onClick: () => void;
+  isActive: boolean;
+  onStart: () => void;
+  onClear: () => void;
 }) {
+  if (url) {
+    return (
+      <div className="relative aspect-[4/3] rounded-[var(--radius)] border-2 border-[var(--success)] overflow-hidden">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={url} alt={label} className="h-full w-full object-cover" />
+        <div className="absolute top-1.5 right-1.5 h-6 w-6 rounded-full bg-[var(--success)] flex items-center justify-center">
+          <Check className="h-3.5 w-3.5 text-white" strokeWidth={3} />
+        </div>
+        <button
+          onClick={onClear}
+          className="absolute bottom-1.5 right-1.5 h-7 px-2 rounded-full bg-black/70 backdrop-blur text-white text-[10px] font-semibold flex items-center gap-1 hover:bg-black/90"
+        >
+          <RotateCcw className="h-3 w-3" />
+          Reprendre
+        </button>
+      </div>
+    );
+  }
   return (
     <button
-      onClick={onClick}
-      disabled={disabled}
+      onClick={onStart}
       className={`relative aspect-[4/3] rounded-[var(--radius)] border-2 border-dashed overflow-hidden transition-colors ${
-        uploading
-          ? "border-[var(--gold)]"
-          : url
-            ? "border-[var(--success)]"
-            : "border-[var(--border)] hover:border-[var(--gold)] bg-[var(--surface)]"
-      } ${disabled && !uploading ? "opacity-50 cursor-not-allowed" : ""}`}
+        isActive
+          ? "border-[var(--gold)] bg-[var(--gold-faint)]"
+          : "border-[var(--border)] hover:border-[var(--gold)] bg-[var(--surface)]"
+      }`}
     >
-      {url ? (
-        <>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={url} alt={label} className="h-full w-full object-cover" />
-          <div className="absolute top-1.5 right-1.5 h-6 w-6 rounded-full bg-[var(--success)] flex items-center justify-center">
-            <Check className="h-3.5 w-3.5 text-white" strokeWidth={3} />
-          </div>
-        </>
-      ) : (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
-          <Camera className="h-6 w-6 text-[var(--gold)]" />
-          <div className="text-xs font-semibold">{label}</div>
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
+        <Camera className="h-6 w-6 text-[var(--gold)]" />
+        <div className="text-xs font-semibold">{label}</div>
+        <div className="text-[10px] text-[var(--foreground-muted)]">
+          {isActive ? "Caméra active…" : "Toucher pour ouvrir la caméra"}
         </div>
-      )}
-      {uploading && (
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
-          <Loader2 className="h-6 w-6 text-[var(--gold)] animate-spin" />
-        </div>
-      )}
+      </div>
     </button>
   );
 }
