@@ -78,12 +78,6 @@ export function HomeHeader({ signedIn, firstName, email, kycVerified }: Props) {
           </>
         )}
       </div>
-
-      <h1 className="mt-7 text-[26px] font-extrabold tracking-tight leading-[1.15]">
-        Dernières <span className="gradient-gold-text">enchères</span>
-        <br />
-        et mises à jour !
-      </h1>
     </section>
   );
 }

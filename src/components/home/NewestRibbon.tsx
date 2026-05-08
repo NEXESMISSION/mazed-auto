@@ -35,9 +35,9 @@ export function NewestRibbon({ items }: Props) {
               href={`/auctions/${a.id}`}
               aria-hidden={i >= items.length ? true : undefined}
               tabIndex={i >= items.length ? -1 : undefined}
-              className="group relative w-[180px] shrink-0 overflow-hidden rounded-2xl ring-1 ring-[var(--border)] bg-[var(--surface-2)] hover:ring-[var(--gold-soft)]/50 transition-shadow"
+              className="group relative w-[260px] shrink-0 overflow-hidden rounded-2xl ring-1 ring-[var(--border)] bg-[var(--surface-2)] hover:ring-[var(--gold-soft)]/50 transition-shadow"
             >
-              <div className="relative h-[96px]">
+              <div className="relative h-[180px]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={a.vehicle.imageUrls[0]}
@@ -45,15 +45,15 @@ export function NewestRibbon({ items }: Props) {
                   className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.05]"
                   draggable={false}
                 />
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
-                <div className="absolute inset-x-0 bottom-0 px-2.5 pb-1.5">
-                  <div className="text-[11px] font-bold leading-tight line-clamp-1 text-white">
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 px-3.5 pb-3">
+                  <div className="text-[14px] font-bold leading-tight line-clamp-1 text-white">
                     {a.vehicle.make} {a.vehicle.model}{" "}
                     <span className="text-white/70 font-medium">
                       {a.vehicle.year}
                     </span>
                   </div>
-                  <div className="text-[11px] font-extrabold tabular-nums gradient-gold-text leading-tight">
+                  <div className="text-[15px] font-extrabold tabular-nums gradient-gold-text leading-tight mt-0.5">
                     {formatPrice(a.currentPrice)}
                   </div>
                 </div>
