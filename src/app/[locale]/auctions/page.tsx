@@ -1,8 +1,8 @@
 import { AppShell } from "@/components/layout/AppShell";
+import { BrowseHeader } from "@/components/layout/BrowseHeader";
 import { createClient } from "@/lib/supabase/server";
-import { listAuctions, mapAuction } from "@/lib/db";
+import { listAuctions } from "@/lib/db";
 import { AuctionsBrowser } from "./AuctionsBrowser";
-import { NewestRibbon } from "@/components/home/NewestRibbon";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -18,22 +18,12 @@ export default async function AuctionsPage({ searchParams }: Props) {
   const supabase = await createClient();
   const auctions = await listAuctions(supabase, {});
 
-  let newest: Awaited<ReturnType<typeof listAuctions>> = [];
-  if (inHubMode) {
-    const { data } = await supabase
-      .from("auctions")
-      .select("*, seller:sellers(*)")
-      .in("status", ["active", "ending"])
-      .order("created_at", { ascending: false })
-      .limit(10);
-    newest = (data ?? []).map((r) =>
-      mapAuction(r as Parameters<typeof mapAuction>[0]),
-    );
-  }
-
   return (
     <AppShell noTopBar>
-      {inHubMode && <NewestRibbon items={newest} />}
+      <BrowseHeader
+        eyebrow="Mazed Auto"
+        title={inHubMode ? "Parcourir" : "Résultats"}
+      />
       <AuctionsBrowser initial={auctions} />
     </AppShell>
   );

@@ -1,6 +1,7 @@
 import { Link } from "@/i18n/navigation";
-import { Search, ShieldCheck, LogIn } from "lucide-react";
+import { ShieldCheck, LogIn } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
+import { HeaderIcons } from "@/components/layout/HeaderIcons";
 
 interface Props {
   signedIn: boolean;
@@ -10,10 +11,9 @@ interface Props {
 }
 
 /**
- * Identity row + bold two-line headline. Mirrors the reference design:
- * avatar/logo on start, name+email column, round action on end, then a big
- * tagline that anchors the rails below. Replaces the old Hero/SignedInHero
- * split with a single header that handles both states.
+ * Identity row + bold two-line headline. Avatar/login on the start, the
+ * shared messages + notifications cluster always sits at the end so the
+ * action surface is consistent with the browse header and global TopBar.
  */
 export function HomeHeader({ signedIn, firstName, email, kycVerified }: Props) {
   return (
@@ -47,20 +47,18 @@ export function HomeHeader({ signedIn, firstName, email, kycVerified }: Props) {
                 {email}
               </div>
             </div>
-            <Link
-              href="/auctions"
-              className="h-10 w-10 shrink-0 rounded-full bg-[var(--surface)] border border-[var(--border)] flex items-center justify-center hover:border-[var(--gold-soft)] hover:bg-[var(--surface-2)] transition-colors"
-              aria-label="Recherche"
-            >
-              <Search className="h-[18px] w-[18px]" />
-            </Link>
+            <HeaderIcons />
           </>
         ) : (
           <>
-            <div className="h-11 w-11 shrink-0 rounded-full bg-gradient-to-b from-[var(--gold-bright)] to-[var(--gold)] flex items-center justify-center shadow-[var(--shadow-gold)]">
-              <span className="font-extrabold text-black text-[16px] leading-none">
-                M
-              </span>
+            <div className="h-11 w-11 shrink-0 rounded-full overflow-hidden ring-1 ring-[var(--gold-soft)]/60 shadow-[var(--shadow-gold)]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/logo.png"
+                alt="Mazed Auto"
+                className="h-full w-full object-cover"
+                draggable={false}
+              />
             </div>
             <div className="flex-1 min-w-0">
               <div className="font-bold text-[15px] truncate leading-tight">
