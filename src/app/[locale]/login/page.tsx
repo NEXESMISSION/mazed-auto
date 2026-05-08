@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, Suspense } from "react";
-import { Link, useRouter } from "@/i18n/navigation";
-import { useSearchParams } from "next/navigation";
+import { Link } from "@/i18n/navigation";
+import { useSearchParams, useParams } from "next/navigation";
 import { stripLocalePrefix } from "@/i18n/routing";
 import { Mail, Lock, ArrowRight } from "lucide-react";
 import { AuthShell } from "@/components/layout/AuthShell";
@@ -12,8 +12,8 @@ import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/lib/auth";
 
 function LoginForm() {
-  const router = useRouter();
   const params = useSearchParams();
+  const routeParams = useParams<{ locale: string }>();
   const { toast } = useToast();
   const { signIn, signInWithGoogle } = useAuth();
   const [email, setEmail] = useState("");
@@ -28,8 +28,8 @@ function LoginForm() {
     }
     setLoading(true);
     const { error } = await signIn(email, password);
-    setLoading(false);
     if (error) {
+      setLoading(false);
       const msg =
         error.message === "Invalid login credentials"
           ? "E-mail ou mot de passe incorrect"
@@ -39,14 +39,15 @@ function LoginForm() {
       toast(msg, "error");
       return;
     }
-    toast("Bon retour", "success");
-    // Strip any leading /fr or /ar so the locale-aware router doesn't
-    // double-prefix old redirect URLs (e.g. /fr/profile → /fr/fr/profile).
-    // Defends against bookmarks + browser history that pre-date the
-    // proxy fix that now writes locale-stripped paths.
-    const redirect = stripLocalePrefix(params.get("redirect") || "/");
-    router.push(redirect);
-    router.refresh();
+    // Hard nav so the auth cookie is guaranteed picked up by middleware on
+    // the destination request — router.push + refresh used to land on the
+    // protected page before the cookie propagated, flashing a momentary
+    // unauthed error toast even on successful login.
+    const stripped = stripLocalePrefix(params.get("redirect") || "/");
+    const locale = routeParams?.locale ?? "fr";
+    const target =
+      stripped === "/" ? `/${locale}` : `/${locale}${stripped}`;
+    window.location.assign(target);
   }
 
   async function handleGoogle() {

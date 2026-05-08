@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, Suspense } from "react";
-import { Link, useRouter } from "@/i18n/navigation";
-import { useSearchParams } from "next/navigation";
+import { Link } from "@/i18n/navigation";
+import { useSearchParams, useParams } from "next/navigation";
 import { Mail, Lock, User, Phone, ArrowRight } from "lucide-react";
 import { AuthShell } from "@/components/layout/AuthShell";
 import { Input } from "@/components/ui/Input";
@@ -13,8 +13,8 @@ import { useAuth } from "@/lib/auth";
 import { scrollToFirstInvalid } from "@/lib/validation";
 
 function RegisterForm() {
-  const router = useRouter();
   const params = useSearchParams();
+  const routeParams = useParams<{ locale: string }>();
   const { toast } = useToast();
   const { signUp, signInWithGoogle } = useAuth();
   const [data, setData] = useState({
@@ -58,16 +58,19 @@ function RegisterForm() {
       phone,
       role,
     });
-    setLoading(false);
     if (error) {
+      setLoading(false);
       const msg = error.message.includes("already")
         ? "Cet e-mail est déjà utilisé"
         : error.message;
       toast(msg, "error");
       return;
     }
-    toast("Compte créé — Vérifiez votre boîte e-mail", "success");
-    router.push("/verify-email");
+    // Hard nav so the new auth cookie is on the next request, avoiding the
+    // unauthed flash that router.push used to trigger on the verify-email
+    // page (which itself reads user state from the server).
+    const locale = routeParams?.locale ?? "fr";
+    window.location.assign(`/${locale}/verify-email`);
   }
 
   async function handleGoogle() {
