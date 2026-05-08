@@ -41,8 +41,7 @@ const ZERO = {
  *                                          unmissable but not error-coded
  *  - very urgent (<5m): bright amber + soft glow + pulse  — drama without
  *                                          using a destructive red
- *  - ended:          rose-400 in a soft pill — clearly final, but readable
- *                                          where plain "danger red" was not
+ *  - ended:          red-400 — final, unmistakable, no pink connotation
  */
 export function Countdown({
   endTime,
@@ -67,7 +66,7 @@ export function Countdown({
       <span
         className={cn(
           "inline-flex items-center gap-1 font-bold",
-          "text-rose-300",
+          "text-red-400",
           styles.text,
           className,
         )}
