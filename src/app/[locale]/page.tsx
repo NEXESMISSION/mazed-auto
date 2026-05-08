@@ -1,5 +1,6 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { HomeHeader } from "@/components/home/HomeHeader";
+import { PromoBanner } from "@/components/home/PromoBanner";
 import { NewestRibbon } from "@/components/home/NewestRibbon";
 import { ContinueBiddingRail } from "@/components/home/ContinueBiddingRail";
 import { RecommendedRail } from "@/components/home/RecommendedRail";
@@ -86,6 +87,7 @@ export default async function HomePage() {
         email={user?.email ?? ""}
         kycVerified={meta.kycStatus === "verified"}
       />
+      <PromoBanner pool={pool} />
       <NewestRibbon items={newest} />
       {user && <ContinueBiddingRail userId={user.id} />}
       <RecommendedRail items={recommended} />
