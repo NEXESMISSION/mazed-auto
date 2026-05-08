@@ -28,17 +28,8 @@ const conditionLabels: Record<string, string> = {
   damaged: "Endommagé",
 };
 
-// Dev-only: stock photos used to backfill missing slots if the user is testing.
-// Stripped from prod via `IS_DEV` dead-code elimination.
-const DEV_PLACEHOLDERS = [
-  "https://images.unsplash.com/photo-1493238792000-8113da705763?w=900&q=80",
-  "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=900&q=80",
-  "https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=900&q=80",
-  "https://images.unsplash.com/photo-1542362567-b07e54358753?w=900&q=80",
-  "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=900&q=80",
-  "https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=900&q=80",
-];
-const IS_DEV = process.env.NODE_ENV !== "production";
+// (Dev placeholder photos removed — every auction must use real photos
+// captured live in step-2 / step-3.)
 
 export default function ReviewPage() {
   const router = useRouter();
@@ -98,20 +89,25 @@ export default function ReviewPage() {
     }
 
     // 2) Insert the auction row
-    const startingPrice = draft.startingPrice ?? (IS_DEV ? 30000 : 0);
+    const startingPrice = draft.startingPrice ?? 0;
 
-    // Dev: backfill any holes so an incomplete draft can still publish for
-    // end-to-end testing. Prod always uses what's in the draft (validation
-    // above blocks publishing if it's incomplete).
     const finalImages = (draft.imageUrls ?? []).filter(
       (u) => u && u.length > 0,
     );
-    if (IS_DEV && finalImages.length < 12) {
-      while (finalImages.length < 12) {
-        finalImages.push(
-          DEV_PLACEHOLDERS[finalImages.length % DEV_PLACEHOLDERS.length],
-        );
-      }
+    if (finalImages.length < 12) {
+      setPublishing(false);
+      toast(
+        "Vous devez fournir 12 photos avant de publier l'enchère",
+        "warning",
+      );
+      router.push("/seller/new/step-2");
+      return;
+    }
+    if (!draft.videoUrl) {
+      setPublishing(false);
+      toast("Vous devez filmer la voiture avant de publier", "warning");
+      router.push("/seller/new/step-3");
+      return;
     }
 
     const durationMs = (draft.durationDays ?? 7) * 24 * 3600 * 1000;
@@ -138,7 +134,7 @@ export default function ReviewPage() {
         city: draft.city,
         region: draft.region,
         image_urls: finalImages,
-        video_url: draft.videoUrl ?? (IS_DEV ? "/loading.jpg" : null),
+        video_url: draft.videoUrl,
         starting_price: startingPrice,
         reserve_price: draft.reservePrice ?? null,
         buy_now_price: draft.buyNowPrice ?? null,
@@ -200,26 +196,10 @@ export default function ReviewPage() {
         </div>
 
         {missing.length > 0 && (
-          <div
-            className={`rounded-[var(--radius)] p-3 flex gap-2 items-start ${
-              IS_DEV
-                ? "bg-amber-500/10 border border-amber-500/40"
-                : "bg-red-500/10 border border-red-500/30"
-            }`}
-          >
-            <AlertTriangle
-              className={`h-4 w-4 shrink-0 mt-0.5 ${
-                IS_DEV ? "text-amber-400" : "text-red-400"
-              }`}
-            />
-            <div
-              className={`text-xs leading-relaxed ${
-                IS_DEV ? "text-amber-200" : "text-red-200"
-              }`}
-            >
-              <div className="font-bold">
-                {IS_DEV ? "Étapes manquantes (seront remplies automatiquement en mode test) :" : "Étapes manquantes :"}
-              </div>
+          <div className="rounded-[var(--radius)] p-3 flex gap-2 items-start bg-red-500/10 border border-red-500/30">
+            <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-red-400" />
+            <div className="text-xs leading-relaxed text-red-200">
+              <div className="font-bold">Étapes manquantes :</div>
               <div className="mt-0.5">{missing.join(" — ")}</div>
             </div>
           </div>
@@ -345,7 +325,7 @@ export default function ReviewPage() {
           disabled={
             !agreed ||
             publishing ||
-            (!IS_DEV && missing.length > 0) ||
+            missing.length > 0 ||
             !user ||
             user.kycStatus !== "verified"
           }

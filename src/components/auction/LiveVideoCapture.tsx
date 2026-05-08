@@ -105,6 +105,7 @@ export function LiveVideoCapture({
   }, [facing, audio]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     startStream();
     return () => {
       stopStream();

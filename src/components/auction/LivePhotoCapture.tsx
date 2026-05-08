@@ -96,6 +96,7 @@ export function LivePhotoCapture({
   }, [facingMode]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     startStream();
     return () => stopStream();
     // eslint-disable-next-line react-hooks/exhaustive-deps
