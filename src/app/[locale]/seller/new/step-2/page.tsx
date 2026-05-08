@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import {
   Camera,
   Check,
   ArrowRight,
-  Zap,
   Car,
   Undo2,
   ArrowRightFromLine,
@@ -18,29 +17,19 @@ import {
   Package,
   Disc3,
   Hash,
-  Loader2,
+  RotateCcw,
 } from "lucide-react";
 import { CreateAuctionShell } from "@/components/layout/CreateAuctionShell";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { useDraft } from "@/lib/draft";
-import { useAuth } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/client";
+import { LivePhotoCapture } from "@/components/auction/LivePhotoCapture";
 import { cn } from "@/lib/utils";
 
-// Dev-only: a small set of realistic Unsplash car photos used to fill empty
-// slots during testing. Tree-shaken out of production builds.
-const DEV_PLACEHOLDERS = [
-  "https://images.unsplash.com/photo-1493238792000-8113da705763?w=900&q=80",
-  "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=900&q=80",
-  "https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=900&q=80",
-  "https://images.unsplash.com/photo-1542362567-b07e54358753?w=900&q=80",
-  "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=900&q=80",
-  "https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=900&q=80",
-];
-const IS_DEV = process.env.NODE_ENV !== "production";
-
-const photoSlots: { label: string; Icon: React.ComponentType<{ className?: string }> }[] = [
+const photoSlots: {
+  label: string;
+  Icon: React.ComponentType<{ className?: string }>;
+}[] = [
   { label: "Face avant", Icon: Car },
   { label: "Face arrière", Icon: Undo2 },
   { label: "Côté droit", Icon: ArrowRightFromLine },
@@ -59,90 +48,34 @@ export default function Step2Page() {
   const router = useRouter();
   const { toast } = useToast();
   const { draft, update } = useDraft();
-  const { user } = useAuth();
-  const inputRef = useRef<HTMLInputElement>(null);
   const [photos, setPhotos] = useState<(string | null)[]>(Array(12).fill(null));
   const [activeSlot, setActiveSlot] = useState<number | null>(null);
-  const [uploadingSlot, setUploadingSlot] = useState<number | null>(null);
 
   useEffect(() => {
     const saved = draft.imageUrls;
-    if (saved && saved.length === 12) setPhotos(saved as (string | null)[]);
+    if (saved && saved.length === 12) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPhotos(saved.map((u) => (u ? u : null)));
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draft.imageUrls?.length]);
 
   const filled = photos.filter(Boolean).length;
   const allDone = filled === 12;
 
-  function openCamera(i: number) {
-    if (uploadingSlot !== null) return;
-    setActiveSlot(i);
-    if (inputRef.current) {
-      inputRef.current.value = "";
-      inputRef.current.click();
-    }
-  }
-
-  async function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0];
-    const slot = activeSlot;
-    if (!f || slot === null) return;
-    if (!user) {
-      toast("Connectez-vous d'abord", "warning");
-      return;
-    }
-
-    setUploadingSlot(slot);
-    const supabase = createClient();
-    const ext = (f.name.split(".").pop() || "jpg").toLowerCase();
-    const path = `${user.id}/auctions/${Date.now()}-${slot}-${Math.random()
-      .toString(36)
-      .slice(2, 8)}.${ext}`;
-
-    const { error } = await supabase.storage
-      .from("auction-media")
-      .upload(path, f, {
-        contentType: f.type || "image/jpeg",
-        upsert: false,
-      });
-
-    if (error) {
-      setUploadingSlot(null);
-      setActiveSlot(null);
-      toast("Échec du téléversement : " + error.message, "error");
-      return;
-    }
-
-    const { data } = supabase.storage.from("auction-media").getPublicUrl(path);
-    const next = [...photos];
-    next[slot] = data.publicUrl;
+  function persist(next: (string | null)[]) {
     setPhotos(next);
     update({ imageUrls: next.map((p) => p ?? "") });
-    setUploadingSlot(null);
-    setActiveSlot(null);
-    toast(`Photo ${slot + 1}/12 ✓`, "success");
-  }
-
-  // Dev-only: fill any empty slots with stock photos so the wizard can be
-  // walked end-to-end without taking real shots. Stripped from prod by the
-  // IS_DEV gate.
-  function fillForTesting() {
-    if (!IS_DEV) return;
-    const next = photos.map(
-      (p, i) => p ?? DEV_PLACEHOLDERS[i % DEV_PLACEHOLDERS.length],
-    );
-    setPhotos(next);
-    update({ imageUrls: next.map((p) => p ?? "") });
-    toast("Photos remplies (mode test)", "info");
   }
 
   return (
     <CreateAuctionShell current={1}>
       <div className="space-y-5">
         <div>
-          <h1 className="text-2xl font-extrabold">12 Photo obligatoire</h1>
+          <h1 className="text-2xl font-extrabold">12 photos obligatoires</h1>
           <p className="text-sm text-[var(--foreground-muted)] mt-1">
-Prise de vue en direct uniquement — garantie d'authenticité et de qualité
+            Prise de vue en direct uniquement — la caméra s&apos;ouvre
+            directement, aucun fichier à téléverser.
           </p>
         </div>
 
@@ -150,7 +83,11 @@ Prise de vue en direct uniquement — garantie d'authenticité et de qualité
         <div className="rounded-[var(--radius)] bg-[var(--surface)] border border-[var(--border)] p-3">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-semibold">
-              <span className={allDone ? "text-[var(--success)]" : "text-[var(--gold)]"}>
+              <span
+                className={
+                  allDone ? "text-[var(--success)]" : "text-[var(--gold)]"
+                }
+              >
                 {filled}
               </span>{" "}
               / 12
@@ -170,32 +107,21 @@ Prise de vue en direct uniquement — garantie d'authenticité et de qualité
           </div>
         </div>
 
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          onChange={onFileChange}
-          className="hidden"
-        />
-
         <div className="grid grid-cols-3 gap-2.5">
           {photoSlots.map((slot, i) => {
             const photo = photos[i];
-            const isUploading = uploadingSlot === i;
+            const isActive = activeSlot === i;
             return (
               <button
                 key={i}
-                onClick={() => openCamera(i)}
-                disabled={uploadingSlot !== null}
+                onClick={() => setActiveSlot(isActive ? null : i)}
                 className={cn(
                   "relative aspect-square rounded-[var(--radius)] border-2 border-dashed overflow-hidden transition-colors",
-                  isUploading
-                    ? "border-[var(--gold)]"
+                  isActive
+                    ? "border-[var(--gold)] bg-[var(--gold-faint)]"
                     : photo
                       ? "border-[var(--success)]"
                       : "border-[var(--border)] hover:border-[var(--gold)] bg-[var(--surface)]",
-                  uploadingSlot !== null && !isUploading && "opacity-50 cursor-not-allowed",
                 )}
               >
                 {photo ? (
@@ -224,24 +150,50 @@ Prise de vue en direct uniquement — garantie d'authenticité et de qualité
                     <Camera className="h-3.5 w-3.5 text-[var(--foreground-muted)] mt-1" />
                   </div>
                 )}
-                {isUploading && (
-                  <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
-                    <Loader2 className="h-6 w-6 text-[var(--gold)] animate-spin" />
-                  </div>
-                )}
               </button>
             );
           })}
         </div>
 
-        {IS_DEV && !allDone && (
-          <button
-            onClick={fillForTesting}
-            className="w-full rounded-[var(--radius)] border border-dashed border-amber-500/40 bg-amber-500/5 hover:bg-amber-500/10 text-amber-300 py-2.5 text-xs font-bold flex items-center justify-center gap-2 transition-colors"
-          >
-            <Zap className="h-3.5 w-3.5" />
-Mode test : remplir les photos restantes ({12 - filled})
-          </button>
+        {activeSlot !== null && (
+          <div className="rounded-[var(--radius-md)] bg-[var(--surface)] border border-[var(--border)] p-3 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-bold text-[var(--gold)]">
+                Photo {activeSlot + 1}/12 — {photoSlots[activeSlot].label}
+              </div>
+              {photos[activeSlot] && (
+                <button
+                  onClick={() => {
+                    const next = [...photos];
+                    next[activeSlot] = null;
+                    persist(next);
+                  }}
+                  className="text-[10px] text-[var(--foreground-muted)] flex items-center gap-1 hover:text-foreground"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  Refaire
+                </button>
+              )}
+            </div>
+            <LivePhotoCapture
+              key={`slot-${activeSlot}-${photos[activeSlot] ? "done" : "fresh"}`}
+              frame="vehicle"
+              hint="Cadrez tout le sujet, sans flou"
+              upload
+              folder="auctions"
+              facing="environment"
+              onCapture={(url) => {
+                const next = [...photos];
+                next[activeSlot] = url;
+                persist(next);
+                toast(`Photo ${activeSlot + 1}/12 ✓`, "success");
+                // Auto-advance to the next empty slot — keeps the flow moving
+                // for the seller without forcing them to tap each tile.
+                const nextEmpty = next.findIndex((p) => !p);
+                setActiveSlot(nextEmpty === -1 ? null : nextEmpty);
+              }}
+            />
+          </div>
         )}
 
         <div className="pt-4 flex flex-col-reverse sm:flex-row gap-2">
@@ -256,27 +208,14 @@ Mode test : remplir les photos restantes ({12 - filled})
           <Button
             size="lg"
             fullWidth
-            // In dev we bypass the 12-photo gate entirely — click goes through
-            // and auto-fills any empty slot with a stock photo first so the
-            // saved draft has 12 valid URLs.
-            disabled={!IS_DEV && !allDone}
-            onClick={() => {
-              if (IS_DEV && !allDone) {
-                const next = photos.map(
-                  (p, i) => p ?? DEV_PLACEHOLDERS[i % DEV_PLACEHOLDERS.length],
-                );
-                setPhotos(next);
-                update({ imageUrls: next.map((p) => p ?? "") });
-              }
-              router.push("/seller/new/step-3");
-            }}
+            disabled={!allDone}
+            onClick={() => router.push("/seller/new/step-3")}
           >
             Continuer
             <ArrowRight className="h-5 w-5" />
           </Button>
         </div>
       </div>
-
     </CreateAuctionShell>
   );
 }
