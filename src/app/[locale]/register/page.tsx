@@ -7,8 +7,10 @@ import { Mail, Lock, User, Phone, ArrowRight } from "lucide-react";
 import { AuthShell } from "@/components/layout/AuthShell";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { Checkbox } from "@/components/ui/Checkbox";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/lib/auth";
+import { scrollToFirstInvalid } from "@/lib/validation";
 
 function RegisterForm() {
   const router = useRouter();
@@ -28,15 +30,21 @@ function RegisterForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (Object.values(data).some((v) => !v)) {
-      toast("Remplissez tous les champs", "warning");
+    const missing = (Object.keys(data) as (keyof typeof data)[]).filter(
+      (k) => !data[k],
+    );
+    if (missing.length) {
+      scrollToFirstInvalid(missing as string[]);
+      toast("Veuillez compléter les champs en rouge", "warning");
       return;
     }
     if (data.password.length < 8) {
+      scrollToFirstInvalid(["password"]);
       toast("Le mot de passe doit comporter au moins 8 caractères", "warning");
       return;
     }
     if (!agreed) {
+      scrollToFirstInvalid(["agreed"]);
       toast("Vous devez accepter les conditions", "warning");
       return;
     }
@@ -74,7 +82,7 @@ function RegisterForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
+        <div className="space-y-1.5" data-field="firstName">
           <label className="text-xs font-semibold text-[var(--foreground-muted)]">
             Prénom
           </label>
@@ -85,7 +93,7 @@ function RegisterForm() {
             iconLeft={<User className="h-4 w-4" />}
           />
         </div>
-        <div className="space-y-1.5">
+        <div className="space-y-1.5" data-field="lastName">
           <label className="text-xs font-semibold text-[var(--foreground-muted)]">
             Nom
           </label>
@@ -97,7 +105,7 @@ function RegisterForm() {
         </div>
       </div>
 
-      <div className="space-y-1.5">
+      <div className="space-y-1.5" data-field="email">
         <label className="text-xs font-semibold text-[var(--foreground-muted)]">
           E-mail
         </label>
@@ -110,7 +118,7 @@ function RegisterForm() {
         />
       </div>
 
-      <div className="space-y-1.5">
+      <div className="space-y-1.5" data-field="phone">
         <label className="text-xs font-semibold text-[var(--foreground-muted)]">
 Numéro de téléphone
         </label>
@@ -128,7 +136,7 @@ Numéro de téléphone
         </div>
       </div>
 
-      <div className="space-y-1.5">
+      <div className="space-y-1.5" data-field="password">
         <label className="text-xs font-semibold text-[var(--foreground-muted)]">
           Mot de passe
         </label>
@@ -141,17 +149,19 @@ Numéro de téléphone
         />
       </div>
 
-      <label className="flex items-start gap-2 cursor-pointer">
-        <input
-          type="checkbox"
+      <label
+        className="flex items-start gap-2.5 cursor-pointer"
+        data-field="agreed"
+      >
+        <Checkbox
+          className="mt-0.5"
           checked={agreed}
           onChange={(e) => setAgreed(e.target.checked)}
-          className="mt-1 h-4 w-4 rounded border-[var(--border-strong)] bg-[var(--surface)] accent-[var(--gold)]"
         />
         <span className="text-xs text-[var(--foreground-muted)] leading-relaxed">
-          J'accepte les{" "}
+          J&apos;accepte les{" "}
           <Link href="/terms" className="text-[var(--gold)] hover:underline">
-            Conditions d'utilisation
+            Conditions d&apos;utilisation
           </Link>{" "}
           et la{" "}
           <Link href="/privacy" className="text-[var(--gold)] hover:underline">

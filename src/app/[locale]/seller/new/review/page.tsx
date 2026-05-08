@@ -5,6 +5,7 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { Check, Edit2, Send, AlertTriangle } from "lucide-react";
 import { CreateAuctionShell } from "@/components/layout/CreateAuctionShell";
 import { Button } from "@/components/ui/Button";
+import { Checkbox } from "@/components/ui/Checkbox";
 import { Modal, ModalFooter } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/lib/auth";
@@ -322,15 +323,14 @@ export default function ReviewPage() {
           </div>
         </div>
 
-        <label className="flex items-start gap-2 cursor-pointer">
-          <input
-            type="checkbox"
+        <label className="flex items-start gap-2.5 cursor-pointer">
+          <Checkbox
+            className="mt-0.5"
             checked={agreed}
             onChange={(e) => setAgreed(e.target.checked)}
-            className="mt-1 h-4 w-4 accent-[var(--gold)]"
           />
           <span className="text-xs text-[var(--foreground-muted)] leading-relaxed">
-            J'accepte les{" "}
+            J&apos;accepte les{" "}
             <Link href="/terms" className="text-[var(--gold)] hover:underline">
               conditions de publication
             </Link>{" "}

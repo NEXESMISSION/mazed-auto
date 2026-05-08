@@ -116,9 +116,18 @@ export function BidBox({ auction }: Props) {
                 <Minus className="h-4 w-4" />
               </button>
               <input
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(Number(e.target.value) || minBid)}
+                type="text"
+                inputMode="numeric"
+                value={amount === 0 ? "" : amount}
+                onChange={(e) => {
+                  const v = e.target.value
+                    .replace(/\D/g, "")
+                    .replace(/^0+(?=\d)/, "");
+                  setAmount(v === "" ? 0 : Number(v));
+                }}
+                onBlur={() => {
+                  if (amount < minBid) setAmount(minBid);
+                }}
                 className="flex-1 bg-[var(--surface)] text-center text-lg font-bold tabular-nums focus:outline-none"
               />
               <button
@@ -257,11 +266,15 @@ Confirmer et payer
           </label>
           <div className="flex items-stretch h-12 rounded-[var(--radius)] overflow-hidden border border-[var(--border)]">
             <input
-              type="number"
-              value={autoMax}
-              onChange={(e) => setAutoMax(Number(e.target.value))}
-              min={minBid}
-              step={auction.bidIncrement}
+              type="text"
+              inputMode="numeric"
+              value={autoMax === 0 ? "" : autoMax}
+              onChange={(e) => {
+                const v = e.target.value
+                  .replace(/\D/g, "")
+                  .replace(/^0+(?=\d)/, "");
+                setAutoMax(v === "" ? 0 : Number(v));
+              }}
               className="flex-1 bg-[var(--surface)] text-center text-lg font-bold tabular-nums px-4 focus:outline-none"
             />
           </div>

@@ -5,10 +5,12 @@ import { useRouter } from "@/i18n/navigation";
 import { ArrowRight, Info } from "lucide-react";
 import { CreateAuctionShell } from "@/components/layout/CreateAuctionShell";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { NumberField } from "@/components/ui/NumberField";
+import { Checkbox } from "@/components/ui/Checkbox";
 import { formatPrice } from "@/lib/format";
 import { useDraft } from "@/lib/draft";
 import { useToast } from "@/components/ui/Toast";
+import { scrollToFirstInvalid } from "@/lib/validation";
 
 export default function Step5Page() {
   const { toast } = useToast();
@@ -35,17 +37,20 @@ export default function Step5Page() {
   );
 
   function next() {
-    if (startingPrice <= 0) {
+    if (!startingPrice || startingPrice <= 0) {
+      scrollToFirstInvalid(["startingPrice"]);
       toast("Le prix de départ doit être supérieur à 0", "warning");
       return;
     }
     if (hasReserve && reservePrice <= startingPrice) {
+      scrollToFirstInvalid(["reservePrice"]);
       toast("Le prix de réserve doit être supérieur au prix de départ", "warning");
       return;
     }
     if (hasBuyNow) {
       const floor = hasReserve ? reservePrice : startingPrice;
       if (buyNowPrice <= floor) {
+        scrollToFirstInvalid(["buyNowPrice"]);
         toast(
           hasReserve
             ? 'Le prix "Achat immédiat" doit être supérieur au prix de réserve'
@@ -74,30 +79,28 @@ export default function Step5Page() {
           </p>
         </div>
 
-        <Field label="Prix de départ" required>
-          <Input
-            type="number"
+        <Field label="Prix de départ" required name="startingPrice">
+          <NumberField
+            placeholder="30000"
             value={startingPrice}
-            onChange={(e) => setStartingPrice(Number(e.target.value))}
+            onChange={(n) => setStartingPrice(n ?? 0)}
           />
         </Field>
 
-        <div>
-          <label className="flex items-center gap-2 cursor-pointer mb-2">
-            <input
-              type="checkbox"
+        <div data-field="reservePrice">
+          <label className="flex items-center gap-2.5 cursor-pointer mb-2">
+            <Checkbox
               checked={hasReserve}
               onChange={(e) => setHasReserve(e.target.checked)}
-              className="h-4 w-4 accent-[var(--gold)]"
             />
             <span className="font-semibold text-sm">Prix de réserve</span>
           </label>
           {hasReserve && (
             <>
-              <Input
-                type="number"
+              <NumberField
+                placeholder="35000"
                 value={reservePrice}
-                onChange={(e) => setReservePrice(Number(e.target.value))}
+                onChange={(n) => setReservePrice(n ?? 0)}
               />
               <p className="text-xs text-[var(--foreground-muted)] mt-1.5">
                 La voiture n'est vendue que si ce prix est atteint
@@ -106,25 +109,23 @@ export default function Step5Page() {
           )}
         </div>
 
-        <div>
-          <label className="flex items-center gap-2 cursor-pointer mb-2">
-            <input
-              type="checkbox"
+        <div data-field="buyNowPrice">
+          <label className="flex items-center gap-2.5 cursor-pointer mb-2">
+            <Checkbox
               checked={hasBuyNow}
               onChange={(e) => setHasBuyNow(e.target.checked)}
-              className="h-4 w-4 accent-[var(--gold)]"
             />
-            <span className="font-semibold text-sm">Prix d'achat immédiat</span>
+            <span className="font-semibold text-sm">Prix d&apos;achat immédiat</span>
           </label>
           {hasBuyNow && (
             <>
-              <Input
-                type="number"
+              <NumberField
+                placeholder="45000"
                 value={buyNowPrice}
-                onChange={(e) => setBuyNowPrice(Number(e.target.value))}
+                onChange={(n) => setBuyNowPrice(n ?? 0)}
               />
               <p className="text-xs text-[var(--foreground-muted)] mt-1.5">
-                L'acheteur peut clôturer l'enchère immédiatement à ce prix
+                L&apos;acheteur peut clôturer l&apos;enchère immédiatement à ce prix
               </p>
             </>
           )}
@@ -205,14 +206,16 @@ Vérification finale
 function Field({
   label,
   required,
+  name,
   children,
 }: {
   label: string;
   required?: boolean;
+  name?: string;
   children: React.ReactNode;
 }) {
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1.5" data-field={name}>
       <label className="text-xs font-semibold text-[var(--foreground-muted)]">
         {label} {required && <span className="text-[var(--danger)]">*</span>}
       </label>

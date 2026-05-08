@@ -460,12 +460,15 @@ export function BidComposer({
                 <Minus className="h-4 w-4" />
               </button>
               <input
-                type="number"
+                type="text"
                 inputMode="numeric"
-                value={amount}
-                step={inc}
-                min={minBid}
-                onChange={(e) => setAmount(Number(e.target.value) || 0)}
+                value={amount === 0 ? "" : amount}
+                onChange={(e) => {
+                  const v = e.target.value
+                    .replace(/\D/g, "")
+                    .replace(/^0+(?=\d)/, "");
+                  setAmount(v === "" ? 0 : Number(v));
+                }}
                 onBlur={() => {
                   if (amount < minBid) setAmount(minBid);
                 }}
@@ -631,11 +634,15 @@ export function BidComposer({
             Maximum
           </label>
           <input
-            type="number"
-            value={autoMax}
-            onChange={(e) => setAutoMax(Number(e.target.value))}
-            min={minBid}
-            step={inc}
+            type="text"
+            inputMode="numeric"
+            value={autoMax === 0 ? "" : autoMax}
+            onChange={(e) => {
+              const v = e.target.value
+                .replace(/\D/g, "")
+                .replace(/^0+(?=\d)/, "");
+              setAutoMax(v === "" ? 0 : Number(v));
+            }}
             className="w-full h-11 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] text-center text-base font-bold tabular-nums focus:outline-none focus:border-[var(--gold)]"
           />
           <p className="text-xs text-[var(--foreground-muted)] leading-relaxed">

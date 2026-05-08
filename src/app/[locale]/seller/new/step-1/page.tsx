@@ -5,11 +5,13 @@ import { useRouter } from "@/i18n/navigation";
 import { ArrowRight, Zap, Car, Gauge, Mountain, Sparkles } from "lucide-react";
 import { CreateAuctionShell } from "@/components/layout/CreateAuctionShell";
 import { Input } from "@/components/ui/Input";
+import { NumberField } from "@/components/ui/NumberField";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { useDraft, clearDraft, type AuctionDraft } from "@/lib/draft";
 import { useAuth } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/client";
+import { scrollToFirstInvalid } from "@/lib/validation";
 
 const DEV_PHOTOS = [
   "https://images.unsplash.com/photo-1493238792000-8113da705763?w=900&q=80",
@@ -334,7 +336,8 @@ export default function Step1Page() {
     ];
     const missing = required.filter((k) => !draft[k]);
     if (missing.length) {
-      toast("Remplissez tous les champs essentiels", "warning");
+      scrollToFirstInvalid(missing as string[]);
+      toast("Veuillez compléter les champs en rouge", "warning");
       return;
     }
     router.push("/seller/new/step-2");
@@ -388,7 +391,7 @@ export default function Step1Page() {
         )}
 
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Marque">
+          <Field label="Marque" name="make">
             <select
               className="select-field"
               value={draft.make ?? ""}
@@ -402,34 +405,28 @@ export default function Step1Page() {
               ))}
             </select>
           </Field>
-          <Field label="Modèle">
+          <Field label="Modèle" name="model">
             <Input
               placeholder="Clio"
               value={draft.model ?? ""}
               onChange={(e) => update({ model: e.target.value })}
             />
           </Field>
-          <Field label="Année">
-            <Input
-              type="number"
+          <Field label="Année" name="year">
+            <NumberField
               placeholder="2022"
-              value={draft.year ?? ""}
-              onChange={(e) =>
-                update({ year: Number(e.target.value) || undefined })
-              }
+              value={draft.year}
+              onChange={(n) => update({ year: n })}
             />
           </Field>
-          <Field label="Kilométrage">
-            <Input
-              type="number"
+          <Field label="Kilométrage" name="mileage">
+            <NumberField
               placeholder="50000"
-              value={draft.mileage ?? ""}
-              onChange={(e) =>
-                update({ mileage: Number(e.target.value) || undefined })
-              }
+              value={draft.mileage}
+              onChange={(n) => update({ mileage: n })}
             />
           </Field>
-          <Field label="Carburant">
+          <Field label="Carburant" name="fuelType">
             <select
               className="select-field"
               value={draft.fuelType ?? ""}
@@ -448,7 +445,7 @@ export default function Step1Page() {
               ))}
             </select>
           </Field>
-          <Field label="Boîte de vitesses">
+          <Field label="Boîte de vitesses" name="transmission">
             <select
               className="select-field"
               value={draft.transmission ?? ""}
@@ -464,14 +461,14 @@ export default function Step1Page() {
               <option value="automatic">Automatique</option>
             </select>
           </Field>
-          <Field label="Couleur">
+          <Field label="Couleur" name="color">
             <Input
               placeholder="Blanc"
               value={draft.color ?? ""}
               onChange={(e) => update({ color: e.target.value })}
             />
           </Field>
-          <Field label="Catégorie">
+          <Field label="Catégorie" name="category">
             <select
               className="select-field"
               value={draft.category ?? ""}
@@ -492,7 +489,7 @@ export default function Step1Page() {
           </Field>
         </div>
 
-        <Field label="Statut">
+        <Field label="Statut" name="condition">
           <select
             className="select-field"
             value={draft.condition ?? ""}
@@ -528,8 +525,8 @@ export default function Step1Page() {
           />
         </Field>
 
-        <Field label="Site">
-          <div className="grid grid-cols-2 gap-2">
+        <Field label="Site" name="city">
+          <div className="grid grid-cols-2 gap-2" data-field="region">
             <Input
               placeholder="Ville"
               value={draft.city ?? ""}
@@ -618,13 +615,15 @@ Enregistrer et quitter
 
 function Field({
   label,
+  name,
   children,
 }: {
   label: string;
+  name?: string;
   children: React.ReactNode;
 }) {
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1.5" data-field={name}>
       <label className="text-xs font-semibold text-[var(--foreground-muted)]">
         {label}
       </label>
