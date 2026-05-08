@@ -11,7 +11,7 @@ import {
 import { AppShell } from "@/components/layout/AppShell";
 import { Countdown } from "@/components/auction/Countdown";
 import { SpecsGrid } from "@/components/auction/SpecsGrid";
-import { SellerCard } from "@/components/auction/SellerCard";
+import { AnonSellerCard } from "@/components/auction/AnonSellerCard";
 import { ReportButton } from "@/components/auction/ReportButton";
 import { FavoriteButton } from "@/components/auction/FavoriteButton";
 import { ShareButton } from "@/components/auction/ShareButton";
@@ -218,7 +218,7 @@ export default async function AuctionDetailPage({ params }: Props) {
         )}
 
         <Section title="Vendeur">
-          <SellerCard seller={seller} variant="compact" />
+          <AnonSellerCard seller={seller} />
         </Section>
       </div>
     </AppShell>

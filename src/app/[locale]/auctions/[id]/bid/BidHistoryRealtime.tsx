@@ -4,6 +4,7 @@ import { Bot, TrendingUp } from "lucide-react";
 import { useRealtimeBids } from "@/lib/realtime";
 import type { BidRow } from "@/lib/db";
 import { formatPrice } from "@/lib/format";
+import { anonBidder } from "@/lib/anon";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -38,7 +39,10 @@ export function BidHistoryRealtime({
       ) : (
         <div className="divide-y divide-[var(--border)]">
           {bids.map((b, i) => {
-            const label = b.bidder_label || "Enchérisseur";
+            // Always derive the label client-side from user_id — even if a
+            // stored bidder_label leaked a real name from old rows, we
+            // never render it.
+            const label = anonBidder(b.user_id, i);
             return (
               <div
                 key={b.id}
@@ -47,13 +51,13 @@ export function BidHistoryRealtime({
                 <div className="flex items-center gap-2 min-w-0">
                   <span
                     className={cn(
-                      "h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0",
+                      "h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 tabular-nums",
                       i === 0
                         ? "bg-[var(--gold)] text-black"
                         : "bg-[var(--surface)] text-[var(--foreground-muted)]",
                     )}
                   >
-                    {label[0]}
+                    {i + 1}
                   </span>
                   <div className="min-w-0">
                     <div className="text-[11px] font-semibold truncate flex items-center gap-1">

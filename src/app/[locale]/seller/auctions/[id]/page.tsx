@@ -19,6 +19,7 @@ import { AuctionResultBanner } from "@/components/auction/AuctionResultBanner";
 import { createClient } from "@/lib/supabase/server";
 import { getAuctionById, listRecentBids } from "@/lib/db";
 import { formatPrice } from "@/lib/format";
+import { anonBidder } from "@/lib/anon";
 import type { AuctionStatus } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -42,15 +43,6 @@ const statusBadge: Record<
   pending_review: { label: "En cours de modération", variant: "warning" },
   re_offered: { label: "Re-proposée (gagnant a renoncé)", variant: "warning" },
 };
-
-// Anonymise bidder ids — only the seller's own auctions reach this page so
-// we can safely compute a stable label per uuid without leaking PII.
-function bidderLabel(userId: string | null, idx: number): string {
-  if (!userId) return `Enchérisseur ${idx + 1}`;
-  // Take last 4 chars of UUID for a short stable handle
-  const tag = userId.replace(/-/g, "").slice(-4).toUpperCase();
-  return `Enchérisseur #${tag}`;
-}
 
 export default async function SellerAuctionDetailPage({ params }: Props) {
   const { id, locale } = await params;
@@ -242,7 +234,7 @@ Aucune offre pour le moment
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-semibold truncate">
-                      {b.bidder_label || bidderLabel(b.user_id, idx)}
+                      {anonBidder(b.user_id, idx)}
                       {b.is_auto_bid && (
                         <span className="ms-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--gold)]">
                           AUTO

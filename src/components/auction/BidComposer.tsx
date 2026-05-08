@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { useRealtimeAuction } from "@/lib/realtime";
 import { useAuth } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/client";
+import { anonBidder } from "@/lib/anon";
 import type { Auction } from "@/lib/types";
 
 interface Props {
@@ -208,7 +209,9 @@ export function BidComposer({
       await supabase.from("bids").insert({
         auction_id: auction.id,
         user_id: user.id,
-        bidder_label: `${user.firstName} ${user.lastName?.[0] ?? ""}.`.trim(),
+        // Anonymous handle — never store the user's real name on the bid
+        // row. Other bidders and the seller only ever see this opaque tag.
+        bidder_label: anonBidder(user.id),
         amount: auction.currentPrice + auction.bidIncrement,
         is_auto_bid: true,
       });
@@ -236,7 +239,7 @@ export function BidComposer({
     const { error } = await supabase.from("bids").insert({
       auction_id: auction.id,
       user_id: user.id,
-      bidder_label: `${user.firstName} ${user.lastName?.[0] ?? ""}.`.trim(),
+      bidder_label: anonBidder(user.id),
       amount,
       is_auto_bid: false,
     });
