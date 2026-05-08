@@ -304,6 +304,28 @@ a {
   animation: fade-in 180ms ease-out;
 }
 
+/* Form-validation flash — toggled by lib/validation.ts on the field's outer
+   container. The container can be any element (div, fieldset…) — we paint
+   the inputs/selects/textareas inside red and pulse a soft halo for 2.5s. */
+.field-invalid > label {
+  color: var(--danger) !important;
+}
+.field-invalid input:not([type="checkbox"]):not([type="radio"]),
+.field-invalid select,
+.field-invalid textarea,
+.field-invalid .select-field {
+  border-color: var(--danger) !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18);
+}
+.field-invalid {
+  animation: field-invalid-flash 2.5s ease-out;
+  border-radius: var(--radius);
+}
+@keyframes field-invalid-flash {
+  0%   { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0.35); }
+  100% { box-shadow: 0 0 0 0   rgba(239, 68, 68, 0); }
+}
+
 /* Endless horizontal marquee — items must be duplicated once in markup;
    the track translates -50% so the seam is invisible. */
 @keyframes marquee-scroll {
