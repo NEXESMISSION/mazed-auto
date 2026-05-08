@@ -1,16 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
-import { Camera, Check, AlertTriangle, ArrowRight } from "lucide-react";
+import { Camera, Check, AlertTriangle, ArrowRight, Loader2 } from "lucide-react";
 import { CreateAuctionShell } from "@/components/layout/CreateAuctionShell";
 import { Button } from "@/components/ui/Button";
-import { Modal } from "@/components/ui/Modal";
-import { CameraCapture } from "@/components/auction/CameraCapture";
 import { Input } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
 import { useDraft } from "@/lib/draft";
 import { useAuth } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/client";
 
 const IS_DEV = process.env.NODE_ENV !== "production";
 
@@ -70,9 +69,11 @@ export default function Step4Page() {
   const { toast } = useToast();
   const { draft, update } = useDraft();
   const { user } = useAuth();
+  const inputRef = useRef<HTMLInputElement>(null);
   const [front, setFront] = useState<string | null>(null);
   const [back, setBack] = useState<string | null>(null);
   const [activeShoot, setActiveShoot] = useState<"front" | "back" | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [ocr, setOcr] = useState<OCR | null>(
     draft.ownerName
@@ -91,18 +92,54 @@ export default function Step4Page() {
   const kycName = [user?.firstName, user?.lastName].filter(Boolean).join(" ");
   const matched = ocr ? namesMatch(ocr.ownerName, kycName) : false;
 
-  function onCaptured(url: string) {
-    if (activeShoot === "front") setFront(url);
-    if (activeShoot === "back") setBack(url);
+  function pickShoot(side: "front" | "back") {
+    if (uploading || analyzing) return;
+    setActiveShoot(side);
+    if (inputRef.current) {
+      inputRef.current.value = "";
+      inputRef.current.click();
+    }
+  }
+
+  async function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    const side = activeShoot;
+    if (!f || !side) return;
+    if (!user) {
+      toast("Connectez-vous d'abord", "warning");
+      return;
+    }
+
+    setUploading(true);
+    const supabase = createClient();
+    const ext = (f.name.split(".").pop() || "jpg").toLowerCase();
+    const path = `${user.id}/carte-grise/${Date.now()}-${side}-${Math.random()
+      .toString(36)
+      .slice(2, 8)}.${ext}`;
+
+    const { error } = await supabase.storage
+      .from("auction-media")
+      .upload(path, f, {
+        contentType: f.type || "image/jpeg",
+        upsert: false,
+      });
+
+    if (error) {
+      setUploading(false);
+      setActiveShoot(null);
+      toast("Échec du téléversement : " + error.message, "error");
+      return;
+    }
+
+    const { data } = supabase.storage.from("auction-media").getPublicUrl(path);
+    const url = data.publicUrl;
+    if (side === "front") setFront(url);
+    else setBack(url);
+    setUploading(false);
     setActiveShoot(null);
 
-    // After both are captured, simulate OCR
-    if (
-      (activeShoot === "front" && back) ||
-      (activeShoot === "back" && front)
-    ) {
-      runOCR();
-    }
+    const otherDone = side === "front" ? back : front;
+    if (otherDone) runOCR();
   }
 
   async function runOCR() {
@@ -163,17 +200,30 @@ export default function Step4Page() {
           </p>
         </div>
 
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={onFileChange}
+          className="hidden"
+        />
+
         {/* Two scans side by side */}
         <div className="grid grid-cols-2 gap-3">
           <ScanSlot
             label="Recto"
             url={front}
-            onClick={() => setActiveShoot("front")}
+            uploading={uploading && activeShoot === "front"}
+            disabled={uploading}
+            onClick={() => pickShoot("front")}
           />
           <ScanSlot
             label="Verso"
             url={back}
-            onClick={() => setActiveShoot("back")}
+            uploading={uploading && activeShoot === "back"}
+            disabled={uploading}
+            onClick={() => pickShoot("back")}
           />
         </div>
 
@@ -324,19 +374,6 @@ export default function Step4Page() {
         </div>
       </div>
 
-      <Modal
-        open={activeShoot !== null}
-        onClose={() => setActiveShoot(null)}
-        title={activeShoot === "front" ? "Recto" : "Verso"}
-      >
-        <CameraCapture
-          frame="id-card"
-          hint="Placez la carte grise dans le cadre"
-          onCapture={onCaptured}
-          upload
-          folder="carte-grise"
-        />
-      </Modal>
     </CreateAuctionShell>
   );
 }
@@ -344,18 +381,27 @@ export default function Step4Page() {
 function ScanSlot({
   label,
   url,
+  uploading,
+  disabled,
   onClick,
 }: {
   label: string;
   url: string | null;
+  uploading: boolean;
+  disabled: boolean;
   onClick: () => void;
 }) {
   return (
     <button
       onClick={onClick}
+      disabled={disabled}
       className={`relative aspect-[4/3] rounded-[var(--radius)] border-2 border-dashed overflow-hidden transition-colors ${
-        url ? "border-[var(--success)]" : "border-[var(--border)] hover:border-[var(--gold)] bg-[var(--surface)]"
-      }`}
+        uploading
+          ? "border-[var(--gold)]"
+          : url
+            ? "border-[var(--success)]"
+            : "border-[var(--border)] hover:border-[var(--gold)] bg-[var(--surface)]"
+      } ${disabled && !uploading ? "opacity-50 cursor-not-allowed" : ""}`}
     >
       {url ? (
         <>
@@ -369,6 +415,11 @@ function ScanSlot({
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
           <Camera className="h-6 w-6 text-[var(--gold)]" />
           <div className="text-xs font-semibold">{label}</div>
+        </div>
+      )}
+      {uploading && (
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
+          <Loader2 className="h-6 w-6 text-[var(--gold)] animate-spin" />
         </div>
       )}
     </button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import {
   Camera,
@@ -18,13 +18,14 @@ import {
   Package,
   Disc3,
   Hash,
+  Loader2,
 } from "lucide-react";
 import { CreateAuctionShell } from "@/components/layout/CreateAuctionShell";
 import { Button } from "@/components/ui/Button";
-import { Modal } from "@/components/ui/Modal";
-import { CameraCapture } from "@/components/auction/CameraCapture";
 import { useToast } from "@/components/ui/Toast";
 import { useDraft } from "@/lib/draft";
+import { useAuth } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
 // Dev-only: a small set of realistic Unsplash car photos used to fill empty
@@ -58,10 +59,12 @@ export default function Step2Page() {
   const router = useRouter();
   const { toast } = useToast();
   const { draft, update } = useDraft();
+  const { user } = useAuth();
+  const inputRef = useRef<HTMLInputElement>(null);
   const [photos, setPhotos] = useState<(string | null)[]>(Array(12).fill(null));
   const [activeSlot, setActiveSlot] = useState<number | null>(null);
+  const [uploadingSlot, setUploadingSlot] = useState<number | null>(null);
 
-  // Hydrate from draft once
   useEffect(() => {
     const saved = draft.imageUrls;
     if (saved && saved.length === 12) setPhotos(saved as (string | null)[]);
@@ -72,17 +75,52 @@ export default function Step2Page() {
   const allDone = filled === 12;
 
   function openCamera(i: number) {
+    if (uploadingSlot !== null) return;
     setActiveSlot(i);
+    if (inputRef.current) {
+      inputRef.current.value = "";
+      inputRef.current.click();
+    }
   }
 
-  function onCaptured(url: string) {
-    if (activeSlot === null) return;
+  async function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    const slot = activeSlot;
+    if (!f || slot === null) return;
+    if (!user) {
+      toast("Connectez-vous d'abord", "warning");
+      return;
+    }
+
+    setUploadingSlot(slot);
+    const supabase = createClient();
+    const ext = (f.name.split(".").pop() || "jpg").toLowerCase();
+    const path = `${user.id}/auctions/${Date.now()}-${slot}-${Math.random()
+      .toString(36)
+      .slice(2, 8)}.${ext}`;
+
+    const { error } = await supabase.storage
+      .from("auction-media")
+      .upload(path, f, {
+        contentType: f.type || "image/jpeg",
+        upsert: false,
+      });
+
+    if (error) {
+      setUploadingSlot(null);
+      setActiveSlot(null);
+      toast("Échec du téléversement : " + error.message, "error");
+      return;
+    }
+
+    const { data } = supabase.storage.from("auction-media").getPublicUrl(path);
     const next = [...photos];
-    next[activeSlot] = url;
+    next[slot] = data.publicUrl;
     setPhotos(next);
     update({ imageUrls: next.map((p) => p ?? "") });
+    setUploadingSlot(null);
     setActiveSlot(null);
-    toast(`Photo ${activeSlot + 1}/12 ✓`, "success");
+    toast(`Photo ${slot + 1}/12 ✓`, "success");
   }
 
   // Dev-only: fill any empty slots with stock photos so the wizard can be
@@ -132,18 +170,32 @@ Prise de vue en direct uniquement — garantie d'authenticité et de qualité
           </div>
         </div>
 
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={onFileChange}
+          className="hidden"
+        />
+
         <div className="grid grid-cols-3 gap-2.5">
           {photoSlots.map((slot, i) => {
             const photo = photos[i];
+            const isUploading = uploadingSlot === i;
             return (
               <button
                 key={i}
                 onClick={() => openCamera(i)}
+                disabled={uploadingSlot !== null}
                 className={cn(
                   "relative aspect-square rounded-[var(--radius)] border-2 border-dashed overflow-hidden transition-colors",
-                  photo
-                    ? "border-[var(--success)]"
-                    : "border-[var(--border)] hover:border-[var(--gold)] bg-[var(--surface)]",
+                  isUploading
+                    ? "border-[var(--gold)]"
+                    : photo
+                      ? "border-[var(--success)]"
+                      : "border-[var(--border)] hover:border-[var(--gold)] bg-[var(--surface)]",
+                  uploadingSlot !== null && !isUploading && "opacity-50 cursor-not-allowed",
                 )}
               >
                 {photo ? (
@@ -170,6 +222,11 @@ Prise de vue en direct uniquement — garantie d'authenticité et de qualité
                       {i + 1}. {slot.label}
                     </div>
                     <Camera className="h-3.5 w-3.5 text-[var(--foreground-muted)] mt-1" />
+                  </div>
+                )}
+                {isUploading && (
+                  <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
+                    <Loader2 className="h-6 w-6 text-[var(--gold)] animate-spin" />
                   </div>
                 )}
               </button>
@@ -220,28 +277,6 @@ Mode test : remplir les photos restantes ({12 - filled})
         </div>
       </div>
 
-      {/* Camera modal */}
-      <Modal
-        open={activeSlot !== null}
-        onClose={() => setActiveSlot(null)}
-        title={
-          activeSlot !== null
-            ? `${activeSlot + 1}. ${photoSlots[activeSlot].label}`
-            : ""
-        }
-      >
-        <CameraCapture
-          frame="vehicle"
-          hint={
-            activeSlot !== null
-              ? `${photoSlots[activeSlot].label} — placez la voiture au centre du cadre, bon éclairage`
-              : ""
-          }
-          onCapture={onCaptured}
-          upload
-          folder="auctions"
-        />
-      </Modal>
     </CreateAuctionShell>
   );
 }
