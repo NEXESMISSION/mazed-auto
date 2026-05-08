@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
-import { Search, Heart, Plus, Gavel, User } from "lucide-react";
+import { Home, Search, Plus, Gavel, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function BottomTabBar() {
@@ -10,22 +10,20 @@ export function BottomTabBar() {
   const t = useTranslations("nav");
   const tCommon = useTranslations("common");
 
-  // 5 cells with the Sell FAB perfectly centered (cell 3). Browse +
-  // Watchlist on the discovery side, MyBids + Profile on the activity
-  // side. The 4-cell layout from the previous iteration put the FAB
-  // off-center, which read as "messed up".
+  // 5 cells with the Sell FAB perfectly centered (cell 3). Home + Browse
+  // on the discovery side, MyBids + Profile on the activity side.
   const tabs = [
+    {
+      href: "/",
+      label: t("home"),
+      icon: Home,
+      match: (p: string) => p === "/",
+    },
     {
       href: "/auctions",
       label: t("browseShort"),
       icon: Search,
-      match: (p: string) => p === "/" || p.startsWith("/auctions"),
-    },
-    {
-      href: "/buyer/watchlist",
-      label: t("watchlist"),
-      icon: Heart,
-      match: (p: string) => p.startsWith("/buyer/watchlist"),
+      match: (p: string) => p.startsWith("/auctions"),
     },
     {
       href: "/seller/new/step-1",

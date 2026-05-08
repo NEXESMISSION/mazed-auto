@@ -1,0 +1,81 @@
+import { Link } from "@/i18n/navigation";
+import { ArrowUpRight } from "lucide-react";
+import type { Auction } from "@/lib/types";
+
+const TILE_LIMIT = 10;
+
+interface Props {
+  /** Pool of auctions to derive brand tiles from. Caller passes the home
+   *  page's full active-auction fetch so we don't issue another query. */
+  pool: Auction[];
+}
+
+export function BrandSlider({ pool }: Props) {
+  const byBrand = new Map<string, { image: string; count: number }>();
+  for (const a of pool) {
+    const key = a.vehicle.make;
+    if (!key) continue;
+    const cur = byBrand.get(key);
+    if (cur) {
+      cur.count += 1;
+    } else {
+      byBrand.set(key, {
+        image: a.vehicle.imageUrls[0] ?? "",
+        count: 1,
+      });
+    }
+  }
+  const brands = Array.from(byBrand.entries())
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, TILE_LIMIT);
+  if (brands.length === 0) return null;
+
+  return (
+    <section className="mt-7">
+      <div className="px-4 flex items-center justify-between mb-3">
+        <h2 className="text-base font-bold text-foreground">
+          Parcourir par marque
+        </h2>
+        <Link
+          href="/auctions"
+          className="text-[12px] font-semibold text-[var(--foreground-muted)] hover:text-[var(--gold)] inline-flex items-center gap-0.5 transition-colors"
+        >
+          Voir tout
+          <ArrowUpRight className="h-3.5 w-3.5" />
+        </Link>
+      </div>
+
+      <div className="overflow-x-auto hide-scrollbar">
+        <div className="flex gap-3 px-4 pb-1">
+          {brands.map(([name, b]) => (
+            <Link
+              key={name}
+              href={`/auctions?brand=${encodeURIComponent(name)}`}
+              className="group relative w-[120px] h-[120px] shrink-0 overflow-hidden rounded-2xl ring-1 ring-[var(--border)] bg-[var(--surface-2)] hover:ring-[var(--gold-soft)]/50 transition-shadow"
+            >
+              {b.image ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={b.image}
+                  alt={name}
+                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.06]"
+                  draggable={false}
+                />
+              ) : null}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/10" />
+              <div className="absolute inset-x-0 bottom-0 px-3 pb-2.5">
+                <div className="text-[13px] font-extrabold leading-tight text-white">
+                  {name}
+                </div>
+                <div className="text-[10px] tabular-nums text-white/70 mt-0.5">
+                  {b.count} {b.count === 1 ? "voiture" : "voitures"}
+                </div>
+              </div>
+            </Link>
+          ))}
+          <div className="w-1 shrink-0" />
+        </div>
+      </div>
+    </section>
+  );
+}

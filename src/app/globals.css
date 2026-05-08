@@ -304,6 +304,42 @@ a {
   animation: fade-in 180ms ease-out;
 }
 
+/* Endless horizontal marquee — items must be duplicated once in markup;
+   the track translates -50% so the seam is invisible. */
+@keyframes marquee-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.marquee-viewport {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    black 6%,
+    black 94%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    black 6%,
+    black 94%,
+    transparent 100%
+  );
+}
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee-scroll 50s linear infinite;
+  will-change: transform;
+}
+.marquee-track:hover {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track { animation: none; }
+}
+
 /* Mobile-app body framing — soft neutral page bg around the phone-width app
    container so on desktop the dark surface reads like a mock-up. */
 body {

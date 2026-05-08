@@ -1,5 +1,5 @@
 import { Link } from "@/i18n/navigation";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Flame } from "lucide-react";
 import { AuctionCard } from "@/components/auction/AuctionCard";
 import type { Auction } from "@/lib/types";
 
@@ -7,15 +7,18 @@ interface Props {
   items: Auction[];
 }
 
-export function RecommendedRail({ items }: Props) {
+export function EndingSoonRail({ items }: Props) {
   if (items.length === 0) return null;
 
   return (
-    <section className="mt-6">
+    <section className="mt-7">
       <div className="px-4 flex items-center justify-between mb-3">
-        <h2 className="text-base font-bold text-foreground">Recommandés</h2>
+        <h2 className="text-base font-bold text-foreground inline-flex items-center gap-1.5">
+          <Flame className="h-4 w-4 text-[var(--danger)]" />
+          Bientôt terminé
+        </h2>
         <Link
-          href="/auctions"
+          href="/auctions?sort=ending_soon"
           className="text-[12px] font-semibold text-[var(--foreground-muted)] hover:text-[var(--gold)] inline-flex items-center gap-0.5 transition-colors"
         >
           Voir tout
