@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Camera, RotateCcw, Check, Upload } from "lucide-react";
+import { Camera, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/client";
@@ -12,7 +12,7 @@ interface Props {
   frame?: "id-card" | "selfie" | "vehicle";
   /** Helper text under frame */
   hint?: string;
-  /** Called when user confirms a captured shot — receives the public URL */
+  /** Called when the capture is finalized (uploaded URL or local data URL). */
   onCapture: (url: string) => void;
   /**
    * If true, the captured file is uploaded to Supabase Storage and the
@@ -27,6 +27,12 @@ interface Props {
   folder?: string;
 }
 
+/**
+ * Capture flow with NO confirmation step. Tap the button → device camera
+ * opens → user takes shot → we upload immediately and call onCapture. The
+ * preview is shown only during the upload so the user sees what they
+ * captured. A Retake button appears only on failure.
+ */
 export function CameraCapture({
   frame = "id-card",
   hint,
@@ -38,11 +44,9 @@ export function CameraCapture({
   const { toast } = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [file, setFile] = useState<File | null>(null);
-  const [analyzing, setAnalyzing] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [failed, setFailed] = useState(false);
 
-  // Cleanup blob URL when component unmounts or file changes
   useEffect(() => {
     return () => {
       if (preview && preview.startsWith("blob:")) URL.revokeObjectURL(preview);
@@ -50,60 +54,43 @@ export function CameraCapture({
   }, [preview]);
 
   function pickFile() {
+    setFailed(false);
     inputRef.current?.click();
   }
 
-  function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
-    setFile(f);
-    setPreview(URL.createObjectURL(f));
-    setAnalyzing(true);
-    // Quick "checking quality" UX touch
-    setTimeout(() => setAnalyzing(false), 500);
-  }
-
-  function retake() {
-    if (preview && preview.startsWith("blob:")) URL.revokeObjectURL(preview);
-    setPreview(null);
-    setFile(null);
-    if (inputRef.current) inputRef.current.value = "";
-  }
-
-  async function confirm() {
-    if (!preview) return;
+    const localUrl = URL.createObjectURL(f);
+    setPreview(localUrl);
 
     if (!upload) {
-      // Simulated path (KYC etc.) — just hand back the preview URL
-      onCapture(preview);
+      onCapture(localUrl);
       return;
     }
-
     if (!user) {
       toast("Connectez-vous d'abord", "warning");
-      return;
-    }
-    if (!file) {
-      toast("Aucune photo à téléverser", "error");
+      setFailed(true);
       return;
     }
 
     setUploading(true);
     const supabase = createClient();
-    const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+    const ext = (f.name.split(".").pop() || "jpg").toLowerCase();
     const path = `${user.id}/${folder}/${Date.now()}-${Math.random()
       .toString(36)
       .slice(2, 8)}.${ext}`;
 
     const { error } = await supabase.storage
       .from("auction-media")
-      .upload(path, file, {
-        contentType: file.type || "image/jpeg",
+      .upload(path, f, {
+        contentType: f.type || "image/jpeg",
         upsert: false,
       });
 
     if (error) {
       setUploading(false);
+      setFailed(true);
       toast("Échec du téléversement de la photo : " + error.message, "error");
       return;
     }
@@ -111,6 +98,14 @@ export function CameraCapture({
     const { data } = supabase.storage.from("auction-media").getPublicUrl(path);
     setUploading(false);
     onCapture(data.publicUrl);
+  }
+
+  function retake() {
+    if (preview && preview.startsWith("blob:")) URL.revokeObjectURL(preview);
+    setPreview(null);
+    setFailed(false);
+    if (inputRef.current) inputRef.current.value = "";
+    pickFile();
   }
 
   return (
@@ -149,13 +144,11 @@ export function CameraCapture({
           </>
         )}
 
-        {(analyzing || uploading) && (
+        {uploading && (
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center">
             <div className="text-center">
               <div className="mx-auto h-10 w-10 border-4 border-[var(--gold)] border-t-transparent rounded-full animate-spin mb-2" />
-              <div className="text-sm font-semibold">
-                {uploading ? "Téléversement..." : "Vérification..."}
-              </div>
+              <div className="text-sm font-semibold">Téléversement…</div>
             </div>
           </div>
         )}
@@ -167,29 +160,17 @@ export function CameraCapture({
         </p>
       )}
 
-      {preview ? (
-        <div className="flex gap-2">
-          <Button
-            variant="secondary"
-            size="lg"
-            fullWidth
-            onClick={retake}
-            disabled={uploading}
-          >
-            <RotateCcw className="h-4 w-4" />
-            Recommencer
-          </Button>
-          <Button size="lg" fullWidth onClick={confirm} disabled={uploading}>
-            <Check className="h-5 w-5" />
-{uploading ? "Téléversement..." : "Utiliser"}
-          </Button>
-        </div>
-      ) : (
-        <Button size="xl" fullWidth onClick={pickFile}>
-          {upload ? <Upload className="h-5 w-5" /> : <Camera className="h-5 w-5" />}
-{upload ? "Choisir ou prendre une photo" : "Prendre la photo"}
+      {failed ? (
+        <Button size="lg" fullWidth onClick={retake}>
+          <RotateCcw className="h-4 w-4" />
+          Réessayer
         </Button>
-      )}
+      ) : !preview ? (
+        <Button size="xl" fullWidth onClick={pickFile}>
+          <Camera className="h-5 w-5" />
+          Prendre la photo
+        </Button>
+      ) : null}
     </div>
   );
 }
