@@ -3,8 +3,9 @@
 import { useRouter } from "@/i18n/navigation";
 import { CheckCircle2 } from "lucide-react";
 import { KYCShell } from "@/components/layout/KYCShell";
-import { CameraCapture } from "@/components/auction/CameraCapture";
+import { LivePhotoCapture } from "@/components/auction/LivePhotoCapture";
 import { useToast } from "@/components/ui/Toast";
+import { updateKycDraft } from "@/lib/kycDraft";
 
 export default function KYCIdBackPage() {
   const router = useRouter();
@@ -15,18 +16,25 @@ export default function KYCIdBackPage() {
       <div className="space-y-5">
         <div className="text-center">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--gold-faint)] text-[10px] uppercase tracking-wider font-bold text-[var(--gold)] mb-3">
-Verso de la carte (2/2)
+            Verso de la carte (2/2)
           </div>
-          <h2 className="text-xl font-extrabold">Retournez la carte et photographiez le verso</h2>
+          <h2 className="text-xl font-extrabold">
+            Retournez la carte et photographiez le verso
+          </h2>
           <p className="text-sm text-[var(--foreground-muted)] mt-1.5">
-            De la même manière — placez-la dans le cadre et vérifiez la netteté des données
+            De la même manière — placez-la dans le cadre et vérifiez la
+            netteté des données
           </p>
         </div>
 
-        <CameraCapture
+        <LivePhotoCapture
           frame="id-card"
           hint="Assurez-vous que toutes les données sont nettes"
-          onCapture={() => {
+          upload
+          folder="kyc"
+          facing="environment"
+          onCapture={(url) => {
+            updateKycDraft({ idBackUrl: url });
             toast("✓ Verso de la carte capturé", "success");
             router.push("/kyc/selfie");
           }}

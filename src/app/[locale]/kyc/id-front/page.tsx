@@ -3,8 +3,9 @@
 import { useRouter } from "@/i18n/navigation";
 import { CheckCircle2 } from "lucide-react";
 import { KYCShell } from "@/components/layout/KYCShell";
-import { CameraCapture } from "@/components/auction/CameraCapture";
+import { LivePhotoCapture } from "@/components/auction/LivePhotoCapture";
 import { useToast } from "@/components/ui/Toast";
+import { updateKycDraft } from "@/lib/kycDraft";
 
 export default function KYCIdFrontPage() {
   const router = useRouter();
@@ -17,16 +18,23 @@ export default function KYCIdFrontPage() {
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--gold-faint)] text-[10px] uppercase tracking-wider font-bold text-[var(--gold)] mb-3">
             Recto de la carte (1/2)
           </div>
-          <h2 className="text-xl font-extrabold">Photographiez le recto de votre carte</h2>
+          <h2 className="text-xl font-extrabold">
+            Photographiez le recto de votre carte
+          </h2>
           <p className="text-sm text-[var(--foreground-muted)] mt-1.5">
-            Placez la carte dans le cadre — assurez-vous que tous les textes sont nets
+            Placez la carte dans le cadre — assurez-vous que tous les textes
+            sont nets
           </p>
         </div>
 
-        <CameraCapture
+        <LivePhotoCapture
           frame="id-card"
           hint="Bon éclairage, sans reflets"
-          onCapture={() => {
+          upload
+          folder="kyc"
+          facing="environment"
+          onCapture={(url) => {
+            updateKycDraft({ idFrontUrl: url });
             toast("✓ Recto de la carte capturé", "success");
             router.push("/kyc/id-back");
           }}
