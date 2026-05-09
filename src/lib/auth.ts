@@ -41,12 +41,19 @@ function mapUser(u: SupabaseUser | null): AppUser | null {
     }
   }
   if (!lastName) lastName = (meta.family_name as string) || "";
+  // Phone fallback uses `||` not `??` — Supabase returns `u.phone` as
+  // `""` (empty string, not null) for OAuth users, and `??` only falls
+  // back on null/undefined. Using `??` would lock us into the empty
+  // top-level value and ignore the metadata phone we wrote during the
+  // post-signup completion step, causing PhoneCompletionGate to loop.
+  const phoneFromTop = (u.phone ?? "").trim();
+  const phoneFromMeta = ((meta.phone as string | undefined) ?? "").trim();
   return {
     id: u.id,
     firstName,
     lastName,
     email: u.email ?? "",
-    phone: u.phone ?? (meta.phone as string) ?? "",
+    phone: phoneFromTop || phoneFromMeta,
     trustScore: (meta.trustScore as number) ?? 0,
     kycStatus: (meta.kycStatus as AppUser["kycStatus"]) ?? "none",
     emailVerified: Boolean(u.email_confirmed_at),

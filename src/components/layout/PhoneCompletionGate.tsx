@@ -18,22 +18,39 @@ import { createClient } from "@/lib/supabase/client";
  * Mounted globally inside AppShell so it surfaces on every authenticated
  * page. Existing users with a phone never see it.
  */
+const SESSION_FLAG_KEY = "mazed_phone_just_set";
+
 export function PhoneCompletionGate() {
   const { user, loaded } = useAuth();
   const [phone, setPhone] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  // Local "just submitted" guard. Hides the gate immediately on
+  // successful submit, even if the auth listener hasn't propagated the
+  // metadata refresh yet. Without this the gate could re-show for the
+  // millisecond between updateUser returning and the next auth event.
+  const [locallySatisfied, setLocallySatisfied] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    // Per-tab cache: if we already saved the phone in this session,
+    // don't re-prompt even if the cookie is briefly stale.
+    if (sessionStorage.getItem(SESSION_FLAG_KEY) === "1") {
+      setLocallySatisfied(true);
+    }
   }, []);
 
-  // Auth resolved + signed in + no phone in user_metadata. Reading
-  // u.phone (top-level) covers SMS-OTP signups; falling back to
-  // user_metadata.phone covers our own form-based signup. If both are
+  // Auth resolved + signed in + no phone in user_metadata + we haven't
+  // already submitted this session. Reading u.phone (top-level) covers
+  // SMS-OTP signups; falling back to user_metadata.phone covers our own
+  // form-based signup and the post-signup completion step. If all are
   // empty, the gate kicks in.
-  const needsPhone = loaded && Boolean(user) && !user!.phone.trim();
+  const needsPhone =
+    loaded &&
+    Boolean(user) &&
+    !user!.phone.trim() &&
+    !locallySatisfied;
 
   // Lock background scroll while the gate is up.
   useEffect(() => {
@@ -69,13 +86,31 @@ export function PhoneCompletionGate() {
     const { error: e } = await supabase.auth.updateUser({
       data: { phone: normalised },
     });
-    setSubmitting(false);
     if (e) {
+      setSubmitting(false);
       setError("Échec de l'enregistrement : " + e.message);
       return;
     }
-    // Reload so server pages re-fetch the user (and the gate disappears).
-    window.location.reload();
+    // Force a fresh JWT so the cookie carries the updated metadata.
+    // updateUser writes to the server-side row but the local cookie
+    // can lag — without this, server components reading the user via
+    // SSR see the pre-update phone (empty), and the gate re-triggers
+    // on the very next navigation. Best-effort: keep going if it fails.
+    try {
+      await supabase.auth.refreshSession();
+    } catch {
+      // ignore
+    }
+    // Belt-and-suspenders: even if anything above is slow to propagate,
+    // we know in-memory that we just saved it. Persist for this tab so
+    // a hot reload or a quick navigation doesn't re-show the modal.
+    try {
+      sessionStorage.setItem(SESSION_FLAG_KEY, "1");
+    } catch {
+      // ignore
+    }
+    setLocallySatisfied(true);
+    setSubmitting(false);
   }
 
   return createPortal(
