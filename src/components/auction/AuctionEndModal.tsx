@@ -158,7 +158,7 @@ export function AuctionEndModal({ auction: initial, userId }: Props) {
             ? `Vous avez payé ${formatPrice(outcome.finalPrice)} intégralement. Contactez le vendeur pour récupérer la voiture.`
             : `Offre gagnante : ${formatPrice(outcome.finalPrice)}. Finalisez le paiement pour récupérer la voiture avant la fin du délai.`,
           primary: outcome.finalPaid ? (
-            <Link href="/buyer/wins" className="block">
+            <Link href="/buyer/bids" className="block">
               <Button size="md" fullWidth>
                 <Trophy className="h-4 w-4" />
                 Mes victoires

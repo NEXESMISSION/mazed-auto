@@ -33,6 +33,7 @@ export interface SellerRow {
   account_age_months: number;
   city: string;
   is_pro: boolean;
+  is_active?: boolean | null;
 }
 
 export interface AuctionRow {
@@ -106,6 +107,8 @@ export function mapSeller(r: SellerRow): Seller {
     accountAgeMonths: r.account_age_months,
     city: r.city,
     isPro: r.is_pro,
+    // Old rows pre-migration won't have the column yet — treat as active.
+    isActive: r.is_active ?? true,
   };
 }
 
@@ -143,6 +146,7 @@ const FALLBACK_SELLER: Seller = {
   ratingCount: 0,
   accountAgeMonths: 0,
   city: "",
+  isActive: true,
 };
 
 export function mapAuction(r: AuctionRow): Auction {
@@ -189,6 +193,218 @@ export function mapAuction(r: AuctionRow): Auction {
 // ===== Fetchers (work with both server & browser clients) =====
 
 const AUCTION_SELECT = "*, seller:sellers(*)";
+
+// ===== Home rails =====
+
+const LIVE_STATUSES = ["active", "ending"] as const;
+const FINAL_STATUSES = [
+  "ended",
+  "reserve_not_met",
+  "pending_seller_decision",
+] as const;
+
+export interface HotAuction extends Auction {
+  recentBids: number;
+  recentBidders: number;
+}
+
+/**
+ * "Hot right now" — live auctions with the most bids in the last hour.
+ * Pulls the bid-count from the auction_hot_now view, then hydrates the
+ * full auction rows in one IN-query so the rail still has all the data
+ * AuctionCard expects. Falls back to total_bids ordering if the view is
+ * missing (e.g. migrate-home-hot-rail.sql hasn't run yet).
+ */
+export async function listHotNow(
+  supabase: SupabaseClient,
+  limit: number = 6,
+): Promise<HotAuction[]> {
+  // 1) Fetch the ranking from the view.
+  const { data: ranks, error: rankErr } = await supabase
+    .from("auction_hot_now")
+    .select("id, recent_bids, recent_bidders")
+    .order("recent_bids", { ascending: false })
+    .order("recent_bidders", { ascending: false })
+    .limit(limit);
+
+  // Fallback: when the view doesn't exist yet, just sort live auctions
+  // by total bids — an OK approximation while the migration is pending.
+  if (rankErr) {
+    const { data } = await supabase
+      .from("auctions")
+      .select(AUCTION_SELECT)
+      .in("status", LIVE_STATUSES as readonly string[])
+      .gte("end_time", new Date().toISOString())
+      .order("total_bids", { ascending: false })
+      .limit(limit);
+    return (data ?? []).map((r) => ({
+      ...mapAuction(r as unknown as AuctionRow),
+      recentBids: 0,
+      recentBidders: 0,
+    }));
+  }
+  if (!ranks || ranks.length === 0) return [];
+
+  // 2) Hydrate the auctions in one IN-query, then re-order to match the
+  //    rank list.
+  const ids = ranks.map((r) => r.id as string);
+  const { data: rows } = await supabase
+    .from("auctions")
+    .select(AUCTION_SELECT)
+    .in("id", ids);
+  const byId = new Map(
+    (rows ?? []).map((r) => [
+      (r as unknown as AuctionRow).id,
+      mapAuction(r as unknown as AuctionRow),
+    ]),
+  );
+  return ranks
+    .map((r) => {
+      const a = byId.get(r.id as string);
+      if (!a) return null;
+      return {
+        ...a,
+        recentBids: (r.recent_bids as number) ?? 0,
+        recentBidders: (r.recent_bidders as number) ?? 0,
+      };
+    })
+    .filter((x): x is HotAuction => x !== null);
+}
+
+/**
+ * Live auctions ending within the next 24 hours, soonest first.
+ * Excludes already-expired rows even if their status hasn't been swept
+ * yet by end_expired_auctions().
+ */
+export async function listEndingSoon(
+  supabase: SupabaseClient,
+  hoursAhead: number = 24,
+  limit: number = 6,
+): Promise<Auction[]> {
+  const now = new Date();
+  const end = new Date(now.getTime() + hoursAhead * 60 * 60 * 1000);
+  const { data, error } = await supabase
+    .from("auctions")
+    .select(AUCTION_SELECT)
+    .in("status", LIVE_STATUSES as readonly string[])
+    .gte("end_time", now.toISOString())
+    .lte("end_time", end.toISOString())
+    .order("end_time", { ascending: true })
+    .limit(limit);
+  if (error) return [];
+  return (data ?? []).map((r) => mapAuction(r as unknown as AuctionRow));
+}
+
+/** Most-recently-created live auctions, newest first. The earlier 48h
+ *  gate caused the Nouveautés rail to disappear whenever the catalog had
+ *  nothing brand new in the window, which read to users as "the slider
+ *  was removed." `_hoursBack` is kept for call-site compat but ignored. */
+export async function listNewestLive(
+  supabase: SupabaseClient,
+  _hoursBack: number = 48,
+  limit: number = 10,
+): Promise<Auction[]> {
+  void _hoursBack;
+  const { data, error } = await supabase
+    .from("auctions")
+    .select(AUCTION_SELECT)
+    .in("status", LIVE_STATUSES as readonly string[])
+    .gte("end_time", new Date().toISOString())
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) return [];
+  return (data ?? []).map((r) => mapAuction(r as unknown as AuctionRow));
+}
+
+/** Featured + live auctions, soonest end first. */
+export async function listFeaturedLive(
+  supabase: SupabaseClient,
+  limit: number = 6,
+): Promise<Auction[]> {
+  const { data, error } = await supabase
+    .from("auctions")
+    .select(AUCTION_SELECT)
+    .eq("is_featured", true)
+    .in("status", LIVE_STATUSES as readonly string[])
+    .gte("end_time", new Date().toISOString())
+    .order("end_time", { ascending: true })
+    .limit(limit);
+  if (error) return [];
+  return (data ?? []).map((r) => mapAuction(r as unknown as AuctionRow));
+}
+
+/**
+ * Last N bid rows across all auctions, joined to vehicle make/model so
+ * the home ticker can render anonymous "X bid Y on Z" pills with zero
+ * extra client-side roundtrips. The shape matches what
+ * LiveActivityTicker expects for its `initial` prop.
+ */
+export async function seedActivityItems(
+  supabase: SupabaseClient,
+  limit: number = 8,
+): Promise<
+  {
+    id: string;
+    auctionId: string | null;
+    bidder: string;
+    amount: number;
+    vehicle: string;
+    at: number;
+  }[]
+> {
+  const { data } = await supabase
+    .from("bids")
+    .select(
+      "id, auction_id, user_id, amount, placed_at, auctions:auction_id(make, model, year)",
+    )
+    .order("placed_at", { ascending: false })
+    .limit(limit);
+  if (!data) return [];
+  return (data as unknown as Array<{
+    id: string;
+    auction_id: string | null;
+    user_id: string | null;
+    amount: number | string;
+    placed_at: string;
+    auctions: { make: string; model: string; year: number } | null;
+  }>)
+    .filter((r) => Boolean(r.auctions))
+    .map((r) => ({
+      id: r.id,
+      auctionId: r.auction_id,
+      // Same opaque tag rule as the client — keep identities anonymous.
+      bidder: `Enchérisseur #${(r.user_id ?? "0000").replace(/-/g, "").slice(-4).toUpperCase()}`,
+      amount: Number(r.amount),
+      vehicle: r.auctions
+        ? `${r.auctions.make} ${r.auctions.model} ${r.auctions.year}`
+        : "Une voiture",
+      at: new Date(r.placed_at).getTime(),
+    }));
+}
+
+/**
+ * Auctions that ended in the last `hoursBack` hours. Drives the
+ * "Vendues récemment" rail — pure social proof + scarcity, the page
+ * shows the final price instead of a countdown.
+ */
+export async function listRecentlyEnded(
+  supabase: SupabaseClient,
+  hoursBack: number = 72,
+  limit: number = 6,
+): Promise<Auction[]> {
+  const cutoff = new Date(
+    Date.now() - hoursBack * 60 * 60 * 1000,
+  ).toISOString();
+  const { data, error } = await supabase
+    .from("auctions")
+    .select(AUCTION_SELECT)
+    .in("status", FINAL_STATUSES as readonly string[])
+    .gte("end_time", cutoff)
+    .order("end_time", { ascending: false })
+    .limit(limit);
+  if (error) return [];
+  return (data ?? []).map((r) => mapAuction(r as unknown as AuctionRow));
+}
 
 export async function listAuctions(
   supabase: SupabaseClient,
@@ -267,6 +483,40 @@ export async function listSellers(supabase: SupabaseClient): Promise<Seller[]> {
     return [];
   }
   return (data ?? []).map((r) => mapSeller(r as SellerRow));
+}
+
+export interface UserActivityEntry {
+  id: number;
+  user_id: string;
+  kind: string;
+  detail: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+}
+
+/**
+ * Admin-side fetch for the user-activity feed surfaced on the user-detail
+ * page. Returns the most recent entries for one user. RLS gates this to
+ * admins (see migrate-user-activity.sql); for non-admin callers Supabase
+ * silently returns an empty array, which is fine here — only admins
+ * navigate to this page.
+ */
+export async function listUserActivity(
+  supabase: SupabaseClient,
+  userId: string,
+  limit = 50,
+): Promise<UserActivityEntry[]> {
+  const { data, error } = await supabase
+    .from("user_activity_log")
+    .select("id,user_id,kind,detail,metadata,created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) {
+    console.error("listUserActivity:", error.message);
+    return [];
+  }
+  return (data ?? []) as UserActivityEntry[];
 }
 
 export async function listAuctionsBySeller(

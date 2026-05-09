@@ -47,3 +47,14 @@ export function isEndingSoon(endTime: Date | string | number): boolean {
   const t = timeRemaining(endTime);
   return !t.isEnded && t.totalMs < 60 * 60 * 1000; // < 1 hour
 }
+
+/**
+ * Public-facing tracking code for an auction. Derived from the first 6
+ * hex chars of the UUID so it stays stable for the lifetime of the row
+ * and never needs a separate DB column. Buyers and sellers reference it
+ * in support tickets, screenshots, and shared links.
+ */
+export function auctionCode(id: string): string {
+  const hex = (id || "").replace(/[^a-fA-F0-9]/g, "").slice(0, 6).toUpperCase();
+  return `MA-${hex.padEnd(6, "0")}`;
+}

@@ -1,24 +1,64 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Link, useRouter } from "@/i18n/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import {
   Search,
   X,
   SearchX,
-  ChevronLeft,
   Car,
   Truck,
   Caravan,
+  LayoutGrid,
+  List as ListIcon,
+  Rows3,
+  ArrowUpDown,
+  Check,
+  SlidersHorizontal,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { AuctionCard } from "@/components/auction/AuctionCard";
+import { AuctionRow } from "@/components/auction/AuctionRow";
+import { LargeAuctionCard } from "@/components/auction/LargeAuctionCard";
 import { useRealtimeAuctionList } from "@/lib/realtime";
 import type { Auction, VehicleCategory } from "@/lib/types";
+import {
+  BrowseFilters,
+  EMPTY_FILTERS,
+  type BrowseFilterState,
+} from "./BrowseFilters";
+
+const FINAL_STATUSES = new Set([
+  "ended",
+  "reserve_not_met",
+  "cancelled",
+  "pending_seller_decision",
+]);
+
+type ViewMode = "grid" | "list" | "large";
+
+type SortKey =
+  | "newest"
+  | "ending_soon"
+  | "price_asc"
+  | "price_desc"
+  | "most_bids";
+
+const SORTS: Array<{ value: SortKey; label: string }> = [
+  { value: "newest", label: "Plus récentes" },
+  { value: "ending_soon", label: "Bientôt terminées" },
+  { value: "price_asc", label: "Prix croissant" },
+  { value: "price_desc", label: "Prix décroissant" },
+  { value: "most_bids", label: "Plus enchéries" },
+];
 
 interface Props {
   initial: Auction[];
+  /** When true, render the classic Marques + Catégories grid landing
+   *  page instead of the modern filter-bar list. Tapping a tile pushes
+   *  ?brand= / ?body= and drops back to modern so the user sees results. */
+  classicMode?: boolean;
 }
 
 const BODY_TYPES: Array<{
@@ -41,21 +81,31 @@ const BODY_LABEL: Record<VehicleCategory, string> = Object.fromEntries(
 ) as Record<VehicleCategory, string>;
 
 /**
- * Two-mode browse:
- *
- *   HUB MODE  (no query params)
- *     Search bar + Marques grid + Catégories grid. Tapping a brand or
- *     category card pushes a URL with the corresponding query param,
- *     which switches the page into LIST MODE.
- *
- *   LIST MODE (?brand=… or ?body=…)
- *     Back-to-hub header + active-filter pill + filtered AuctionCard
- *     grid. Search still works (narrows within the active filter).
- *
- * URLs are bookmarkable: /auctions?brand=Mercedes can be shared and
- * lands directly on the Mercedes results.
+ * Single-page browse:
+ * sticky filter bar (search + sort + advanced filters + layout toggle),
+ * active-filter chip strip with one-tap remove, quick brand+category
+ * chips when no scope is set, then the result list in one of three view
+ * modes: list (compact rows), grid (2-col cards), large (single-column
+ * 16:9 hero cards). Brand and category still drive `?brand=…` / `?body=…`
+ * URL params so links stay shareable.
  */
-export function AuctionsBrowser({ initial }: Props) {
+/**
+ * Top-level dispatcher — holds NO hooks. Routes to either the modern
+ * filter-bar browse or the classic Marques+Catégories hub based on the
+ * `classicMode` flag. Each branch is its own component so the React
+ * hook-call count stays stable when the flag flips. Mixing both flows
+ * inside a single component caused "Rendered fewer hooks than expected"
+ * the moment the user toggled views.
+ */
+export function AuctionsBrowser({ initial, classicMode = false }: Props) {
+  return classicMode ? (
+    <ClassicHub initial={initial} />
+  ) : (
+    <ModernBrowser initial={initial} />
+  );
+}
+
+function ModernBrowser({ initial }: { initial: Auction[] }) {
   const router = useRouter();
   const params = useSearchParams();
   const brand = params.get("brand");
@@ -63,10 +113,13 @@ export function AuctionsBrowser({ initial }: Props) {
 
   const list = useRealtimeAuctionList(initial);
   const [search, setSearch] = useState("");
+  const [filters, setFilters] = useState<BrowseFilterState>(EMPTY_FILTERS);
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [sort, setSort] = useState<SortKey>("newest");
+  const [sortOpen, setSortOpen] = useState(false);
 
-  const inListMode = brand !== null || body !== null;
-
-  // Brand index — count + first matching auction's image as the box bg.
+  // Brand index — count + first auction's image. Used for the quick-chip
+  // strip and the "no scope" suggestion grid.
   const brandIndex = useMemo(() => {
     const data = new Map<string, { count: number; image?: string }>();
     for (const a of list) {
@@ -83,8 +136,451 @@ export function AuctionsBrowser({ initial }: Props) {
       .sort((a, b) => b.count - a.count);
   }, [list]);
 
-  // Body-type index — full taxonomy, with image when at least one auction
-  // matches.
+  const filteredAuctions = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const minPrice = Number(filters.minPrice) || 0;
+    const maxPrice = Number(filters.maxPrice) || Infinity;
+    const minYear = Number(filters.minYear) || 0;
+    const maxYear = Number(filters.maxYear) || Infinity;
+    const maxKm = Number(filters.maxKm) || Infinity;
+    // Read-only timestamp inside useMemo — the rule misfires here.
+    // eslint-disable-next-line react-hooks/purity
+    const now = Date.now();
+
+    const filtered = list.filter((a) => {
+      if (brand && a.vehicle.make !== brand) return false;
+      if (body && a.vehicle.category !== body) return false;
+
+      const isFinished =
+        FINAL_STATUSES.has(a.status) || a.endTime.getTime() <= now;
+      if (filters.status === "live" && isFinished) return false;
+      if (filters.status === "finished" && !isFinished) return false;
+
+      if (filters.fuel !== "any" && a.vehicle.fuelType !== filters.fuel)
+        return false;
+      if (
+        filters.condition !== "any" &&
+        a.vehicle.condition !== filters.condition
+      )
+        return false;
+      if (a.currentPrice < minPrice || a.currentPrice > maxPrice) return false;
+      if (a.vehicle.year < minYear || a.vehicle.year > maxYear) return false;
+      if (a.vehicle.mileage > maxKm) return false;
+
+      if (!q) return true;
+      return (
+        a.vehicle.make.toLowerCase().includes(q) ||
+        a.vehicle.model.toLowerCase().includes(q) ||
+        a.vehicle.city.toLowerCase().includes(q) ||
+        a.vehicle.color.toLowerCase().includes(q)
+      );
+    });
+
+    const sorted = [...filtered];
+    switch (sort) {
+      case "ending_soon":
+        sorted.sort((a, b) => a.endTime.getTime() - b.endTime.getTime());
+        break;
+      case "price_asc":
+        sorted.sort((a, b) => a.currentPrice - b.currentPrice);
+        break;
+      case "price_desc":
+        sorted.sort((a, b) => b.currentPrice - a.currentPrice);
+        break;
+      case "most_bids":
+        sorted.sort((a, b) => b.totalBids - a.totalBids);
+        break;
+      case "newest":
+      default:
+        sorted.sort((a, b) => b.startTime.getTime() - a.startTime.getTime());
+    }
+    return sorted;
+  }, [list, search, brand, body, filters, sort]);
+
+  // Build the active-filter chip list. Each chip carries an action that
+  // clears that one dimension only, so the user can drill in and out
+  // without ever resetting the whole state by mistake.
+  const activeChips = useMemo(() => {
+    const chips: Array<{ key: string; label: string; clear: () => void }> = [];
+    if (brand)
+      chips.push({
+        key: "brand",
+        label: brand,
+        clear: () => updateScope({ brand: null }),
+      });
+    if (body)
+      chips.push({
+        key: "body",
+        label: BODY_LABEL[body],
+        clear: () => updateScope({ body: null }),
+      });
+    if (filters.status !== "live")
+      chips.push({
+        key: "status",
+        label: filters.status === "finished" ? "Terminées" : "Toutes",
+        clear: () => setFilters((f) => ({ ...f, status: "live" })),
+      });
+    if (filters.fuel !== "any")
+      chips.push({
+        key: "fuel",
+        label: FUEL_LABEL[filters.fuel] ?? filters.fuel,
+        clear: () => setFilters((f) => ({ ...f, fuel: "any" })),
+      });
+    if (filters.condition !== "any")
+      chips.push({
+        key: "condition",
+        label: CONDITION_LABEL[filters.condition] ?? filters.condition,
+        clear: () => setFilters((f) => ({ ...f, condition: "any" })),
+      });
+    if (filters.minPrice || filters.maxPrice)
+      chips.push({
+        key: "price",
+        label: `Prix : ${formatRange(filters.minPrice, filters.maxPrice)} TND`,
+        clear: () =>
+          setFilters((f) => ({ ...f, minPrice: "", maxPrice: "" })),
+      });
+    if (filters.minYear || filters.maxYear)
+      chips.push({
+        key: "year",
+        label: `Année : ${formatRange(filters.minYear, filters.maxYear)}`,
+        clear: () => setFilters((f) => ({ ...f, minYear: "", maxYear: "" })),
+      });
+    if (filters.maxKm)
+      chips.push({
+        key: "km",
+        label: `≤ ${filters.maxKm} km`,
+        clear: () => setFilters((f) => ({ ...f, maxKm: "" })),
+      });
+    return chips;
+    // updateScope is defined below; it captures `params` and `router`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [brand, body, filters]);
+
+  const hasAnyFilter = activeChips.length > 0 || search.length > 0;
+
+  function updateScope({
+    brand: nextBrand,
+    body: nextBody,
+  }: {
+    brand?: string | null;
+    body?: VehicleCategory | null;
+  }) {
+    const next = new URLSearchParams(params.toString());
+    if (nextBrand === null) next.delete("brand");
+    else if (nextBrand !== undefined) next.set("brand", nextBrand);
+    if (nextBody === null) next.delete("body");
+    else if (nextBody !== undefined) next.set("body", nextBody);
+    const qs = next.toString();
+    router.push(qs ? `/auctions?${qs}` : "/auctions");
+  }
+
+  function clearAll() {
+    setSearch("");
+    setFilters(EMPTY_FILTERS);
+    router.push("/auctions");
+  }
+
+  return (
+    <div className="pb-8">
+      {/* ─── Sticky control bar ───────────────────────────────────────── */}
+      <div className="sticky top-0 z-30 bg-[var(--background)]/85 backdrop-blur-xl border-b border-[var(--border)]">
+        <div className="px-4 pt-3 pb-2 space-y-2">
+          {/* Search */}
+          <div className="flex items-center gap-3 rounded-full bg-[var(--surface)] border border-[var(--border)] focus-within:border-[var(--gold-soft)] transition-colors pl-4 pr-1.5 h-11">
+            <Search className="h-4 w-4 text-[var(--foreground-muted)] shrink-0" />
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Marque, modèle, ville..."
+              className="flex-1 bg-transparent text-[15px] placeholder:text-[var(--foreground-subtle)] focus:outline-none min-w-0"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                aria-label="Effacer"
+                className="h-7 w-7 rounded-full bg-[var(--surface-2)] text-[var(--foreground-muted)] flex items-center justify-center hover:text-foreground transition-colors shrink-0"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Toolbar row */}
+          <div className="flex items-center gap-1.5">
+            {/* Sort */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setSortOpen((v) => !v)}
+                className="inline-flex items-center gap-1.5 h-9 px-3 rounded-full border border-[var(--border)] bg-[var(--surface)] text-[12px] font-bold hover:border-[var(--gold-soft)] transition-colors"
+                aria-haspopup="listbox"
+                aria-expanded={sortOpen}
+              >
+                <ArrowUpDown className="h-3.5 w-3.5" />
+                {SORTS.find((s) => s.value === sort)?.label}
+              </button>
+              {sortOpen && (
+                <>
+                  <button
+                    type="button"
+                    aria-label="Fermer"
+                    onClick={() => setSortOpen(false)}
+                    className="fixed inset-0 z-10"
+                  />
+                  <div
+                    role="listbox"
+                    className="absolute z-20 top-full mt-1.5 start-0 min-w-[12rem] rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-lg)] overflow-hidden"
+                  >
+                    {SORTS.map((s) => (
+                      <button
+                        key={s.value}
+                        type="button"
+                        role="option"
+                        aria-selected={s.value === sort}
+                        onClick={() => {
+                          setSort(s.value);
+                          setSortOpen(false);
+                        }}
+                        className={`w-full flex items-center gap-2 px-3.5 h-10 text-[13px] font-semibold text-start ${
+                          s.value === sort
+                            ? "bg-[var(--gold-faint)] text-[var(--gold)]"
+                            : "hover:bg-[var(--surface-2)]"
+                        }`}
+                      >
+                        {s.value === sort ? (
+                          <Check className="h-3.5 w-3.5" />
+                        ) : (
+                          <span className="h-3.5 w-3.5" />
+                        )}
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Advanced filters modal — uses BrowseFilters' own trigger button */}
+            <BrowseFilters value={filters} onChange={setFilters} />
+
+            {/* Layout toggle */}
+            <div className="ms-auto inline-flex rounded-full border border-[var(--border)] bg-[var(--surface)] p-0.5">
+              <ViewToggle
+                active={viewMode === "list"}
+                onClick={() => setViewMode("list")}
+                label="Vue compacte"
+                icon={Rows3}
+              />
+              <ViewToggle
+                active={viewMode === "grid"}
+                onClick={() => setViewMode("grid")}
+                label="Vue grille"
+                icon={LayoutGrid}
+              />
+              <ViewToggle
+                active={viewMode === "large"}
+                onClick={() => setViewMode("large")}
+                label="Vue détaillée"
+                icon={ListIcon}
+              />
+            </div>
+          </div>
+
+          {/* Active filter chips */}
+          {(activeChips.length > 0 || search.length > 0) && (
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {search.length > 0 && (
+                <ActiveChip
+                  label={`«${search}»`}
+                  onClear={() => setSearch("")}
+                />
+              )}
+              {activeChips.map((c) => (
+                <ActiveChip key={c.key} label={c.label} onClear={c.clear} />
+              ))}
+              <button
+                type="button"
+                onClick={clearAll}
+                className="ms-1 shrink-0 inline-flex items-center h-7 px-3 rounded-full text-[11px] font-bold text-[var(--foreground-muted)] hover:text-foreground hover:bg-[var(--surface-2)] transition-colors"
+              >
+                Tout effacer
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ─── Quick brand chips (only when no scope yet) ─── */}
+      {!hasAnyFilter && brandIndex.length > 0 && (
+        <div className="px-4 mt-4">
+          <ChipStrip
+            eyebrow="Marques populaires"
+            items={brandIndex.slice(0, 12).map((b) => ({
+              key: b.name,
+              label: b.name,
+              count: b.count,
+              onClick: () => updateScope({ brand: b.name }),
+            }))}
+          />
+        </div>
+      )}
+
+      {/* ─── Result count ─── */}
+      <div className="px-4 mt-4 flex items-baseline justify-between gap-3">
+        <h2 className="font-extrabold text-[15px] tracking-tight">
+          {hasAnyFilter ? "Résultats" : "Toutes les enchères"}
+        </h2>
+        <span className="text-[12px] text-[var(--foreground-muted)] tabular-nums">
+          {filteredAuctions.length}{" "}
+          {filteredAuctions.length === 1 ? "annonce" : "annonces"}
+        </span>
+      </div>
+
+      {/* ─── Results ─── */}
+      {filteredAuctions.length === 0 ? (
+        <div className="text-center py-16 space-y-3 px-4 mt-2">
+          <div className="mx-auto h-14 w-14 rounded-full bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center text-[var(--foreground-muted)]">
+            <SearchX className="h-7 w-7" />
+          </div>
+          <div className="font-bold text-base">Aucune enchère</div>
+          <p className="text-xs text-[var(--foreground-muted)]">
+            Aucune annonce ne correspond à votre recherche pour le moment.
+          </p>
+          <button
+            type="button"
+            onClick={clearAll}
+            className="inline-flex items-center h-9 px-4 rounded-full bg-[var(--gold)] text-black text-[12px] font-bold shadow-[var(--shadow-gold)]"
+          >
+            Effacer les filtres
+          </button>
+        </div>
+      ) : viewMode === "grid" ? (
+        <div className="mt-3 grid grid-cols-2 gap-3 px-4">
+          {filteredAuctions.map((auction) => (
+            <AuctionCard key={auction.id} auction={auction} />
+          ))}
+        </div>
+      ) : viewMode === "list" ? (
+        <div className="mt-3 px-4 space-y-2">
+          {filteredAuctions.map((auction) => (
+            <AuctionRow key={auction.id} auction={auction} />
+          ))}
+        </div>
+      ) : (
+        <div className="mt-3 px-4 space-y-3">
+          {filteredAuctions.map((auction) => (
+            <LargeAuctionCard key={auction.id} auction={auction} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const FUEL_LABEL: Record<string, string> = {
+  gasoline: "Essence",
+  diesel: "Diesel",
+  hybrid: "Hybride",
+  electric: "Électrique",
+};
+
+const CONDITION_LABEL: Record<string, string> = {
+  new: "Neuf",
+  excellent: "Excellent",
+  good: "Bon",
+  fair: "Correct",
+  damaged: "Endommagé",
+};
+
+function formatRange(min: string | number, max: string | number): string {
+  const m = String(min || "");
+  const M = String(max || "");
+  if (m && M) return `${m} – ${M}`;
+  if (m) return `≥ ${m}`;
+  if (M) return `≤ ${M}`;
+  return "";
+}
+
+function ActiveChip({
+  label,
+  onClear,
+}: {
+  label: string;
+  onClear: () => void;
+}) {
+  return (
+    <span className="shrink-0 inline-flex items-center gap-1.5 h-7 ps-3 pe-1 rounded-full bg-[var(--gold-faint)] border border-[var(--gold)]/40 text-[var(--gold)] text-[11px] font-bold">
+      <span className="truncate max-w-[10rem]">{label}</span>
+      <button
+        type="button"
+        onClick={onClear}
+        aria-label={`Retirer ${label}`}
+        className="h-5 w-5 rounded-full bg-[var(--gold)] text-black flex items-center justify-center hover:scale-105 transition-transform"
+      >
+        <X className="h-3 w-3" strokeWidth={3} />
+      </button>
+    </span>
+  );
+}
+
+function ViewToggle({
+  active,
+  onClick,
+  label,
+  icon: Icon,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  icon: LucideIcon;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      aria-pressed={active}
+      className={`h-8 w-8 rounded-full inline-flex items-center justify-center transition-colors ${
+        active
+          ? "bg-[var(--gold)] text-black"
+          : "text-[var(--foreground-muted)] hover:text-foreground"
+      }`}
+    >
+      <Icon className="h-4 w-4" />
+    </button>
+  );
+}
+
+/**
+ * Classic discovery hub — the original "browse" UX with Marques and
+ * Catégories rendered as image-anchored boxes. Kept around so the user
+ * can A/B compare it against the modern filter-bar list. Tile taps push
+ * `?brand=…` / `?body=…` and drop the `view=classic` flag, so the user
+ * lands directly on filtered modern results.
+ */
+function ClassicHub({ initial }: { initial: Auction[] }) {
+  const router = useRouter();
+  const list = useRealtimeAuctionList(initial);
+  const [search, setSearch] = useState("");
+
+  const brandIndex = useMemo(() => {
+    const data = new Map<string, { count: number; image?: string }>();
+    for (const a of list) {
+      const m = a.vehicle.make.trim();
+      if (!m) continue;
+      const ex = data.get(m);
+      data.set(m, {
+        count: (ex?.count ?? 0) + 1,
+        image: ex?.image ?? a.vehicle.imageUrls[0],
+      });
+    }
+    return Array.from(data.entries())
+      .map(([name, d]) => ({ name, count: d.count, image: d.image }))
+      .sort((a, b) => b.count - a.count);
+  }, [list]);
+
   const bodyIndex = useMemo(() => {
     const firstByCategory = new Map<VehicleCategory, string>();
     const counts = new Map<VehicleCategory, number>();
@@ -102,27 +598,16 @@ export function AuctionsBrowser({ initial }: Props) {
     }));
   }, [list]);
 
-  const filteredAuctions = useMemo(() => {
+  const filteredBrands = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return list.filter((a) => {
-      if (brand && a.vehicle.make !== brand) return false;
-      if (body && a.vehicle.category !== body) return false;
-      if (!q) return true;
-      return (
-        a.vehicle.make.toLowerCase().includes(q) ||
-        a.vehicle.model.toLowerCase().includes(q) ||
-        a.vehicle.city.toLowerCase().includes(q) ||
-        a.vehicle.color.toLowerCase().includes(q)
-      );
-    });
-  }, [list, search, brand, body]);
-
-  // Compose the active-filter human label for the list-mode header.
-  const filterLabel = brand ?? (body ? BODY_LABEL[body] : "");
+    if (!q) return brandIndex;
+    return brandIndex.filter((b) => b.name.toLowerCase().includes(q));
+  }, [brandIndex, search]);
 
   return (
     <div className="pt-5 pb-8">
-      {/* Search bar — present in both modes. */}
+      {/* Search bar — narrows the brand grid, lets users find a marque
+          in an alphabet of 60+ without scrolling. */}
       <div className="px-4">
         <div className="flex items-center gap-3 rounded-full bg-[var(--surface)] border border-[var(--border)] focus-within:border-[var(--gold-soft)] transition-colors pl-4 pr-1.5 h-12">
           <Search className="h-4 w-4 text-[var(--foreground-muted)] shrink-0" />
@@ -130,11 +615,7 @@ export function AuctionsBrowser({ initial }: Props) {
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder={
-              inListMode
-                ? `Filtrer dans ${filterLabel}…`
-                : "Rechercher une voiture, une ville..."
-            }
+            placeholder="Filtrer les marques..."
             className="flex-1 bg-transparent text-base placeholder:text-[var(--foreground-subtle)] focus:outline-none min-w-0"
           />
           {search && (
@@ -150,127 +631,51 @@ export function AuctionsBrowser({ initial }: Props) {
         </div>
       </div>
 
-      {inListMode ? (
-        /* ─────────── LIST MODE ─────────── */
-        <>
-          {/* Back-to-hub header */}
-          <div className="px-4 mt-5 flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => router.push("/auctions")}
-              aria-label="Retour aux catégories"
-              className="h-12 w-12 shrink-0 rounded-full bg-[var(--surface)] border-2 border-[var(--gold-soft)] text-[var(--gold)] flex items-center justify-center shadow-[var(--shadow-md)] hover:bg-[var(--gold-faint)] hover:border-[var(--gold)] active:scale-95 transition-all"
-            >
-              <ChevronLeft className="h-6 w-6" strokeWidth={2.5} />
-            </button>
-            <div className="flex-1 min-w-0">
-              <div className="text-[11px] font-semibold text-[var(--foreground-muted)] uppercase tracking-wider">
-                {brand ? "Marque" : "Catégorie"}
-              </div>
-              <h1 className="text-2xl font-extrabold tracking-tight truncate">
-                {filterLabel}
-              </h1>
-            </div>
-            <span className="shrink-0 inline-flex items-center justify-center h-8 min-w-[2.5rem] px-2.5 rounded-full bg-[var(--gold-faint)] border border-[var(--gold)] text-[var(--gold)] text-[12px] font-extrabold tabular-nums">
-              {filteredAuctions.length}
-            </span>
+      {filteredBrands.length > 0 && (
+        <section className="mt-6">
+          <ClassicSectionHeader label="Marques" count={filteredBrands.length} />
+          <div className="px-4 mt-2.5 grid grid-cols-3 gap-2.5">
+            {filteredBrands.map((b) => (
+              <ClassicImageBox
+                key={b.name}
+                label={b.name}
+                count={b.count}
+                image={b.image}
+                fallbackInitials={b.name.slice(0, 2).toUpperCase()}
+                onClick={() =>
+                  router.push(
+                    `/auctions?brand=${encodeURIComponent(b.name)}`,
+                  )
+                }
+              />
+            ))}
           </div>
-
-          {/* Filtered grid */}
-          {filteredAuctions.length === 0 ? (
-            <div className="text-center py-16 space-y-3 px-4">
-              <div className="mx-auto h-14 w-14 rounded-full bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center text-[var(--foreground-muted)]">
-                <SearchX className="h-7 w-7" />
-              </div>
-              <div className="font-bold text-base">Aucune enchère</div>
-              <p className="text-xs text-[var(--foreground-muted)]">
-                Aucune annonce ne correspond à ce filtre pour le moment.
-              </p>
-              <button
-                type="button"
-                onClick={() => router.push("/auctions")}
-                className="inline-flex items-center h-9 px-4 rounded-full bg-[var(--gold)] text-black text-[12px] font-bold shadow-[var(--shadow-gold)]"
-              >
-                Voir toutes les catégories
-              </button>
-            </div>
-          ) : (
-            <div className="mt-5 grid grid-cols-2 gap-3 px-4">
-              {filteredAuctions.map((auction) => (
-                <AuctionCard key={auction.id} auction={auction} />
-              ))}
-            </div>
-          )}
-        </>
-      ) : (
-        /* ─────────── HUB MODE ─────────── */
-        <>
-          {/* Brands grid */}
-          {brandIndex.length > 0 && (
-            <section className="mt-6">
-              <SectionHeader label="Marques" count={brandIndex.length} />
-              <div className="px-4 mt-2.5 grid grid-cols-3 gap-2.5">
-                {brandIndex.map((b) => (
-                  <ImageBox
-                    key={b.name}
-                    label={b.name}
-                    count={b.count}
-                    image={b.image}
-                    fallbackInitials={b.name.slice(0, 2).toUpperCase()}
-                    onClick={() =>
-                      router.push(
-                        `/auctions?brand=${encodeURIComponent(b.name)}`,
-                      )
-                    }
-                  />
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Body-type grid */}
-          <section className="mt-6">
-            <SectionHeader label="Catégories" count={BODY_TYPES.length} />
-            <div className="px-4 mt-2.5 grid grid-cols-3 gap-2.5">
-              {bodyIndex.map((bt) => (
-                <ImageBox
-                  key={bt.value}
-                  label={bt.label}
-                  count={bt.count}
-                  image={bt.image}
-                  fallbackIcon={bt.icon}
-                  disabled={bt.count === 0}
-                  onClick={() =>
-                    router.push(
-                      `/auctions?body=${encodeURIComponent(bt.value)}`,
-                    )
-                  }
-                />
-              ))}
-            </div>
-          </section>
-
-          {/* Sellers shortcut at bottom */}
-          <div className="mt-6 px-4">
-            <Link
-              href="/sellers"
-              className="block rounded-2xl bg-[var(--surface)] border border-dashed border-[var(--border)] p-4 hover:border-[var(--gold)] hover:bg-[var(--gold-faint)] transition-colors text-center"
-            >
-              <div className="text-[12px] font-semibold text-[var(--foreground-muted)] hover:text-foreground">
-                Parcourir les vendeurs
-              </div>
-              <div className="text-[10px] text-[var(--foreground-subtle)] mt-0.5">
-                Annuaire des concessionnaires et particuliers
-              </div>
-            </Link>
-          </div>
-        </>
+        </section>
       )}
+
+      <section className="mt-6">
+        <ClassicSectionHeader label="Catégories" count={BODY_TYPES.length} />
+        <div className="px-4 mt-2.5 grid grid-cols-3 gap-2.5">
+          {bodyIndex.map((bt) => (
+            <ClassicImageBox
+              key={bt.value}
+              label={bt.label}
+              count={bt.count}
+              image={bt.image}
+              fallbackIcon={bt.icon}
+              disabled={bt.count === 0}
+              onClick={() =>
+                router.push(`/auctions?body=${encodeURIComponent(bt.value)}`)
+              }
+            />
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
 
-function ImageBox({
+function ClassicImageBox({
   label,
   count,
   image,
@@ -302,6 +707,7 @@ function ImageBox({
             alt=""
             className="absolute inset-0 h-full w-full object-cover"
             loading="lazy"
+            decoding="async"
           />
           <span className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
         </>
@@ -317,7 +723,6 @@ function ImageBox({
           <span className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/70 to-transparent" />
         </span>
       )}
-
       <div className="relative w-full p-2.5 text-start">
         <div className="text-[12px] font-extrabold text-white truncate drop-shadow-sm">
           {label}
@@ -330,7 +735,7 @@ function ImageBox({
   );
 }
 
-function SectionHeader({
+function ClassicSectionHeader({
   label,
   count,
 }: {
@@ -343,6 +748,51 @@ function SectionHeader({
       <span className="text-[11px] text-[var(--foreground-muted)] tabular-nums">
         {count}
       </span>
+    </div>
+  );
+}
+
+function ChipStrip({
+  eyebrow,
+  items,
+}: {
+  eyebrow: string;
+  items: Array<{
+    key: string;
+    label: string;
+    count: number;
+    icon?: LucideIcon;
+    onClick: () => void;
+  }>;
+}) {
+  if (items.length === 0) return null;
+  return (
+    <div>
+      <div className="text-[10px] uppercase tracking-[0.18em] font-bold text-[var(--foreground-muted)] mb-2 inline-flex items-center gap-1.5">
+        <SlidersHorizontal className="h-3 w-3" />
+        {eyebrow}
+      </div>
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-4 px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {items.map((it) => {
+          const Icon = it.icon;
+          return (
+            <button
+              key={it.key}
+              type="button"
+              onClick={it.onClick}
+              className="shrink-0 inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full border border-[var(--border)] bg-[var(--surface)] hover:border-[var(--gold-soft)] hover:bg-[var(--gold-faint)] transition-colors group"
+            >
+              {Icon && (
+                <Icon className="h-3.5 w-3.5 text-[var(--foreground-muted)] group-hover:text-[var(--gold)] transition-colors" />
+              )}
+              <span className="text-[12px] font-bold">{it.label}</span>
+              <span className="text-[11px] text-[var(--foreground-muted)] tabular-nums">
+                {it.count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

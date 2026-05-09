@@ -3,18 +3,17 @@ import { BrowseHeader } from "@/components/layout/BrowseHeader";
 import { createClient } from "@/lib/supabase/server";
 import { listAuctions } from "@/lib/db";
 import { AuctionsBrowser } from "./AuctionsBrowser";
+import { BrowseViewToggle } from "./BrowseViewToggle";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 interface Props {
-  searchParams: Promise<{ brand?: string; body?: string }>;
+  searchParams: Promise<{ view?: string }>;
 }
 
 export default async function AuctionsPage({ searchParams }: Props) {
-  const { brand, body } = await searchParams;
-  const inHubMode = !brand && !body;
-
+  const { view } = await searchParams;
   const supabase = await createClient();
   const auctions = await listAuctions(supabase, {});
 
@@ -22,9 +21,13 @@ export default async function AuctionsPage({ searchParams }: Props) {
     <AppShell noTopBar>
       <BrowseHeader
         eyebrow="Mazed Auto"
-        title={inHubMode ? "Parcourir" : "Résultats"}
+        title="Parcourir"
+        action={<BrowseViewToggle />}
       />
-      <AuctionsBrowser initial={auctions} />
+      <AuctionsBrowser
+        initial={auctions}
+        classicMode={view === "classic"}
+      />
     </AppShell>
   );
 }

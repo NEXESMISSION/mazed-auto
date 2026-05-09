@@ -5,8 +5,8 @@ import {
   Check,
   Crown,
   Gavel,
-  MessageSquare,
-  Heart,
+  Users,
+  Clock,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Countdown } from "@/components/auction/Countdown";
@@ -23,7 +23,7 @@ import { HeroCarousel } from "@/components/auction/HeroCarousel";
 import { AIAlerts } from "@/components/auction/AIAlerts";
 import { createClient } from "@/lib/supabase/server";
 import { getAuctionById } from "@/lib/db";
-import { formatPrice } from "@/lib/format";
+import { auctionCode, formatPrice } from "@/lib/format";
 import type { Auction } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -71,6 +71,11 @@ export default async function AuctionDetailPage({ params }: Props) {
   const isLive =
     !expired &&
     (auction.status === "active" || auction.status === "ending");
+  // Treat both the database-final status and a passed end-time as "over"
+  // for display purposes — the end_expired_auctions sweep above flips the
+  // status, but if it lagged for any reason we still want the page to
+  // render a clear ended state instead of silently hiding the timer.
+  const isOver = isFinal || expired;
 
   return (
     <AppShell noTopBar>
@@ -119,18 +124,35 @@ export default async function AuctionDetailPage({ params }: Props) {
               (bids · participants) so users see how hot the auction is
               without scrolling to the price pills. */}
           <div className="absolute inset-x-0 bottom-0 px-5 pb-7 z-10">
-            <div className="flex items-center gap-2 mb-2">
-              {auction.isVip && (
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
+              {isOver && (
+                // Big unmistakable pill — same height as the title row,
+                // glowing red, with a pulse so the user can't miss it
+                // even with a quick scroll-by.
+                <span className="inline-flex items-center gap-1.5 px-3 h-7 rounded-full bg-red-500 text-white text-[11px] font-extrabold uppercase tracking-[0.18em] shadow-[0_0_24px_rgba(239,68,68,0.7)]">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inset-0 rounded-full bg-white animate-ping opacity-60" />
+                    <span className="relative h-2 w-2 rounded-full bg-white" />
+                  </span>
+                  Enchère terminée
+                </span>
+              )}
+              {auction.isVip && !isOver && (
                 <span className="inline-flex items-center gap-1 px-2 h-5 rounded-full bg-[var(--gold)] text-black text-[10px] font-extrabold uppercase tracking-[0.15em]">
                   <Crown className="h-2.5 w-2.5" />
                   VIP
                 </span>
               )}
-              {auction.isFeatured && (
+              {auction.isFeatured && !isOver && (
                 <span className="inline-flex items-center px-2 h-5 rounded-full bg-white/15 text-white text-[10px] font-bold uppercase tracking-[0.15em]">
                   En vedette
                 </span>
               )}
+              {/* Public tracking code — small monospace pill so support
+                  agents can identify the auction at a glance. */}
+              <span className="inline-flex items-center px-2 h-5 rounded-full bg-black/55 backdrop-blur-md border border-white/15 text-white/85 text-[10px] font-bold font-mono tracking-[0.08em] tabular-nums">
+                {auctionCode(auction.id)}
+              </span>
             </div>
             <h1 className="text-white text-[26px] font-extrabold leading-[1.15] tracking-tight">
               {vehicle.make} {vehicle.model}
@@ -142,12 +164,12 @@ export default async function AuctionDetailPage({ params }: Props) {
             {/* Activity row — bids count + participants count */}
             <div className="mt-3 flex items-center gap-4 text-white/80 text-[13px] tabular-nums">
               <span className="inline-flex items-center gap-1.5">
-                <MessageSquare className="h-4 w-4" />
+                <Gavel className="h-4 w-4" />
                 <span className="font-bold">{auction.totalBids}</span>
-                <span className="text-white/55 text-[11px]">{auction.totalBids === 1 ? "offre" : "offres"}</span>
+                <span className="text-white/55 text-[11px]">{auction.totalBids === 1 ? "enchère" : "enchères"}</span>
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <Heart className="h-4 w-4" />
+                <Users className="h-4 w-4" />
                 <span className="font-bold">{auction.totalParticipants}</span>
                 <span className="text-white/55 text-[11px]">{auction.totalParticipants === 1 ? "participant" : "participants"}</span>
               </span>
@@ -157,7 +179,11 @@ export default async function AuctionDetailPage({ params }: Props) {
       </section>
 
       <div className="px-4 pt-5 pb-4 space-y-5">
-        {isFinal && <AuctionResultBanner auction={auction} />}
+        {isFinal ? (
+          <AuctionResultBanner auction={auction} />
+        ) : (
+          isOver && <EndedNotice auction={auction} />
+        )}
 
         {/* Description — short paragraph with view-more behaviour via line clamp */}
         {vehicle.description && (
@@ -239,6 +265,35 @@ function Section({
       </h2>
       {children}
     </section>
+  );
+}
+
+/**
+ * Slim "Auction is over" banner used when the end-time has passed but the
+ * end_expired_auctions sweep hasn't flipped the row's status to a final
+ * state yet (so AuctionResultBanner doesn't kick in). Renders a clear,
+ * unmistakable red notice so the page never silently hides the timer.
+ */
+function EndedNotice({ auction }: { auction: Auction }) {
+  return (
+    <div className="rounded-[var(--radius-md)] bg-red-500/10 border border-red-500/30 p-4 flex items-center gap-3">
+      <div className="h-10 w-10 rounded-full bg-red-500/20 text-red-300 flex items-center justify-center shrink-0">
+        <Clock className="h-5 w-5" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="font-extrabold text-red-200">
+          Cette enchère est terminée
+        </div>
+        <div className="text-xs text-red-200/70 mt-0.5">
+          Prix final :{" "}
+          <span className="font-bold tabular-nums">
+            {formatPrice(auction.currentPrice)}
+          </span>{" "}
+          · {auction.totalBids}{" "}
+          {auction.totalBids === 1 ? "offre" : "offres"}
+        </div>
+      </div>
+    </div>
   );
 }
 

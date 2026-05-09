@@ -43,6 +43,8 @@ export interface Seller {
   accountAgeMonths: number;
   city: string;
   isPro?: boolean;
+  /** Admin-controlled flag. False = soft-disabled — can't bid, sell, or sign in. */
+  isActive: boolean;
 }
 
 export interface Vehicle {
