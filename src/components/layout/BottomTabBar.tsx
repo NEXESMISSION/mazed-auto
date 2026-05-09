@@ -36,8 +36,10 @@ export function BottomTabBar() {
       href: "/buyer/bids",
       label: t("myBids"),
       icon: Gavel,
-      match: (p: string) =>
-        p.startsWith("/buyer") && !p.startsWith("/buyer/watchlist"),
+      // Match the whole /buyer/* tree — watchlist + wins are folded into
+      // /buyer/bids tabs now (see BidsTabs), so the old "exclude
+      // watchlist" carve-out is gone.
+      match: (p: string) => p.startsWith("/buyer"),
     },
     {
       href: "/profile",
@@ -50,10 +52,19 @@ export function BottomTabBar() {
   return (
     <nav
       className={cn(
-        "md:hidden sticky bottom-0 z-40 h-[var(--bottombar-h)] pb-safe",
+        // Bar grows with the device's safe-area inset rather than padding
+        // inside a fixed 80px box — the previous `h-[bottombar-h] pb-safe`
+        // pushed the icons up by ~16px on Android (where there's no actual
+        // home indicator), leaving a visible empty strip below them. Now
+        // the visible icon zone is ALWAYS bottombar-h tall, with the
+        // safe-area sitting underneath only when the device actually has
+        // one (iPhone home indicator).
+        "md:hidden sticky bottom-0 z-40",
         "bg-[#0e0e0e] border-t border-[var(--border-strong)]",
         "shadow-[0_-8px_24px_rgba(0,0,0,0.5)]",
         "grid grid-cols-5 items-center px-1",
+        "h-[calc(var(--bottombar-h)+env(safe-area-inset-bottom))]",
+        "pb-[env(safe-area-inset-bottom)]",
       )}
       aria-label={tCommon("primaryNav")}
     >

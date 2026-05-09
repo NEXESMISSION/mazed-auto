@@ -11,7 +11,6 @@ import {
   Trophy,
   Wallet,
   HelpCircle,
-  LogOut,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { ScreenHeader } from "@/components/layout/ScreenHeader";
@@ -32,7 +31,7 @@ export default async function ProfilePage() {
   if (!user) {
     return (
       <AppShell noTopBar>
-        <ScreenHeader title="Mon profil" backHref={null} />
+        <ScreenHeader title="Mon profil" backHref="/" />
         <div className="px-4 text-center py-16 space-y-3">
           <div className="mx-auto h-14 w-14 rounded-full bg-[var(--gold-faint)] text-[var(--gold)] flex items-center justify-center">
             <UserIcon className="h-6 w-6" />
@@ -95,7 +94,7 @@ export default async function ProfilePage() {
     <AppShell noTopBar>
       <ScreenHeader
         title="Mon compte"
-        backHref={null}
+        backHref="/"
         action={
           <Link
             href="/settings"
@@ -128,16 +127,32 @@ export default async function ProfilePage() {
             <div className="text-[12px] text-[var(--foreground-muted)] truncate mt-0.5">
               {user.email}
             </div>
-            <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--gold-faint)] border border-[var(--gold)]/30 text-[10px] font-bold text-[var(--gold)] uppercase tracking-[0.15em]">
-              {role === "admin" ? "Admin" : role === "seller" ? "Vendeur" : "Acheteur"}
-            </div>
+            {/* Role badge — buyers don't get one, since "Acheteur" on
+                everyone's profile reads as noise. Only Admin and Vendeur
+                surface here, where the badge actually means something. */}
+            {(role === "admin" || role === "seller") && (
+              <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--gold-faint)] border border-[var(--gold)]/30 text-[10px] font-bold text-[var(--gold)] uppercase tracking-[0.15em]">
+                {role === "admin" ? "Admin" : "Vendeur"}
+              </div>
+            )}
           </div>
         </section>
 
-        {/* KYC nudge — only shown when the user hasn't verified yet */}
+        {/* KYC nudge — only shown when the user hasn't verified yet.
+            Route by state:
+              none/null  → /kyc/start  (intro + start the flow)
+              pending    → /kyc/status (wait screen, 1-2 days banner)
+              rejected   → /kyc/status (rejected screen with Retry CTA)
+            Without this, the "your verification is being reviewed" link
+            sent the user back to the "Before you begin" page, which made
+            no sense. */}
         {kycStatus !== "verified" && (
           <Link
-            href="/kyc/start"
+            href={
+              kycStatus === "pending" || kycStatus === "rejected"
+                ? "/kyc/status"
+                : "/kyc/start"
+            }
             className="block rounded-2xl bg-[var(--gold-faint)] border border-[var(--gold)]/40 p-3.5 hover:bg-[var(--gold)] hover:text-black transition-colors group"
           >
             <div className="flex items-center gap-3">
@@ -148,17 +163,19 @@ export default async function ProfilePage() {
                 <div className="font-bold text-[13px] text-[var(--gold)] group-hover:text-black">
                   {kycStatus === "pending"
                     ? "Votre vérification est en cours d'examen"
-                    : "Terminer la vérification d'identité"}
+                    : kycStatus === "rejected"
+                      ? "Vérification refusée — réessayer"
+                      : "Terminer la vérification d'identité"}
                 </div>
                 <div className="text-[11px] text-[var(--foreground-muted)] group-hover:text-black/70 mt-0.5">
                   {kycStatus === "pending"
                     ? "Nous vous notifierons dès la fin"
-                    : "Pour participer aux enchères et vendre votre voiture"}
+                    : kycStatus === "rejected"
+                      ? "Voir le motif et soumettre à nouveau"
+                      : "Pour participer aux enchères et vendre votre voiture"}
                 </div>
               </div>
-              {kycStatus !== "pending" && (
-                <ChevronRight className="h-4 w-4 shrink-0" />
-              )}
+              <ChevronRight className="h-4 w-4 shrink-0" />
             </div>
           </Link>
         )}
@@ -173,13 +190,13 @@ export default async function ProfilePage() {
             badge={counts.bids > 0 ? String(counts.bids) : undefined}
           />
           <MenuRow
-            href="/buyer/wins"
+            href="/buyer/bids?tab=won"
             icon={<Trophy className="h-4 w-4" />}
             label="Gagnées"
             badge={counts.won > 0 ? String(counts.won) : undefined}
           />
           <MenuRow
-            href="/buyer/watchlist"
+            href="/buyer/bids?tab=watchlist"
             icon={<Heart className="h-4 w-4" />}
             label="Favoris"
             badge={counts.watch > 0 ? String(counts.watch) : undefined}
@@ -202,11 +219,6 @@ export default async function ProfilePage() {
               href="/seller/auctions"
               icon={<Gavel className="h-4 w-4" />}
               label="Mes enchères"
-            />
-            <MenuRow
-              href="/seller/earnings"
-              icon={<Wallet className="h-4 w-4" />}
-              label="Revenus"
             />
           </MenuCard>
         )}

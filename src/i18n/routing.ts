@@ -6,14 +6,15 @@ export const routing = defineRouting({
   // Adding more locales later is a one-line change here.
   locales: ["ar", "fr"] as const,
   defaultLocale: "fr",
-  // "always" gives every route an explicit /ar or /fr prefix. We tried
-  // "as-needed" first but next-intl's `router.replace(href, { locale })`
-  // always builds prefixed URLs like /ar/settings — and the middleware
-  // redirect to drop the default-locale prefix didn't fire reliably,
-  // producing 404s on the language switcher. Always-prefixing is also
-  // closer to the user's mental model: /ar/auctions and /fr/auctions are
-  // both real, bookmarkable URLs.
   localePrefix: "always",
+  // Persist the user's locale choice for a year and on every path so a
+  // close + reopen lands them back on the language they picked. Without
+  // this, the cookie still defaults to ~1y but we make it explicit so a
+  // future framework upgrade doesn't quietly shorten it.
+  localeCookie: {
+    maxAge: 60 * 60 * 24 * 365,
+    sameSite: "lax",
+  },
 });
 
 export type Locale = (typeof routing.locales)[number];

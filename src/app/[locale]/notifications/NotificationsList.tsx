@@ -34,7 +34,7 @@ const kindMeta: Record<
   won: {
     icon: Trophy,
     color: "text-[var(--gold)] bg-[var(--gold-faint)]",
-    href: () => "/buyer/wins",
+    href: () => "/buyer/bids",
   },
   lost: {
     icon: AlertTriangle,
@@ -59,7 +59,7 @@ const kindMeta: Record<
   payment_due: {
     icon: Wallet,
     color: "text-blue-400 bg-blue-500/15",
-    href: () => "/buyer/wins",
+    href: () => "/buyer/bids",
   },
   reminder: { icon: Bell, color: "text-[var(--gold)] bg-[var(--gold-faint)]" },
   system: { icon: ShieldCheck, color: "text-[var(--gold)] bg-[var(--gold-faint)]" },

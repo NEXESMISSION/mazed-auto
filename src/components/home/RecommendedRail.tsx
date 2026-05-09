@@ -1,6 +1,7 @@
 import { Link } from "@/i18n/navigation";
 import { ArrowUpRight } from "lucide-react";
 import { AuctionCard } from "@/components/auction/AuctionCard";
+import { AutoPagingScroller } from "./AutoPagingScroller";
 import type { Auction } from "@/lib/types";
 
 interface Props {
@@ -23,16 +24,22 @@ export function RecommendedRail({ items }: Props) {
         </Link>
       </div>
 
-      <div className="overflow-x-auto hide-scrollbar">
+      <AutoPagingScroller>
+        {/* Items duplicated once so AutoPagingScroller can teleport
+            back at the halfway boundary without any visible content
+            change — the loop reads as endless. */}
         <div className="flex gap-3 px-4 pb-1">
-          {items.map((auction) => (
-            <div key={auction.id} className="w-[230px] shrink-0">
+          {[...items, ...items].map((auction, i) => (
+            <div
+              key={`${auction.id}-${i}`}
+              aria-hidden={i >= items.length ? true : undefined}
+              className="w-[230px] shrink-0 snap-center"
+            >
               <AuctionCard auction={auction} />
             </div>
           ))}
-          <div className="w-1 shrink-0" />
         </div>
-      </div>
+      </AutoPagingScroller>
     </section>
   );
 }

@@ -57,8 +57,9 @@ export async function voluntaryForfeit(
     return { ok: false, code: "UNKNOWN", message: msg };
   }
 
-  // Refresh the wins list + transactions on the client.
-  revalidatePath("/buyer/wins");
+  // Refresh the wins list + transactions on the client. Wins now live
+  // under /buyer/bids → "Gagnées" tab, so we revalidate that path.
+  revalidatePath("/buyer/bids");
   revalidatePath("/transactions");
   return { ok: true };
 }

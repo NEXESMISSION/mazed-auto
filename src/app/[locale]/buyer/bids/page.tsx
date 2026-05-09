@@ -15,6 +15,12 @@ export interface MyBid {
   auction: Auction;
   myBid: number;
   isWinning: boolean;
+  /** Final payment recorded for this auction (bids the user won + buy-now). */
+  finalPaid: boolean;
+  /** Cached deposit amount (5% of starting price) — same source as the
+   *  participationDeposit column on auctions. Surfaced here for the won
+   *  tab's "remaining = winning bid - deposit" hint. */
+  deposit: number;
 }
 
 export default async function BuyerBidsPage() {
@@ -26,7 +32,7 @@ export default async function BuyerBidsPage() {
   if (!user) {
     return (
       <AppShell noTopBar>
-        <ScreenHeader title="Mes enchères" backHref={null} />
+        <ScreenHeader title="Mes enchères" backHref="/" />
         <div className="px-4 text-center py-16 space-y-3">
           <div className="mx-auto h-14 w-14 rounded-full bg-[var(--gold-faint)] text-[var(--gold)] flex items-center justify-center">
             <Gavel className="h-6 w-6" />
@@ -110,15 +116,31 @@ export default async function BuyerBidsPage() {
         auction: a,
         myBid: myAmount,
         isWinning,
+        finalPaid: paidAuctionIds.has(a.id),
+        deposit: a.participationDeposit,
       };
     });
   }
+
+  // Watchlist (favorites) — folded into this page as a fourth tab so
+  // the user has a single hub for "everything I've engaged with",
+  // instead of jumping between /buyer/bids and /buyer/watchlist.
+  let watchlist: Auction[] = [];
+  const { data: wlRows } = await supabase
+    .from("watchlist")
+    .select("auction_id, auctions(*, seller:sellers(*))")
+    .eq("user_id", user.id);
+  watchlist = (wlRows ?? [])
+    .map((r) =>
+      r.auctions ? mapAuction(r.auctions as unknown as AuctionRow) : null,
+    )
+    .filter(Boolean) as Auction[];
 
   return (
     <AppShell noTopBar>
       <ScreenHeader title="Mes enchères" backHref="/" />
       <div className="px-4 pb-8 space-y-4">
-        <BidsTabs bids={bids} />
+        <BidsTabs bids={bids} watchlist={watchlist} />
       </div>
     </AppShell>
   );

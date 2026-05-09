@@ -47,7 +47,7 @@
   --shadow-gold: 0 6px 20px -4px rgba(212, 175, 55, 0.35), 0 2px 6px rgba(212, 175, 55, 0.2);
 
   /* Layout — mobile-app feel: narrow phone-sized container, even on desktop */
-  --topbar-h: 56px;
+  --topbar-h: 64px;
   --bottombar-h: 80px;
   --max-w: 480px;
 }
@@ -352,8 +352,28 @@ a {
 .marquee-track {
   display: flex;
   width: max-content;
-  animation: marquee-scroll 50s linear infinite;
+  /* 25s default. Speed overridden by --fast / --rapid modifiers below. */
+  animation: marquee-scroll 25s linear infinite;
+  /* GPU-accelerated transform — avoids the single-frame "snap" some
+     browsers flash when the animation jumps from -50% back to 0%. */
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
   will-change: transform;
+}
+/* Per-item spacing lives on each child via Tailwind `me-*` utilities
+   (NewestRibbon → me-4, LiveActivityTicker → me-3) — guarantees the
+   trailing-gap arithmetic the -50% seam depends on, and survives the
+   Tailwind preflight better than a custom selector. Don't add `gap-N`
+   to the track. */
+/* Faster variant for the home "Nouveautés" rail — feels alive without
+   being so fast you can't read the cards. */
+.marquee-track--fast {
+  animation-duration: 28s;
+}
+/* Live activity ticker — fast enough to feel live, slow enough that
+   you can actually read "X bid Y on Z" before the pill slides out. */
+.marquee-track--rapid {
+  animation-duration: 40s;
 }
 .marquee-track:hover {
   animation-play-state: paused;

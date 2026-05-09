@@ -7,12 +7,15 @@ import { BackButton } from "./BackButton";
 import { HeaderIcons } from "./HeaderIcons";
 
 /**
- * Slim top bar.
+ * Top app bar.
  *
- * Layout invariant: messages + notifications always sit on the trailing
- * edge (right in LTR), regardless of whether a back button is present on
- * the leading edge. This keeps the icon position predictable across every
- * page in the app.
+ * - Trailing cluster (Messages + Notifications) is always at the end so
+ *   users learn one position for every screen.
+ * - The bar uses the safe-area inset on top so notch / status-bar
+ *   pixels don't overlap the brand and back button on mobile.
+ * - Slightly taller (64px content + safe area) and a subtle bottom
+ *   shadow so the bar separates from the page content cleanly even on
+ *   pages that don't have their own header.
  */
 export function TopBar() {
   const pathname = usePathname();
@@ -31,15 +34,25 @@ export function TopBar() {
   const hasBackButton = !isHome;
 
   return (
-    <header className="sticky top-0 z-40 h-[var(--topbar-h)] bg-[#0a0a0a] border-b border-[var(--border)]">
+    <header
+      className={cn(
+        "sticky top-0 z-40 bg-[#0a0a0a] border-b border-[var(--border)]",
+        "shadow-[0_2px_18px_rgba(0,0,0,0.35)]",
+        // Total bar = topbar-h + safe-area-inset-top (notch). Padding
+        // pushes the row content down past the notch.
+        "h-[calc(var(--topbar-h)+env(safe-area-inset-top))]",
+        "pt-[env(safe-area-inset-top)]",
+      )}
+    >
       <div className="max-w-[var(--max-w)] mx-auto h-full px-4 md:px-6 flex items-center gap-2">
         {/* Leading cluster */}
         {hasBackButton && <BackButton />}
 
-        {/* Brand wordmark */}
+        {/* Brand wordmark — gold gradient. Slightly larger and with
+            more breathing room so it reads like an app title. */}
         <Link
           href="/"
-          className="font-bold tracking-tight text-base gradient-gold-text ms-1"
+          className="font-extrabold tracking-tight text-[17px] gradient-gold-text ms-1.5"
           aria-label={tBrand("name")}
         >
           {tBrand("name")}

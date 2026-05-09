@@ -38,7 +38,15 @@
     "account": "Compte",
     "primaryNav": "Navigation principale",
     "back": "Retour",
-    "cancel": "Annuler"
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "saved": "Enregistré",
+    "comingSoon": "Bientôt disponible",
+    "confirm": "Confirmer",
+    "continue": "Continuer",
+    "delete": "Supprimer",
+    "edit": "Modifier"
   },
   "offline": {
     "title": "Aucune connexion Internet",
@@ -47,10 +55,52 @@
     "checking": "Vérification..."
   },
   "settings": {
+    "title": "Paramètres",
     "language": {
       "title": "Langue",
       "arabic": "Arabe",
       "french": "Français"
+    },
+    "account": {
+      "title": "Compte",
+      "password": "Modifier le mot de passe",
+      "passwordHint": "Au moins 8 caractères",
+      "newPassword": "Nouveau mot de passe",
+      "passwordChanged": "Mot de passe modifié",
+      "email": "Modifier l'e-mail",
+      "emailHint": "Vous recevrez un lien de confirmation",
+      "newEmail": "Nouvel e-mail",
+      "emailUpdateRequested": "Lien de confirmation envoyé",
+      "phone": "Modifier le téléphone",
+      "phoneHint": "Format international, ex. +216 20 123 456",
+      "newPhone": "Nouveau téléphone",
+      "phoneUpdateRequested": "Numéro mis à jour"
+    },
+    "notifications": {
+      "title": "Notifications",
+      "push": "Notifications de l'application",
+      "pushSub": "Quand votre offre est dépassée ou que vous gagnez une enchère",
+      "email": "Notifications par e-mail",
+      "emailSub": "Résumé hebdomadaire + notifications importantes",
+      "sms": "Notifications par SMS",
+      "smsSub": "Code OTP uniquement (pas de publicités)",
+      "saved": "Préférences enregistrées"
+    },
+    "security": {
+      "title": "Confidentialité et sécurité",
+      "twoFactor": "Authentification à deux facteurs",
+      "twoFactorSub": "Protection supplémentaire pour votre compte",
+      "sessions": "Sessions actives",
+      "sessionsSub": "Gérez les appareils connectés"
+    },
+    "danger": {
+      "title": "Zone de danger",
+      "deleteAccount": "Supprimer mon compte",
+      "deleteAccountSub": "Action irréversible — contactez le support",
+      "deleteConfirmTitle": "Supprimer définitivement votre compte ?",
+      "deleteConfirmBody": "Cette action ne peut pas être annulée. Toutes vos données (enchères, cautions, messages) seront supprimées sous 30 jours.",
+      "deleteContact": "Contacter le support",
+      "deleteCancel": "Annuler"
     }
   },
   "metadata": {

@@ -2,9 +2,9 @@
 
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { Bell, MessageSquare } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { useRealtimeNotifications } from "@/lib/realtime";
+import { NotificationBell } from "./NotificationBell";
 
 interface Props {
   /** Smaller (h-9 w-9) variant when sitting next to a profile avatar. */
@@ -16,17 +16,13 @@ interface Props {
 }
 
 /**
- * Two-icon cluster (messages + notifications with unread badge) reused by
- * the home header, the browse header, and the global TopBar so the icon
- * appearance and unread count behaviour stay consistent everywhere.
+ * Two-icon cluster (messages + notifications-with-popover) reused by the
+ * home header, the browse header, and the global TopBar. The bell opens
+ * a modal instead of navigating, so the user keeps whatever they were
+ * doing on the page underneath.
  */
-export function HeaderIcons({
-  compact,
-  hideWhenSignedOut = true,
-  ghost,
-}: Props) {
+export function HeaderIcons({ compact, hideWhenSignedOut = true, ghost }: Props) {
   const { user } = useAuth();
-  const { unread } = useRealtimeNotifications(user?.id);
   const t = useTranslations("nav");
 
   if (!user && hideWhenSignedOut) return null;
@@ -46,18 +42,9 @@ export function HeaderIcons({
       >
         <MessageSquare className="h-[18px] w-[18px]" />
       </Link>
-      <Link
-        href="/notifications"
-        className={`${base} ${skin} relative`}
-        aria-label={t("notifications")}
-      >
-        <Bell className="h-[18px] w-[18px]" />
-        {unread !== null && unread > 0 && (
-          <span className="absolute -top-1 -end-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[var(--gold)] text-black text-[10px] font-bold flex items-center justify-center tabular-nums shadow-[var(--shadow-gold)]">
-            {unread > 99 ? "99+" : unread}
-          </span>
-        )}
-      </Link>
+      {user && (
+        <NotificationBell userId={user.id} ghost={ghost} compact={compact} />
+      )}
     </div>
   );
 }

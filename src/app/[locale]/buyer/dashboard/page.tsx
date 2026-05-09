@@ -94,14 +94,14 @@ Suivez vos enchères et vos prochaines opportunités
             color="text-[var(--gold)]"
           />
           <StatLink
-            href="/buyer/wins"
+            href="/buyer/bids"
             icon={<Trophy className="h-4 w-4" />}
             label="Gagnées"
             value={String(counts.wins)}
             color="text-[var(--success)]"
           />
           <StatLink
-            href="/buyer/watchlist"
+            href="/buyer/bids?tab=watchlist"
             icon={<Heart className="h-4 w-4" />}
             label="Favoris"
             value={String(counts.watchlist)}

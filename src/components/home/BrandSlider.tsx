@@ -1,5 +1,7 @@
 import { Link } from "@/i18n/navigation";
 import { ArrowUpRight } from "lucide-react";
+import { thumb } from "@/lib/imageUrl";
+import { AutoPagingScroller } from "./AutoPagingScroller";
 import type { Auction } from "@/lib/types";
 
 const TILE_LIMIT = 10;
@@ -45,19 +47,22 @@ export function BrandSlider({ pool }: Props) {
         </Link>
       </div>
 
-      <div className="overflow-x-auto hide-scrollbar">
+      <AutoPagingScroller intervalMs={5500}>
         <div className="flex gap-3 px-4 pb-1">
-          {brands.map(([name, b]) => (
+          {[...brands, ...brands].map(([name, b], i) => (
             <Link
-              key={name}
+              key={`${name}-${i}`}
               href={`/auctions?brand=${encodeURIComponent(name)}`}
-              className="group relative w-[120px] h-[120px] shrink-0 overflow-hidden rounded-2xl ring-1 ring-[var(--border)] bg-[var(--surface-2)] hover:ring-[var(--gold-soft)]/50 transition-shadow"
+              aria-hidden={i >= brands.length ? true : undefined}
+              className="group relative w-[120px] h-[120px] shrink-0 snap-center overflow-hidden rounded-2xl ring-1 ring-[var(--border)] bg-[var(--surface-2)] hover:ring-[var(--gold-soft)]/50 transition-shadow"
             >
               {b.image ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={b.image}
+                  src={thumb(b.image, { width: 240, quality: 65 })}
                   alt={name}
+                  loading="lazy"
+                  decoding="async"
                   className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.06]"
                   draggable={false}
                 />
@@ -73,9 +78,8 @@ export function BrandSlider({ pool }: Props) {
               </div>
             </Link>
           ))}
-          <div className="w-1 shrink-0" />
         </div>
-      </div>
+      </AutoPagingScroller>
     </section>
   );
 }

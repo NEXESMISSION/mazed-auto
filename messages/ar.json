@@ -5,9 +5,9 @@
   },
   "nav": {
     "home": "الرئيسية",
-    "browse": "تصفح المزادات",
-    "browseShort": "تصفح",
-    "sellCar": "بِع سيارتك",
+    "browse": "استعراض المزادات",
+    "browseShort": "استعراض",
+    "sellCar": "بيع سيارتك",
     "myBids": "مزاداتي",
     "myAccount": "حسابي",
     "dashboard": "لوحة التحكم",
@@ -15,7 +15,7 @@
     "messages": "الرسائل",
     "notifications": "الإشعارات",
     "settings": "الإعدادات",
-    "howItWorks": "كيف تعمل",
+    "howItWorks": "كيف يعمل",
     "help": "المساعدة",
     "terms": "الشروط والخصوصية",
     "info": "معلومات",
@@ -25,38 +25,88 @@
     "signIn": "تسجيل الدخول",
     "signUp": "إنشاء حساب",
     "signOut": "تسجيل الخروج",
-    "verified": "موثَّق",
-    "verifiedAccount": "حساب موثَّق",
-    "completeVerification": "إكمال التوثيق",
-    "viewProfile": "عرض الملف الشخصي",
-    "loginPrompt": "ادخل لتقديم العروض وحفظ المفضلة",
-    "intelligentAuctions": "المزادات الذكية"
+    "verified": "موثّق",
+    "verifiedAccount": "حساب موثّق",
+    "completeVerification": "إكمال التحقّق",
+    "viewProfile": "عرض الملف",
+    "loginPrompt": "سجّل الدخول للمزايدة وحفظ مفضّلتك",
+    "intelligentAuctions": "مزادات ذكية"
   },
   "common": {
     "menu": "القائمة",
     "close": "إغلاق",
     "account": "الحساب",
-    "primaryNav": "التنقل الرئيسي",
-    "back": "العودة",
-    "cancel": "إلغاء"
+    "primaryNav": "التنقّل الرئيسي",
+    "back": "رجوع",
+    "cancel": "إلغاء",
+    "save": "حفظ",
+    "saving": "جارٍ الحفظ…",
+    "saved": "تمّ الحفظ",
+    "comingSoon": "قريباً",
+    "confirm": "تأكيد",
+    "continue": "متابعة",
+    "delete": "حذف",
+    "edit": "تعديل"
   },
   "offline": {
     "title": "لا يوجد اتصال بالإنترنت",
-    "description": "تحقّق من اتصالك بالشبكة وحاول مجدداً. ستستأنف الصفحة عملها فور عودة الاتصال.",
+    "description": "تحقّق من اتصال الشبكة ثم أعد المحاولة. ستُستأنف الصفحة تلقائياً عند عودة الاتصال.",
     "retry": "إعادة المحاولة",
-    "checking": "جارٍ التحقق..."
+    "checking": "جارٍ التحقّق..."
   },
   "settings": {
+    "title": "الإعدادات",
     "language": {
       "title": "اللغة",
       "arabic": "العربية",
       "french": "الفرنسية"
+    },
+    "account": {
+      "title": "الحساب",
+      "password": "تغيير كلمة المرور",
+      "passwordHint": "8 أحرف على الأقل",
+      "newPassword": "كلمة المرور الجديدة",
+      "passwordChanged": "تمّ تغيير كلمة المرور",
+      "email": "تغيير البريد الإلكتروني",
+      "emailHint": "ستصلك رسالة تأكيد",
+      "newEmail": "البريد الإلكتروني الجديد",
+      "emailUpdateRequested": "تمّ إرسال رابط التأكيد",
+      "phone": "تغيير رقم الهاتف",
+      "phoneHint": "بصيغة دولية، مثال: +216 20 123 456",
+      "newPhone": "رقم الهاتف الجديد",
+      "phoneUpdateRequested": "تمّ تحديث الرقم"
+    },
+    "notifications": {
+      "title": "الإشعارات",
+      "push": "إشعارات التطبيق",
+      "pushSub": "عند تجاوز عرضك أو فوزك بمزاد",
+      "email": "إشعارات البريد الإلكتروني",
+      "emailSub": "ملخّص أسبوعي + الإشعارات الهامّة",
+      "sms": "إشعارات SMS",
+      "smsSub": "رمز التحقّق فقط (لا توجد إعلانات)",
+      "saved": "تمّ حفظ التفضيلات"
+    },
+    "security": {
+      "title": "الخصوصية والأمان",
+      "twoFactor": "المصادقة بخطوتين",
+      "twoFactorSub": "حماية إضافية لحسابك",
+      "sessions": "الجلسات النشطة",
+      "sessionsSub": "إدارة الأجهزة المتّصلة"
+    },
+    "danger": {
+      "title": "منطقة الخطر",
+      "deleteAccount": "حذف حسابي",
+      "deleteAccountSub": "إجراء لا يمكن التراجع عنه — تواصل مع الدعم",
+      "deleteConfirmTitle": "هل تريد حذف الحساب نهائياً؟",
+      "deleteConfirmBody": "لا يمكن التراجع عن هذا الإجراء. ستُحذف جميع بياناتك (المزادات، الكفالات، الرسائل) خلال 30 يوماً.",
+      "deleteContact": "تواصل مع الدعم",
+      "deleteCancel": "إلغاء"
     }
   },
   "metadata": {
     "titleDefault": "Mazed Auto — منصة المزادات الذكية للسيارات",
     "titleTemplate": "%s — Mazed Auto",
-    "description": "منصة موثوقة للمزادات على السيارات في تونس — توثيق متعدد الطبقات، مزادات لحظية، شفافية كاملة.",
+    "description": "منصة موثوقة للمزادات على السيارات في تونس — تحقّق متعدّد الطبقات، مزايدة فورية، شفافية كاملة.",
     "descriptionShort": "منصة موثوقة للمزادات على السيارات في تونس."
   }
 }

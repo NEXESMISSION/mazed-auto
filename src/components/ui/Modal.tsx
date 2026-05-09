@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -30,6 +31,13 @@ export function Modal({
   size = "md",
   mobileSheet = true,
 }: ModalProps) {
+  // Track when we're mounted on the client so the SSR pass can return
+  // null (createPortal needs a real DOM target).
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
   React.useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => {
@@ -43,9 +51,15 @@ export function Modal({
     };
   }, [open, onClose]);
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
-  return (
+  // Render through a portal anchored to <body>. Without this, any
+  // ancestor with `transform`, `filter`, or `backdrop-filter` (e.g. the
+  // sticky `backdrop-blur` filter bar on /auctions) becomes the
+  // containing block for our `fixed inset-0` overlay — the modal then
+  // anchors to that ancestor's top instead of the viewport, which read
+  // to users as "messed up, stuck at the top, not centered."
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-end md:items-center justify-center"
       role="dialog"
@@ -101,7 +115,8 @@ export function Modal({
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-5">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

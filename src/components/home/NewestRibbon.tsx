@@ -1,6 +1,7 @@
 import { Link } from "@/i18n/navigation";
 import { Sparkles } from "lucide-react";
 import { formatPrice } from "@/lib/format";
+import { thumb } from "@/lib/imageUrl";
 import type { Auction } from "@/lib/types";
 
 interface Props {
@@ -16,7 +17,15 @@ interface Props {
 export function NewestRibbon({ items }: Props) {
   if (items.length === 0) return null;
 
-  const loop = [...items, ...items];
+  // Repeat enough times that the track always has ~10+ tiles even
+  // when the DB only has 2-3 live auctions — otherwise the marquee
+  // reads as "broken" because the same 2 items keep flicking past.
+  // Reps must be EVEN so the -50% keyframe loop lands on a duplicate
+  // of the first tile (translateX(-50%) of an even-rep track == start
+  // of the second half == identical content).
+  const wantedReps = Math.max(2, Math.ceil(10 / items.length));
+  const reps = wantedReps % 2 === 0 ? wantedReps : wantedReps + 1;
+  const loop = Array.from({ length: reps }, () => items).flat();
 
   return (
     <section className="pt-5" aria-label="Nouvelles voitures">
@@ -28,20 +37,26 @@ export function NewestRibbon({ items }: Props) {
       </div>
 
       <div className="marquee-viewport">
-        <div className="marquee-track gap-3 px-3">
+        {/* Each item carries its OWN margin-inline-end (me-4) instead of
+            relying on flex `gap` — the loop seam math needs the trailing
+            gap to count too, and a per-item utility wins specificity vs.
+            the Tailwind preflight. Don't add `gap-N` to the track. */}
+        <div className="marquee-track marquee-track--fast px-3">
           {loop.map((a, i) => (
             <Link
               key={`${a.id}-${i}`}
               href={`/auctions/${a.id}`}
               aria-hidden={i >= items.length ? true : undefined}
               tabIndex={i >= items.length ? -1 : undefined}
-              className="group relative w-[260px] shrink-0 overflow-hidden rounded-2xl ring-1 ring-[var(--border)] bg-[var(--surface-2)] hover:ring-[var(--gold-soft)]/50 transition-shadow"
+              className="group relative w-[260px] shrink-0 me-4 overflow-hidden rounded-2xl ring-1 ring-[var(--border)] bg-[var(--surface-2)] hover:ring-[var(--gold-soft)]/50 transition-shadow"
             >
               <div className="relative h-[180px]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={a.vehicle.imageUrls[0]}
+                  src={thumb(a.vehicle.imageUrls[0], { width: 520, quality: 65 })}
                   alt={`${a.vehicle.make} ${a.vehicle.model}`}
+                  loading="lazy"
+                  decoding="async"
                   className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.05]"
                   draggable={false}
                 />
