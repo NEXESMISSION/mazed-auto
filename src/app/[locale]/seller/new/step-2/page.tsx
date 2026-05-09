@@ -17,13 +17,13 @@ import {
   Package,
   Disc3,
   Hash,
-  RotateCcw,
+  Loader2,
 } from "lucide-react";
 import { CreateAuctionShell } from "@/components/layout/CreateAuctionShell";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { useDraft } from "@/lib/draft";
-import { LivePhotoCapture } from "@/components/auction/LivePhotoCapture";
+import { NativeCapture } from "@/components/auction/NativeCapture";
 import { cn } from "@/lib/utils";
 
 const photoSlots: {
@@ -49,7 +49,6 @@ export default function Step2Page() {
   const { toast } = useToast();
   const { draft, update } = useDraft();
   const [photos, setPhotos] = useState<(string | null)[]>(Array(12).fill(null));
-  const [activeSlot, setActiveSlot] = useState<number | null>(null);
 
   useEffect(() => {
     const saved = draft.imageUrls;
@@ -63,7 +62,9 @@ export default function Step2Page() {
   const filled = photos.filter(Boolean).length;
   const allDone = filled === 12;
 
-  function persist(next: (string | null)[]) {
+  function setSlot(i: number, url: string) {
+    const next = [...photos];
+    next[i] = url;
     setPhotos(next);
     update({ imageUrls: next.map((p) => p ?? "") });
   }
@@ -74,8 +75,8 @@ export default function Step2Page() {
         <div>
           <h1 className="text-2xl font-extrabold">12 photos obligatoires</h1>
           <p className="text-sm text-[var(--foreground-muted)] mt-1">
-            Prise de vue en direct uniquement — la caméra s&apos;ouvre
-            directement, aucun fichier à téléverser.
+            Touchez une vignette : la caméra de votre appareil s&apos;ouvre,
+            vous prenez la photo puis vous validez dans l&apos;écran natif.
           </p>
         </div>
 
@@ -108,93 +109,29 @@ export default function Step2Page() {
         </div>
 
         <div className="grid grid-cols-3 gap-2.5">
-          {photoSlots.map((slot, i) => {
-            const photo = photos[i];
-            const isActive = activeSlot === i;
-            return (
-              <button
-                key={i}
-                onClick={() => setActiveSlot(isActive ? null : i)}
-                className={cn(
-                  "relative aspect-square rounded-[var(--radius)] border-2 border-dashed overflow-hidden transition-colors",
-                  isActive
-                    ? "border-[var(--gold)] bg-[var(--gold-faint)]"
-                    : photo
-                      ? "border-[var(--success)]"
-                      : "border-[var(--border)] hover:border-[var(--gold)] bg-[var(--surface)]",
-                )}
-              >
-                {photo ? (
-                  <>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={photo}
-                      alt={slot.label}
-                      className="h-full w-full object-cover"
-                    />
-                    <div className="absolute top-1 right-1 h-5 w-5 rounded-full bg-[var(--success)] flex items-center justify-center">
-                      <Check className="h-3 w-3 text-white" strokeWidth={3} />
-                    </div>
-                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black to-transparent p-1.5">
-                      <div className="text-[9px] font-semibold text-white text-center">
-                        {i + 1}. {slot.label}
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center p-1.5 text-center">
-                    <slot.Icon className="h-6 w-6 text-[var(--gold)] mb-1" />
-                    <div className="text-[9px] font-semibold leading-tight">
-                      {i + 1}. {slot.label}
-                    </div>
-                    <Camera className="h-3.5 w-3.5 text-[var(--foreground-muted)] mt-1" />
-                  </div>
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {activeSlot !== null && (
-          <div className="rounded-[var(--radius-md)] bg-[var(--surface)] border border-[var(--border)] p-3 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="text-xs font-bold text-[var(--gold)]">
-                Photo {activeSlot + 1}/12 — {photoSlots[activeSlot].label}
-              </div>
-              {photos[activeSlot] && (
-                <button
-                  onClick={() => {
-                    const next = [...photos];
-                    next[activeSlot] = null;
-                    persist(next);
-                  }}
-                  className="text-[10px] text-[var(--foreground-muted)] flex items-center gap-1 hover:text-foreground"
-                >
-                  <RotateCcw className="h-3 w-3" />
-                  Refaire
-                </button>
-              )}
-            </div>
-            <LivePhotoCapture
-              key={`slot-${activeSlot}-${photos[activeSlot] ? "done" : "fresh"}`}
-              frame="vehicle"
-              hint="Cadrez tout le sujet, sans flou"
-              upload
-              folder="auctions"
+          {photoSlots.map((slot, i) => (
+            <NativeCapture
+              key={i}
+              kind="photo"
               facing="environment"
-              onCapture={(url) => {
-                const next = [...photos];
-                next[activeSlot] = url;
-                persist(next);
-                toast(`Photo ${activeSlot + 1}/12 ✓`, "success");
-                // Auto-advance to the next empty slot — keeps the flow moving
-                // for the seller without forcing them to tap each tile.
-                const nextEmpty = next.findIndex((p) => !p);
-                setActiveSlot(nextEmpty === -1 ? null : nextEmpty);
+              folder="auctions"
+              onCaptured={(url) => {
+                setSlot(i, url);
+                toast(`Photo ${i + 1}/12 ✓`, "success");
               }}
-            />
-          </div>
-        )}
+            >
+              {({ open, uploading }) => (
+                <SlotTile
+                  index={i}
+                  slot={slot}
+                  photo={photos[i]}
+                  uploading={uploading}
+                  onTap={open}
+                />
+              )}
+            </NativeCapture>
+          ))}
+        </div>
 
         <div className="pt-4 flex flex-col-reverse sm:flex-row gap-2">
           <Button
@@ -217,5 +154,66 @@ export default function Step2Page() {
         </div>
       </div>
     </CreateAuctionShell>
+  );
+}
+
+function SlotTile({
+  index,
+  slot,
+  photo,
+  uploading,
+  onTap,
+}: {
+  index: number;
+  slot: { label: string; Icon: React.ComponentType<{ className?: string }> };
+  photo: string | null;
+  uploading: boolean;
+  onTap: () => void;
+}) {
+  return (
+    <button
+      onClick={onTap}
+      disabled={uploading}
+      className={cn(
+        "relative aspect-square rounded-[var(--radius)] border-2 border-dashed overflow-hidden transition-colors",
+        uploading
+          ? "border-[var(--gold)]"
+          : photo
+            ? "border-[var(--success)]"
+            : "border-[var(--border)] hover:border-[var(--gold)] bg-[var(--surface)]",
+      )}
+    >
+      {photo ? (
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={photo}
+            alt={slot.label}
+            className="h-full w-full object-cover"
+          />
+          <div className="absolute top-1 right-1 h-5 w-5 rounded-full bg-[var(--success)] flex items-center justify-center">
+            <Check className="h-3 w-3 text-white" strokeWidth={3} />
+          </div>
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black to-transparent p-1.5">
+            <div className="text-[9px] font-semibold text-white text-center">
+              {index + 1}. {slot.label}
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="absolute inset-0 flex flex-col items-center justify-center p-1.5 text-center">
+          <slot.Icon className="h-6 w-6 text-[var(--gold)] mb-1" />
+          <div className="text-[9px] font-semibold leading-tight">
+            {index + 1}. {slot.label}
+          </div>
+          <Camera className="h-3.5 w-3.5 text-[var(--foreground-muted)] mt-1" />
+        </div>
+      )}
+      {uploading && (
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
+          <Loader2 className="h-6 w-6 text-[var(--gold)] animate-spin" />
+        </div>
+      )}
+    </button>
   );
 }

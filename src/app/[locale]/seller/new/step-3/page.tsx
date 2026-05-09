@@ -7,14 +7,14 @@ import { CreateAuctionShell } from "@/components/layout/CreateAuctionShell";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { useDraft } from "@/lib/draft";
-import { LiveVideoCapture } from "@/components/auction/LiveVideoCapture";
+import { NativeCapture } from "@/components/auction/NativeCapture";
 
 const checklist = [
-  { time: "0-20s", from: 0, to: 20, label: "Tour à 360° autour de la voiture" },
-  { time: "20-35s", from: 20, to: 35, label: "Ouverture des portes / vue intérieure" },
-  { time: "35-45s", from: 35, to: 45, label: "Ouverture du capot moteur" },
-  { time: "45-55s", from: 45, to: 55, label: "Démarrage du moteur" },
-  { time: "55-60s", from: 55, to: 60, label: "Gros plan sur la plaque d'immatriculation" },
+  { time: "0-20s", label: "Tour à 360° autour de la voiture" },
+  { time: "20-35s", label: "Ouverture de toutes les portes et vue intérieure" },
+  { time: "35-45s", label: "Ouverture du capot moteur" },
+  { time: "45-55s", label: "Démarrage du moteur" },
+  { time: "55-60s", label: "Gros plan sur la plaque d'immatriculation" },
 ];
 
 export default function Step3Page() {
@@ -22,14 +22,10 @@ export default function Step3Page() {
   const { toast } = useToast();
   const { draft, update } = useDraft();
   const [videoUrl, setVideoUrl] = useState<string | null>(draft.videoUrl ?? null);
-  // `key` lets us force-remount LiveVideoCapture when the user wants to
-  // re-record after a successful upload (otherwise its internal stream
-  // wouldn't restart).
-  const [recorderKey, setRecorderKey] = useState(0);
 
   const done = Boolean(videoUrl);
 
-  function handleCapture(url: string) {
+  function handleCaptured(url: string) {
     setVideoUrl(url);
     update({ videoUrl: url });
     toast("Vidéo téléversée ✓", "success");
@@ -38,7 +34,6 @@ export default function Step3Page() {
   function reset() {
     setVideoUrl(null);
     update({ videoUrl: undefined });
-    setRecorderKey((k) => k + 1);
   }
 
   return (
@@ -47,15 +42,16 @@ export default function Step3Page() {
         <div>
           <h1 className="text-2xl font-extrabold">Vidéo de la voiture</h1>
           <p className="text-sm text-[var(--foreground-muted)] mt-1">
-            Filmez la voiture en suivant la liste ci-dessous. La caméra
-            s&apos;ouvre directement, aucun fichier à téléverser.
+            Suivez la liste ci-dessous pendant le tournage. Touchez le bouton
+            : la caméra de votre appareil s&apos;ouvre, vous filmez puis
+            validez dans l&apos;écran natif.
           </p>
         </div>
 
-        {done ? (
+        {done && videoUrl ? (
           <div className="relative aspect-[9/16] sm:aspect-video rounded-[var(--radius-md)] overflow-hidden bg-black border border-[var(--border)]">
             <video
-              src={videoUrl ?? undefined}
+              src={videoUrl}
               controls
               playsInline
               className="h-full w-full object-cover"
@@ -65,15 +61,12 @@ export default function Step3Page() {
             </div>
           </div>
         ) : (
-          <LiveVideoCapture
-            key={recorderKey}
-            minSeconds={45}
-            maxSeconds={75}
+          <NativeCapture
+            kind="video"
             facing="environment"
-            audio
-            checklist={checklist}
             folder="auction-video"
-            onCapture={handleCapture}
+            label="Filmer la voiture"
+            onCaptured={handleCaptured}
           />
         )}
 

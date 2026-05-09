@@ -8,13 +8,15 @@ import {
   ArrowRight,
   Camera,
   RotateCcw,
+  Loader2,
 } from "lucide-react";
 import { CreateAuctionShell } from "@/components/layout/CreateAuctionShell";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useDraft } from "@/lib/draft";
 import { useAuth } from "@/lib/auth";
-import { LivePhotoCapture } from "@/components/auction/LivePhotoCapture";
+import { NativeCapture } from "@/components/auction/NativeCapture";
+import { cn } from "@/lib/utils";
 
 // Exceptions per PLAN §11.3. The first five cover legitimate name
 // mismatches; "other" is the catch-all and forces an admin review before
@@ -44,8 +46,6 @@ export default function Step4Page() {
 
   const [front, setFront] = useState<string | null>(null);
   const [back, setBack] = useState<string | null>(null);
-  // Per side: "idle" = nothing yet, "active" = camera is live for this side.
-  const [active, setActive] = useState<"front" | "back" | null>(null);
 
   const [ownerName, setOwnerName] = useState(draft.ownerName ?? "");
   const [plate, setPlate] = useState(draft.registration ?? "");
@@ -82,70 +82,49 @@ export default function Step4Page() {
         <div>
           <h1 className="text-2xl font-extrabold">Carte grise</h1>
           <p className="text-sm text-[var(--foreground-muted)] mt-1">
-            La caméra s&apos;ouvre directement — aucun fichier à téléverser.
-            Photographiez le recto puis le verso.
+            Touchez chaque vignette : la caméra de votre appareil s&apos;ouvre,
+            vous prenez la photo puis vous validez dans l&apos;écran natif.
           </p>
         </div>
 
-        {/* Two scans side by side */}
         <div className="grid grid-cols-2 gap-3">
-          <ScanSlot
-            label="Recto"
-            url={front}
-            isActive={active === "front"}
-            onStart={() => setActive("front")}
-            onClear={() => setFront(null)}
-          />
-          <ScanSlot
-            label="Verso"
-            url={back}
-            isActive={active === "back"}
-            onStart={() => setActive("back")}
-            onClear={() => setBack(null)}
-          />
+          <NativeCapture
+            kind="photo"
+            facing="environment"
+            folder="carte-grise"
+            onCaptured={(url) => setFront(url)}
+          >
+            {({ open, uploading }) => (
+              <ScanSlot
+                label="Recto"
+                url={front}
+                uploading={uploading}
+                onTap={open}
+                onClear={() => setFront(null)}
+              />
+            )}
+          </NativeCapture>
+
+          <NativeCapture
+            kind="photo"
+            facing="environment"
+            folder="carte-grise"
+            onCaptured={(url) => setBack(url)}
+          >
+            {({ open, uploading }) => (
+              <ScanSlot
+                label="Verso"
+                url={back}
+                uploading={uploading}
+                onTap={open}
+                onClear={() => setBack(null)}
+              />
+            )}
+          </NativeCapture>
         </div>
 
-        {/* Live camera for the active side */}
-        {active === "front" && (
-          <div className="rounded-[var(--radius-md)] bg-[var(--surface)] border border-[var(--border)] p-3">
-            <div className="text-xs font-bold text-[var(--gold)] mb-2">
-              Recto — placez la carte dans le cadre
-            </div>
-            <LivePhotoCapture
-              frame="id-card"
-              hint="Bon éclairage, sans reflets"
-              upload
-              folder="carte-grise"
-              onCapture={(url) => {
-                setFront(url);
-                setActive(null);
-              }}
-            />
-          </div>
-        )}
-
-        {active === "back" && (
-          <div className="rounded-[var(--radius-md)] bg-[var(--surface)] border border-[var(--border)] p-3">
-            <div className="text-xs font-bold text-[var(--gold)] mb-2">
-              Verso — placez la carte dans le cadre
-            </div>
-            <LivePhotoCapture
-              frame="id-card"
-              hint="Vérifiez la netteté du texte"
-              upload
-              folder="carte-grise"
-              onCapture={(url) => {
-                setBack(url);
-                setActive(null);
-              }}
-            />
-          </div>
-        )}
-
-        {/* Manual entry once both photos exist. No mock OCR — the seller
-            types the data they read off the carte grise; the admin verifies
-            it later against the photos. */}
-        {bothCaptured && !active && (
+        {/* Manual entry once both photos exist. */}
+        {bothCaptured && (
           <div className="rounded-[var(--radius-md)] bg-[var(--surface)] border border-[var(--border)] p-4 space-y-3">
             <div className="text-xs font-bold text-[var(--gold)]">
               Renseignez les informations de la carte grise
@@ -184,8 +163,6 @@ export default function Step4Page() {
           </div>
         )}
 
-        {/* Golden Lock — checks the name the seller entered against the
-            verified KYC name. */}
         {bothCaptured && ownerName && matched && (
           <div className="rounded-[var(--radius)] bg-green-500/10 border border-green-500/30 p-4 flex gap-3 items-start">
             <Check className="h-5 w-5 text-green-400 shrink-0 mt-0.5" />
@@ -275,14 +252,14 @@ export default function Step4Page() {
 function ScanSlot({
   label,
   url,
-  isActive,
-  onStart,
+  uploading,
+  onTap,
   onClear,
 }: {
   label: string;
   url: string | null;
-  isActive: boolean;
-  onStart: () => void;
+  uploading: boolean;
+  onTap: () => void;
   onClear: () => void;
 }) {
   if (url) {
@@ -305,20 +282,27 @@ function ScanSlot({
   }
   return (
     <button
-      onClick={onStart}
-      className={`relative aspect-[4/3] rounded-[var(--radius)] border-2 border-dashed overflow-hidden transition-colors ${
-        isActive
-          ? "border-[var(--gold)] bg-[var(--gold-faint)]"
-          : "border-[var(--border)] hover:border-[var(--gold)] bg-[var(--surface)]"
-      }`}
+      onClick={onTap}
+      disabled={uploading}
+      className={cn(
+        "relative aspect-[4/3] rounded-[var(--radius)] border-2 border-dashed overflow-hidden transition-colors",
+        uploading
+          ? "border-[var(--gold)]"
+          : "border-[var(--border)] hover:border-[var(--gold)] bg-[var(--surface)]",
+      )}
     >
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
         <Camera className="h-6 w-6 text-[var(--gold)]" />
         <div className="text-xs font-semibold">{label}</div>
         <div className="text-[10px] text-[var(--foreground-muted)]">
-          {isActive ? "Caméra active…" : "Toucher pour ouvrir la caméra"}
+          Toucher pour ouvrir la caméra
         </div>
       </div>
+      {uploading && (
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
+          <Loader2 className="h-6 w-6 text-[var(--gold)] animate-spin" />
+        </div>
+      )}
     </button>
   );
 }
