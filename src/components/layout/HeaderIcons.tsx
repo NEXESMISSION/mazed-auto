@@ -1,8 +1,8 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { Bell, MessageSquare } from "lucide-react";
 import { Link } from "@/i18n/navigation";
-import { MessageSquare } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { NotificationBell } from "./NotificationBell";
 
@@ -19,7 +19,8 @@ interface Props {
  * Two-icon cluster (messages + notifications-with-popover) reused by the
  * home header, the browse header, and the global TopBar. The bell opens
  * a modal instead of navigating, so the user keeps whatever they were
- * doing on the page underneath.
+ * doing on the page underneath. Signed-out users see the same icons —
+ * tapping either one routes through /login.
  */
 export function HeaderIcons({ compact, hideWhenSignedOut = true, ghost }: Props) {
   const { user } = useAuth();
@@ -28,7 +29,7 @@ export function HeaderIcons({ compact, hideWhenSignedOut = true, ghost }: Props)
   if (!user && hideWhenSignedOut) return null;
 
   const size = compact ? "h-9 w-9" : "h-10 w-10";
-  const base = `${size} flex items-center justify-center rounded-full transition-colors`;
+  const base = `${size} flex items-center justify-center rounded-full transition-colors relative`;
   const skin = ghost
     ? "hover:bg-[var(--surface)]"
     : "bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--gold-soft)] hover:bg-[var(--surface-2)]";
@@ -36,14 +37,25 @@ export function HeaderIcons({ compact, hideWhenSignedOut = true, ghost }: Props)
   return (
     <div className="flex items-center gap-1">
       <Link
-        href="/messages"
+        href={user ? "/messages" : "/login?redirect=/messages"}
         className={`${base} ${skin}`}
         aria-label={t("messages")}
       >
         <MessageSquare className="h-[18px] w-[18px]" />
       </Link>
-      {user && (
+      {user ? (
         <NotificationBell userId={user.id} ghost={ghost} compact={compact} />
+      ) : (
+        // Guest variant — same icon, routes to login. Keeps the header
+        // shape stable for both signed-in and signed-out states so
+        // returning users see a familiar layout.
+        <Link
+          href="/login?redirect=/notifications"
+          className={`${base} ${skin}`}
+          aria-label="Notifications"
+        >
+          <Bell className="h-[18px] w-[18px]" />
+        </Link>
       )}
     </div>
   );
