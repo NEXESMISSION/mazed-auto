@@ -3,10 +3,10 @@
 import { useState } from "react";
 import { Link } from "@/i18n/navigation";
 import { Eye, Edit, X, Inbox } from "lucide-react";
-import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { formatPrice, formatTimeRemaining } from "@/lib/format";
 import type { Auction, AuctionStatus } from "@/lib/types";
+import { SellerDecisionCard } from "./SellerDecisionCard";
 
 const tabs: {
   value: "active" | "pending" | "ended" | "cancelled";
@@ -41,12 +41,26 @@ export function SellerAuctionsList({ list }: { list: Auction[] }) {
     "active" | "pending" | "ended" | "cancelled"
   >("active");
 
+  // eslint-disable-next-line react-hooks/purity
+  const now = Date.now();
+  // Time-aware liveness check: covers the brief window between an
+  // auction's end_time passing and end_expired_auctions flipping its
+  // status. Without this, ended rows briefly appear in "Actives".
+  const isLive = (a: Auction) =>
+    (a.status === "active" || a.status === "ending") &&
+    a.endTime.getTime() > now;
+  const isExpiredButOpen = (a: Auction) =>
+    (a.status === "active" || a.status === "ending") &&
+    a.endTime.getTime() <= now;
+
   const counts = {
-    active: list.filter((a) => a.status === "active" || a.status === "ending")
-      .length,
+    active: list.filter(isLive).length,
     pending: list.filter((a) => a.status === "pending_review").length,
     ended: list.filter(
-      (a) => a.status === "ended" || a.status === "reserve_not_met",
+      (a) =>
+        a.status === "ended" ||
+        a.status === "reserve_not_met" ||
+        isExpiredButOpen(a),
     ).length,
     cancelled: list.filter((a) => a.status === "cancelled").length,
   };
@@ -56,51 +70,39 @@ export function SellerAuctionsList({ list }: { list: Auction[] }) {
   );
 
   const filtered = list.filter((a) => {
-    if (tab === "active")
-      return a.status === "active" || a.status === "ending";
+    if (tab === "active") return isLive(a);
     if (tab === "pending") return a.status === "pending_review";
     if (tab === "ended")
-      return a.status === "ended" || a.status === "reserve_not_met";
+      return (
+        a.status === "ended" ||
+        a.status === "reserve_not_met" ||
+        isExpiredButOpen(a)
+      );
     return a.status === "cancelled";
   });
 
   return (
     <>
       {needsDecision.length > 0 && (
-        <div className="rounded-[var(--radius-md)] bg-amber-500/10 border border-amber-500/40 p-4 space-y-3">
-          <div className="flex items-center gap-2">
-            <span className="h-8 w-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-300">
+        <div className="space-y-3">
+          <div className="flex items-center gap-3 px-1">
+            <span className="h-9 w-9 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-300 shrink-0">
               ⏳
             </span>
             <div>
-              <div className="font-bold text-amber-200">
-                {needsDecision.length} Enchère nécessite votre décision
+              <div className="font-extrabold text-amber-200 leading-tight">
+                {needsDecision.length === 1
+                  ? "1 enchère attend votre décision"
+                  : `${needsDecision.length} enchères attendent votre décision`}
               </div>
-              <div className="text-xs text-[var(--foreground-muted)]">
-                Enchères terminées avec prix de réserve non atteint. Vous avez 3 jours pour accepter ou refuser.
+              <div className="text-[11px] text-[var(--foreground-muted)] mt-0.5">
+                Vous n'êtes pas obligé de vendre — acceptez l'offre du plus haut enchérisseur ou refusez.
               </div>
             </div>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {needsDecision.map((a) => (
-              <Link
-                key={a.id}
-                href={`/auctions/${a.id}`}
-                className="flex items-center gap-3 p-3 rounded-[var(--radius)] bg-[var(--surface)] border border-[var(--border)] hover:border-amber-500/40 transition-colors"
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="font-bold text-sm">
-                    {a.vehicle.make} {a.vehicle.model} {a.vehicle.year}
-                  </div>
-                  <div className="text-xs text-[var(--foreground-muted)]">
-                    Offre la plus haute : {formatPrice(a.currentPrice)} • Réserve :{" "}
-                    {formatPrice(a.reservePrice ?? 0)}
-                  </div>
-                </div>
-                <Button size="sm" variant="secondary">
-Prendre une décision
-                </Button>
-              </Link>
+              <SellerDecisionCard key={a.id} auction={a} />
             ))}
           </div>
         </div>

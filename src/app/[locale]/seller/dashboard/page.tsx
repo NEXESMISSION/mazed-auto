@@ -27,6 +27,13 @@ export default function SellerDashboardPage() {
     if (!loaded || !user) return;
     const supabase = createClient();
     (async () => {
+      // Sweep expired auctions first so the dashboard never shows a row
+      // sitting in "active" with a long-passed end_time.
+      try {
+        await supabase.rpc("end_expired_auctions");
+      } catch {
+        // ignore — the client-side endTime guard below covers the gap
+      }
       const { data } = await supabase
         .from("auctions")
         .select("*, seller:sellers(*)")
@@ -38,8 +45,16 @@ export default function SellerDashboardPage() {
     })();
   }, [user, loaded]);
 
+  // Time-aware "active" check — covers the brief window between an
+  // auction's end_time passing and end_expired_auctions flipping its
+  // status. Without this, the count momentarily disagrees with the UI.
+  const now = Date.now();
+  const isLive = (a: Auction) =>
+    (a.status === "active" || a.status === "ending") &&
+    a.endTime.getTime() > now;
+
   const stats = {
-    active: myAuctions.filter((a) => a.status === "active" || a.status === "ending").length,
+    active: myAuctions.filter(isLive).length,
     completed: myAuctions.filter((a) => a.status === "ended").length,
     earnings: myAuctions
       .filter((a) => a.status === "ended")

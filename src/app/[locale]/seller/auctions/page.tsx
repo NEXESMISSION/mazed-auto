@@ -40,6 +40,14 @@ export default async function SellerAuctionsPage() {
     );
   }
 
+  // Sweep expired auctions before reading so the seller never sees a
+  // row that says "active" while the timer has clearly run out.
+  try {
+    await supabase.rpc("end_expired_auctions");
+  } catch {
+    // ignore — fetch falls back to the client-side endTime guard
+  }
+
   const { data } = await supabase
     .from("auctions")
     .select("*, seller:sellers(*)")
