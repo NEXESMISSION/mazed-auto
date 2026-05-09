@@ -20,15 +20,35 @@ export interface AppUser {
 function mapUser(u: SupabaseUser | null): AppUser | null {
   if (!u) return null;
   const meta = (u.user_metadata ?? {}) as Record<string, unknown>;
+  // Google OAuth puts the user's name in `full_name` / `name` / `given_name`
+  // / `family_name` rather than the firstName/lastName pair our sign-up
+  // form writes. Fall back to those so OAuth users see their real name on
+  // the home header without a follow-up profile-edit step.
+  const firstFromMeta = (meta.firstName as string) || "";
+  const lastFromMeta = (meta.lastName as string) || "";
+  let firstName = firstFromMeta;
+  let lastName = lastFromMeta;
+  if (!firstName) {
+    const given = (meta.given_name as string) || "";
+    const fullName =
+      (meta.full_name as string) || (meta.name as string) || "";
+    if (given) {
+      firstName = given;
+    } else if (fullName) {
+      const [first, ...rest] = fullName.trim().split(/\s+/);
+      firstName = first ?? "";
+      if (!lastName) lastName = rest.join(" ");
+    }
+  }
+  if (!lastName) lastName = (meta.family_name as string) || "";
   return {
     id: u.id,
-    firstName: (meta.firstName as string) || "",
-    lastName: (meta.lastName as string) || "",
+    firstName,
+    lastName,
     email: u.email ?? "",
     phone: u.phone ?? (meta.phone as string) ?? "",
     trustScore: (meta.trustScore as number) ?? 0,
-    kycStatus:
-      (meta.kycStatus as AppUser["kycStatus"]) ?? "none",
+    kycStatus: (meta.kycStatus as AppUser["kycStatus"]) ?? "none",
     emailVerified: Boolean(u.email_confirmed_at),
     phoneVerified: Boolean(u.phone_confirmed_at),
     role: (meta.role as AppUser["role"]) ?? "buyer",
