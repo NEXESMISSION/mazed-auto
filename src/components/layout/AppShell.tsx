@@ -1,6 +1,7 @@
 import { TopBar } from "./TopBar";
 import { BottomTabBar } from "./BottomTabBar";
 import { PullToRefresh } from "./PullToRefresh";
+import { PhoneCompletionGate } from "./PhoneCompletionGate";
 
 interface Props {
   children: React.ReactNode;
@@ -18,6 +19,10 @@ export function AppShell({ children, noTopBar }: Props) {
         {children}
       </main>
       <BottomTabBar />
+      {/* Non-dismissible phone-completion modal for users who signed up
+          via Google OAuth (or any path that didn't capture a phone).
+          Stays up until they submit a valid number. */}
+      <PhoneCompletionGate />
     </div>
   );
 }
