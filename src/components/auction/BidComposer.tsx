@@ -120,6 +120,13 @@ export function BidComposer({
     setAmount((v) => (v < minBid ? minBid : v));
   }, [minBid]);
 
+  // Seed the cap input with a sensible starting value: their existing cap
+  // if they already set one (so they can clearly raise it), otherwise a
+  // forward-looking suggestion at ~2x the next legal bid.
+  useEffect(() => {
+    setAutoMax(activeAutoMax ?? minBid * 2);
+  }, [activeAutoMax, minBid]);
+
   useEffect(() => {
     if (initialAction === "buy-now" && user && auction.buyNowPrice) {
       handleBuyNowClick();
@@ -187,35 +194,42 @@ export function BidComposer({
       toast("Payez d'abord la caution de participation", "warning");
       return;
     }
-    if (autoMax < minBid) {
-      toast(`Le maximum doit être au moins ${formatPrice(minBid)}`, "warning");
+    if (activeAutoMax !== null && autoMax < activeAutoMax) {
+      toast(
+        `Vous ne pouvez que monter votre plafond, jamais le baisser (actuel : ${formatPrice(activeAutoMax)})`,
+        "warning",
+      );
       return;
     }
     setSavingAuto(true);
     const supabase = createClient();
-    const { error } = await supabase.from("auto_bids").upsert(
-      { auction_id: auction.id, user_id: user.id, max_amount: autoMax, is_active: true },
-      { onConflict: "auction_id,user_id" },
-    );
+    // Single RPC call — validates the business rules (cap >= starting,
+    // cap can only rise, deposit paid, auction live), upserts the cap,
+    // and places ONE proxy bid at the smallest amount needed to lead.
+    const { error } = await supabase.rpc("place_auto_bid", {
+      p_auction_id: auction.id,
+      p_max_amount: autoMax,
+    });
     setSavingAuto(false);
     if (error) {
-      toast("Échec de l'enregistrement de l'auto-enchère : " + error.message, "error");
+      const code = error.message;
+      const msg = code.includes("CAP_CANNOT_DECREASE")
+        ? "Vous ne pouvez pas baisser votre plafond — uniquement le monter"
+        : code.includes("CAP_BELOW_STARTING")
+          ? "Le plafond doit être au moins égal au prix de départ"
+          : code.includes("DEPOSIT_REQUIRED")
+            ? "Payez d'abord la caution de participation"
+            : code.includes("AUCTION_NOT_ACTIVE") || code.includes("AUCTION_ENDED")
+              ? "Cette enchère est terminée"
+              : code.includes("SELLER_CANNOT_BID")
+                ? "Vous ne pouvez pas enchérir sur votre propre enchère"
+                : "Échec de l'enregistrement du plafond : " + error.message;
+      toast(msg, "error");
       return;
     }
     setActiveAutoMax(autoMax);
     setShowAuto(false);
-    toast(`Auto-enchère activée jusqu'à ${formatPrice(autoMax)}`, "success");
-    if (auction.currentPrice + auction.bidIncrement <= autoMax) {
-      await supabase.from("bids").insert({
-        auction_id: auction.id,
-        user_id: user.id,
-        // Anonymous handle — never store the user's real name on the bid
-        // row. Other bidders and the seller only ever see this opaque tag.
-        bidder_label: anonBidder(user.id),
-        amount: auction.currentPrice + auction.bidIncrement,
-        is_auto_bid: true,
-      });
-    }
+    toast(`Plafond activé à ${formatPrice(autoMax)}`, "success");
   }
 
   async function cancelAutoBid() {
@@ -529,8 +543,8 @@ export function BidComposer({
               >
                 <Bot className="h-3 w-3" />
                 {activeAutoMax
-                  ? `Auto jusqu'à ${formatPrice(activeAutoMax)}`
-                  : "Auto-Bid"}
+                  ? `Plafond ${formatPrice(activeAutoMax)}`
+                  : "Plafond automatique"}
               </button>
               {auction.buyNowPrice && (
                 <>
@@ -614,7 +628,7 @@ export function BidComposer({
           <li>• <strong className="text-foreground">Caution 5%:</strong> Payée une fois par enchère, remboursée si vous ne gagnez pas.</li>
           <li>• <strong className="text-foreground">Anti-Sniping:</strong> Toute offre dans les 5 dernières minutes prolonge l'enchère de 5 minutes.</li>
           <li>• <strong className="text-foreground">Réserve :</strong> Si le prix de réserve n'est pas atteint, l'enchère n'est pas conclue.</li>
-          <li>• <strong className="text-foreground">Auto-enchère :</strong> Enchérit en votre nom jusqu'au maximum.</li>
+          <li>• <strong className="text-foreground">Plafond automatique :</strong> Vous fixez un montant maximum caché. Le système enchérit pour vous au minimum nécessaire pour devancer le 2ᵉ plafond — jamais plus.</li>
           <li>• <strong className="text-foreground">Retrait après victoire :</strong> Caution saisie + bannissement 30 jours.</li>
         </ul>
       </Modal>
@@ -622,35 +636,66 @@ export function BidComposer({
       <Modal
         open={showAuto}
         onClose={() => setShowAuto(false)}
-        title="Configurer l'auto-enchère"
-        description="Nous enchérissons en votre nom jusqu'au maximum"
+        title="Plafond automatique"
+        description="Indiquez le montant maximum que vous êtes prêt à payer. Reste caché des autres."
       >
-        <div className="space-y-3">
+        <div className="space-y-4">
           {activeAutoMax && (
             <div className="rounded-[var(--radius)] bg-emerald-500/10 border border-emerald-500/30 p-3 text-xs">
               <span className="font-bold text-emerald-300">
-                Auto-enchère activée jusqu'à {formatPrice(activeAutoMax)}
+                Plafond actuel : {formatPrice(activeAutoMax)} —
+              </span>{" "}
+              <span className="text-emerald-300/80">
+                vous ne pouvez que le monter
               </span>
             </div>
           )}
-          <label className="text-xs font-semibold text-[var(--foreground-muted)]">
-            Maximum
-          </label>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={autoMax === 0 ? "" : autoMax}
-            onChange={(e) => {
-              const v = e.target.value
-                .replace(/\D/g, "")
-                .replace(/^0+(?=\d)/, "");
-              setAutoMax(v === "" ? 0 : Number(v));
-            }}
-            className="w-full h-11 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] text-center text-base font-bold tabular-nums focus:outline-none focus:border-[var(--gold)]"
-          />
-          <p className="text-xs text-[var(--foreground-muted)] leading-relaxed">
-            À chaque nouvelle offre, nous proposons une contre-offre avec l'incrément minimum, jusqu'à ce que votre offre maximum de {formatPrice(autoMax)} soit atteinte.
-          </p>
+          <div>
+            <label className="text-[10px] uppercase tracking-[0.18em] font-bold text-[var(--foreground-muted)]">
+              Votre plafond maximum
+            </label>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={autoMax === 0 ? "" : autoMax}
+              onChange={(e) => {
+                const v = e.target.value
+                  .replace(/\D/g, "")
+                  .replace(/^0+(?=\d)/, "");
+                setAutoMax(v === "" ? 0 : Number(v));
+              }}
+              className="mt-1.5 w-full h-12 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] text-center text-lg font-extrabold tabular-nums focus:outline-none focus:border-[var(--gold)]"
+            />
+            {activeAutoMax !== null && autoMax < activeAutoMax && (
+              <div className="mt-2 text-[11px] text-[var(--danger)] font-semibold">
+                Le plafond ne peut être que monté (≥ {formatPrice(activeAutoMax)}).
+              </div>
+            )}
+          </div>
+
+          {/* Proxy bidding explanation — clear three-line summary so the
+              user understands they're NOT committing to pay this amount;
+              they only pay what's needed to beat the next-highest cap. */}
+          <ul className="space-y-1.5 text-[11px] text-[var(--foreground-muted)] leading-relaxed">
+            <li className="flex gap-2">
+              <span className="text-[var(--gold)]">•</span>
+              <span>
+                Vous payez seulement <strong className="text-foreground">le minimum nécessaire</strong> pour devancer le 2ᵉ plafond — jamais votre plafond intégral.
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-[var(--gold)]">•</span>
+              <span>
+                Votre plafond reste <strong className="text-foreground">caché</strong> des autres enchérisseurs et du vendeur.
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-[var(--gold)]">•</span>
+              <span>
+                En cas d'égalité de plafond, <strong className="text-foreground">le plus ancien gagne</strong>.
+              </span>
+            </li>
+          </ul>
         </div>
         <ModalFooter>
           {activeAutoMax && (
@@ -662,7 +707,7 @@ export function BidComposer({
             Annuler
           </Button>
           <Button size="md" onClick={saveAutoBid} disabled={savingAuto}>
-            {savingAuto ? "Enregistrement..." : activeAutoMax ? "Mettre à jour" : "Activer"}
+            {savingAuto ? "Enregistrement..." : activeAutoMax ? "Monter le plafond" : "Activer"}
           </Button>
         </ModalFooter>
       </Modal>
