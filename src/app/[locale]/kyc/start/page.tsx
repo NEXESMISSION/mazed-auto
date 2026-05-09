@@ -3,7 +3,6 @@
 import { Link } from "@/i18n/navigation";
 import {
   ShieldCheck,
-  Lock,
   Sun,
   CreditCard,
   ArrowRight,
@@ -43,11 +42,6 @@ Ayez avec vous
               icon={<Sun className="h-4 w-4" />}
               title="Bon éclairage"
               text="Évitez les reflets et les ombres sur la carte"
-            />
-            <Prep
-              icon={<Lock className="h-4 w-4" />}
-              title="Vos données sont en sécurité"
-              text="Chiffrées et utilisées uniquement pour la vérification, jamais partagées"
             />
           </ul>
         </div>

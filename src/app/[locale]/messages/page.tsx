@@ -1,16 +1,14 @@
 import { Link } from "@/i18n/navigation";
 import { MessageSquare } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
-import { ScreenHeader } from "@/components/layout/ScreenHeader";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { createClient } from "@/lib/supabase/server";
 import {
   type ConversationRow,
   type AuctionRow,
-  type SellerRow,
-  mapSeller,
 } from "@/lib/db";
+import { anonBidder, anonSeller } from "@/lib/anon";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -60,31 +58,26 @@ export default async function MessagesIndexPage() {
     ),
   );
 
-  const [{ data: sellersData }, { data: lastMessages }] = await Promise.all([
-    otherIds.length > 0
-      ? supabase.from("sellers").select("*").in("id", otherIds)
-      : Promise.resolve({ data: [] as SellerRow[] }),
-    conversations.length > 0
-      ? supabase
-          .from("messages")
-          .select("conversation_id, body, sender_id, created_at, read_at")
-          .in(
-            "conversation_id",
-            conversations.map((c) => c.id),
-          )
-          .order("created_at", { ascending: false })
-      : Promise.resolve({ data: [] as Array<{
-          conversation_id: string;
-          body: string;
-          sender_id: string;
-          created_at: string;
-          read_at: string | null;
-        }> }),
-  ]);
-
-  const sellersById = new Map(
-    (sellersData ?? []).map((s) => [s.id, mapSeller(s as SellerRow)]),
-  );
+  // We deliberately don't look up the other participant's seller row.
+  // Participants must stay anonymous in the inbox — buyers can't see who
+  // the seller is, sellers can't see who the buyer is. Only the platform
+  // (admin) ever resolves identities.
+  const { data: lastMessages } = conversations.length > 0
+    ? await supabase
+        .from("messages")
+        .select("conversation_id, body, sender_id, created_at, read_at")
+        .in(
+          "conversation_id",
+          conversations.map((c) => c.id),
+        )
+        .order("created_at", { ascending: false })
+    : { data: [] as Array<{
+        conversation_id: string;
+        body: string;
+        sender_id: string;
+        created_at: string;
+        read_at: string | null;
+      }> };
 
   // Last message + unread count per conversation
   const lastByConv = new Map<
@@ -131,7 +124,13 @@ export default async function MessagesIndexPage() {
             {conversations.map((c) => {
               const otherId =
                 c.buyer_id === user.id ? c.seller_id : c.buyer_id;
-              const other = sellersById.get(otherId);
+              const otherIsSeller = c.buyer_id === user.id;
+              // Anonymous handle, derived from the other participant's
+              // user_id — the same opaque tag every time without ever
+              // touching the seller row.
+              const otherLabel = otherIsSeller
+                ? anonSeller(otherId)
+                : anonBidder(otherId);
               const last = lastByConv.get(c.id);
               const subtitle = c.auctions
                 ? `${c.auctions.make} ${c.auctions.model} ${c.auctions.year}`
@@ -142,16 +141,11 @@ export default async function MessagesIndexPage() {
                   href={`/messages/${c.id}`}
                   className="flex items-center gap-3 p-3 hover:bg-[var(--surface-2)] transition-colors"
                 >
-                  <Avatar
-                    size="md"
-                    src={other?.avatarUrl}
-                    alt={other?.displayName || "Conversation"}
-                  />
+                  <Avatar size="md" alt={otherLabel} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <div className="font-bold text-sm truncate">
-                        {other?.displayName ||
-                          (c.buyer_id === user.id ? "Le vendeur" : "L'acheteur")}
+                        {otherLabel}
                       </div>
                       <div className="text-[10px] text-[var(--foreground-subtle)] tabular-nums shrink-0">
                         {last ? formatRel(last.created_at) : ""}

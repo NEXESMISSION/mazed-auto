@@ -12,14 +12,23 @@ import {
   CheckCircle2,
   AlertTriangle,
   Receipt,
+  Ban,
 } from "lucide-react";
 import { AdminShell } from "@/components/layout/AdminShell";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { createClient } from "@/lib/supabase/server";
-import { getSellerById, listAuctionsBySeller } from "@/lib/db";
+import {
+  getSellerById,
+  listAuctionsBySeller,
+  listUserActivity,
+} from "@/lib/db";
 import { formatPrice } from "@/lib/format";
 import { AdminUserActions } from "./AdminUserActions";
+import { ActivityLog } from "./ActivityLog";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -31,7 +40,10 @@ export default async function AdminUserDetailsPage({ params }: Props) {
   const seller = await getSellerById(supabase, id);
   if (!seller) notFound();
 
-  const auctions = await listAuctionsBySeller(supabase, seller.id);
+  const [auctions, activity] = await Promise.all([
+    listAuctionsBySeller(supabase, seller.id),
+    listUserActivity(supabase, seller.id, 50),
+  ]);
   const totalSales = auctions
     .filter((a) => a.status === "ended")
     .reduce((s, a) => s + a.currentPrice, 0);
@@ -53,6 +65,12 @@ export default async function AdminUserDetailsPage({ params }: Props) {
             <div className="flex-1 min-w-0 space-y-2">
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-2xl font-extrabold">{seller.displayName}</h1>
+                {!seller.isActive && (
+                  <Badge variant="danger" size="sm">
+                    <Ban className="h-3 w-3" />
+                    Désactivé
+                  </Badge>
+                )}
                 {seller.verifiedKyc && (
                   <Badge variant="success" size="sm">
                     <CheckCircle2 className="h-3 w-3" />
@@ -83,7 +101,10 @@ export default async function AdminUserDetailsPage({ params }: Props) {
                 </span>
               </div>
             </div>
-            <AdminUserActions />
+            <AdminUserActions
+              userId={seller.id}
+              initialActive={seller.isActive}
+            />
           </div>
         </div>
 
@@ -132,6 +153,10 @@ export default async function AdminUserDetailsPage({ params }: Props) {
             <KycRow label="Identité vérifiée (KYC)" ok={seller.verifiedKyc} />
             <KycRow label="Propriété vérifiée" ok={seller.verifiedOwnership} />
           </div>
+        </Section>
+
+        <Section title={`Historique d'activité (${activity.length})`}>
+          <ActivityLog entries={activity} />
         </Section>
 
         <Section title={`Enchères de cet utilisateur (${auctions.length})`}>

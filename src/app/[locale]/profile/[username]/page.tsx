@@ -44,6 +44,17 @@ export default async function PublicProfilePage({ params }: Props) {
   const seller = await getSellerByUsername(supabase, username);
   if (!seller) notFound();
 
+  // Privacy gate: only the seller themselves and admins can read this
+  // page. Buyers must not be able to identify sellers — the platform
+  // mediates every interaction. Returning notFound() keeps the route
+  // existence opaque to outsiders.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const role = (user?.user_metadata as { role?: string } | null)?.role;
+  const isOwner = user?.id === seller.id;
+  if (!isOwner && role !== "admin") notFound();
+
   const [auctions, ratingRows] = await Promise.all([
     listAuctionsBySeller(supabase, seller.id),
     listSellerRatings(supabase, seller.id, 10),

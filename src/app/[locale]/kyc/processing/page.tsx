@@ -15,103 +15,208 @@ const checks = [
   "Mise en file pour examen humain…",
 ];
 
+const TAG = "[KYC/processing]";
+
+// Verbose, structured logger so the dev console shows every step the
+// submission goes through — auth state, draft URLs, Supabase responses
+// and timings — making it easy to copy a console dump back when
+// something stalls.
+function log(...args: unknown[]) {
+  const ts = new Date().toISOString().slice(11, 23); // HH:MM:SS.mmm
+  // eslint-disable-next-line no-console
+  console.log(`%c${TAG} %c${ts}`, "color:#d4af37;font-weight:bold", "color:#888", ...args);
+}
+
+function err(...args: unknown[]) {
+  const ts = new Date().toISOString().slice(11, 23);
+  // eslint-disable-next-line no-console
+  console.error(`%c${TAG} %c${ts}`, "color:#ef4444;font-weight:bold", "color:#888", ...args);
+}
+
+interface DetailedError {
+  message: string;
+  code?: string;
+  hint?: string;
+  details?: string;
+  raw?: unknown;
+}
+
 export default function KYCProcessingPage() {
   const router = useRouter();
-  const { user, update } = useAuth();
+  const { user, loaded, update } = useAuth();
   const [step, setStep] = useState(0);
-  const [error, setError] = useState<string | null>(null);
-  // Submitting can re-render this component multiple times; the ref keeps
-  // the network call from firing twice and creating two pending rows.
+  const [error, setError] = useState<DetailedError | null>(null);
   const submittedRef = useRef(false);
 
+  // Snapshot the volatile context values in refs. The effect below depends
+  // ONLY on `loaded` so the submit() promise is never torn down mid-flight
+  // by a re-render — the previous version was killed when update() flipped
+  // user.kycStatus, which fired the auth listener, mutated the `user`
+  // object, ran the effect's cleanup, and skipped the trailing
+  // router.push("/kyc/status") via a stale `cancelled` flag.
+  const userRef = useRef(user);
+  const updateRef = useRef(update);
+  const routerRef = useRef(router);
+  userRef.current = user;
+  updateRef.current = update;
+  routerRef.current = router;
+
   useEffect(() => {
-    if (submittedRef.current) return;
+    log("mount", {
+      loaded,
+      hasUser: Boolean(userRef.current),
+      userId: userRef.current?.id,
+    });
+    if (!loaded) {
+      log("waiting for auth.loaded …");
+      return;
+    }
+    if (submittedRef.current) {
+      log("submit already attempted, skipping");
+      return;
+    }
     submittedRef.current = true;
 
-    let cancelled = false;
+    // `unmounted` only guards setState calls so React doesn't warn after
+    // the page leaves. The router.push is intentionally NOT gated by it —
+    // we always want to navigate once the submission succeeds.
+    let unmounted = false;
     async function submit() {
-      if (!user) {
-        setError("Vous devez être connecté pour finaliser la vérification.");
+      log("submit() start");
+      const u = userRef.current;
+      if (!u) {
+        err("no user in context — aborting");
+        if (!unmounted)
+          setError({
+            message: "Vous devez être connecté pour finaliser la vérification.",
+          });
         return;
       }
+      log("user", {
+        id: u.id,
+        email: u.email,
+        firstName: u.firstName,
+        lastName: u.lastName,
+        kycStatus: u.kycStatus,
+      });
 
       const draft = readKycDraft();
+      log("draft", draft);
       if (!draft.idFrontUrl || !draft.idBackUrl || !draft.selfieVideoUrl) {
-        setError(
-          "Documents manquants. Veuillez recommencer depuis le début.",
-        );
+        err("draft incomplete", {
+          hasFront: Boolean(draft.idFrontUrl),
+          hasBack: Boolean(draft.idBackUrl),
+          hasSelfie: Boolean(draft.selfieVideoUrl),
+        });
+        if (!unmounted)
+          setError({
+            message:
+              "Documents manquants. Veuillez recommencer depuis le début.",
+          });
         return;
       }
 
-      // Visual progress — cosmetic, but it makes the upload feel less
-      // abrupt to the user.
       const advance = (i: number) =>
-        new Promise<void>((res) => setTimeout(() => {
-          if (!cancelled) setStep(i);
-          res();
-        }, 700));
+        new Promise<void>((res) =>
+          setTimeout(() => {
+            if (!unmounted) setStep(i);
+            res();
+          }, 700),
+        );
 
+      log("advance → step 1 (upload phase visual)");
       await advance(1);
 
       const supabase = createClient();
-      const fullName = [user.firstName, user.lastName]
-        .filter(Boolean)
-        .join(" ");
+      const fullName = [u.firstName, u.lastName].filter(Boolean).join(" ");
 
-      // Upsert so a second attempt after a rejection replaces the old row.
-      const { error: insertErr } = await supabase
+      const payload = {
+        user_id: u.id,
+        full_name: fullName || null,
+        id_front_url: draft.idFrontUrl,
+        id_back_url: draft.idBackUrl,
+        selfie_video_url: draft.selfieVideoUrl,
+        selfie_image_url: draft.selfieImageUrl ?? null,
+        status: "pending" as const,
+        rejection_reason: null,
+        reviewed_by: null,
+        reviewed_at: null,
+        submitted_at: new Date().toISOString(),
+      };
+      log("upserting kyc_submissions", payload);
+
+      const t0 = performance.now();
+      const upsertResp = await supabase
         .from("kyc_submissions")
-        .upsert(
-          {
-            user_id: user.id,
-            full_name: fullName || null,
-            id_front_url: draft.idFrontUrl,
-            id_back_url: draft.idBackUrl,
-            selfie_video_url: draft.selfieVideoUrl,
-            selfie_image_url: draft.selfieImageUrl ?? null,
-            status: "pending",
-            rejection_reason: null,
-            reviewed_by: null,
-            reviewed_at: null,
-            submitted_at: new Date().toISOString(),
-          },
-          { onConflict: "user_id" },
-        );
+        .upsert(payload, { onConflict: "user_id" })
+        .select()
+        .single();
+      const upsertMs = Math.round(performance.now() - t0);
+      log("kyc_submissions response", {
+        ms: upsertMs,
+        status: upsertResp.status,
+        statusText: upsertResp.statusText,
+        data: upsertResp.data,
+        error: upsertResp.error,
+      });
 
-      if (insertErr) {
-        if (!cancelled) {
-          setError(
-            "Échec de l'enregistrement de votre dossier : " +
-              insertErr.message,
-          );
+      if (upsertResp.error) {
+        const e = upsertResp.error;
+        err("kyc_submissions upsert failed", e);
+        if (!unmounted) {
+          setError({
+            message: e.message,
+            code: e.code,
+            hint: e.hint,
+            details: e.details,
+            raw: e,
+          });
         }
         return;
       }
 
+      log("advance → step 2 (record saved)");
       await advance(2);
 
-      // Flip the user's kycStatus to "pending" — NOT verified. An admin
-      // approves it later via the kyc-queue page.
-      const { error: updateErr } = await update({ kycStatus: "pending" });
-      if (updateErr) {
-        if (!cancelled) {
-          setError(
-            "Échec de la mise à jour de votre profil : " + updateErr.message,
-          );
+      log("calling update({ kycStatus: 'pending' })");
+      const updateResp = await updateRef.current({ kycStatus: "pending" });
+      log("update response", updateResp);
+      if (updateResp.error) {
+        err("auth update failed", updateResp.error);
+        if (!unmounted) {
+          setError({
+            message: updateResp.error.message,
+            raw: updateResp.error,
+          });
         }
         return;
       }
 
+      log("advance → step 3 (queued for review)");
       await advance(3);
+
+      log("clearing draft + redirecting → /kyc/status");
       clearKycDraft();
-      if (!cancelled) router.push("/kyc/status");
+      // Always navigate. Don't condition on `unmounted` — by the time we
+      // got here the submit succeeded; a re-render shouldn't trap the
+      // user on this screen.
+      routerRef.current.push("/kyc/status");
     }
 
-    submit();
+    submit().catch((e) => {
+      err("submit() threw", e);
+      if (!unmounted) {
+        setError({
+          message: e instanceof Error ? e.message : "Erreur inattendue",
+          raw: e,
+        });
+      }
+    });
     return () => {
-      cancelled = true;
+      log("effect cleanup");
+      unmounted = true;
     };
-  }, [user, update, router]);
+  }, [loaded]);
 
   if (error) {
     return (
@@ -123,7 +228,17 @@ export default function KYCProcessingPage() {
           <div>
             <h2 className="text-xl font-bold">Une erreur est survenue</h2>
             <p className="text-sm text-[var(--foreground-muted)] mt-2 leading-relaxed">
-              {error}
+              {error.message}
+            </p>
+            {(error.code || error.hint || error.details) && (
+              <div className="mt-3 text-left text-[11px] font-mono text-[var(--foreground-muted)] bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] p-3 space-y-1">
+                {error.code && <div>code: {error.code}</div>}
+                {error.hint && <div>hint: {error.hint}</div>}
+                {error.details && <div>details: {error.details}</div>}
+              </div>
+            )}
+            <p className="text-[10px] text-[var(--foreground-subtle)] mt-2">
+              Voir la console du navigateur pour les détails complets.
             </p>
           </div>
           <Button size="lg" fullWidth onClick={() => router.push("/kyc/start")}>

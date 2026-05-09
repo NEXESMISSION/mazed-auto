@@ -11,7 +11,24 @@
 --    user's own top-level folder (<user_id>/...), so no new policies
 --    are required for storage.
 
--- 2) Submissions table
+-- 2) Admin-check helper. Reads role from the JWT (auth.jwt()) so end-user
+--    policies don't need SELECT on auth.users (which they wouldn't have).
+create or replace function public.is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce(
+    (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin',
+    false
+  )
+$$;
+revoke all on function public.is_admin() from public;
+grant execute on function public.is_admin() to authenticated, anon;
+
+-- 3) Submissions table
 create table if not exists public.kyc_submissions (
   id                  uuid primary key default gen_random_uuid(),
   user_id             uuid not null unique references auth.users(id) on delete cascade,
@@ -51,25 +68,13 @@ create policy "kyc_self_update" on public.kyc_submissions
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
--- Admins can read/update everything. Admin role is stored in
--- auth.users.raw_user_meta_data->>'role' = 'admin' (matches the existing
--- AppUser.role mapping in lib/auth.ts).
+-- Admins can read/update everything. Role check uses the JWT helper
+-- (public.is_admin) so we don't need SELECT on auth.users from the
+-- end-user role.
 create policy "kyc_admin_all" on public.kyc_submissions
   for all to authenticated
-  using (
-    exists (
-      select 1 from auth.users u
-       where u.id = auth.uid()
-         and (u.raw_user_meta_data->>'role') = 'admin'
-    )
-  )
-  with check (
-    exists (
-      select 1 from auth.users u
-       where u.id = auth.uid()
-         and (u.raw_user_meta_data->>'role') = 'admin'
-    )
-  );
+  using (public.is_admin())
+  with check (public.is_admin());
 
 -- 3) When admin sets status='approved', mirror to the user's
 --    user_metadata.kycStatus so the UI reflects the decision without
@@ -89,15 +94,8 @@ set search_path = public
 as $$
 declare
   v_user uuid;
-  v_is_admin boolean;
 begin
-  select exists (
-    select 1 from auth.users u
-     where u.id = auth.uid()
-       and (u.raw_user_meta_data->>'role') = 'admin'
-  ) into v_is_admin;
-
-  if not v_is_admin then
+  if not public.is_admin() then
     raise exception 'NOT_ADMIN';
   end if;
 

@@ -5,6 +5,17 @@
 // step picks them all up to insert a single kyc_submissions row.
 
 const KEY = "mazed_kyc_draft";
+const TAG = "[KYC/draft]";
+function log(...args: unknown[]) {
+  const ts = new Date().toISOString().slice(11, 23);
+  // eslint-disable-next-line no-console
+  console.log(
+    `%c${TAG} %c${ts}`,
+    "color:#d4af37;font-weight:bold",
+    "color:#888",
+    ...args,
+  );
+}
 
 export interface KycDraft {
   idFrontUrl?: string;
@@ -17,8 +28,11 @@ export function readKycDraft(): KycDraft {
   if (typeof window === "undefined") return {};
   try {
     const raw = sessionStorage.getItem(KEY);
-    return raw ? (JSON.parse(raw) as KycDraft) : {};
-  } catch {
+    const draft = raw ? (JSON.parse(raw) as KycDraft) : {};
+    log("read", draft);
+    return draft;
+  } catch (e) {
+    log("read failed", e);
     return {};
   }
 }
@@ -26,10 +40,12 @@ export function readKycDraft(): KycDraft {
 export function updateKycDraft(patch: Partial<KycDraft>) {
   if (typeof window === "undefined") return;
   const next = { ...readKycDraft(), ...patch };
+  log("update", { patch, next });
   sessionStorage.setItem(KEY, JSON.stringify(next));
 }
 
 export function clearKycDraft() {
   if (typeof window === "undefined") return;
+  log("clear");
   sessionStorage.removeItem(KEY);
 }

@@ -7,6 +7,28 @@ import { useAuth } from "@/lib/auth";
 import { useToast } from "@/components/ui/Toast";
 import { uploadToBucket } from "@/lib/upload";
 
+const TAG = "[NativeCapture]";
+function log(...args: unknown[]) {
+  const ts = new Date().toISOString().slice(11, 23);
+  // eslint-disable-next-line no-console
+  console.log(
+    `%c${TAG} %c${ts}`,
+    "color:#d4af37;font-weight:bold",
+    "color:#888",
+    ...args,
+  );
+}
+function err(...args: unknown[]) {
+  const ts = new Date().toISOString().slice(11, 23);
+  // eslint-disable-next-line no-console
+  console.error(
+    `%c${TAG} %c${ts}`,
+    "color:#ef4444;font-weight:bold",
+    "color:#888",
+    ...args,
+  );
+}
+
 interface BaseProps {
   /** "photo" → image/* | "video" → video/*. */
   kind: "photo" | "video";
@@ -53,26 +75,42 @@ export function NativeCapture({
   const [uploading, setUploading] = useState(false);
 
   function open() {
+    log("open()", { folder, kind, facing, disabled, uploading, hasUser: Boolean(user) });
     if (uploading || disabled) return;
     if (!user) {
+      err("open() blocked — no user in context");
       toast("Connectez-vous d'abord", "warning");
       return;
     }
     if (inputRef.current) {
       inputRef.current.value = "";
       inputRef.current.click();
+      log("native input click dispatched");
     }
   }
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
+    log("onFile", {
+      hasFile: Boolean(f),
+      name: f?.name,
+      type: f?.type,
+      size: f?.size,
+      lastModified: f?.lastModified,
+    });
     if (!f || !user) return;
     setUploading(true);
+    const t0 = performance.now();
     try {
-      const { url } = await uploadToBucket(f, user.id, folder);
+      log("uploadToBucket → start", { folder, userId: user.id });
+      const { url, path } = await uploadToBucket(f, user.id, folder);
+      const ms = Math.round(performance.now() - t0);
+      log("uploadToBucket → done", { ms, url, path });
       onCaptured(url);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Erreur inconnue";
+    } catch (e) {
+      const ms = Math.round(performance.now() - t0);
+      const msg = e instanceof Error ? e.message : "Erreur inconnue";
+      err("uploadToBucket failed", { ms, error: e, message: msg });
       toast("Échec du téléversement : " + msg, "error");
     } finally {
       setUploading(false);

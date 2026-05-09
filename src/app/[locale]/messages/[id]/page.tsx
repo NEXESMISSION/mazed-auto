@@ -6,10 +6,9 @@ import {
   type ConversationRow,
   type MessageRow,
   type AuctionRow,
-  type SellerRow,
-  mapSeller,
 } from "@/lib/db";
 import { Avatar } from "@/components/ui/Avatar";
+import { anonBidder, anonSeller } from "@/lib/anon";
 import { ChatThread } from "./ChatThread";
 
 export const dynamic = "force-dynamic";
@@ -42,17 +41,12 @@ export default async function ConversationPage({ params }: Props) {
     auctions: Pick<AuctionRow, "make" | "model" | "year" | "image_urls"> | null;
   };
 
-  // Identify the "other" participant
+  // Identify the "other" participant — but never reveal who they are.
+  // Buyers see "Vendeur #ABCD"; sellers see "Enchérisseur #ABCD". The
+  // platform mediates every interaction, so the chat header stays opaque.
   const isBuyer = conversation.buyer_id === user.id;
   const otherUserId = isBuyer ? conversation.seller_id : conversation.buyer_id;
-
-  const { data: otherSeller } = await supabase
-    .from("sellers")
-    .select("*")
-    .eq("id", otherUserId)
-    .maybeSingle();
-  const otherSellerObj = otherSeller ? mapSeller(otherSeller as SellerRow) : null;
-  const otherName = otherSellerObj?.displayName || (isBuyer ? "le vendeur" : "l'acheteur");
+  const otherName = isBuyer ? anonSeller(otherUserId) : anonBidder(otherUserId);
 
   // Initial messages (SSR seed)
   const { data: rawMessages } = await supabase
@@ -74,7 +68,7 @@ export default async function ConversationPage({ params }: Props) {
         >
           <ChevronLeft className="h-4 w-4" />
         </Link>
-        <Avatar size="sm" src={otherSellerObj?.avatarUrl} alt={otherName} />
+        <Avatar size="sm" alt={otherName} />
         <div className="flex-1 min-w-0">
           <div className="font-bold text-sm truncate">{otherName}</div>
           {conversation.auctions && (

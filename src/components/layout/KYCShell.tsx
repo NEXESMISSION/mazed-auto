@@ -36,7 +36,7 @@ export function KYCShell({
   const showStepper = current >= 0;
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <header className="flex items-center justify-between px-4 pt-4 pb-3">
+      <header className="flex items-center justify-between px-4 pt-4 pb-1">
         <Link
           href={backHref}
           aria-label={tCommon("back")}
@@ -55,9 +55,9 @@ export function KYCShell({
       </header>
 
       {showStepper && (
-        <div className="px-4 pb-4">
+        <div className="px-4 pb-3">
           <Stepper steps={steps} current={current} />
-          <div className="text-[10px] text-center text-[var(--foreground-muted)] mt-2 tabular-nums">
+          <div className="text-[10px] text-center text-[var(--foreground-muted)] mt-1 tabular-nums">
             Étape {current + 1} sur {steps.length}
           </div>
         </div>

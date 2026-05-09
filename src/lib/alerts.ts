@@ -1,58 +1,22 @@
 import type { Auction, AIAlert } from "@/lib/types";
 
-// PLAN §18 — heuristic AI alerts derived from auction signals. We generate
-// them at read-time from the auction row instead of running a backend job
-// because the signals are deterministic and cheap, and stale alerts on a row
-// would be worse than no alerts at all.
-
-export function computeAlerts(auction: Auction): AIAlert[] {
-  const out: AIAlert[] = [];
-  const v = auction.vehicle;
-  const s = auction.seller;
-
-  // New seller (account < 6 months OR < 3 successful deals OR low trust).
-  // We use trustScore internally to decide whether to show the warning, but
-  // we don't surface the score to users — only concrete signals (months,
-  // deals) which are easier to interpret.
-  const isNewSeller =
-    s.accountAgeMonths < 6 || s.successfulDeals < 3 || s.trustScore < 80;
-  if (isNewSeller && s.trustLevel !== "verified_pro") {
-    out.push({
-      type: "info",
-      title: "Nouveau vendeur sur la plateforme",
-      detail: `${s.successfulDeals} ventes précédentes · compte depuis ${s.accountAgeMonths} mois`,
-      suggestion: "Consultez ses évaluations et vérifiez ses badges avant d'enchérir",
-    });
-  }
-
-  // Reserve price set very high vs starting (often signals tire-kicker auction)
-  if (
-    auction.reservePrice &&
-    auction.startingPrice &&
-    auction.reservePrice > auction.startingPrice * 2
-  ) {
-    out.push({
-      type: "info",
-      title: "Prix de réserve élevé",
-      detail:
-        "Le vendeur demande un prix de réserve double du prix de départ. L'enchère pourrait ne pas atteindre la valeur de vente.",
-    });
-  }
-
-  // (Removed the "KYC not verified" alert — the platform already blocks
-  // unverified sellers from publishing in /seller/new/layout.tsx, and admin
-  // review approves every listing. So if an auction is visible to bidders
-  // here, the seller must be KYC-verified. The alert was a false positive
-  // when the seller row's verified_kyc lagged behind auth.user_metadata.)
-
-  // (Removed the "Peu de photos" alert — the photos are right there on
-  // the page and users can count them. The alert added noise without
-  // giving any information they couldn't already see.)
-
-  // Reference v.imageUrls so the linter doesn't flag the unused
-  // destructured variable. Keeps the destructuring above intact in case
-  // future alerts need it.
-  void v;
-
-  return out;
+/**
+ * Heuristic auto-generated alerts (was PLAN §18).
+ *
+ * Disabled deliberately: the rule-based alerts ("Nouveau vendeur sur
+ * la plateforme", "Prix de réserve élevé", etc.) added noise that
+ * couldn't be tuned per-listing and showed up everywhere even when
+ * irrelevant. The plan is to replace this with admin-managed alert
+ * rules — created from the admin dashboard with explicit conditions
+ * (status / brand / seller filters, custom message, severity) — so
+ * the platform owner controls exactly what users see.
+ *
+ * The pipeline still merges DB-stored alerts (the `auctions.alerts`
+ * jsonb column) over whatever this returns, so admin-created rules
+ * land via that path. Until the admin UI ships, manually inserted
+ * rows in that column also work.
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function computeAlerts(_auction: Auction): AIAlert[] {
+  return [];
 }

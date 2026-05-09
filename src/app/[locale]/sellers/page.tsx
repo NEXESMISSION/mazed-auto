@@ -1,3 +1,4 @@
+import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
 import { ScreenHeader } from "@/components/layout/ScreenHeader";
 import { createClient } from "@/lib/supabase/server";
@@ -7,8 +8,20 @@ import { SellersBrowser } from "./SellersBrowser";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+/**
+ * Sellers directory — kept admin-only on purpose. Buyers must not be able
+ * to browse or identify sellers (the platform mediates every interaction
+ * — that's the whole "middle-man" promise). Anyone but an admin gets a
+ * 404 so the route doesn't even hint at its existence.
+ */
 export default async function SellersPage() {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const role = (user?.user_metadata as { role?: string } | null)?.role;
+  if (role !== "admin") notFound();
+
   const sellers = await listSellers(supabase);
 
   // Active-auction count per seller — fetched in parallel so the rows can
@@ -28,7 +41,7 @@ export default async function SellersPage() {
 
   return (
     <AppShell noTopBar>
-      <ScreenHeader title="Vendeurs" backHref={null} />
+      <ScreenHeader title="Vendeurs (admin)" backHref={null} />
       <SellersBrowser sellers={enriched} />
     </AppShell>
   );
