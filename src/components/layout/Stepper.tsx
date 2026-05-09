@@ -48,7 +48,7 @@ export function Stepper({ steps, current, className }: Props) {
             {i < steps.length - 1 && (
               <div
                 className={cn(
-                  "flex-1 h-0.5 mx-2 -mt-4 transition-colors",
+                  "flex-1 h-0.5 mx-3 sm:mx-5 -mt-4 transition-colors",
                   done ? "bg-[var(--gold)]" : "bg-[var(--border)]",
                 )}
               />
