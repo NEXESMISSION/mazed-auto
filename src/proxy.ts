@@ -47,8 +47,9 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     // Run on every request EXCEPT static assets, the SW, the manifest, the
-    // metadata icons, and any image. The auth + locale check should only run
-    // for actual app navigation.
-    "/((?!_next/static|_next/image|favicon\\.ico|sw\\.js|manifest\\.webmanifest|icon\\.png|apple-icon\\.png|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    // metadata icons, any image, and the /models/ tree (face-api weights —
+    // .bin/.json files served from public/, must bypass i18n so they aren't
+    // redirected to /fr/models/ and 404'd).
+    "/((?!models/|_next/static|_next/image|favicon\\.ico|sw\\.js|manifest\\.webmanifest|icon\\.png|apple-icon\\.png|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };
