@@ -49,6 +49,14 @@ export default async function BuyerBidsPage() {
     );
   }
 
+  // Sweep expired auctions before reading so the buyer never sees a
+  // bid sitting in "Actives" with a long-passed end_time.
+  try {
+    await supabase.rpc("end_expired_auctions");
+  } catch {
+    // ignore — the BidsTabs client also has a time-aware guard
+  }
+
   const { data: rawBids } = await supabase
     .from("bids")
     .select("*")

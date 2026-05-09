@@ -39,14 +39,28 @@ export function BidsTabs({
   watchlist?: Auction[];
 }) {
   const params = useSearchParams();
+  // eslint-disable-next-line react-hooks/purity
+  const now = Date.now();
+  // Time-aware liveness — covers the brief gap between an auction's
+  // end_time passing and end_expired_auctions sweeping its status.
+  // Without this, an auction the user sees as "Terminée" on the detail
+  // page can still appear under Actives here for several seconds.
+  const isLive = (b: MyBid) =>
+    (b.auction.status === "active" || b.auction.status === "ending") &&
+    b.auction.endTime.getTime() > now;
+  const isOver = (b: MyBid) =>
+    b.auction.status === "ended" ||
+    b.auction.status === "reserve_not_met" ||
+    b.auction.status === "cancelled" ||
+    b.auction.status === "pending_seller_decision" ||
+    ((b.auction.status === "active" || b.auction.status === "ending") &&
+      b.auction.endTime.getTime() <= now);
+
   const counts = {
-    active: bids.filter(
-      (b) => b.auction.status === "active" || b.auction.status === "ending",
-    ).length,
+    active: bids.filter(isLive).length,
     watchlist: watchlist.length,
-    won: bids.filter((b) => b.auction.status === "ended" && b.isWinning).length,
-    lost: bids.filter((b) => b.auction.status === "ended" && !b.isWinning)
-      .length,
+    won: bids.filter((b) => isOver(b) && b.isWinning).length,
+    lost: bids.filter((b) => isOver(b) && !b.isWinning).length,
   };
 
   // Land on the most relevant tab. URL takes priority — `?tab=won` /
@@ -74,10 +88,9 @@ export function BidsTabs({
   }, [urlTab]);
 
   const filteredBids = bids.filter((b) => {
-    if (tab === "active")
-      return b.auction.status === "active" || b.auction.status === "ending";
-    if (tab === "won") return b.auction.status === "ended" && b.isWinning;
-    if (tab === "lost") return b.auction.status === "ended" && !b.isWinning;
+    if (tab === "active") return isLive(b);
+    if (tab === "won") return isOver(b) && b.isWinning;
+    if (tab === "lost") return isOver(b) && !b.isWinning;
     return false;
   });
 
