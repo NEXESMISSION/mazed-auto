@@ -5,6 +5,7 @@ import { Mail, Phone, MapPin, Send, MessageSquare, CheckCircle2 } from "lucide-r
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { createClient } from "@/lib/supabase/client";
 
 const TOPICS = [
   { value: "general", label: "Demande générale" },
@@ -31,10 +32,22 @@ export default function ContactPage() {
     }
     setError(null);
     setSubmitting(true);
-    // No backend for contact yet — simulate so users get a confirmation while we
-    // hook up an inbox. Spec calls /contact a static info + form page.
-    await new Promise((r) => setTimeout(r, 600));
+    const supabase = createClient();
+    const { data: auth } = await supabase.auth.getUser();
+    const { error: insertErr } = await supabase
+      .from("contact_messages")
+      .insert({
+        name: name.trim(),
+        email: email.trim(),
+        topic,
+        body: message.trim(),
+        user_id: auth?.user?.id ?? null,
+      });
     setSubmitting(false);
+    if (insertErr) {
+      setError("Impossible d'envoyer le message. Réessayez plus tard.");
+      return;
+    }
     setSent(true);
   }
 

@@ -1,9 +1,30 @@
+import { getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { ArrowRight, Target, Heart, Award } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/Button";
+import { createClient } from "@/lib/supabase/server";
+import { getCmsPage } from "@/lib/cms";
 
-export default function AboutPage() {
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export default async function AboutPage() {
+  const locale = await getLocale();
+  const supabase = await createClient();
+  const cms = await getCmsPage(supabase, "about");
+  const cmsBody =
+    cms && (locale === "ar" ? cms.bodyAr : cms.bodyFr) ? (
+      <div className="prose prose-invert max-w-none">
+        {((locale === "ar" ? cms.bodyAr : cms.bodyFr) ?? "")
+          .split("\n\n")
+          .map((p, i) => (
+            <p key={i} className="leading-relaxed">
+              {p}
+            </p>
+          ))}
+      </div>
+    ) : null;
   return (
     <AppShell>
       <div className="max-w-[var(--max-w)] mx-auto px-4 py-8 md:py-16 space-y-10">
@@ -37,17 +58,23 @@ export default function AboutPage() {
 
         <section className="space-y-4 text-[var(--foreground-muted)] leading-relaxed">
           <h2 className="text-2xl font-bold text-foreground">Notre histoire</h2>
-          <p>
-            L'idée est née d'un constat simple : le marché tunisien des voitures d'occasion souffrait de
-            comptes fictifs, de photos volées et d'informations trompeuses. Nous voulions une solution qui
-            place la confiance au cœur de tout.
-          </p>
-          <p>
-            C'est ainsi qu'est née Mazed Auto — une plateforme qui combine la technologie (intelligence
-            artificielle, vérification automatique) et une transparence totale (Trust Score, badges multiples).
-            Nous sommes convaincus que chaque vendeur mérite une chance équitable, et chaque acheteur des
-            informations sincères.
-          </p>
+          {cmsBody ?? (
+            <>
+              <p>
+                L&apos;idée est née d&apos;un constat simple : le marché tunisien des
+                voitures d&apos;occasion souffrait de comptes fictifs, de photos volées
+                et d&apos;informations trompeuses. Nous voulions une solution qui place
+                la confiance au cœur de tout.
+              </p>
+              <p>
+                C&apos;est ainsi qu&apos;est née Mazed Auto — une plateforme qui combine
+                la technologie (intelligence artificielle, vérification automatique) et
+                une transparence totale (Trust Score, badges multiples). Nous sommes
+                convaincus que chaque vendeur mérite une chance équitable, et chaque
+                acheteur des informations sincères.
+              </p>
+            </>
+          )}
         </section>
 
         <div className="text-center">

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { ArrowRight } from "lucide-react";
 import { CreateAuctionShell } from "@/components/layout/CreateAuctionShell";
@@ -9,8 +10,11 @@ import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { useDraft } from "@/lib/draft";
 import { scrollToFirstInvalid } from "@/lib/validation";
+import { createClient } from "@/lib/supabase/client";
 
-const makes = [
+// Fallback when cms_brands / cms_features tables are empty (fresh DB).
+// Once the admin edits anything in /admin/cms/*, the DB version overrides.
+const FALLBACK_MAKES = [
   "Renault",
   "Peugeot",
   "Volkswagen",
@@ -49,7 +53,7 @@ const categories = [
   { v: "convertible", l: "Cabriolet" },
   { v: "wagon", l: "Break" },
 ];
-const featureOpts = [
+const FALLBACK_FEATURES = [
   "Climatisation",
   "ABS",
   "ESP",
@@ -70,6 +74,56 @@ export default function Step1Page() {
   const { toast } = useToast();
   const { draft, update } = useDraft();
   const features = draft.features ?? [];
+
+  // Hydrate brands / features / cities from the CMS tables. We start
+  // with the fallback so the form is interactive on the first paint,
+  // then swap to the DB version once the round-trip completes.
+  const [makes, setMakes] = useState<string[]>(FALLBACK_MAKES);
+  const [featureOpts, setFeatureOpts] = useState<string[]>(FALLBACK_FEATURES);
+  const [cityOpts, setCityOpts] = useState<{ slug: string; name: string }[]>([]);
+  useEffect(() => {
+    const supabase = createClient();
+    let cancelled = false;
+    Promise.all([
+      supabase
+        .from("cms_brands")
+        .select("display_name, position")
+        .eq("is_active", true)
+        .order("position", { ascending: true }),
+      supabase
+        .from("cms_features")
+        .select("label_fr, position")
+        .eq("is_active", true)
+        .order("position", { ascending: true }),
+      supabase
+        .from("cms_cities")
+        .select("slug, name_fr, position")
+        .eq("is_active", true)
+        .order("position", { ascending: true }),
+    ]).then(([brandsRes, featRes, citiesRes]) => {
+      if (cancelled) return;
+      if (brandsRes.data && brandsRes.data.length > 0) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setMakes(brandsRes.data.map((b) => b.display_name as string));
+      }
+      if (featRes.data && featRes.data.length > 0) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setFeatureOpts(featRes.data.map((f) => f.label_fr as string));
+      }
+      if (citiesRes.data && citiesRes.data.length > 0) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setCityOpts(
+          citiesRes.data.map((c) => ({
+            slug: c.slug as string,
+            name: c.name_fr as string,
+          })),
+        );
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function toggleFeature(f: string) {
     const next = features.includes(f)
@@ -273,6 +327,7 @@ export default function Step1Page() {
               placeholder="Ville"
               value={draft.city ?? ""}
               onChange={(e) => update({ city: e.target.value })}
+              list="cms-cities"
             />
             <Input
               placeholder="Région"
@@ -280,6 +335,13 @@ export default function Step1Page() {
               onChange={(e) => update({ region: e.target.value })}
             />
           </div>
+          {cityOpts.length > 0 && (
+            <datalist id="cms-cities">
+              {cityOpts.map((c) => (
+                <option key={c.slug} value={c.name} />
+              ))}
+            </datalist>
+          )}
         </Field>
 
         <Field label="Description">

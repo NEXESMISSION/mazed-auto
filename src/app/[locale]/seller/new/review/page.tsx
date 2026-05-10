@@ -114,8 +114,40 @@ export default function ReviewPage() {
     const durationMs = (draft.durationDays ?? 7) * 24 * 3600 * 1000;
     const now = new Date();
     const endTime = new Date(now.getTime() + durationMs);
-    const bidIncrement =
-      startingPrice >= 100000 ? 1000 : startingPrice >= 30000 ? 500 : 250;
+
+    // Bid-increment tiers live in platform_settings so the admin can
+    // tune them without a redeploy. Falls back to the legacy 250/500/1000
+    // ladder if the row is missing or malformed.
+    let bidIncrement = 250;
+    try {
+      const { data: tierRow } = await supabase
+        .from("platform_settings")
+        .select("value")
+        .eq("key", "listing.bid_increment_tiers")
+        .maybeSingle();
+      const tiers = (tierRow?.value ?? []) as Array<{
+        max: number | null;
+        increment: number;
+      }>;
+      if (Array.isArray(tiers) && tiers.length > 0) {
+        const match = tiers.find(
+          (t) => t.max === null || startingPrice < t.max,
+        );
+        if (match && Number.isFinite(match.increment)) {
+          bidIncrement = match.increment;
+        }
+      } else {
+        bidIncrement =
+          startingPrice >= 100000
+            ? 1000
+            : startingPrice >= 30000
+              ? 500
+              : 250;
+      }
+    } catch {
+      bidIncrement =
+        startingPrice >= 100000 ? 1000 : startingPrice >= 30000 ? 500 : 250;
+    }
 
     const { data: auction, error: auctionErr } = await supabase
       .from("auctions")
@@ -149,6 +181,11 @@ export default function ReviewPage() {
         // An admin flips it to `active` from /admin/auctions-queue.
         status: "pending_review",
         reserve_met: false,
+        // Golden-Lock metadata — captured here so /admin/ownership-review
+        // can surface exceptional cases instead of letting them mix into
+        // the regular queue with no signal.
+        ownership_exception: draft.ownershipException ?? null,
+        carte_grise_owner_name: draft.ownerName ?? null,
       })
       .select("id")
       .single();

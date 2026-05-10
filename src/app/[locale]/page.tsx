@@ -1,6 +1,9 @@
+import { getLocale } from "next-intl/server";
 import { AppShell } from "@/components/layout/AppShell";
 import { HomeHeader } from "@/components/home/HomeHeader";
 import { PromoBanner } from "@/components/home/PromoBanner";
+import { CmsBanner } from "@/components/home/CmsBanner";
+import { listCmsBanners } from "@/lib/cms";
 import { NewestRibbon } from "@/components/home/NewestRibbon";
 import { ContinueBiddingRail } from "@/components/home/ContinueBiddingRail";
 import { RecommendedRail } from "@/components/home/RecommendedRail";
@@ -82,9 +85,16 @@ export default async function HomePage() {
   // BrandSlider needs a wide-ish pool — feed it everything we already have.
   const brandPool: Auction[] = dedupe([...livePool, ...recentlyEnded]);
 
+  // Pick the highest-priority active CMS banner. Render above the
+  // existing PromoBanner so admin-managed seasonal promos lead.
+  const locale = await getLocale();
+  const cmsBanners = await listCmsBanners(supabase);
+  const topBanner = cmsBanners[0] ?? null;
+
   return (
     <AppShell noTopBar>
       <HomeHeader signedIn={Boolean(user)} />
+      <CmsBanner banner={topBanner} locale={locale} />
       <PromoBanner pool={livePool} />
 
       {/* Newness — leading the page so every visit feels fresh */}

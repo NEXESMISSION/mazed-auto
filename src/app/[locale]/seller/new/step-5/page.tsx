@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { ArrowRight, Info } from "lucide-react";
 import { CreateAuctionShell } from "@/components/layout/CreateAuctionShell";
@@ -11,6 +11,7 @@ import { formatPrice } from "@/lib/format";
 import { useDraft } from "@/lib/draft";
 import { useToast } from "@/components/ui/Toast";
 import { scrollToFirstInvalid } from "@/lib/validation";
+import { createClient } from "@/lib/supabase/client";
 
 export default function Step5Page() {
   const { toast } = useToast();
@@ -22,6 +23,28 @@ export default function Step5Page() {
   const [duration, setDuration] = useState<3 | 7 | 14>(
     (draft.durationDays as 3 | 7 | 14) ?? 7,
   );
+  // Duration choices come from platform_settings so admins can offer
+  // 5/10/20-day options without touching code. Falls back to 3/7/14.
+  const [durationOpts, setDurationOpts] = useState<number[]>([3, 7, 14]);
+  useEffect(() => {
+    let cancelled = false;
+    createClient()
+      .from("platform_settings")
+      .select("value")
+      .eq("key", "listing.duration_options")
+      .maybeSingle()
+      .then(({ data }) => {
+        if (cancelled) return;
+        const v = data?.value as unknown;
+        if (Array.isArray(v) && v.every((x) => typeof x === "number")) {
+          // eslint-disable-next-line react-hooks/set-state-in-effect
+          setDurationOpts(v as number[]);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const [hasReserve, setHasReserve] = useState(
     draft.reservePrice !== undefined ? Boolean(draft.reservePrice) : true,
   );
@@ -148,8 +171,11 @@ export default function Step5Page() {
         </div>
 
         <Field label="Durée de l'enchère" required>
-          <div className="grid grid-cols-3 gap-2">
-            {[3, 7, 14].map((d) => (
+          <div
+            className="grid gap-2"
+            style={{ gridTemplateColumns: `repeat(${durationOpts.length}, minmax(0, 1fr))` }}
+          >
+            {durationOpts.map((d) => (
               <button
                 key={d}
                 onClick={() => setDuration(d as 3 | 7 | 14)}
