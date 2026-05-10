@@ -107,14 +107,18 @@ export function LivenessCheck({ onComplete, onCancel }: Props) {
   const { user } = useAuth();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const recorderRef = useRef<MediaRecorder | null>(null);
-  const recordedChunksRef = useRef<Blob[]>([]);
   const faceapiRef = useRef<FaceApiNs | null>(null);
   const detectorOptionsRef = useRef<unknown>(null);
   const heldSinceRef = useRef<number | null>(null);
   const lastDetectAtRef = useRef<number>(0);
   const stoppedRef = useRef<boolean>(false);
+  // One JPEG per pose. We dropped the MediaRecorder pipeline entirely —
+  // the full-flow WebM was hanging the upload, and admin really only
+  // needs visual proof of the three poses. Three ~50-80 KB JPEGs
+  // composed into a triptych are sub-300 KB total and review-friendly.
   const frontSnapshotRef = useRef<Blob | null>(null);
+  const rightSnapshotRef = useRef<Blob | null>(null);
+  const leftSnapshotRef = useRef<Blob | null>(null);
   const detectionCountRef = useRef<number>(0);
   // Step index mirrored as a ref so the detection loop reads the
   // *current* step without having to be re-armed every time stepIdx
@@ -246,26 +250,10 @@ export function LivenessCheck({ onComplete, onCancel }: Props) {
           warn("videoRef is null at stream attach");
         }
 
-        // MediaRecorder for the evidence video. Best-effort: on Safari
-        // some MIME types aren't supported, fall through to no video.
-        try {
-          const mime = pickRecorderMime();
-          log("MediaRecorder mime probe", { picked: mime });
-          if (mime) {
-            const rec = new MediaRecorder(stream, { mimeType: mime });
-            rec.ondataavailable = (e) => {
-              if (e.data.size > 0) recordedChunksRef.current.push(e.data);
-            };
-            rec.onerror = (e) => err("MediaRecorder error", e);
-            rec.start(500);
-            recorderRef.current = rec;
-            log("MediaRecorder started", { state: rec.state, mimeType: rec.mimeType });
-          } else {
-            warn("No supported MediaRecorder MIME — video evidence skipped");
-          }
-        } catch (e) {
-          warn("MediaRecorder init failed", e);
-        }
+        // No MediaRecorder — we capture per-pose JPEGs in runDetection
+        // and compose them into a triptych at finalize. Smaller upload,
+        // no codec pitfalls on Safari, and zero risk of an "envoi en
+        // cours" hang on a multi-MB blob.
 
         setPhase("running");
         setLivePoseHint("Suivez les étapes ci-dessous");
@@ -274,10 +262,32 @@ export function LivenessCheck({ onComplete, onCancel }: Props) {
         });
       } catch (e: unknown) {
         if (cancelled) return;
-        const msg =
-          e instanceof Error ? e.message : "Impossible d'initialiser la caméra";
-        err("boot FAILED", { msg, error: e });
-        setErrorMsg(msg);
+        // Translate the most common DOMException codes into something
+        // useful in the error UI. The bare "Impossible d'initialiser"
+        // message hid every real cause behind a generic string.
+        const errName = (e as { name?: string })?.name;
+        const errMessage = e instanceof Error ? e.message : String(e);
+        let userMsg = "Impossible d'initialiser la caméra";
+        if (errName === "NotAllowedError") {
+          userMsg = "Permission caméra refusée — autorisez puis réessayez";
+        } else if (errName === "NotFoundError" || errName === "OverconstrainedError") {
+          userMsg = "Aucune caméra avant détectée sur cet appareil";
+        } else if (errName === "NotReadableError" || errName === "AbortError") {
+          userMsg = "La caméra est utilisée par une autre application";
+        } else if (errName === "SecurityError") {
+          userMsg = "La caméra requiert une connexion sécurisée (HTTPS)";
+        } else if (errMessage.includes("Failed to fetch") || errMessage.includes("404")) {
+          userMsg = "Échec du chargement du modèle de détection — actualisez la page";
+        }
+        err("boot FAILED", {
+          name: errName,
+          msg: errMessage,
+          userMsg,
+          isSecureContext: window.isSecureContext,
+          protocol: window.location.protocol,
+          error: e,
+        });
+        setErrorMsg(userMsg);
         setPhase("error");
       }
     })();
@@ -461,17 +471,20 @@ export function LivenessCheck({ onComplete, onCancel }: Props) {
         yaw: round(yaw, 3),
         score: round(score, 2),
       });
-      if (stepId === "front") {
-        try {
-          const tSnap = performance.now();
-          frontSnapshotRef.current = await canvasSnapshot(video);
-          log("front snapshot captured", {
-            ms: Math.round(performance.now() - tSnap),
-            sizeBytes: frontSnapshotRef.current.size,
-          });
-        } catch (e) {
-          warn("front snapshot failed — will fall back to video frame", e);
-        }
+      // One JPEG snapshot per pose. The triptych composer in finalize()
+      // combines all three side-by-side for admin review.
+      try {
+        const tSnap = performance.now();
+        const blob = await canvasSnapshot(video);
+        if (stepId === "front") frontSnapshotRef.current = blob;
+        else if (stepId === "right") rightSnapshotRef.current = blob;
+        else if (stepId === "left") leftSnapshotRef.current = blob;
+        log(`${stepId} snapshot captured`, {
+          ms: Math.round(performance.now() - tSnap),
+          sizeBytes: blob.size,
+        });
+      } catch (e) {
+        warn(`${stepId} snapshot failed`, e);
       }
       heldSinceRef.current = null;
       setProgress(0);
@@ -524,9 +537,9 @@ export function LivenessCheck({ onComplete, onCancel }: Props) {
     log("finalize start", {
       hasUserFromHook: Boolean(user),
       hasUserFromFetch: Boolean(liveUser),
-      hasFrontSnapshot: Boolean(frontSnapshotRef.current),
-      recorderState: recorderRef.current?.state ?? "none",
-      recordedChunks: recordedChunksRef.current.length,
+      front: Boolean(frontSnapshotRef.current),
+      right: Boolean(rightSnapshotRef.current),
+      left: Boolean(leftSnapshotRef.current),
       authErr: authErr?.message,
     });
     if (!liveUser) {
@@ -536,86 +549,71 @@ export function LivenessCheck({ onComplete, onCancel }: Props) {
       return;
     }
 
-    let videoBlob: Blob | null = null;
-    if (recorderRef.current && recorderRef.current.state !== "inactive") {
-      const rec = recorderRef.current;
-      const tStop = performance.now();
-      const stopPromise = new Promise<void>((resolve) => {
-        rec.onstop = () => resolve();
-      });
-      rec.stop();
-      await stopPromise;
-      log("MediaRecorder stopped", {
-        ms: Math.round(performance.now() - tStop),
-        chunks: recordedChunksRef.current.length,
-        totalBytes: recordedChunksRef.current.reduce((s, b) => s + b.size, 0),
-      });
-      if (recordedChunksRef.current.length > 0) {
-        videoBlob = new Blob(recordedChunksRef.current, {
-          type: rec.mimeType || "video/webm",
-        });
-        log("video blob assembled", {
-          sizeBytes: videoBlob.size,
-          type: videoBlob.type,
-        });
-      } else {
-        warn("recorder stopped but produced 0 chunks — no video to upload");
-      }
-    } else {
-      log("no active recorder — video evidence skipped");
-    }
-
-    // Fall back to a still capture if the front-step snapshot didn't land.
+    // Fall back to a still capture if any snapshot didn't land. The
+    // current frame is the best we can do — yaw might not match the
+    // expected pose, but we still have visual evidence.
     if (!frontSnapshotRef.current && videoRef.current) {
-      log("front snapshot missing — falling back to current video frame");
+      log("front snapshot missing — falling back to current frame");
       try {
         frontSnapshotRef.current = await canvasSnapshot(videoRef.current);
-        log("fallback snapshot captured", {
-          sizeBytes: frontSnapshotRef.current.size,
-        });
       } catch (e) {
-        warn("fallback snapshot failed", e);
+        warn("fallback front snapshot failed", e);
       }
     }
 
     try {
+      // 1) Front frame — primary headshot for face-match against the CIN.
       const tImg = performance.now();
       const imgFile = new File(
         [frontSnapshotRef.current ?? new Blob([])],
-        `liveness-${Date.now()}.jpg`,
+        `liveness-front-${Date.now()}.jpg`,
         { type: "image/jpeg" },
       );
-      log("uploading image", { sizeBytes: imgFile.size, name: imgFile.name });
+      log("uploading front image", { sizeBytes: imgFile.size });
       const imgRes = await uploadToBucket(imgFile, liveUser.id, "kyc");
-      log("image upload done", {
+      log("front image upload done", {
         ms: Math.round(performance.now() - tImg),
         url: imgRes.url,
       });
 
-      let videoUrl = imgRes.url;
-      if (videoBlob && videoBlob.size > 0) {
-        const tVid = performance.now();
-        const ext = (videoBlob.type.split("/")[1] || "webm").split(";")[0];
-        const vidFile = new File(
-          [videoBlob],
-          `liveness-${Date.now()}.${ext}`,
-          { type: videoBlob.type || "video/webm" },
+      // 2) Triptych — single composite JPEG showing front | right | left
+      // side-by-side. Replaces the multi-MB video with a ~150-300 KB
+      // image. Stored under the existing `selfie_video_url` column so
+      // the schema doesn't change.
+      let triptychUrl = imgRes.url;
+      const triptychBlob = await composeTriptych(
+        frontSnapshotRef.current,
+        rightSnapshotRef.current,
+        leftSnapshotRef.current,
+      );
+      if (triptychBlob) {
+        const tTri = performance.now();
+        const triFile = new File(
+          [triptychBlob],
+          `liveness-triptych-${Date.now()}.jpg`,
+          { type: "image/jpeg" },
         );
-        log("uploading video", { sizeBytes: vidFile.size, name: vidFile.name });
-        const vidRes = await uploadToBucket(vidFile, liveUser.id, "kyc");
-        videoUrl = vidRes.url;
-        log("video upload done", {
-          ms: Math.round(performance.now() - tVid),
-          url: vidRes.url,
+        log("uploading triptych", { sizeBytes: triFile.size });
+        const triRes = await uploadToBucket(triFile, liveUser.id, "kyc");
+        triptychUrl = triRes.url;
+        log("triptych upload done", {
+          ms: Math.round(performance.now() - tTri),
+          url: triRes.url,
         });
       } else {
-        log("no video blob — using image URL for both fields");
+        log("triptych skipped — using front URL for both slots");
       }
 
       stopAll();
       setPhase("done");
-      log("finalize SUCCESS", { imageUrl: imgRes.url, videoUrl });
-      onComplete({ videoUrl, imageUrl: imgRes.url });
+      log("finalize SUCCESS", {
+        imageUrl: imgRes.url,
+        triptychUrl,
+      });
+      // Keep the LivenessResult shape backwards-compatible — the host
+      // page (kyc/selfie) writes selfieVideoUrl and selfieImageUrl into
+      // the kycDraft. The "video" slot now points at the triptych JPEG.
+      onComplete({ videoUrl: triptychUrl, imageUrl: imgRes.url });
     } catch (e: unknown) {
       const msg =
         e instanceof Error ? e.message : "Échec de l'envoi du selfie";
@@ -627,19 +625,10 @@ export function LivenessCheck({ onComplete, onCancel }: Props) {
 
   function stopAll() {
     log("stopAll() called", {
-      hadRecorder: Boolean(recorderRef.current),
-      recorderState: recorderRef.current?.state ?? "none",
       hadStream: Boolean(streamRef.current),
       detectionsRun: detectionCountRef.current,
     });
     stoppedRef.current = true;
-    if (recorderRef.current && recorderRef.current.state !== "inactive") {
-      try {
-        recorderRef.current.stop();
-      } catch (e) {
-        warn("recorder.stop() threw — ignoring", e);
-      }
-    }
     streamRef.current?.getTracks().forEach((t) => {
       log("stopping track", { kind: t.kind, label: t.label, readyState: t.readyState });
       t.stop();
@@ -655,8 +644,9 @@ export function LivenessCheck({ onComplete, onCancel }: Props) {
     setCompletedSteps(new Set());
     setProgress(0);
     heldSinceRef.current = null;
-    recordedChunksRef.current = [];
     frontSnapshotRef.current = null;
+    rightSnapshotRef.current = null;
+    leftSnapshotRef.current = null;
     detectionCountRef.current = 0;
     stoppedRef.current = false;
     // Re-run effects by toggling a key on the parent? Simplest: reload
@@ -887,18 +877,72 @@ async function canvasSnapshot(video: HTMLVideoElement): Promise<Blob> {
   });
 }
 
-function pickRecorderMime(): string | null {
-  const candidates = [
-    "video/webm;codecs=vp9",
-    "video/webm;codecs=vp8",
-    "video/webm",
-    "video/mp4",
-  ];
-  if (typeof MediaRecorder === "undefined") return null;
-  for (const m of candidates) {
-    if (MediaRecorder.isTypeSupported(m)) return m;
+/**
+ * Compose three liveness pose JPEGs into a single horizontal triptych:
+ * front | right | left, each panel 480×480, gold separator strips
+ * between them. Returns null if no input panels exist (the caller
+ * falls back to using only the front frame in that case).
+ *
+ * Replaces the old MediaRecorder pipeline. The full-flow WebM was
+ * 3-8 MB and stalled the upload — the triptych is ~150-300 KB and
+ * actually shows admin the three poses they need to see at a glance.
+ */
+async function composeTriptych(
+  front: Blob | null,
+  right: Blob | null,
+  left: Blob | null,
+): Promise<Blob | null> {
+  const blobs = [front, right, left];
+  if (!blobs.some((b) => b)) return null;
+  const PANEL = 480;
+  const GAP = 6;
+  const W = PANEL * 3 + GAP * 2;
+  const H = PANEL;
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+  ctx.fillStyle = "#0a0a0a";
+  ctx.fillRect(0, 0, W, H);
+
+  // Draw each panel — letterbox if the source isn't square.
+  for (let i = 0; i < 3; i++) {
+    const blob = blobs[i];
+    if (!blob) continue;
+    try {
+      const bmp = await createImageBitmap(blob);
+      const x = i * (PANEL + GAP);
+      // Cover-fit so the face fills the panel even if the camera was
+      // 16:9 rather than square.
+      const ratio = bmp.width / bmp.height;
+      let sx = 0,
+        sy = 0,
+        sw = bmp.width,
+        sh = bmp.height;
+      if (ratio > 1) {
+        sw = bmp.height;
+        sx = (bmp.width - sw) / 2;
+      } else if (ratio < 1) {
+        sh = bmp.width;
+        sy = (bmp.height - sh) / 2;
+      }
+      ctx.drawImage(bmp, sx, sy, sw, sh, x, 0, PANEL, PANEL);
+      bmp.close?.();
+    } catch {
+      // Skip the panel; the dark background fills the slot.
+    }
   }
-  return null;
+
+  // Thin gold dividers between panels — visual cue this is one image
+  // composed of three captures, not a single weird wide photo.
+  ctx.fillStyle = "#d4af37";
+  ctx.fillRect(PANEL, 0, GAP, H);
+  ctx.fillRect(PANEL * 2 + GAP, 0, GAP, H);
+
+  return new Promise<Blob | null>((resolve) =>
+    canvas.toBlob((b) => resolve(b), "image/jpeg", 0.85),
+  );
 }
 
 function round(n: number, decimals: number): number {
