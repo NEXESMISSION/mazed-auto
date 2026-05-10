@@ -5,14 +5,18 @@ import { useRouter } from "next/navigation";
 import { RefreshCw } from "lucide-react";
 
 // Distance the user has to drag before a release triggers a refresh.
-const TRIGGER_PX = 90;
+// Tuned long on purpose — a short pull was triggering accidental
+// refreshes when users scrolled up at the top of a page. The longer
+// pull requires deliberate intent and matches the "long slide down"
+// feel of native iOS Mail / Twitter.
+const TRIGGER_PX = 160;
 // Hard cap on how far the indicator can slide — keeps the rubber-band
 // effect feeling snappy instead of letting users drag the page halfway down.
-const MAX_PULL_PX = 140;
-// Resistance factor: each finger-pixel of movement contributes 60% to the
-// indicator's vertical offset. Without this the pull would feel 1:1, which
-// is too eager.
-const RESISTANCE = 0.6;
+const MAX_PULL_PX = 240;
+// Resistance factor: each finger-pixel of movement contributes ~55% to
+// the indicator's vertical offset. Slightly heavier than 1:1 so the
+// gesture feels weighted and "earned".
+const RESISTANCE = 0.55;
 // Only activate PTR when the touch STARTS within this many pixels of the
 // top of the viewport. Without this guard, taps on buttons mid-page that
 // shift slightly during touch get hijacked into a pull, and the button
