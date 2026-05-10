@@ -354,6 +354,15 @@ export function LivenessCheck({ onComplete, onCancel }: Props) {
   }, [phase]);
 
   async function playStepBeep() {
+    // Tactile signal first — works on phones in silent mode and on
+    // browsers that still block our AudioContext for any reason. Three
+    // 18 ms pulses give a distinct "step done" feel on all devices
+    // that expose the Vibration API. Silent no-op elsewhere.
+    try {
+      navigator.vibrate?.(18);
+    } catch {
+      // ignore
+    }
     const ctx = audioCtxRef.current;
     if (!ctx) {
       warn("beep skipped — no AudioContext");
@@ -364,6 +373,13 @@ export function LivenessCheck({ onComplete, onCancel }: Props) {
     else log("step beep played");
   }
   async function playDoneBeep() {
+    // Stronger pattern for the final "all done" cue — mirrors the
+    // ascending audio arpeggio with three rising vibration bursts.
+    try {
+      navigator.vibrate?.([20, 60, 25, 60, 35]);
+    } catch {
+      // ignore
+    }
     const ctx = audioCtxRef.current;
     if (!ctx) {
       warn("done beep skipped — no AudioContext");
