@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useEffect, useRef, useState, Suspense } from "react";
 import { Link } from "@/i18n/navigation";
 import { useSearchParams, useParams } from "next/navigation";
 import { stripLocalePrefix } from "@/i18n/routing";
@@ -19,6 +19,25 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Surface auth-callback failures from /auth/callback. Without this,
+  // the user lands silently on /login after a failed OAuth exchange
+  // with no idea why — they assume the app is broken. The callback
+  // route now puts the underlying message in `?error=...` and we
+  // toast it once on mount (guarded against React StrictMode
+  // double-effect via a ref).
+  const errorParam = params.get("error");
+  const errorShownRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!errorParam || errorShownRef.current === errorParam) return;
+    errorShownRef.current = errorParam;
+    const friendly =
+      errorParam === "callback"
+        ? "La connexion via le fournisseur externe a échoué. Réessayez."
+        : `Échec de l'authentification : ${decodeURIComponent(errorParam)}`;
+    toast(friendly, "error");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [errorParam]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

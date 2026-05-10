@@ -98,6 +98,20 @@ export default function Step1Page() {
       toast("Veuillez compléter les champs en rouge", "warning");
       return;
     }
+    // VIN is optional, but if provided it must be a real 17-char VIN.
+    // ISO 3779 excludes I, O, Q to avoid confusion with 1 and 0. Only
+    // validate when the field has content — letting a seller skip it
+    // is fine, but an obviously-bogus value like "x" would publish a
+    // listing with junk data the admin queue would have to reject.
+    const vin = (draft.vin ?? "").trim().toUpperCase();
+    if (vin.length > 0 && !/^[A-HJ-NPR-Z0-9]{17}$/.test(vin)) {
+      scrollToFirstInvalid(["vin"]);
+      toast(
+        "Le numéro de châssis (VIN) doit faire 17 caractères, sans I, O, ou Q",
+        "warning",
+      );
+      return;
+    }
     router.push("/seller/new/step-2");
   }
 
@@ -230,11 +244,18 @@ export default function Step1Page() {
           </select>
         </Field>
 
-        <Field label="Numéro de châssis (VIN)">
+        <Field label="Numéro de châssis (VIN)" name="vin">
           <Input
-            placeholder="VF1XXXXXXXXXXXX"
+            placeholder="VF1XXXXXXXXXXXX (17 caractères, optionnel)"
             value={draft.vin ?? ""}
-            onChange={(e) => update({ vin: e.target.value })}
+            maxLength={17}
+            onChange={(e) =>
+              update({
+                vin: e.target.value
+                  .toUpperCase()
+                  .replace(/[^A-HJ-NPR-Z0-9]/g, ""),
+              })
+            }
           />
         </Field>
 

@@ -21,7 +21,13 @@ import { createClient } from "@/lib/supabase/client";
 function CheckoutContent() {
   const router = useRouter();
   const params = useSearchParams();
-  const amount = Number(params.get("amount") ?? 1600);
+  // Parse the amount strictly. Previously this defaulted to 1600 DT
+  // when the param was missing — meaning a malformed link could
+  // silently charge the buyer the wrong amount. Now we reject any
+  // missing / non-numeric / non-positive value below.
+  const rawAmount = params.get("amount");
+  const parsedAmount = rawAmount === null ? NaN : Number(rawAmount);
+  const amount = Number.isFinite(parsedAmount) && parsedAmount > 0 ? parsedAmount : 0;
   const type = params.get("type") ?? "deposit";
   const auctionId = params.get("auction");
 
@@ -32,11 +38,26 @@ function CheckoutContent() {
   );
   const [validating, setValidating] = useState(true);
 
+  // Hard-gate on the amount being a real positive number BEFORE we
+  // even hit Supabase. Without this a malformed link like
+  // /payment/checkout?type=deposit&auction=xyz (no amount) would have
+  // silently used the old default of 1600 DT.
+  useEffect(() => {
+    if (amount <= 0) {
+      setBlock({
+        title: "Montant manquant ou invalide",
+        body: "Le lien de paiement est incomplet. Revenez à l'enchère et réessayez.",
+      });
+      setValidating(false);
+    }
+  }, [amount]);
+
   // Validate that the auction is in a state that accepts this payment type.
   // Spec: deposits only on live auctions, final payments only on ended /
   // pending_seller_decision (or live if it's a buy-now). Refuse anything else
   // up-front so we never charge a card against a dead auction.
   useEffect(() => {
+    if (amount <= 0) return; // already blocked above
     if (!auctionId) {
       setValidating(false);
       return;

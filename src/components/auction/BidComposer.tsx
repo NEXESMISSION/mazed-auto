@@ -49,7 +49,19 @@ export function BidComposer({
   const { toast } = useToast();
   const { user, loaded: authLoaded } = useAuth();
   const minBid = auction.currentPrice + auction.bidIncrement;
-  const [amount, setAmount] = useState(minBid);
+  // Display state lives in a string so the input field can show
+  // exactly what the user typed (including a stray "0" while they're
+  // mid-entry). `amount` is derived as the numeric value used for
+  // validation and submission.
+  const [amountStr, setAmountStr] = useState<string>(() => String(minBid));
+  const amount = (() => {
+    const n = Number(amountStr);
+    return Number.isFinite(n) ? n : 0;
+  })();
+  function setAmount(v: number | ((prev: number) => number)) {
+    const next = typeof v === "function" ? v(amount) : v;
+    setAmountStr(String(Math.max(0, Math.floor(next))));
+  }
   const [showConfirm, setShowConfirm] = useState(false);
   const [showRules, setShowRules] = useState(false);
   const [showAuto, setShowAuto] = useState(false);
@@ -488,15 +500,27 @@ export function BidComposer({
               <input
                 type="text"
                 inputMode="numeric"
-                value={amount === 0 ? "" : amount}
+                value={amountStr}
                 onChange={(e) => {
-                  const v = e.target.value
-                    .replace(/\D/g, "")
-                    .replace(/^0+(?=\d)/, "");
-                  setAmount(v === "" ? 0 : Number(v));
+                  // Keep digits only — the underlying numeric `amount`
+                  // re-derives automatically. Whatever the user typed
+                  // stays visible until blur normalises it.
+                  setAmountStr(e.target.value.replace(/\D/g, ""));
+                }}
+                onFocus={(e) => {
+                  // Select all on focus so the user can overtype the
+                  // existing value without manual erase — matches the
+                  // pattern of every native iOS / Android amount field.
+                  e.currentTarget.select();
                 }}
                 onBlur={() => {
-                  if (amount < minBid) setAmount(minBid);
+                  // On blur: clamp to minBid and drop any leading-zero
+                  // weirdness. If the field is empty, fall back to
+                  // minBid so we never submit NaN / 0.
+                  const n = Number(amountStr);
+                  const clamped =
+                    Number.isFinite(n) && n >= minBid ? n : minBid;
+                  setAmountStr(String(clamped));
                 }}
                 className="flex-1 bg-transparent text-center text-xl font-extrabold tabular-nums focus:outline-none"
                 aria-label="votre offre"

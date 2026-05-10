@@ -41,6 +41,10 @@ export function FavoriteButton({
       setActive(false); // signed-out is "not favorited"
       return;
     }
+    // Cleanup flag — without this, navigating away mid-fetch fires
+    // setActive() on an unmounted component, generating React's
+    // "can't perform state update on an unmounted component" warning.
+    let mounted = true;
     setActive(null);
     const supabase = createClient();
     supabase
@@ -49,7 +53,13 @@ export function FavoriteButton({
       .eq("user_id", user.id)
       .eq("auction_id", auctionId)
       .maybeSingle()
-      .then(({ data }) => setActive(!!data));
+      .then(({ data }) => {
+        if (!mounted) return;
+        setActive(!!data);
+      });
+    return () => {
+      mounted = false;
+    };
   }, [user, auctionId, authLoaded]);
 
   async function toggle(e: React.MouseEvent) {

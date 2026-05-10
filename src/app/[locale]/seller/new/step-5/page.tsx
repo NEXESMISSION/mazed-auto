@@ -37,24 +37,40 @@ export default function Step5Page() {
   );
 
   function next() {
-    if (!startingPrice || startingPrice <= 0) {
+    if (!Number.isFinite(startingPrice) || startingPrice <= 0) {
       scrollToFirstInvalid(["startingPrice"]);
       toast("Le prix de départ doit être supérieur à 0", "warning");
       return;
     }
-    if (hasReserve && reservePrice <= startingPrice) {
-      scrollToFirstInvalid(["reservePrice"]);
-      toast("Le prix de réserve doit être supérieur au prix de départ", "warning");
-      return;
+    if (hasReserve) {
+      if (!Number.isFinite(reservePrice) || reservePrice <= startingPrice) {
+        scrollToFirstInvalid(["reservePrice"]);
+        toast("Le prix de réserve doit être supérieur au prix de départ", "warning");
+        return;
+      }
     }
     if (hasBuyNow) {
       const floor = hasReserve ? reservePrice : startingPrice;
-      if (buyNowPrice <= floor) {
+      if (!Number.isFinite(buyNowPrice) || buyNowPrice <= floor) {
         scrollToFirstInvalid(["buyNowPrice"]);
         toast(
           hasReserve
             ? 'Le prix "Achat immédiat" doit être supérieur au prix de réserve'
             : 'Le prix "Achat immédiat" doit être supérieur au prix de départ',
+          "warning",
+        );
+        return;
+      }
+      // Platform rule: buy-now must be at least 1.3× the starting
+      // price (matches `auction.buy_now.min_multiplier` in
+      // platform_settings, enforced server-side too). Catch it here
+      // so the seller doesn't sit through the publish step only to
+      // see the RPC reject — fail fast with a clear hint.
+      const minBuyNow = startingPrice * 1.3;
+      if (buyNowPrice < minBuyNow) {
+        scrollToFirstInvalid(["buyNowPrice"]);
+        toast(
+          `"Achat immédiat" doit être ≥ 1,3× le prix de départ (min ${Math.ceil(minBuyNow)} DT)`,
           "warning",
         );
         return;
