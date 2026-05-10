@@ -118,12 +118,21 @@ export function PhoneCompletionGate() {
       role="dialog"
       aria-modal="true"
       aria-labelledby="phone-gate-title"
+      data-swipe-skip
       className="fixed inset-0 z-[60] flex items-end md:items-center justify-center"
+      style={{
+        animation: "ptr-fade-in 220ms ease-out",
+      }}
     >
       {/* Solid backdrop — no onClick handler, so taps don't dismiss. */}
       <div className="absolute inset-0 bg-black/80 backdrop-blur-md" />
 
-      <div className="relative w-full max-w-md mx-0 md:mx-4 bg-[var(--surface)] border border-[var(--gold-soft)]/40 rounded-t-[var(--radius-xl)] md:rounded-[var(--radius-md)] shadow-[var(--shadow-lg)] overflow-hidden">
+      <div
+        className="relative w-full max-w-md mx-0 md:mx-4 bg-[var(--surface)] border border-[var(--gold-soft)]/40 rounded-t-[var(--radius-xl)] md:rounded-[var(--radius-md)] shadow-[var(--shadow-lg)] overflow-hidden"
+        style={{
+          animation: "ptr-slide-up 280ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+        }}
+      >
         <div className="p-6 space-y-5">
           <div className="text-center space-y-3">
             <div className="mx-auto h-14 w-14 rounded-full bg-[var(--gold-faint)] border border-[var(--gold)]/40 flex items-center justify-center shadow-[var(--shadow-gold)]">

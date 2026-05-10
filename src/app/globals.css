@@ -304,6 +304,24 @@ a {
   animation: fade-in 180ms ease-out;
 }
 
+/* Modal-style entrance — backdrop fades, panel slides up from bottom
+   with a back-out spring. Used by overlays that mount mid-flow
+   (PhoneCompletionGate, etc.) so they don't pop suddenly. */
+@keyframes ptr-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes ptr-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Form-validation flash — toggled by lib/validation.ts on the field's outer
    container. The container can be any element (div, fieldset…) — we paint
    the inputs/selects/textareas inside red and pulse a soft halo for 2.5s. */
