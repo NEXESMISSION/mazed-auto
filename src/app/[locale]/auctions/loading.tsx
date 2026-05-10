@@ -33,11 +33,11 @@ export default function Loading() {
           ))}
         </div>
 
-        {/* Products grid */}
-        <div className="mt-7 px-4">
+        {/* Products grid — column count tracks the real page (md:3 / lg:4 / xl:5). */}
+        <div className="mt-7 px-4 lg:max-w-[var(--max-w-wide)] lg:mx-auto lg:px-6">
           <div className="h-4 w-20 rounded skeleton mb-3" />
-          <div className="grid grid-cols-2 gap-3">
-            {Array.from({ length: 6 }).map((_, i) => (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 lg:gap-5">
+            {Array.from({ length: 12 }).map((_, i) => (
               <div key={i} className="space-y-2">
                 <div className="aspect-[4/5] rounded-2xl skeleton" />
                 <div className="h-3 w-3/4 rounded skeleton" />
