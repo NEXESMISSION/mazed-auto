@@ -1,6 +1,7 @@
 import { TopBar } from "./TopBar";
 import { BottomTabBar } from "./BottomTabBar";
 import { PullToRefresh } from "./PullToRefresh";
+import { SideSwipeNav } from "./SideSwipeNav";
 import { PhoneCompletionGate } from "./PhoneCompletionGate";
 
 interface Props {
@@ -14,6 +15,11 @@ export function AppShell({ children, noTopBar }: Props) {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <PullToRefresh />
+      {/* Edge-swipe between bottom-tab destinations. Only fires when
+          the touch starts within ~36 px of the left or right edge so
+          inline horizontal scrollers (HeroCarousel, marquees, chip
+          strips) keep their swipe gestures unmolested. */}
+      <SideSwipeNav />
       {!noTopBar && <TopBar />}
       <main className="flex-1 pb-[calc(var(--bottombar-h)+env(safe-area-inset-bottom))]">
         {children}
