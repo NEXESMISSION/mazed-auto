@@ -4,6 +4,18 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { RefreshCw } from "lucide-react";
 
+const TAG = "[PTR]";
+function log(...args: unknown[]) {
+  const ts = new Date().toISOString().slice(11, 23);
+  // eslint-disable-next-line no-console
+  console.log(
+    `%c${TAG} %c${ts}`,
+    "color:#d4af37;font-weight:bold",
+    "color:#888",
+    ...args,
+  );
+}
+
 // Distance the user has to drag before a release triggers a refresh.
 // Tuned long on purpose — a short pull was triggering accidental
 // refreshes when users scrolled up at the top of a page. The longer
@@ -22,7 +34,13 @@ const RESISTANCE = 0.55;
 // shift slightly during touch get hijacked into a pull, and the button
 // click is suppressed. This is the standard fix for "buttons sometimes
 // don't fire" when a global PTR listener is in play.
-const TOP_ZONE_PX = 80;
+//
+// Bumped 80 → 140 because the noTopBar surfaces (home / browse / auction
+// detail) push their own header / hero into the top 64-80 px, leaving
+// users very little real estate to START a pull from "the very top".
+// The earlier 80 px window meant a finger landing on the BrowseHeader
+// got rejected before it could move.
+const TOP_ZONE_PX = 140;
 // Minimum dy before we steal the gesture. Keeps tiny finger jitter on
 // regular taps from registering as a pull.
 const ACTIVATION_DY_PX = 12;
@@ -59,13 +77,21 @@ export function PullToRefresh() {
       // suppresses the click event. This is the root cause of "buttons
       // sometimes don't work."
       const y = e.touches[0].clientY;
-      if (window.scrollY > 0 || y > TOP_ZONE_PX) {
+      const scrollY = window.scrollY;
+      if (scrollY > 0 || y > TOP_ZONE_PX) {
         armed.current = false;
         startY.current = null;
+        log("touchstart REJECTED", {
+          scrollY,
+          y: Math.round(y),
+          topZone: TOP_ZONE_PX,
+          reason: scrollY > 0 ? "page scrolled" : "touch below top zone",
+        });
         return;
       }
       armed.current = true;
       startY.current = y;
+      log("touchstart ARMED", { y: Math.round(y) });
     }
 
     function onTouchMove(e: TouchEvent) {
@@ -91,12 +117,18 @@ export function PullToRefresh() {
       }
       armed.current = false;
       const triggered = pull >= TRIGGER_PX;
+      log("touchend", {
+        pullPx: Math.round(pull),
+        triggerPx: TRIGGER_PX,
+        triggered,
+      });
       if (triggered) {
         setRefreshing(true);
         // Snap to a fixed visible position while the refresh runs.
         setPull(TRIGGER_PX);
         try {
           router.refresh();
+          log("router.refresh() invoked");
         } finally {
           // router.refresh() resolves quickly (it kicks off the work but
           // doesn't await every server component). Hold the spinner for a
