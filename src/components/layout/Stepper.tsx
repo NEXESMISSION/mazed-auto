@@ -1,4 +1,3 @@
-import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -7,55 +6,51 @@ interface Props {
   className?: string;
 }
 
+/**
+ * Stories-style segmented progress bar with the active step label and a
+ * "X / Y" counter underneath. Replaces the older 4-circle layout, which
+ * crowded the header and forced labels to compete with the page title
+ * on a 480px-wide phone container.
+ *
+ * Design choices:
+ * - Each step is a thin pill (h-1, ~4px) — done segments are solid gold,
+ *   the active one is gold with a soft glow, pending ones are muted.
+ * - Only the active step's label is shown to keep the bar quiet; users
+ *   navigate sequentially and the back button surfaces the previous one.
+ * - Counter sits on the end so the user always knows how far they are
+ *   without counting nodes.
+ */
 export function Stepper({ steps, current, className }: Props) {
+  const total = steps.length;
+  const safe = Math.max(0, Math.min(current, total - 1));
+  const currentLabel = steps[safe]?.label ?? "";
   return (
-    <ol className={cn("flex items-center w-full", className)}>
-      {steps.map((step, i) => {
-        const done = i < current;
-        const active = i === current;
-        return (
-          <li
-            key={i}
-            className={cn(
-              "flex items-center",
-              i < steps.length - 1 && "flex-1",
-            )}
-          >
-            <div className="flex flex-col items-center gap-1">
-              <div
-                className={cn(
-                  "h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-colors",
-                  done &&
-                    "bg-[var(--gold)] border-[var(--gold)] text-black",
-                  active &&
-                    "border-[var(--gold)] text-[var(--gold)] bg-[var(--gold-faint)]",
-                  !done &&
-                    !active &&
-                    "border-[var(--border)] text-[var(--foreground-muted)]",
-                )}
-              >
-                {done ? <Check className="h-4 w-4" /> : i + 1}
-              </div>
-              <span
-                className={cn(
-                  "text-[10px] font-semibold whitespace-nowrap",
-                  active ? "text-[var(--gold)]" : "text-[var(--foreground-muted)]",
-                )}
-              >
-                {step.label}
-              </span>
-            </div>
-            {i < steps.length - 1 && (
-              <div
-                className={cn(
-                  "flex-1 h-0.5 mx-5 sm:mx-8 -mt-4 transition-colors",
-                  done ? "bg-[var(--gold)]" : "bg-[var(--border)]",
-                )}
-              />
-            )}
-          </li>
-        );
-      })}
-    </ol>
+    <div className={cn("flex flex-col gap-2", className)}>
+      <div className="flex gap-1.5">
+        {steps.map((_, i) => {
+          const done = i < safe;
+          const active = i === safe;
+          return (
+            <div
+              key={i}
+              className={cn(
+                "h-1 flex-1 rounded-full transition-colors duration-300",
+                done && "bg-[var(--gold)]",
+                active && "bg-[var(--gold)] shadow-[0_0_10px_rgba(212,175,55,0.6)]",
+                !done && !active && "bg-[var(--border)]",
+              )}
+            />
+          );
+        })}
+      </div>
+      <div className="flex items-baseline justify-between gap-3 text-[11px]">
+        <span className="font-extrabold tracking-tight text-[var(--gold)] truncate">
+          {currentLabel}
+        </span>
+        <span className="text-[var(--foreground-muted)] tabular-nums shrink-0">
+          Étape {safe + 1} / {total}
+        </span>
+      </div>
+    </div>
   );
 }

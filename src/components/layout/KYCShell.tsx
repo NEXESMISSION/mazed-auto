@@ -57,9 +57,6 @@ export function KYCShell({
       {showStepper && (
         <div className="px-4 pb-3">
           <Stepper steps={steps} current={current} />
-          <div className="text-[10px] text-center text-[var(--foreground-muted)] mt-1 tabular-nums">
-            Étape {current + 1} sur {steps.length}
-          </div>
         </div>
       )}
 

@@ -14,6 +14,39 @@ import {
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/auth";
 import { uploadToBucket } from "@/lib/upload";
+import { createClient } from "@/lib/supabase/client";
+
+const TAG = "[Liveness]";
+function log(...args: unknown[]) {
+  const ts = new Date().toISOString().slice(11, 23);
+  // eslint-disable-next-line no-console
+  console.log(
+    `%c${TAG} %c${ts}`,
+    "color:#d4af37;font-weight:bold",
+    "color:#888",
+    ...args,
+  );
+}
+function warn(...args: unknown[]) {
+  const ts = new Date().toISOString().slice(11, 23);
+  // eslint-disable-next-line no-console
+  console.warn(
+    `%c${TAG} %c${ts}`,
+    "color:#f59e0b;font-weight:bold",
+    "color:#888",
+    ...args,
+  );
+}
+function err(...args: unknown[]) {
+  const ts = new Date().toISOString().slice(11, 23);
+  // eslint-disable-next-line no-console
+  console.error(
+    `%c${TAG} %c${ts}`,
+    "color:#ef4444;font-weight:bold",
+    "color:#888",
+    ...args,
+  );
+}
 
 type StepId = "front" | "right" | "left";
 
@@ -35,7 +68,10 @@ const STEPS: StepDef[] = [
 // flips horizontally so it appears as turning right on screen too).
 const HOLD_MS = 1100;       // satisfy the condition for ~1.1s before tick
 const FRONT_YAW_MAX = 0.18; // |yaw| < 0.18 → looking forward
-const SIDE_YAW_MIN = 0.30;  // |yaw| > 0.30 → turned to side
+// Side threshold tuned upward — the eye-based yaw saturates fast so a
+// small head tilt would slip past at 0.30. 0.55 forces the user to
+// actually turn their head ~25-30° of true rotation, not just shift.
+const SIDE_YAW_MIN = 0.55;
 const MIN_FACE_FRAC = 0.18; // face width ≥ 18% of video width
 const DETECT_INTERVAL_MS = 120; // ~8 fps — light enough for low-end phones
 
@@ -79,6 +115,19 @@ export function LivenessCheck({ onComplete, onCancel }: Props) {
   const lastDetectAtRef = useRef<number>(0);
   const stoppedRef = useRef<boolean>(false);
   const frontSnapshotRef = useRef<Blob | null>(null);
+  const detectionCountRef = useRef<number>(0);
+  // Step index mirrored as a ref so the detection loop reads the
+  // *current* step without having to be re-armed every time stepIdx
+  // changes. Re-arming caused "step: 'front'" log lines to keep firing
+  // for ~600ms after we'd already advanced to "right" — two RAF chains
+  // ran in parallel between the cleanup and the next mount.
+  const stepIdxRef = useRef(0);
+  // Shared AudioContext for the step beeps — created once per mount.
+  // Browsers gate audio behind a user gesture, so we also attach a
+  // one-shot global listener that resumes the context at the very
+  // first click/touch on the page (typically the user's tap that
+  // navigated here, but covers any later interaction too).
+  const audioCtxRef = useRef<AudioContext | null>(null);
 
   const [phase, setPhase] = useState<
     "boot" | "running" | "uploading" | "done" | "error"
@@ -96,22 +145,64 @@ export function LivenessCheck({ onComplete, onCancel }: Props) {
   const totalSteps = STEPS.length;
   const currentStep = STEPS[stepIdx];
 
+  // Keep the ref in sync with state for the detection loop.
+  stepIdxRef.current = stepIdx;
+
   /* ─────────────────────────────────────────────────────────────────────────
    * Boot: load models + camera + recorder
    * ───────────────────────────────────────────────────────────────────────── */
   useEffect(() => {
     let cancelled = false;
     stoppedRef.current = false;
+    log("boot start", {
+      hasMediaDevices: typeof navigator !== "undefined" && !!navigator.mediaDevices,
+      hasMediaRecorder: typeof MediaRecorder !== "undefined",
+      thresholds: { HOLD_MS, FRONT_YAW_MAX, SIDE_YAW_MIN, MIN_FACE_FRAC, DETECT_INTERVAL_MS },
+    });
+
+    // Spin up the shared audio context up front and try to resume it.
+    // First resume() call usually fails on browsers without a recent
+    // user gesture — the listener below catches the next interaction.
+    if (!audioCtxRef.current) {
+      audioCtxRef.current = makeAudioCtx();
+      log("AudioContext created", {
+        state: audioCtxRef.current?.state ?? "unsupported",
+      });
+    }
+    audioCtxRef.current?.resume().then(
+      () => log("AudioContext resumed eagerly", { state: audioCtxRef.current?.state }),
+      (e) => warn("AudioContext eager resume failed (will retry on gesture)", e?.message ?? e),
+    );
+    const onGesture = () => {
+      if (audioCtxRef.current && audioCtxRef.current.state !== "running") {
+        audioCtxRef.current.resume().then(
+          () => log("AudioContext unlocked by gesture"),
+          (e) => warn("gesture resume failed", e?.message ?? e),
+        );
+      }
+    };
+    window.addEventListener("pointerdown", onGesture, { once: true });
+    window.addEventListener("touchstart", onGesture, { once: true });
+    window.addEventListener("keydown", onGesture, { once: true });
     (async () => {
+      const tBoot = performance.now();
       try {
         setLivePoseHint("Chargement du modèle de visage...");
+
+        const tImport = performance.now();
         const faceapi = await import("@vladmandic/face-api");
+        log("face-api module imported", { ms: Math.round(performance.now() - tImport) });
         if (cancelled) return;
         faceapiRef.current = faceapi;
+
+        const tDetector = performance.now();
         await faceapi.nets.tinyFaceDetector.loadFromUri("/models/face-api");
-        await faceapi.nets.faceLandmark68TinyNet.loadFromUri(
-          "/models/face-api",
-        );
+        log("tinyFaceDetector loaded", { ms: Math.round(performance.now() - tDetector) });
+
+        const tLandmarks = performance.now();
+        await faceapi.nets.faceLandmark68TinyNet.loadFromUri("/models/face-api");
+        log("faceLandmark68TinyNet loaded", { ms: Math.round(performance.now() - tLandmarks) });
+
         detectorOptionsRef.current = new faceapi.TinyFaceDetectorOptions({
           inputSize: 320,
           scoreThreshold: 0.5,
@@ -119,6 +210,8 @@ export function LivenessCheck({ onComplete, onCancel }: Props) {
 
         if (cancelled) return;
         setLivePoseHint("Demande d'accès à la caméra...");
+
+        const tCam = performance.now();
         const stream = await navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: "user",
@@ -127,44 +220,75 @@ export function LivenessCheck({ onComplete, onCancel }: Props) {
           },
           audio: false,
         });
+        const track = stream.getVideoTracks()[0];
+        const settings = track?.getSettings?.() ?? {};
+        log("camera granted", {
+          ms: Math.round(performance.now() - tCam),
+          width: settings.width,
+          height: settings.height,
+          frameRate: settings.frameRate,
+          facingMode: settings.facingMode,
+          deviceId: settings.deviceId,
+        });
         if (cancelled) {
           stream.getTracks().forEach((t) => t.stop());
+          log("boot cancelled after camera — stream closed");
           return;
         }
         streamRef.current = stream;
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
-          await videoRef.current.play().catch(() => null);
+          await videoRef.current
+            .play()
+            .then(() => log("video element playing"))
+            .catch((e) => warn("video.play() rejected", e));
+        } else {
+          warn("videoRef is null at stream attach");
         }
 
         // MediaRecorder for the evidence video. Best-effort: on Safari
         // some MIME types aren't supported, fall through to no video.
         try {
           const mime = pickRecorderMime();
+          log("MediaRecorder mime probe", { picked: mime });
           if (mime) {
             const rec = new MediaRecorder(stream, { mimeType: mime });
             rec.ondataavailable = (e) => {
               if (e.data.size > 0) recordedChunksRef.current.push(e.data);
             };
+            rec.onerror = (e) => err("MediaRecorder error", e);
             rec.start(500);
             recorderRef.current = rec;
+            log("MediaRecorder started", { state: rec.state, mimeType: rec.mimeType });
+          } else {
+            warn("No supported MediaRecorder MIME — video evidence skipped");
           }
-        } catch {
-          // ignore — video is a nice-to-have, the snapshot is the proof
+        } catch (e) {
+          warn("MediaRecorder init failed", e);
         }
 
         setPhase("running");
         setLivePoseHint("Suivez les étapes ci-dessous");
+        log("boot done — entering running phase", {
+          totalMs: Math.round(performance.now() - tBoot),
+        });
       } catch (e: unknown) {
         if (cancelled) return;
         const msg =
           e instanceof Error ? e.message : "Impossible d'initialiser la caméra";
+        err("boot FAILED", { msg, error: e });
         setErrorMsg(msg);
         setPhase("error");
       }
     })();
     return () => {
       cancelled = true;
+      log("unmount — stopping streams + recorder");
+      window.removeEventListener("pointerdown", onGesture);
+      window.removeEventListener("touchstart", onGesture);
+      window.removeEventListener("keydown", onGesture);
+      audioCtxRef.current?.close().catch(() => null);
+      audioCtxRef.current = null;
       stopAll();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -175,101 +299,238 @@ export function LivenessCheck({ onComplete, onCancel }: Props) {
    * ───────────────────────────────────────────────────────────────────────── */
   useEffect(() => {
     if (phase !== "running") return;
+    log("detection loop START", {
+      step: STEPS[stepIdxRef.current].id,
+      videoReadyState: videoRef.current?.readyState,
+      videoDims: {
+        w: videoRef.current?.videoWidth,
+        h: videoRef.current?.videoHeight,
+      },
+    });
+    let cancelled = false;
     let raf = 0;
+    let firstFrameLogged = false;
     const tick = async () => {
-      if (stoppedRef.current) return;
+      // Belt + suspenders: bail BEFORE and AFTER the await so a tick
+      // mid-flight when the cleanup fires can't re-arm a stale chain.
+      if (cancelled || stoppedRef.current) return;
       const now = performance.now();
-      if (
-        now - lastDetectAtRef.current >= DETECT_INTERVAL_MS &&
-        videoRef.current &&
-        videoRef.current.readyState >= 2 &&
-        faceapiRef.current
-      ) {
+      const v = videoRef.current;
+      const ready = !!v && v.readyState >= 2 && !!faceapiRef.current;
+      if (!firstFrameLogged && ready) {
+        firstFrameLogged = true;
+        log("first usable frame", {
+          readyState: v!.readyState,
+          videoW: v!.videoWidth,
+          videoH: v!.videoHeight,
+        });
+      }
+      if (now - lastDetectAtRef.current >= DETECT_INTERVAL_MS && ready) {
         lastDetectAtRef.current = now;
         await runDetection();
+        if (cancelled || stoppedRef.current) return;
       }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(raf);
+      log("detection loop STOP", {
+        detections: detectionCountRef.current,
+      });
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, stepIdx]);
+  }, [phase]);
 
+  async function playStepBeep() {
+    const ctx = audioCtxRef.current;
+    if (!ctx) {
+      warn("beep skipped — no AudioContext");
+      return;
+    }
+    const r = await playSequence(ctx, BEEP_STEP);
+    if (!r.ok) warn("step beep failed", r.reason);
+    else log("step beep played");
+  }
+  async function playDoneBeep() {
+    const ctx = audioCtxRef.current;
+    if (!ctx) {
+      warn("done beep skipped — no AudioContext");
+      return;
+    }
+    const r = await playSequence(ctx, BEEP_DONE);
+    if (!r.ok) warn("done beep failed", r.reason);
+    else log("done beep played");
+  }
+
+  // Stable: reads stepIdxRef.current so we don't need to re-arm the
+  // detection loop every time the step changes.
   const runDetection = useCallback(async () => {
     const video = videoRef.current;
     const faceapi = faceapiRef.current;
     if (!video || !faceapi || !detectorOptionsRef.current) return;
+    const idx = stepIdxRef.current;
+    const stepId = STEPS[idx].id;
+
+    const tDet = performance.now();
     const det = await faceapi
       .detectSingleFace(
         video,
         detectorOptionsRef.current as TinyFaceDetectorOptionsLike,
       )
       .withFaceLandmarks(true);
+    const detMs = Math.round(performance.now() - tDet);
+    detectionCountRef.current += 1;
+
+    // Re-read in case state advanced during the await.
+    const idxAfter = stepIdxRef.current;
+    if (idxAfter !== idx) {
+      // Step changed during detection — drop this frame, the next tick
+      // will re-evaluate against the new step.
+      return;
+    }
 
     if (!det) {
       setLivePoseHint("Aucun visage détecté — placez-vous devant la caméra");
       heldSinceRef.current = null;
       setProgress(0);
+      if (detectionCountRef.current % 8 === 0) {
+        log("detect: NO FACE", { detMs, step: stepId });
+      }
       return;
     }
     const box = det.detection.box;
     const videoW = video.videoWidth || 1;
-    if (box.width / videoW < MIN_FACE_FRAC) {
+    const faceFrac = box.width / videoW;
+    const score = det.detection.score;
+
+    if (faceFrac < MIN_FACE_FRAC) {
       setLivePoseHint("Rapprochez-vous un peu de la caméra");
       heldSinceRef.current = null;
       setProgress(0);
+      if (detectionCountRef.current % 8 === 0) {
+        log("detect: TOO_SMALL", {
+          detMs,
+          score: round(score, 2),
+          faceFrac: round(faceFrac, 3),
+          minFaceFrac: MIN_FACE_FRAC,
+          step: stepId,
+        });
+      }
       return;
     }
 
     const yaw = computeYaw(det.landmarks);
-    const pass = stepPasses(STEPS[stepIdx].id, yaw);
+    const pass = stepPasses(stepId, yaw);
 
     if (!pass.ok) {
       setLivePoseHint(pass.hint);
       heldSinceRef.current = null;
       setProgress(0);
+      if (detectionCountRef.current % 5 === 0) {
+        log("detect: WRONG_POSE", {
+          detMs,
+          score: round(score, 2),
+          yaw: round(yaw, 3),
+          step: stepId,
+          hint: pass.hint,
+        });
+      }
       return;
     }
 
     setLivePoseHint("Maintenez la position...");
-    if (heldSinceRef.current === null) heldSinceRef.current = performance.now();
-    const elapsed = performance.now() - heldSinceRef.current;
+    const startedHold = heldSinceRef.current === null;
+    if (startedHold) {
+      heldSinceRef.current = performance.now();
+      log("detect: HOLD_START", {
+        step: stepId,
+        yaw: round(yaw, 3),
+        score: round(score, 2),
+        faceFrac: round(faceFrac, 3),
+      });
+    }
+    const elapsed = performance.now() - heldSinceRef.current!;
     setProgress(Math.min(1, elapsed / HOLD_MS));
 
     if (elapsed >= HOLD_MS) {
-      // Step satisfied. Snapshot the front frame the first time we see
-      // it (used as the still preview + KYC headshot upload).
-      if (STEPS[stepIdx].id === "front") {
+      log("STEP_DONE", {
+        step: stepId,
+        holdMs: Math.round(elapsed),
+        yaw: round(yaw, 3),
+        score: round(score, 2),
+      });
+      if (stepId === "front") {
         try {
+          const tSnap = performance.now();
           frontSnapshotRef.current = await canvasSnapshot(video);
-        } catch {
-          // ignore — we'll fall back to the first video frame on upload
+          log("front snapshot captured", {
+            ms: Math.round(performance.now() - tSnap),
+            sizeBytes: frontSnapshotRef.current.size,
+          });
+        } catch (e) {
+          warn("front snapshot failed — will fall back to video frame", e);
         }
       }
       heldSinceRef.current = null;
       setProgress(0);
       setCompletedSteps((s) => {
         const next = new Set(s);
-        next.add(STEPS[stepIdx].id);
+        next.add(stepId);
         return next;
       });
-      if (stepIdx + 1 < totalSteps) {
-        setStepIdx((i) => i + 1);
+      if (idx + 1 < totalSteps) {
+        log("advancing to next step", {
+          from: stepId,
+          to: STEPS[idx + 1].id,
+        });
+        playStepBeep();
+        // Update the ref synchronously so the next detection tick sees
+        // the new step BEFORE React's setState batches commit. Without
+        // this, a tick that fires between setStepIdx and re-render
+        // would re-evaluate against the OLD step.
+        stepIdxRef.current = idx + 1;
+        setStepIdx(idx + 1);
       } else {
+        log("all steps complete — finalizing");
+        playDoneBeep();
         finalize();
       }
     }
-  }, [stepIdx, totalSteps]);
+  }, [totalSteps]);
 
   /* ─────────────────────────────────────────────────────────────────────────
    * Finalize: stop recorder, upload snapshot + video
    * ───────────────────────────────────────────────────────────────────────── */
   async function finalize() {
-    if (stoppedRef.current) return;
+    if (stoppedRef.current) {
+      log("finalize() called but already stopped — ignoring");
+      return;
+    }
     stoppedRef.current = true;
     setPhase("uploading");
     setLivePoseHint("Validation et envoi...");
-    if (!user) {
+
+    // Re-fetch the user directly from Supabase here. `useAuth()` resolves
+    // asynchronously after mount, but `runDetection` is memoized and
+    // captures the user value from the first render — by the time the
+    // user has walked through the three poses, the React state is fresh
+    // but the closure isn't. Going to the source instead avoids the
+    // "finalize: NO USER" abort that the staleness produced.
+    const supabase = createClient();
+    const { data: authData, error: authErr } = await supabase.auth.getUser();
+    const liveUser = authData?.user ?? null;
+    log("finalize start", {
+      hasUserFromHook: Boolean(user),
+      hasUserFromFetch: Boolean(liveUser),
+      hasFrontSnapshot: Boolean(frontSnapshotRef.current),
+      recorderState: recorderRef.current?.state ?? "none",
+      recordedChunks: recordedChunksRef.current.length,
+      authErr: authErr?.message,
+    });
+    if (!liveUser) {
+      err("finalize: NO USER — aborting", { authErr });
       setErrorMsg("Vous devez être connecté pour soumettre la vérification");
       setPhase("error");
       return;
@@ -278,72 +539,116 @@ export function LivenessCheck({ onComplete, onCancel }: Props) {
     let videoBlob: Blob | null = null;
     if (recorderRef.current && recorderRef.current.state !== "inactive") {
       const rec = recorderRef.current;
+      const tStop = performance.now();
       const stopPromise = new Promise<void>((resolve) => {
         rec.onstop = () => resolve();
       });
       rec.stop();
       await stopPromise;
+      log("MediaRecorder stopped", {
+        ms: Math.round(performance.now() - tStop),
+        chunks: recordedChunksRef.current.length,
+        totalBytes: recordedChunksRef.current.reduce((s, b) => s + b.size, 0),
+      });
       if (recordedChunksRef.current.length > 0) {
         videoBlob = new Blob(recordedChunksRef.current, {
           type: rec.mimeType || "video/webm",
         });
+        log("video blob assembled", {
+          sizeBytes: videoBlob.size,
+          type: videoBlob.type,
+        });
+      } else {
+        warn("recorder stopped but produced 0 chunks — no video to upload");
       }
+    } else {
+      log("no active recorder — video evidence skipped");
     }
 
-    // Fall back to a still capture if MediaRecorder is missing.
+    // Fall back to a still capture if the front-step snapshot didn't land.
     if (!frontSnapshotRef.current && videoRef.current) {
+      log("front snapshot missing — falling back to current video frame");
       try {
         frontSnapshotRef.current = await canvasSnapshot(videoRef.current);
-      } catch {
-        // ignore
+        log("fallback snapshot captured", {
+          sizeBytes: frontSnapshotRef.current.size,
+        });
+      } catch (e) {
+        warn("fallback snapshot failed", e);
       }
     }
 
     try {
+      const tImg = performance.now();
       const imgFile = new File(
         [frontSnapshotRef.current ?? new Blob([])],
         `liveness-${Date.now()}.jpg`,
         { type: "image/jpeg" },
       );
-      const imgRes = await uploadToBucket(imgFile, user.id, "kyc");
+      log("uploading image", { sizeBytes: imgFile.size, name: imgFile.name });
+      const imgRes = await uploadToBucket(imgFile, liveUser.id, "kyc");
+      log("image upload done", {
+        ms: Math.round(performance.now() - tImg),
+        url: imgRes.url,
+      });
 
       let videoUrl = imgRes.url;
       if (videoBlob && videoBlob.size > 0) {
+        const tVid = performance.now();
         const ext = (videoBlob.type.split("/")[1] || "webm").split(";")[0];
         const vidFile = new File(
           [videoBlob],
           `liveness-${Date.now()}.${ext}`,
           { type: videoBlob.type || "video/webm" },
         );
-        const vidRes = await uploadToBucket(vidFile, user.id, "kyc");
+        log("uploading video", { sizeBytes: vidFile.size, name: vidFile.name });
+        const vidRes = await uploadToBucket(vidFile, liveUser.id, "kyc");
         videoUrl = vidRes.url;
+        log("video upload done", {
+          ms: Math.round(performance.now() - tVid),
+          url: vidRes.url,
+        });
+      } else {
+        log("no video blob — using image URL for both fields");
       }
 
       stopAll();
       setPhase("done");
+      log("finalize SUCCESS", { imageUrl: imgRes.url, videoUrl });
       onComplete({ videoUrl, imageUrl: imgRes.url });
     } catch (e: unknown) {
       const msg =
         e instanceof Error ? e.message : "Échec de l'envoi du selfie";
+      err("upload FAILED", { msg, error: e });
       setErrorMsg(msg);
       setPhase("error");
     }
   }
 
   function stopAll() {
+    log("stopAll() called", {
+      hadRecorder: Boolean(recorderRef.current),
+      recorderState: recorderRef.current?.state ?? "none",
+      hadStream: Boolean(streamRef.current),
+      detectionsRun: detectionCountRef.current,
+    });
     stoppedRef.current = true;
     if (recorderRef.current && recorderRef.current.state !== "inactive") {
       try {
         recorderRef.current.stop();
-      } catch {
-        // ignore
+      } catch (e) {
+        warn("recorder.stop() threw — ignoring", e);
       }
     }
-    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current?.getTracks().forEach((t) => {
+      log("stopping track", { kind: t.kind, label: t.label, readyState: t.readyState });
+      t.stop();
+    });
     streamRef.current = null;
   }
 
   function restart() {
+    log("restart() — re-mount via parent key");
     stopAll();
     setPhase("boot");
     setStepIdx(0);
@@ -352,6 +657,7 @@ export function LivenessCheck({ onComplete, onCancel }: Props) {
     heldSinceRef.current = null;
     recordedChunksRef.current = [];
     frontSnapshotRef.current = null;
+    detectionCountRef.current = 0;
     stoppedRef.current = false;
     // Re-run effects by toggling a key on the parent? Simplest: reload
     // the page. But that's heavy. Better: just re-run boot manually —
@@ -520,15 +826,26 @@ interface FaceLandmarks68Like {
 }
 
 function computeYaw(landmarks: FaceLandmarks68Like): number {
-  // 68-landmark layout: index 2 = jaw far-left, 14 = jaw far-right,
-  // 30 = nose tip. Negative result → user turned to their right (which
-  // appears as rightward on the mirrored preview too).
-  const jl = landmarks.positions[2];
-  const jr = landmarks.positions[14];
+  // Eye-based yaw — much more stable than jaw-based across head
+  // rotations. The previous formula used jaw indices 2 and 14, which
+  // get squished together when the head turns and made the half-width
+  // denominator collapse, producing values like -1.27 (geometrically
+  // impossible for a normalised [-1, 1] signal).
+  //
+  // 36 = subject's right eye OUTER corner (image-left in raw frame).
+  // 45 = subject's left eye OUTER corner (image-right in raw frame).
+  // 30 = nose tip.
+  //
+  // When the user turns to THEIR right, in the un-mirrored camera
+  // frame the nose moves toward viewer-left (smaller x), so the yaw
+  // becomes NEGATIVE. The eye-pair stays roughly the same width in 2D
+  // until extreme angles, so the normalisation holds.
+  const eyeL = landmarks.positions[36];
+  const eyeR = landmarks.positions[45];
   const nose = landmarks.positions[30];
-  if (!jl || !jr || !nose) return 0;
-  const center = (jl.x + jr.x) / 2;
-  const half = (jr.x - jl.x) / 2;
+  if (!eyeL || !eyeR || !nose) return 0;
+  const center = (eyeL.x + eyeR.x) / 2;
+  const half = (eyeR.x - eyeL.x) / 2;
   if (half <= 0) return 0;
   return (nose.x - center) / half;
 }
@@ -537,22 +854,18 @@ function stepPasses(
   step: StepId,
   yaw: number,
 ): { ok: boolean; hint: string } {
-  // Preview is mirrored — when the user turns to their right, on the
-  // un-mirrored video frame the nose moves to the user's right side
-  // (positive x in the original 68-landmark frame). We compare against
-  // the un-mirrored coordinate space.
   const abs = Math.abs(yaw);
   if (step === "front") {
     if (abs < FRONT_YAW_MAX) return { ok: true, hint: "Bien centré" };
     return { ok: false, hint: "Centrez votre visage" };
   }
   if (step === "right") {
-    // User's right = positive yaw in 68-landmark space
-    if (yaw > SIDE_YAW_MIN) return { ok: true, hint: "Maintenez la position" };
+    // User turning to THEIR right → nose toward viewer-left → yaw NEGATIVE.
+    if (yaw < -SIDE_YAW_MIN) return { ok: true, hint: "Maintenez la position" };
     return { ok: false, hint: "Tournez plus la tête à droite" };
   }
-  // left
-  if (yaw < -SIDE_YAW_MIN) return { ok: true, hint: "Maintenez la position" };
+  // left — symmetric: nose toward viewer-right → yaw POSITIVE.
+  if (yaw > SIDE_YAW_MIN) return { ok: true, hint: "Maintenez la position" };
   return { ok: false, hint: "Tournez plus la tête à gauche" };
 }
 
@@ -587,3 +900,79 @@ function pickRecorderMime(): string | null {
   }
   return null;
 }
+
+function round(n: number, decimals: number): number {
+  const f = Math.pow(10, decimals);
+  return Math.round(n * f) / f;
+}
+
+type AudioCtxCtor = typeof AudioContext;
+interface WebkitWindow {
+  webkitAudioContext?: AudioCtxCtor;
+}
+
+/**
+ * Returns a singleton-per-call AudioContext, lazily created. Modern
+ * browsers boot it in `suspended` state — we always call `resume()`
+ * before playing, which only succeeds if the page has had a recent
+ * user gesture (or another mechanism unlocked audio earlier).
+ */
+function makeAudioCtx(): AudioContext | null {
+  try {
+    const Ctor =
+      window.AudioContext ||
+      (window as unknown as WebkitWindow).webkitAudioContext;
+    if (!Ctor) return null;
+    return new Ctor();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Plays a sequence of [freq Hz, duration ms] tones on the supplied
+ * AudioContext. Resumes the context first; if resume() rejects
+ * (autoplay policy not yet satisfied), the beep is silently dropped
+ * and the caller logs the reason. The tone uses a tiny attack/decay
+ * envelope so we don't get a click on each beep.
+ */
+async function playSequence(
+  ctx: AudioContext,
+  sequence: Array<[number, number]>,
+): Promise<{ ok: true } | { ok: false; reason: string }> {
+  if (ctx.state === "suspended") {
+    try {
+      await ctx.resume();
+    } catch (e) {
+      return { ok: false, reason: `resume() rejected: ${(e as Error)?.message ?? "unknown"}` };
+    }
+  }
+  if (ctx.state !== "running") {
+    return { ok: false, reason: `ctx state is ${ctx.state}` };
+  }
+  const gain = ctx.createGain();
+  gain.connect(ctx.destination);
+  gain.gain.value = 0;
+  let t = ctx.currentTime + 0.02;
+  for (const [freq, durMs] of sequence) {
+    const osc = ctx.createOscillator();
+    osc.type = "sine";
+    osc.frequency.value = freq;
+    osc.connect(gain);
+    const dur = durMs / 1000;
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(0.35, t + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    osc.start(t);
+    osc.stop(t + dur);
+    t += dur + 0.04;
+  }
+  return { ok: true };
+}
+
+const BEEP_STEP = [[880, 130]] as Array<[number, number]>;
+const BEEP_DONE = [
+  [660, 110],
+  [880, 110],
+  [1175, 200],
+] as Array<[number, number]>;
