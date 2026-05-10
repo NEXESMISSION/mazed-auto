@@ -38,12 +38,78 @@ interface Props {
 export default async function AdminUserDetailsPage({ params }: Props) {
   const { id } = await params;
   const supabase = await createClient();
-  const seller = await getSellerById(supabase, id);
-  if (!seller) notFound();
 
-  const [auctions, activity] = await Promise.all([
+  // Try the seller view first (rich profile fields). If the user is a
+  // buyer with no sellers row, fall back to the admin RPC which reads
+  // straight from auth.users.
+  const sellerRow = await getSellerById(supabase, id);
+  let seller = sellerRow;
+  if (!seller) {
+    const { data: u } = await supabase
+      .rpc("admin_get_user", { p_user_id: id })
+      .maybeSingle<{
+        id: string;
+        email: string | null;
+        display_name: string | null;
+        username: string | null;
+        kyc_status: string;
+        trust_score: number;
+        city: string | null;
+        is_pro: boolean;
+        is_active: boolean;
+        verified_kyc: boolean;
+        verified_ownership: boolean;
+        account_age_months: number;
+        successful_deals: number;
+        rating_average: number;
+        rating_count: number;
+      }>();
+    if (!u) notFound();
+    // Synthesize the minimal Seller-shaped object the page expects.
+    seller = {
+      id: u.id,
+      username: u.username ?? u.id.slice(0, 8),
+      displayName:
+        u.display_name ?? u.email?.split("@")[0] ?? "(sans nom)",
+      avatarUrl: undefined,
+      trustScore: u.trust_score,
+      trustLevel:
+        u.trust_score >= 156
+          ? "very_trusted"
+          : u.trust_score >= 96
+            ? "trusted"
+            : "new",
+      verifiedKyc: u.verified_kyc,
+      verifiedOwnership: u.verified_ownership,
+      successfulDeals: u.successful_deals,
+      ratingAverage: u.rating_average,
+      ratingCount: u.rating_count,
+      accountAgeMonths: u.account_age_months,
+      city: u.city ?? "—",
+      isPro: u.is_pro,
+      isActive: u.is_active,
+    };
+  }
+
+  const [auctions, activity, warnings, bans] = await Promise.all([
     listAuctionsBySeller(supabase, seller.id),
     listUserActivity(supabase, seller.id, 50),
+    supabase
+      .from("user_warnings")
+      .select("id, severity, body, issued_at, dismissed_at")
+      .eq("user_id", seller.id)
+      .order("issued_at", { ascending: false })
+      .limit(20)
+      .then((r) => r.data ?? []),
+    supabase
+      .from("user_bans")
+      .select(
+        "id, scope, reason, banned_at, banned_until, lifted_at, lift_reason",
+      )
+      .eq("user_id", seller.id)
+      .order("banned_at", { ascending: false })
+      .limit(10)
+      .then((r) => r.data ?? []),
   ]);
   const totalSales = auctions
     .filter((a) => a.status === "ended")
@@ -106,6 +172,8 @@ export default async function AdminUserDetailsPage({ params }: Props) {
               userId={seller.id}
               initialActive={seller.isActive}
               currentTrust={seller.trustScore}
+              isPro={seller.isPro}
+              ownershipVerified={seller.verifiedOwnership}
             />
           </div>
         </div>
@@ -156,6 +224,80 @@ export default async function AdminUserDetailsPage({ params }: Props) {
             <KycRow label="Propriété vérifiée" ok={seller.verifiedOwnership} />
           </div>
         </Section>
+
+        {warnings.length > 0 && (
+          <Section title={`Avertissements (${warnings.length})`}>
+            <div className="space-y-2">
+              {warnings.map((w) => (
+                <div
+                  key={w.id}
+                  className={`rounded-[var(--radius)] border p-3 text-sm ${
+                    w.severity === "severe"
+                      ? "bg-red-500/10 border-red-500/30"
+                      : w.severity === "warning"
+                        ? "bg-amber-500/10 border-amber-500/30"
+                        : "bg-[var(--surface-2)] border-[var(--border)]"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] uppercase tracking-[0.18em] font-bold text-[var(--foreground-muted)]">
+                      {w.severity}
+                    </span>
+                    <span className="text-[11px] text-[var(--foreground-muted)] tabular-nums">
+                      {new Date(w.issued_at).toLocaleDateString("fr-TN")}
+                    </span>
+                  </div>
+                  <div>{w.body}</div>
+                </div>
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {bans.length > 0 && (
+          <Section title={`Suspensions (${bans.length})`}>
+            <div className="space-y-2">
+              {bans.map((b) => {
+                const active =
+                  !b.lifted_at &&
+                  (!b.banned_until || new Date(b.banned_until) > new Date());
+                return (
+                  <div
+                    key={b.id}
+                    className={`rounded-[var(--radius)] border p-3 text-sm ${
+                      active
+                        ? "bg-red-500/10 border-red-500/30"
+                        : "bg-[var(--surface-2)] border-[var(--border)]"
+                    }`}
+                  >
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                      <span className="text-[10px] uppercase tracking-[0.18em] font-bold">
+                        {b.scope}
+                      </span>
+                      <span className="text-[10px] text-[var(--foreground-muted)]">
+                        {new Date(b.banned_at).toLocaleDateString("fr-TN")}
+                        {b.banned_until
+                          ? ` → ${new Date(b.banned_until).toLocaleDateString("fr-TN")}`
+                          : " · permanent"}
+                      </span>
+                      {b.lifted_at && (
+                        <Badge size="sm" variant="success">
+                          levée
+                        </Badge>
+                      )}
+                    </div>
+                    <div>{b.reason}</div>
+                    {b.lift_reason && (
+                      <div className="text-xs text-[var(--foreground-muted)] mt-1">
+                        Levée : {b.lift_reason}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </Section>
+        )}
 
         <Section title={`Historique d'activité (${activity.length})`}>
           <ActivityLog entries={activity} />
