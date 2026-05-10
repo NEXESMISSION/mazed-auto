@@ -178,34 +178,28 @@ export default async function AuctionDetailPage({ params }: Props) {
         </HeroCarousel>
       </section>
 
-      <div className="px-4 pt-5 pb-4 space-y-5 lg:max-w-[var(--max-w-app)] lg:mx-auto lg:px-6">
+      {/* ============================================================
+          MOBILE — original linear flow, untouched. Hidden on lg+.
+          ============================================================ */}
+      <div className="lg:hidden px-4 pt-5 pb-4 space-y-5">
         {isFinal ? (
           <AuctionResultBanner auction={auction} />
         ) : (
           isOver && <EndedNotice auction={auction} />
         )}
 
-        {/* Description — short paragraph with view-more behaviour via line clamp */}
         {vehicle.description && (
           <p className="text-[13px] leading-relaxed text-[var(--foreground-muted)] line-clamp-3">
             {vehicle.description}
           </p>
         )}
 
-        {/* AI / trust alerts — live here on the detail page so the user can
-            review them before committing to bid. The bid page itself stays
-            bidding-only. */}
         {auction.alerts && auction.alerts.length > 0 && (
           <AIAlerts alerts={auction.alerts} />
         )}
 
-        {/* Two-pill price/timer panel — only shown while the auction is
-            live. Once it's over, AuctionResultBanner (rendered above)
-            already explains the state, so we drop the EndedNotice card to
-            avoid duplicating the same information twice on the page. */}
         {isLive && <BidPills auction={auction} />}
 
-        {/* Big rounded primary CTA — full-width, blue-grey accent (gold remix) */}
         {isLive && (
           <Link
             href={`/auctions/${auction.id}/bid`}
@@ -222,7 +216,6 @@ export default async function AuctionDetailPage({ params }: Props) {
           <VideoButton url={vehicle.videoUrl} poster={vehicle.imageUrls[0]} />
         )}
 
-        {/* Specs */}
         <Section title="Spécifications">
           <SpecsGrid vehicle={vehicle} />
         </Section>
@@ -246,6 +239,180 @@ export default async function AuctionDetailPage({ params }: Props) {
         <Section title="Vendeur">
           <AnonSellerCard seller={seller} />
         </Section>
+      </div>
+
+      {/* ============================================================
+          DESKTOP — purpose-built layout. Bigger typography, generous
+          padding, 2-col grid with a tall right-side bid panel.
+          ============================================================ */}
+      <div className="hidden lg:block max-w-[var(--max-w-wide)] mx-auto px-8 py-10">
+        {(isFinal || isOver) && (
+          <div className="mb-6">
+            {isFinal ? (
+              <AuctionResultBanner auction={auction} />
+            ) : (
+              <EndedNotice auction={auction} />
+            )}
+          </div>
+        )}
+
+        <div className="grid grid-cols-[1fr_420px] gap-10 items-start">
+          {/* ─── Main column ─── */}
+          <main className="space-y-10 min-w-0">
+            {/* Headline + description as proper editorial copy */}
+            <div className="space-y-4">
+              {auction.alerts && auction.alerts.length > 0 && (
+                <AIAlerts alerts={auction.alerts} />
+              )}
+              {vehicle.description && (
+                <div>
+                  <h2 className="text-xs uppercase tracking-[0.22em] font-bold text-[var(--gold)] mb-3">
+                    Description
+                  </h2>
+                  <p className="text-base leading-relaxed text-[var(--foreground-muted)] whitespace-pre-line">
+                    {vehicle.description}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Specs — 2 columns of stat blocks at this width feels right */}
+            <div>
+              <h2 className="text-xs uppercase tracking-[0.22em] font-bold text-[var(--gold)] mb-4">
+                Spécifications
+              </h2>
+              <SpecsGrid vehicle={vehicle} />
+            </div>
+
+            {/* Features — bigger pills with hover */}
+            {vehicle.features.length > 0 && (
+              <div>
+                <h2 className="text-xs uppercase tracking-[0.22em] font-bold text-[var(--gold)] mb-4">
+                  Caractéristiques
+                </h2>
+                <div className="flex flex-wrap gap-2">
+                  {vehicle.features.map((f, i) => (
+                    <span
+                      key={i}
+                      className="inline-flex items-center gap-2 px-4 h-10 rounded-full bg-[var(--surface)] border border-[var(--border)] text-sm font-medium hover:border-[var(--gold-soft)] hover:text-[var(--gold-bright)] transition-colors"
+                    >
+                      <Check className="h-4 w-4 text-[var(--gold)]" />
+                      {f}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Seller */}
+            <div>
+              <h2 className="text-xs uppercase tracking-[0.22em] font-bold text-[var(--gold)] mb-4">
+                Vendeur
+              </h2>
+              <AnonSellerCard seller={seller} />
+            </div>
+          </main>
+
+          {/* ─── Sticky right panel: price + countdown + bid CTA ─── */}
+          <aside className="sticky top-6 self-start">
+            <div className="rounded-2xl bg-[var(--surface)] border border-[var(--border)] overflow-hidden shadow-[var(--shadow-md)]">
+              {/* Top row — status + auction code */}
+              <div className="px-6 pt-5 pb-3 flex items-center justify-between">
+                {isLive ? (
+                  <span className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] font-bold text-emerald-400">
+                    <span className="relative flex h-2 w-2">
+                      <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-60" />
+                      <span className="relative h-2 w-2 rounded-full bg-emerald-400" />
+                    </span>
+                    En direct
+                  </span>
+                ) : (
+                  <span className="text-[11px] uppercase tracking-[0.2em] font-bold text-[var(--foreground-muted)]">
+                    {isFinal ? "Terminée" : "À venir"}
+                  </span>
+                )}
+                <span className="font-mono text-[10px] text-[var(--foreground-subtle)] tracking-[0.08em]">
+                  {auctionCode(auction.id)}
+                </span>
+              </div>
+
+              {/* Big price */}
+              <div className="px-6 pb-4">
+                <div className="text-[11px] uppercase tracking-[0.18em] font-bold text-[var(--foreground-muted)]">
+                  Prix actuel
+                </div>
+                <div className="mt-1 text-5xl font-black tabular-nums leading-none gradient-gold-text">
+                  {formatPrice(auction.currentPrice)}
+                </div>
+                <div className="mt-3 flex items-center gap-4 text-xs text-[var(--foreground-muted)]">
+                  <span className="inline-flex items-center gap-1.5">
+                    <Gavel className="h-3.5 w-3.5" />
+                    <span className="font-bold text-foreground tabular-nums">
+                      {auction.totalBids}
+                    </span>
+                    {auction.totalBids === 1 ? "enchère" : "enchères"}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <Users className="h-3.5 w-3.5" />
+                    <span className="font-bold text-foreground tabular-nums">
+                      {auction.totalParticipants}
+                    </span>
+                    {auction.totalParticipants === 1
+                      ? "participant"
+                      : "participants"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Countdown band */}
+              {isLive && (
+                <div className="px-6 py-4 bg-[var(--surface-2)] border-y border-[var(--border)] flex items-center gap-3">
+                  <Clock className="h-5 w-5 text-[var(--gold)] shrink-0" />
+                  <div className="flex-1">
+                    <div className="text-[10px] uppercase tracking-[0.18em] font-bold text-[var(--foreground-muted)]">
+                      Temps restant
+                    </div>
+                    <Countdown endTime={auction.endTime} className="text-lg font-extrabold tabular-nums mt-0.5" />
+                  </div>
+                </div>
+              )}
+
+              {/* Reserve hint */}
+              {auction.reservePrice && isLive && (
+                <div className="px-6 py-3 text-xs text-[var(--foreground-muted)] border-b border-[var(--border)]">
+                  Réserve {auction.reserveMet ? "atteinte ✓" : "non atteinte"}
+                </div>
+              )}
+
+              {/* CTA stack */}
+              <div className="p-6 space-y-3">
+                {isLive && (
+                  <Link
+                    href={`/auctions/${auction.id}/bid`}
+                    className="block h-14 rounded-full gradient-gold text-black font-extrabold text-base shadow-[var(--shadow-gold)] flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99] transition-transform"
+                  >
+                    <Gavel className="h-5 w-5" />
+                    {hasBid ? "Continuer l'enchère" : "Rejoindre l'enchère"}
+                  </Link>
+                )}
+
+                {auction.buyNowPrice && isLive && (
+                  <BuyNowButton auction={auction} />
+                )}
+
+                {vehicle.videoUrl && (
+                  <VideoButton url={vehicle.videoUrl} poster={vehicle.imageUrls[0]} />
+                )}
+
+                {!isLive && !isFinal && (
+                  <div className="text-sm text-[var(--foreground-muted)] py-2 text-center">
+                    L&apos;enchère commence bientôt.
+                  </div>
+                )}
+              </div>
+            </div>
+          </aside>
+        </div>
       </div>
     </AppShell>
   );

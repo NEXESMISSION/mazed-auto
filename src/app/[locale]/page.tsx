@@ -1,4 +1,5 @@
 import { getLocale } from "next-intl/server";
+import { Link } from "@/i18n/navigation";
 import { AppShell } from "@/components/layout/AppShell";
 import { HomeHeader } from "@/components/home/HomeHeader";
 import { PromoBanner } from "@/components/home/PromoBanner";
@@ -95,36 +96,166 @@ export default async function HomePage() {
     <AppShell noTopBar>
       <HomeHeader signedIn={Boolean(user)} />
       <CmsBanner banner={topBanner} locale={locale} />
-      <PromoBanner pool={livePool} />
 
-      {/* Newness — leading the page so every visit feels fresh */}
-      <NewestRibbon items={newest} />
+      {/* Mobile-only PromoBanner. Desktop has its own hero below. */}
+      <div className="lg:hidden">
+        <PromoBanner pool={livePool} />
+      </div>
 
-      {/* 🔥 Hottest signal — bidding right now */}
-      <HotNowRail items={hot} />
+      {/* DESKTOP-only editorial hero — magazine-style: 1 big featured card +
+          3 secondary stacked cards. Replaces PromoBanner on lg+. */}
+      <DesktopHero hot={hot} ending={endingSoon} />
 
-      {/* Urgency — countdown (24h window, regular cards) */}
-      <EndingSoonRail items={filteredEndingSoon} />
+      <div className="lg:max-w-[var(--max-w-wide)] lg:mx-auto">
+        {/* Newness — leading the page so every visit feels fresh */}
+        <NewestRibbon items={newest} />
 
-      {/* Personal — pulls signed-in users back in */}
-      {user && <ContinueBiddingRail userId={user.id} />}
+        {/* 🔥 Hottest signal — bidding right now */}
+        <HotNowRail items={hot} />
 
-      {/* Editorial */}
-      <VipRail items={filteredVip} />
+        {/* Urgency — countdown (24h window, regular cards) */}
+        <EndingSoonRail items={filteredEndingSoon} />
 
-      {/* Personalised */}
-      <RecommendedRail items={recommended} />
+        {/* Personal — pulls signed-in users back in */}
+        {user && <ContinueBiddingRail userId={user.id} />}
 
-      {/* Real-time activity ticker */}
-      <LiveActivityTicker initial={activitySeed} />
+        {/* Editorial */}
+        <VipRail items={filteredVip} />
 
-      {/* Social proof — "this car just sold for X" */}
-      <RecentlyEndedRail items={recentlyEnded} />
+        {/* Personalised */}
+        <RecommendedRail items={recommended} />
 
-      {/* Discovery footer */}
-      <BrandSlider pool={brandPool} />
-      <span className="block h-2" aria-hidden />
+        {/* Real-time activity ticker */}
+        <LiveActivityTicker initial={activitySeed} />
+
+        {/* Social proof — "this car just sold for X" */}
+        <RecentlyEndedRail items={recentlyEnded} />
+
+        {/* Discovery footer */}
+        <BrandSlider pool={brandPool} />
+        <span className="block h-2" aria-hidden />
+      </div>
     </AppShell>
+  );
+}
+
+/** Desktop-only editorial hero — only renders on lg+. */
+function DesktopHero({
+  hot,
+  ending,
+}: {
+  hot: Auction[];
+  ending: Auction[];
+}) {
+  // Take 4 distinct auctions: 1 hero + 3 runners-up.
+  const featured = hot[0];
+  if (!featured) return null;
+  const runners = (hot.slice(1, 4).length === 3
+    ? hot.slice(1, 4)
+    : [...hot.slice(1), ...ending].filter((a) => a.id !== featured.id).slice(0, 3));
+  if (runners.length < 3) return null;
+
+  return (
+    <section className="hidden lg:block max-w-[var(--max-w-wide)] mx-auto px-8 mt-7">
+      <div className="flex items-end justify-between mb-5">
+        <div>
+          <div className="text-[11px] uppercase tracking-[0.22em] font-bold text-[var(--gold)]">
+            Mazed Auto · Sélection
+          </div>
+          <h1 className="mt-2 text-4xl xl:text-5xl font-black tracking-tight leading-[1.05]">
+            Les voitures qui font <span className="gradient-gold-text">monter les enchères</span>
+          </h1>
+        </div>
+        <Link
+          href="/auctions"
+          className="inline-flex items-center gap-2 h-12 px-6 rounded-full bg-[var(--gold)] text-black font-extrabold text-sm shadow-[var(--shadow-gold)] hover:scale-[1.02] active:scale-[0.99] transition-transform shrink-0"
+        >
+          Parcourir tout
+          <span aria-hidden>→</span>
+        </Link>
+      </div>
+
+      <div className="grid grid-cols-[1.6fr_1fr] gap-5">
+        {/* Big featured */}
+        <Link
+          href={`/auctions/${featured.id}`}
+          className="group relative rounded-2xl overflow-hidden ring-1 ring-[var(--border)] hover:ring-[var(--gold)] transition-all aspect-[16/10]"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={featured.vehicle.imageUrls[0]}
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover group-hover:scale-[1.03] transition-transform duration-700"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/55 to-black/10" />
+          <div className="absolute inset-x-0 bottom-0 p-6 space-y-3">
+            <div className="text-[10px] uppercase tracking-[0.22em] font-bold text-[var(--gold)]">
+              À la une · La plus disputée
+            </div>
+            <h2 className="text-3xl xl:text-4xl font-black text-white leading-tight">
+              {featured.vehicle.make} {featured.vehicle.model}
+              <span className="block text-white/70 font-light text-xl mt-1">
+                {featured.vehicle.year} · {featured.vehicle.color}
+              </span>
+            </h2>
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <div className="text-[10px] uppercase tracking-[0.18em] font-bold text-white/70">
+                  Prix actuel
+                </div>
+                <div className="text-3xl font-black gradient-gold-text tabular-nums">
+                  {/* formatPrice imported on the route already */}
+                  {new Intl.NumberFormat("fr-TN", {
+                    style: "currency",
+                    currency: "TND",
+                    maximumFractionDigits: 0,
+                  }).format(featured.currentPrice)}
+                </div>
+              </div>
+              <span className="inline-flex items-center gap-2 px-5 h-11 rounded-full bg-[var(--gold)] text-black font-extrabold text-sm shadow-[var(--shadow-gold)] group-hover:scale-[1.02] transition-transform">
+                Voir l&apos;enchère →
+              </span>
+            </div>
+          </div>
+        </Link>
+
+        {/* Runners stacked */}
+        <div className="grid grid-rows-3 gap-5">
+          {runners.map((a) => (
+            <Link
+              key={a.id}
+              href={`/auctions/${a.id}`}
+              className="group relative rounded-2xl overflow-hidden ring-1 ring-[var(--border)] hover:ring-[var(--gold)] transition-all"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={a.vehicle.imageUrls[0]}
+                alt=""
+                className="absolute inset-0 h-full w-full object-cover group-hover:scale-[1.03] transition-transform duration-700"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+              <div className="relative h-full min-h-[110px] flex items-end p-4">
+                <div className="space-y-1">
+                  <div className="text-base font-extrabold text-white leading-tight">
+                    {a.vehicle.make} {a.vehicle.model}{" "}
+                    <span className="font-light text-white/70">
+                      {a.vehicle.year}
+                    </span>
+                  </div>
+                  <div className="text-[var(--gold)] font-bold tabular-nums text-sm">
+                    {new Intl.NumberFormat("fr-TN", {
+                      style: "currency",
+                      currency: "TND",
+                      maximumFractionDigits: 0,
+                    }).format(a.currentPrice)}
+                  </div>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
 
