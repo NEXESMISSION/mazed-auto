@@ -25,9 +25,13 @@ const MAX_PULL_PX = 240;
 // Resistance: each finger-pixel contributes ~55% of the indicator
 // offset. Slightly heavier than 1:1 so the gesture feels weighted.
 const RESISTANCE = 0.55;
-// Touch must START within this many pixels of the viewport top.
-const TOP_ZONE_PX = 140;
-// Minimum dy before we steal the gesture (jitter guard).
+// Minimum dy before we steal the gesture (jitter guard). Also acts as
+// the only protection against tap-on-button-being-mistaken-for-pull —
+// 12 px of intentional vertical movement is enough that a real tap
+// (which barely moves the finger) doesn't trip the gesture, but any
+// real swipe registers immediately. A previous version also gated by
+// "touch must start in the top 140 px", which made the PTR feel
+// broken — users couldn't grab the page anywhere and pull it down.
 const ACTIVATION_DY_PX = 12;
 
 /**
@@ -73,7 +77,6 @@ export function PullToRefresh() {
     log("PTR mounted", {
       trigger: TRIGGER_PX,
       maxPull: MAX_PULL_PX,
-      topZone: TOP_ZONE_PX,
       resistance: RESISTANCE,
     });
 
@@ -81,22 +84,18 @@ export function PullToRefresh() {
       if (refreshingRef.current) return;
       const t = e.touches[0];
       if (!t) return;
-      const y = t.clientY;
+      // The only gate is "page is at the very top". Without that, a
+      // downward swipe mid-page should scroll, not refresh. Touch
+      // location anywhere on the page is fine — the 12-px activation
+      // threshold below filters out accidental taps on buttons.
       const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
-      if (scrollY > 0 || y > TOP_ZONE_PX) {
+      if (scrollY > 0) {
         armedRef.current = false;
         startYRef.current = null;
-        log("touchstart REJECTED", {
-          scrollY,
-          y: Math.round(y),
-          topZone: TOP_ZONE_PX,
-          reason: scrollY > 0 ? "page scrolled" : "touch below top zone",
-        });
         return;
       }
       armedRef.current = true;
-      startYRef.current = y;
-      log("touchstart ARMED", { y: Math.round(y) });
+      startYRef.current = t.clientY;
     }
 
     function onTouchMove(e: TouchEvent) {
