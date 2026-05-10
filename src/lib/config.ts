@@ -134,3 +134,50 @@ export async function getCommissionConfig() {
   ]);
   return { sellerPct, sellerCap, tvaRate };
 }
+
+// ---------- Listing wizard knobs (PLAN §22) ----------
+
+export const getListingDurationOptions = () =>
+  getSetting<number[]>("listing.duration_options", [3, 7, 14]);
+
+export type BidIncrementTier = { max: number | null; increment: number };
+export const getBidIncrementTiers = () =>
+  getSetting<BidIncrementTier[]>("listing.bid_increment_tiers", [
+    { max: 30000, increment: 250 },
+    { max: 100000, increment: 500 },
+    { max: null, increment: 1000 },
+  ]);
+
+/** Pick the bid increment for a given starting price. */
+export async function pickBidIncrement(startingPrice: number): Promise<number> {
+  const tiers = await getBidIncrementTiers();
+  for (const t of tiers) {
+    if (t.max === null || startingPrice < t.max) return t.increment;
+  }
+  return tiers[tiers.length - 1]?.increment ?? 250;
+}
+
+// ---------- Forfeit rules (PLAN §21.4) ----------
+export const getForfeitBanDays = () =>
+  getSetting<number>("auction.forfeit.ban_days", 30);
+export const getForfeitTrustPenalty = () =>
+  getSetting<number>("auction.forfeit.trust_penalty", 40);
+
+// ---------- Support contact (used by /contact, /help, /payment/failed) ----------
+export const getSupportEmail = () =>
+  getSetting<string>("support.email", "support@mazedauto.tn");
+export const getSupportPhone = () =>
+  getSetting<string>("support.phone", "+216 70 100 200");
+export const getSupportAddress = () =>
+  getSetting<string>(
+    "support.address",
+    "Avenue de la Liberté, 1002 Tunis Capitale",
+  );
+export const getSupportHours = () =>
+  getSetting<string>("support.hours", "9h - 18h, 7j/7");
+
+// ---------- KYC validity ----------
+export const getKycValidityDays = () =>
+  getSetting<number>("kyc.validity_days", 365);
+export const getKycExpiryWarningDays = () =>
+  getSetting<number>("kyc.expiry_warning_days", 30);

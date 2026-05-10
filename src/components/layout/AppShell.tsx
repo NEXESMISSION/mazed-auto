@@ -3,6 +3,7 @@ import { BottomTabBar } from "./BottomTabBar";
 import { PullToRefresh } from "./PullToRefresh";
 import { SideSwipeNav } from "./SideSwipeNav";
 import { PhoneCompletionGate } from "./PhoneCompletionGate";
+import { MaintenanceBanner } from "./MaintenanceBanner";
 
 interface Props {
   children: React.ReactNode;
@@ -14,6 +15,7 @@ interface Props {
 export function AppShell({ children, noTopBar }: Props) {
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <MaintenanceBanner />
       <PullToRefresh />
       {/* Edge-swipe between bottom-tab destinations. Only fires when
           the touch starts within ~36 px of the left or right edge so
