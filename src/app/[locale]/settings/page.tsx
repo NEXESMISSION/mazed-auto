@@ -153,6 +153,12 @@ export default function SettingsPage() {
             on={prefs.sms}
             onChange={(v) => togglePref("sms", v)}
           />
+          <Row
+            icon={<Bell className="h-4 w-4" />}
+            label="Préférences détaillées"
+            sub="Choisir par type d'événement et par canal"
+            onClick={() => router.push("/settings/notifications")}
+          />
         </Section>
 
         <Section title={tSettings("security.title")}>
