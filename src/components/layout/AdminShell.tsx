@@ -12,6 +12,7 @@ import {
   Bell,
   LogOut,
   Receipt,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
@@ -24,6 +25,7 @@ const items = [
   { href: "/admin/reports", label: "Signalements", icon: AlertTriangle },
   { href: "/admin/transactions", label: "Transactions", icon: Receipt },
   { href: "/admin/analytics", label: "Analyses", icon: BarChart3 },
+  { href: "/admin/settings", label: "Paramètres", icon: Settings },
 ];
 
 interface Props {

@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { useToast } from "@/components/ui/Toast";
 import { createClient } from "@/lib/supabase/client";
 import { formatPrice } from "@/lib/format";
+import { thumb } from "@/lib/imageUrl";
 import type { Auction } from "@/lib/types";
 
 export function AuctionsQueueList({ initial }: { initial: Auction[] }) {
@@ -87,8 +88,10 @@ export function AuctionsQueueList({ initial }: { initial: Auction[] }) {
           <div className="p-4 flex gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={a.vehicle.imageUrls[0]}
+              src={thumb(a.vehicle.imageUrls[0], { width: 220, quality: 60 })}
               alt=""
+              loading="lazy"
+              decoding="async"
               className="h-24 w-32 rounded-[var(--radius-sm)] object-cover shrink-0"
             />
             <div className="flex-1 min-w-0">

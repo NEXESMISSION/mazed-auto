@@ -24,6 +24,7 @@ import {
   listUserActivity,
 } from "@/lib/db";
 import { formatPrice } from "@/lib/format";
+import { thumb } from "@/lib/imageUrl";
 import { AdminUserActions } from "./AdminUserActions";
 import { ActivityLog } from "./ActivityLog";
 
@@ -104,6 +105,7 @@ export default async function AdminUserDetailsPage({ params }: Props) {
             <AdminUserActions
               userId={seller.id}
               initialActive={seller.isActive}
+              currentTrust={seller.trustScore}
             />
           </div>
         </div>
@@ -176,8 +178,10 @@ export default async function AdminUserDetailsPage({ params }: Props) {
                     {a.vehicle.imageUrls[0] && (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={a.vehicle.imageUrls[0]}
+                        src={thumb(a.vehicle.imageUrls[0], { width: 140, quality: 55 })}
                         alt=""
+                        loading="lazy"
+                        decoding="async"
                         className="h-full w-full object-cover"
                       />
                     )}

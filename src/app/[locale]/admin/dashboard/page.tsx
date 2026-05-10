@@ -5,6 +5,8 @@ import {
   AlertTriangle,
   TrendingUp,
   ShieldCheck,
+  Settings,
+  Clock,
 } from "lucide-react";
 import { AdminShell } from "@/components/layout/AdminShell";
 import { Badge } from "@/components/ui/Badge";
@@ -15,36 +17,52 @@ export default async function AdminDashboardPage() {
   const supabase = await createClient();
 
   // Live counts pulled directly from the database
-  const [activeAuctions, sellers, completed, monthRevenue, pendingReview, openComplaints] =
-    await Promise.all([
-      supabase
-        .from("auctions")
-        .select("id", { count: "exact", head: true })
-        .in("status", ["active", "ending"]),
-      supabase
-        .from("sellers")
-        .select("id", { count: "exact", head: true }),
-      supabase
-        .from("auctions")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "ended"),
-      supabase
-        .from("transactions")
-        .select("amount, direction, type, created_at")
-        .gte(
-          "created_at",
-          new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString(),
-        )
-        .in("type", ["commission", "final_payment"]),
-      supabase
-        .from("auctions")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "pending_review"),
-      supabase
-        .from("transactions")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "failed"),
-    ]);
+  const [
+    activeAuctions,
+    sellers,
+    completed,
+    monthRevenue,
+    pendingReview,
+    openComplaints,
+    pendingDecision,
+    pendingKyc,
+  ] = await Promise.all([
+    supabase
+      .from("auctions")
+      .select("id", { count: "exact", head: true })
+      .in("status", ["active", "ending"]),
+    supabase
+      .from("sellers")
+      .select("id", { count: "exact", head: true }),
+    supabase
+      .from("auctions")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "ended"),
+    supabase
+      .from("transactions")
+      .select("amount, direction, type, created_at")
+      .gte(
+        "created_at",
+        new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString(),
+      )
+      .in("type", ["commission", "final_payment"]),
+    supabase
+      .from("auctions")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending_review"),
+    supabase
+      .from("transactions")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "failed"),
+    supabase
+      .from("auctions")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending_seller_decision"),
+    supabase
+      .from("kyc_submissions")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending"),
+  ]);
 
   const revenue = (monthRevenue.data ?? []).reduce(
     (s, r) => s + Number(r.amount) * (r.direction === "in" ? 1 : -1),
@@ -82,7 +100,7 @@ export default async function AdminDashboardPage() {
     {
       icon: ShieldCheck,
       label: "KYC en attente",
-      count: 0,
+      count: pendingKyc.count ?? 0,
       href: "/admin/kyc-queue",
       color: "text-blue-400 bg-blue-500/15",
     },
@@ -94,11 +112,25 @@ export default async function AdminDashboardPage() {
       color: "text-[var(--gold)] bg-[var(--gold-faint)]",
     },
     {
+      icon: Clock,
+      label: "Décisions vendeur en attente",
+      count: pendingDecision.count ?? 0,
+      href: "/admin/auctions-queue",
+      color: "text-amber-400 bg-amber-500/15",
+    },
+    {
       icon: AlertTriangle,
       label: "Transactions échouées",
       count: openComplaints.count ?? 0,
       href: "/admin/transactions",
       color: "text-red-400 bg-red-500/15",
+    },
+    {
+      icon: Settings,
+      label: "Paramètres plateforme",
+      count: null,
+      href: "/admin/settings",
+      color: "text-purple-400 bg-purple-500/15",
     },
   ];
 
@@ -138,7 +170,7 @@ export default async function AdminDashboardPage() {
 
         <div>
           <h2 className="text-lg font-bold mb-3">Nécessite votre attention</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {queues.map((q, i) => {
               const Icon = q.icon;
               return (
@@ -156,7 +188,15 @@ export default async function AdminDashboardPage() {
                     <div className="text-xs text-[var(--foreground-muted)]">
                       {q.label}
                     </div>
-                    <div className="text-2xl font-extrabold">{q.count}</div>
+                    <div className="text-2xl font-extrabold">
+                      {q.count === null ? (
+                        <span className="text-[var(--gold)] text-base font-semibold">
+                          Ouvrir →
+                        </span>
+                      ) : (
+                        q.count
+                      )}
+                    </div>
                   </div>
                 </a>
               );
