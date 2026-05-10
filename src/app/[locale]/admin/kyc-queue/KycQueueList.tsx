@@ -1,11 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Check, X, ImageIcon, Video as VideoIcon } from "lucide-react";
+import { Check, X, ImageIcon, Video as VideoIcon, Layers } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { useToast } from "@/components/ui/Toast";
 import { createClient } from "@/lib/supabase/client";
+
+const VIDEO_EXT_RE = /\.(mp4|webm|mov|m4v|ogv|ogg)(\?|#|$)/i;
+function isVideoUrl(url: string): boolean {
+  return VIDEO_EXT_RE.test(url);
+}
 
 export interface KycSubmission {
   id: string;
@@ -98,12 +103,27 @@ export function KycQueueList({ items: initial }: { items: KycSubmission[] }) {
               url={item.id_back_url}
               kind="image"
             />
+            {/* `selfie_video_url` historically held a WebM clip; new
+                submissions store a triptych JPEG (front | right | left
+                composed side-by-side). Detect by extension so old
+                video submissions still render as <video> and new
+                ones as <img>. The triptych gets a wider 3:1 aspect
+                with object-contain so all three poses stay visible. */}
             {item.selfie_video_url ? (
-              <DocCard
-                label="Selfie en direct"
-                url={item.selfie_video_url}
-                kind="video"
-              />
+              isVideoUrl(item.selfie_video_url) ? (
+                <DocCard
+                  label="Selfie en direct"
+                  url={item.selfie_video_url}
+                  kind="video"
+                />
+              ) : (
+                <DocCard
+                  label="Selfie — 3 poses"
+                  url={item.selfie_video_url}
+                  kind="triptych"
+                  className="sm:col-span-3"
+                />
+              )
             ) : item.selfie_image_url ? (
               <DocCard
                 label="Selfie"
@@ -118,8 +138,9 @@ export function KycQueueList({ items: initial }: { items: KycSubmission[] }) {
           </div>
 
           <div className="text-xs text-[var(--foreground-muted)] leading-relaxed">
-            <b>Vérifiez :</b> visage du selfie ≈ visage de la carte ; textes
-            nets ; carte non expirée ; aucune retouche visible.
+            <b>Vérifiez :</b> les trois poses (face / droite / gauche) appartiennent
+            bien à la même personne et au visage de la carte ; textes nets ;
+            carte non expirée ; aucune retouche visible.
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -151,40 +172,47 @@ function DocCard({
   label,
   url,
   kind,
+  className,
 }: {
   label: string;
   url: string;
-  kind: "image" | "video";
+  kind: "image" | "video" | "triptych";
+  className?: string;
 }) {
+  const Icon =
+    kind === "video" ? VideoIcon : kind === "triptych" ? Layers : ImageIcon;
+  // The triptych is 3:1 (front | right | left side-by-side). Letterboxed
+  // via object-contain so all three poses stay fully visible — square /
+  // cover would crop the side poses out.
+  const aspect = kind === "triptych" ? "aspect-[3/1]" : "aspect-[4/3]";
+  const fit = kind === "triptych" ? "object-contain" : "object-cover";
   return (
-    <div className="space-y-1.5">
+    <div className={`space-y-1.5 ${className ?? ""}`}>
       <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--foreground-muted)]">
-        {kind === "image" ? (
-          <ImageIcon className="h-3.5 w-3.5" />
-        ) : (
-          <VideoIcon className="h-3.5 w-3.5" />
-        )}
+        <Icon className="h-3.5 w-3.5" />
         {label}
       </div>
       <a
         href={url}
         target="_blank"
         rel="noreferrer"
-        className="block aspect-[4/3] rounded-[var(--radius)] border border-[var(--border)] overflow-hidden bg-black hover:border-[var(--gold)] transition-colors"
+        className={`block ${aspect} rounded-[var(--radius)] border border-[var(--border)] overflow-hidden bg-black hover:border-[var(--gold)] transition-colors`}
       >
-        {kind === "image" ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={url}
-            alt={label}
-            className="h-full w-full object-cover"
-          />
-        ) : (
+        {kind === "video" ? (
           <video
             src={url}
             controls
             playsInline
-            className="h-full w-full object-cover"
+            className={`h-full w-full ${fit}`}
+          />
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={url}
+            alt={label}
+            loading="lazy"
+            decoding="async"
+            className={`h-full w-full ${fit}`}
           />
         )}
       </a>
