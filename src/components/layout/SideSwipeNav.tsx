@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
 const TAG = "[Swipe]";
@@ -15,13 +15,29 @@ function log(...args: unknown[]) {
   );
 }
 
-// Order matters — left-to-right is the swipe sequence. We skip the
-// center "Sell" tab on purpose (kicks off a multi-step creation flow
-// that shouldn't be triggered by a casual gesture).
+// Order matters — left-to-right is the swipe sequence. Center "Sell"
+// tab skipped on purpose (it kicks off a multi-step flow).
 const SWIPE_TABS = ["/", "/auctions", "/buyer/bids", "/profile"];
 
-// Pull the locale prefix off the pathname before matching, since
-// next-intl rewrites every URL to /fr/* or /ar/*.
+// The id we expect on the AppShell's <main> wrapper. The whole page
+// content is translated via style.transform on this element so the
+// finger drags the page itself, not just an indicator.
+const PAGE_EL_ID = "app-main";
+
+// Minimum horizontal travel to commit the navigation.
+const COMMIT_DX = 90;
+// Vertical drift > this aborts the gesture (user is scrolling, not swiping).
+const MAX_DY = 60;
+// We need at least this many pixels of horizontal motion before we
+// commit to driving the page — below this, normal taps and tiny finger
+// jitter pass through to the underlying buttons.
+const ACTIVATION_DX = 14;
+// Hard cap on how far the page can drag, so it never goes fully
+// off-screen during the gesture (prevents the "finger lost" feel).
+function maxDrag(): number {
+  return Math.min(window.innerWidth, 480) * 0.7;
+}
+
 function stripLocale(p: string): string {
   return p.replace(/^\/(fr|ar)(?=\/|$)/, "") || "/";
 }
@@ -35,144 +51,232 @@ function currentTabIndex(pathname: string): number {
   return -1;
 }
 
-// Touch must START within this many pixels of the left or right edge.
-// Edge-swipe is the iOS pattern users already know; mid-page swipes
-// stay reserved for HeroCarousel and other inline horizontal scrollers
-// so we never fight those gestures.
-const EDGE_PX = 36;
-// Minimum horizontal travel to commit the navigation.
-const COMMIT_DX = 80;
-// Reject as horizontal if vertical drift exceeds this — the user is
-// probably scrolling or pulling, not navigating.
-const MAX_DY = 70;
-// Max gesture duration. Keeps slow drags from being read as swipes.
-const MAX_DURATION_MS = 700;
+/**
+ * Walk up the DOM from the touch target and look for any ancestor
+ * that's a horizontal scroller, has its own swipe behaviour, or is
+ * explicitly marked `data-swipe-skip`. If we find one, the swipe
+ * belongs to that element (carousel, marquee, chip strip, tabs, etc.)
+ * and we don't intercept.
+ */
+function shouldSkip(target: EventTarget | null): boolean {
+  let el = target as Element | null;
+  while (el && el !== document.body) {
+    const dataset = (el as HTMLElement).dataset;
+    if (dataset?.swipeSkip !== undefined) return true;
+    const cls = (el as HTMLElement).className;
+    if (typeof cls === "string") {
+      // The marquees + AutoPagingScroller use these class names — they
+      // already own their own touch behaviour, so let them.
+      if (cls.includes("marquee-track")) return true;
+      if (cls.includes("auto-paging-scroller")) return true;
+    }
+    const style = window.getComputedStyle(el);
+    const ox = style.overflowX;
+    if (
+      (ox === "auto" || ox === "scroll") &&
+      el.scrollWidth > el.clientWidth + 1
+    ) {
+      return true;
+    }
+    el = el.parentElement;
+  }
+  return false;
+}
 
 /**
- * Edge-swipe navigation between the four main bottom-tab destinations:
- * Home → Auctions → My Bids → Profile.
+ * Full-page horizontal swipe between the four main bottom-tab
+ * destinations: Home → Auctions → My Bids → Profile.
  *
- *  - Drag from the LEFT edge to the right → previous tab.
- *  - Drag from the RIGHT edge to the left → next tab.
+ * - Drag right → previous tab.
+ * - Drag left  → next tab.
  *
- * Mid-page horizontal motion is ignored, so HeroCarousel swipes,
- * marquees, chip strips, and any future horizontal-scroll component
- * keep working without interference. A thin gold bar peeks from the
- * relevant edge during the gesture so the user has visual confirmation.
+ * The page content (the `#app-main` element) translates 1:1 with the
+ * finger during the drag, then either snaps out and navigates on
+ * commit, or springs back on cancel. Inline horizontal scrollers
+ * (HeroCarousel, marquees, chip strips, scrollable tabs) are
+ * detected automatically and skip the gesture.
  */
 export function SideSwipeNav() {
   const router = useRouter();
   const pathname = usePathname();
-  const [hint, setHint] = useState<{ side: "left" | "right"; px: number } | null>(
-    null,
-  );
 
-  // Mirror state into refs — see PullToRefresh for the same once-bind
-  // pattern. Listeners stay stable for the component lifetime.
   const startXRef = useRef<number | null>(null);
   const startYRef = useRef<number | null>(null);
-  const startTimeRef = useRef<number>(0);
-  const sideRef = useRef<"left" | "right" | null>(null);
+  const startTimeRef = useRef(0);
+  const armedRef = useRef(false);
+  const draggingRef = useRef(false);
+  const lastDxRef = useRef(0);
   const pathRef = useRef(pathname);
   pathRef.current = pathname;
+
+  // Reset the page transform when the route changes — otherwise the
+  // new page would render with the leftover translate from the swipe.
+  useEffect(() => {
+    const el = document.getElementById(PAGE_EL_ID);
+    if (!el) return;
+    el.style.transition = "transform 220ms cubic-bezier(0.22, 1, 0.36, 1)";
+    el.style.transform = "translateX(0)";
+    // Strip the inline transition once it's done so subsequent gesture
+    // updates don't fight a leftover one.
+    const t = setTimeout(() => {
+      el.style.transition = "";
+    }, 240);
+    return () => clearTimeout(t);
+  }, [pathname]);
 
   useEffect(() => {
     log("SideSwipe mounted", { tabs: SWIPE_TABS });
 
-    function reset() {
+    function getMain() {
+      return document.getElementById(PAGE_EL_ID);
+    }
+
+    function setMainTransform(px: number) {
+      const el = getMain();
+      if (!el) return;
+      el.style.transition = "none";
+      el.style.transform = `translate3d(${px}px, 0, 0)`;
+    }
+
+    function springBackMain() {
+      const el = getMain();
+      if (!el) return;
+      el.style.transition = "transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1)";
+      el.style.transform = "translate3d(0, 0, 0)";
+      setTimeout(() => {
+        if (el) el.style.transition = "";
+      }, 280);
+    }
+
+    function snapOutAndNavigate(direction: "left" | "right") {
+      const el = getMain();
+      const idx = currentTabIndex(pathRef.current);
+      if (idx === -1 || !el) {
+        if (el) springBackMain();
+        return;
+      }
+      const next =
+        direction === "right"
+          ? Math.max(0, idx - 1) // drag-right → previous
+          : Math.min(SWIPE_TABS.length - 1, idx + 1); // drag-left → next
+      if (next === idx) {
+        // We're at the end of the sequence — bounce back instead of
+        // sliding into nothing.
+        springBackMain();
+        return;
+      }
+      const w = window.innerWidth;
+      el.style.transition = "transform 220ms cubic-bezier(0.4, 0, 0.2, 1)";
+      el.style.transform = `translate3d(${direction === "right" ? w : -w}px, 0, 0)`;
+      try {
+        navigator.vibrate?.(10);
+      } catch {
+        // ignore
+      }
+      log("navigate", {
+        from: SWIPE_TABS[idx],
+        to: SWIPE_TABS[next],
+        direction,
+      });
+      // Push slightly before the slide finishes so the new page is
+      // already mounted by the time the route effect resets transform.
+      setTimeout(() => router.push(SWIPE_TABS[next]), 120);
+    }
+
+    function reset(silent = false) {
+      armedRef.current = false;
+      draggingRef.current = false;
       startXRef.current = null;
       startYRef.current = null;
-      sideRef.current = null;
-      setHint(null);
+      lastDxRef.current = 0;
+      if (!silent) {
+        const el = getMain();
+        if (el && el.style.transform && el.style.transform !== "translate3d(0px, 0px, 0px)") {
+          springBackMain();
+        }
+      }
     }
 
     function onTouchStart(e: TouchEvent) {
       const t = e.touches[0];
       if (!t) return;
-      const w = window.innerWidth;
-      let side: "left" | "right" | null = null;
-      if (t.clientX <= EDGE_PX) side = "left";
-      else if (t.clientX >= w - EDGE_PX) side = "right";
-      if (!side) {
-        reset();
+      // Don't start if this gesture is inside a scrollable strip,
+      // marquee, carousel, or any element marked data-swipe-skip.
+      if (shouldSkip(e.target)) {
+        startXRef.current = null;
+        return;
+      }
+      // Only run on tab pages — on auction detail / KYC / etc., there's
+      // no "next tab" to navigate to; stay out of the way.
+      if (currentTabIndex(pathRef.current) === -1) {
+        startXRef.current = null;
         return;
       }
       startXRef.current = t.clientX;
       startYRef.current = t.clientY;
       startTimeRef.current = performance.now();
-      sideRef.current = side;
+      armedRef.current = true;
+      draggingRef.current = false;
     }
 
     function onTouchMove(e: TouchEvent) {
-      if (sideRef.current === null || startXRef.current === null) return;
+      if (!armedRef.current || startXRef.current === null) return;
       const t = e.touches[0];
       if (!t) return;
       const dx = t.clientX - startXRef.current;
       const dy = Math.abs(t.clientY - (startYRef.current ?? 0));
-      // Reject if the user is mostly scrolling vertically.
-      if (dy > MAX_DY) {
-        reset();
+
+      // Vertical drift kills the gesture — user is scrolling/pulling.
+      if (dy > MAX_DY && Math.abs(dx) < dy * 1.2) {
+        log("touchmove ABORT — vertical");
+        if (draggingRef.current) springBackMain();
+        reset(true);
         return;
       }
-      // Side-aware travel: left-edge swipe needs +dx, right-edge needs -dx.
-      const travel =
-        sideRef.current === "left" ? Math.max(0, dx) : Math.max(0, -dx);
-      if (travel > 8) {
-        setHint({ side: sideRef.current, px: Math.min(travel, COMMIT_DX) });
-        // Once we've committed to driving the gesture, suppress the
-        // browser's iOS-style edge back-swipe and any text selection.
-        if (e.cancelable) e.preventDefault();
+
+      // Wait for clear horizontal intent before stealing the gesture.
+      if (!draggingRef.current && Math.abs(dx) < ACTIVATION_DX) {
+        return;
       }
+
+      draggingRef.current = true;
+      const cap = maxDrag();
+      const clamped = Math.max(-cap, Math.min(cap, dx));
+      lastDxRef.current = clamped;
+      setMainTransform(clamped);
+      // We own the gesture now — stop the document from also scrolling
+      // horizontally / firing native swipe-back.
+      if (e.cancelable) e.preventDefault();
     }
 
     function onTouchEnd(e: TouchEvent) {
-      if (sideRef.current === null || startXRef.current === null) {
-        reset();
+      if (!armedRef.current) {
+        reset(true);
         return;
       }
-      const t = e.changedTouches[0];
-      if (!t) {
-        reset();
+      armedRef.current = false;
+      if (!draggingRef.current) {
+        reset(true);
         return;
       }
-      const dx = t.clientX - startXRef.current;
-      const dy = Math.abs(t.clientY - (startYRef.current ?? 0));
+      const dx = lastDxRef.current;
       const dt = performance.now() - startTimeRef.current;
-      const travel =
-        sideRef.current === "left" ? Math.max(0, dx) : Math.max(0, -dx);
-      const commit = travel >= COMMIT_DX && dy < MAX_DY && dt < MAX_DURATION_MS;
+      const commit = Math.abs(dx) >= COMMIT_DX && dt < 800;
       log("touchend", {
-        side: sideRef.current,
-        travel: Math.round(travel),
-        dy: Math.round(dy),
+        dx: Math.round(dx),
         dt: Math.round(dt),
         commit,
+        target: (e.target as Element)?.tagName,
       });
       if (commit) {
-        const idx = currentTabIndex(pathRef.current);
-        if (idx === -1) {
-          // We're not on a known tab page — treat the swipe as "go home".
-          router.push("/");
-        } else {
-          // Left-edge swipe (drag right) → previous tab; right-edge swipe
-          // (drag left) → next tab. Wrap clamped, not circular: feels less
-          // surprising on a four-tab nav.
-          const next =
-            sideRef.current === "left"
-              ? Math.max(0, idx - 1)
-              : Math.min(SWIPE_TABS.length - 1, idx + 1);
-          if (next !== idx) {
-            log("navigate", { from: SWIPE_TABS[idx], to: SWIPE_TABS[next] });
-            try {
-              navigator.vibrate?.(8);
-            } catch {
-              // ignore
-            }
-            router.push(SWIPE_TABS[next]);
-          }
-        }
+        snapOutAndNavigate(dx > 0 ? "right" : "left");
+      } else {
+        springBackMain();
       }
-      reset();
+      draggingRef.current = false;
+      startXRef.current = null;
+      startYRef.current = null;
+      lastDxRef.current = 0;
     }
 
     document.addEventListener("touchstart", onTouchStart, { passive: true });
@@ -185,39 +289,8 @@ export function SideSwipeNav() {
       document.removeEventListener("touchend", onTouchEnd);
       document.removeEventListener("touchcancel", onTouchEnd);
     };
-    // Empty deps — pathname is read via ref; router is stable.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Visual hint — thin gold bar peeking from the relevant edge as the
-  // user drags. Width grows with travel up to COMMIT_DX, then a final
-  // glow at the commit threshold. Pointer-events:none so it can't
-  // swallow gestures.
-  if (!hint) return null;
-  const ready = hint.px >= COMMIT_DX;
-  return (
-    <div
-      aria-hidden
-      className="pointer-events-none fixed inset-y-0 z-[55] flex items-center"
-      style={{
-        [hint.side]: 0,
-      } as React.CSSProperties}
-    >
-      <div
-        className="rounded-full transition-[box-shadow,background] duration-150"
-        style={{
-          width: 4,
-          height: `${Math.min(160, 40 + hint.px)}px`,
-          background: ready ? "var(--gold-bright)" : "var(--gold)",
-          boxShadow: ready
-            ? "0 0 18px var(--gold-glow)"
-            : "0 0 8px var(--gold-glow)",
-          opacity: Math.min(1, 0.4 + hint.px / COMMIT_DX),
-          marginLeft: hint.side === "left" ? 0 : undefined,
-          marginRight: hint.side === "right" ? 0 : undefined,
-          transform: `translateX(${hint.side === "left" ? hint.px * 0.15 : -hint.px * 0.15}px)`,
-        }}
-      />
-    </div>
-  );
+  return null;
 }

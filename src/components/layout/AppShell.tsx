@@ -21,7 +21,10 @@ export function AppShell({ children, noTopBar }: Props) {
           strips) keep their swipe gestures unmolested. */}
       <SideSwipeNav />
       {!noTopBar && <TopBar />}
-      <main className="flex-1 pb-[calc(var(--bottombar-h)+env(safe-area-inset-bottom))]">
+      <main
+        id="app-main"
+        className="flex-1 pb-[calc(var(--bottombar-h)+env(safe-area-inset-bottom))] will-change-transform"
+      >
         {children}
       </main>
       <BottomTabBar />

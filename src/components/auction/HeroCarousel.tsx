@@ -127,6 +127,7 @@ export function HeroCarousel({
 
   return (
     <div
+      data-swipe-skip
       className={cn(
         "relative overflow-hidden bg-[var(--surface-2)] select-none",
         className,
