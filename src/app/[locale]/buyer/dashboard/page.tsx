@@ -24,7 +24,7 @@ export default async function BuyerDashboardPage() {
   if (!user) {
     return (
       <AppShell>
-        <div className="max-w-[var(--max-w)] mx-auto px-4 py-5 space-y-5">
+        <div className="max-w-[var(--max-w)] lg:max-w-[var(--max-w-app)] mx-auto px-4 py-5 space-y-5">
           <h1 className="text-2xl font-extrabold">
             Tableau <span className="gradient-gold-text">acheteur</span>
           </h1>
@@ -75,7 +75,7 @@ export default async function BuyerDashboardPage() {
 
   return (
     <AppShell>
-      <div className="max-w-[var(--max-w)] mx-auto px-4 py-5 space-y-6">
+      <div className="max-w-[var(--max-w)] lg:max-w-[var(--max-w-app)] mx-auto px-4 py-5 space-y-6">
         <div>
           <h1 className="text-2xl font-extrabold">
             Tableau <span className="gradient-gold-text">acheteur</span>
@@ -132,7 +132,7 @@ Parcourir toutes les enchères
               Aucune enchère active pour le moment. Exécutez seed.sql dans Supabase.
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {recommended.slice(0, 6).map((a) => (
                 <AuctionCard key={a.id} auction={a} />
               ))}

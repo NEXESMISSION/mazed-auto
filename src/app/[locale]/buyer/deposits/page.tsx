@@ -43,7 +43,7 @@ export default async function DepositsPage() {
   if (!user) {
     return (
       <AppShell>
-        <div className="max-w-[var(--max-w)] mx-auto px-4 py-5 space-y-5">
+        <div className="max-w-[var(--max-w)] lg:max-w-[var(--max-w-app)] mx-auto px-4 py-5 space-y-5">
           <Header />
           <EmptyHero
             title="Connectez-vous pour voir vos cautions"
@@ -76,7 +76,7 @@ export default async function DepositsPage() {
 
   return (
     <AppShell>
-      <div className="max-w-[var(--max-w)] mx-auto px-4 py-5 space-y-5">
+      <div className="max-w-[var(--max-w)] lg:max-w-[var(--max-w-app)] mx-auto px-4 py-5 space-y-5">
         <Header />
 
         {/* Hero balance card — fintech-clean. Big number, status pills,

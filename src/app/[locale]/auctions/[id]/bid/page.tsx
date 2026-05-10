@@ -109,7 +109,7 @@ export default async function BidPage({ params, searchParams }: Props) {
       {/* Pops once if the auction ends mid-bid */}
       <AuctionEndModal auction={auction} userId={user?.id ?? null} />
 
-      <div className="max-w-[var(--max-w)] mx-auto px-4 pt-4 pb-10 space-y-4">
+      <div className="max-w-[var(--max-w)] mx-auto px-4 pt-4 pb-10 space-y-4 lg:max-w-[var(--max-w-wide)] lg:grid lg:grid-cols-[1fr_360px] lg:gap-6 lg:space-y-0 lg:items-start lg:px-6">
         <BidComposer
           auction={auction}
           initialAction={action ?? null}
@@ -119,9 +119,11 @@ export default async function BidPage({ params, searchParams }: Props) {
         {/* Live bid history — only shown when the user is actually in the
             auction. For users still on a gate (login / KYC / deposit) we
             hide it; surfacing other people's bids while they're locked out
-            of bidding turned out to feel like a tease. */}
+            of bidding turned out to feel like a tease. On desktop the
+            history sits in a sticky sidebar so the user can keep an eye
+            on the room while crafting their bid. */}
         {userIsBidder && (
-          <div className="pt-2">
+          <div className="pt-2 lg:pt-0 lg:sticky lg:top-[calc(var(--topbar-h)+1rem)]">
             <BidHistoryRealtime
               auctionId={auction.id}
               totalBids={auction.totalBids}

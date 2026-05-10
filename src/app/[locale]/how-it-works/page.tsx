@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/Button";
 export default function HowItWorksPage() {
   return (
     <AppShell>
-      <div className="max-w-[var(--max-w)] mx-auto px-4 py-8 md:py-16 space-y-12">
+      <div className="max-w-[var(--max-w)] lg:max-w-[var(--max-w-content)] mx-auto px-4 py-8 md:py-16 space-y-12">
         <header className="text-center space-y-3">
           <h1 className="text-[28px] font-extrabold tracking-tight leading-tight">
             Comment fonctionne <span className="gradient-gold-text">Mazed Auto</span> ?

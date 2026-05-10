@@ -120,7 +120,7 @@ export function BidsTabs({
           // Card grid for the watchlist — same component as the browse
           // grid. A compact list of MyBids would feel out of place here
           // since favourites carry no per-row "I bid X" data.
-          <div className="grid grid-cols-2 gap-3 mt-2">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mt-2">
             {watchlist.map((a) => (
               <AuctionCard key={a.id} auction={a} />
             ))}
@@ -129,7 +129,7 @@ export function BidsTabs({
       ) : filteredBids.length === 0 ? (
         renderEmpty(tab, counts, setTab)
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
           {filteredBids.map((b) =>
             tab === "won" ? (
               <WinCard key={b.auction.id} bid={b} />

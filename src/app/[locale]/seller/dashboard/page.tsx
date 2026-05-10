@@ -63,7 +63,7 @@ export default function SellerDashboardPage() {
 
   return (
     <AppShell>
-      <div className="max-w-[var(--max-w)] mx-auto px-4 py-5 space-y-6">
+      <div className="max-w-[var(--max-w)] lg:max-w-[var(--max-w-app)] mx-auto px-4 py-5 space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-extrabold tracking-tight">
@@ -142,7 +142,7 @@ export default function SellerDashboardPage() {
               Vous n'avez encore publié aucune enchère. Cliquez sur &ldquo;Publier une nouvelle enchère&rdquo; pour commencer.
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {myAuctions.slice(0, 6).map((a) => (
                 <AuctionCard key={a.id} auction={a} />
               ))}

@@ -37,7 +37,7 @@ export default async function NotificationsPage() {
   return (
     <AppShell noTopBar>
       <BackRow />
-      <div className="px-4 pb-8 space-y-4">
+      <div className="px-4 pb-8 space-y-4 lg:max-w-[var(--max-w-content)] lg:mx-auto lg:px-6">
         <NotificationsList userId={user.id} initial={initial} />
       </div>
     </AppShell>

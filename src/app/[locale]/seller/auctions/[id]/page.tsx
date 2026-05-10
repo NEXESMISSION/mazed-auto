@@ -94,7 +94,7 @@ export default async function SellerAuctionDetailPage({ params }: Props) {
 
   return (
     <AppShell>
-      <div className="max-w-[var(--max-w)] mx-auto px-4 md:px-6 py-5 space-y-6">
+      <div className="max-w-[var(--max-w)] lg:max-w-[var(--max-w-app)] mx-auto px-4 md:px-6 py-5 space-y-6">
         <div className="flex items-center justify-between gap-3">
           <Link
             href="/seller/auctions"

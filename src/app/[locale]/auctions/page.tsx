@@ -24,10 +24,12 @@ export default async function AuctionsPage({ searchParams }: Props) {
         title="Parcourir"
         action={<BrowseViewToggle />}
       />
-      <AuctionsBrowser
-        initial={auctions}
-        classicMode={view === "classic"}
-      />
+      <div className="lg:max-w-[var(--max-w-wide)] lg:mx-auto">
+        <AuctionsBrowser
+          initial={auctions}
+          classicMode={view === "classic"}
+        />
+      </div>
     </AppShell>
   );
 }

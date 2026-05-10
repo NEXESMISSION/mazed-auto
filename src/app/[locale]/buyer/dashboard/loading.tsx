@@ -7,7 +7,7 @@ import { AppShell } from "@/components/layout/AppShell";
 export default function Loading() {
   return (
     <AppShell>
-      <div className="max-w-[var(--max-w)] mx-auto px-4 py-5 space-y-5">
+      <div className="max-w-[var(--max-w)] lg:max-w-[var(--max-w-app)] mx-auto px-4 py-5 space-y-5">
         {/* Title block */}
         <div className="space-y-2">
           <div className="h-7 w-40 rounded skeleton" />
@@ -15,7 +15,7 @@ export default function Loading() {
         </div>
 
         {/* Stats grid */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="rounded-[var(--radius)] bg-[var(--surface)] border border-[var(--border)] p-3 space-y-2">
               <div className="h-3 w-20 rounded skeleton" />
@@ -30,7 +30,7 @@ export default function Loading() {
             <div className="h-4 w-28 rounded skeleton" />
             <div className="h-3 w-24 rounded skeleton" />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="space-y-2">
                 <div className="aspect-[4/5] rounded-2xl skeleton" />

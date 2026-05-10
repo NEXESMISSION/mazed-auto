@@ -7,7 +7,7 @@ import { AppShell } from "@/components/layout/AppShell";
 export default function Loading() {
   return (
     <AppShell>
-      <div className="max-w-[var(--max-w)] mx-auto px-4 py-5 space-y-4">
+      <div className="max-w-[var(--max-w)] lg:max-w-[var(--max-w-app)] mx-auto px-4 py-5 space-y-4">
         <div className="h-7 w-32 rounded skeleton" />
 
         <div className="rounded-[var(--radius-md)] bg-[var(--surface)] border border-[var(--border)] divide-y divide-[var(--border)] overflow-hidden">

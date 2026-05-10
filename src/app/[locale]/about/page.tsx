@@ -27,7 +27,7 @@ export default async function AboutPage() {
     ) : null;
   return (
     <AppShell>
-      <div className="max-w-[var(--max-w)] mx-auto px-4 py-8 md:py-16 space-y-10">
+      <div className="max-w-[var(--max-w)] lg:max-w-[var(--max-w-content)] mx-auto px-4 py-8 md:py-16 space-y-10">
         <header className="text-center space-y-3">
           <h1 className="text-[28px] font-extrabold tracking-tight leading-tight">
             À <span className="gradient-gold-text">propos</span>

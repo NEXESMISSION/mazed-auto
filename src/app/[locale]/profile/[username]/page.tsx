@@ -81,7 +81,7 @@ export default async function PublicProfilePage({ params }: Props) {
 
   return (
     <AppShell>
-      <div className="max-w-[var(--max-w)] mx-auto px-4 md:px-6 pt-4 pb-10">
+      <div className="max-w-[var(--max-w)] lg:max-w-[var(--max-w-app)] mx-auto px-4 md:px-6 pt-4 pb-10">
         <Link
           href="/auctions"
           className="inline-flex items-center gap-1 text-xs text-[var(--foreground-muted)] hover:text-[var(--gold)] transition-colors mb-4"

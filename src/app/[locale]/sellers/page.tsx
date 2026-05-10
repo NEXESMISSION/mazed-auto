@@ -42,7 +42,9 @@ export default async function SellersPage() {
   return (
     <AppShell noTopBar>
       <ScreenHeader title="Vendeurs (admin)" backHref={null} />
-      <SellersBrowser sellers={enriched} />
+      <div className="lg:max-w-[var(--max-w-app)] lg:mx-auto">
+        <SellersBrowser sellers={enriched} />
+      </div>
     </AppShell>
   );
 }

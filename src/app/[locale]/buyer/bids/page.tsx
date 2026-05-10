@@ -147,7 +147,7 @@ export default async function BuyerBidsPage() {
   return (
     <AppShell noTopBar>
       <ScreenHeader title="Mes enchères" backHref="/" />
-      <div className="px-4 pb-8 space-y-4">
+      <div className="px-4 pb-8 space-y-4 lg:max-w-[var(--max-w-app)] lg:mx-auto lg:px-6">
         <BidsTabs bids={bids} watchlist={watchlist} />
       </div>
     </AppShell>

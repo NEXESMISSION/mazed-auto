@@ -46,7 +46,7 @@ export function CreateAuctionShell({ current, children }: Props) {
         <Stepper steps={steps} current={current} />
       </div>
 
-      <main className="flex-1 px-4 max-w-[var(--max-w)] mx-auto w-full pb-32">
+      <main className="flex-1 px-4 max-w-[var(--max-w)] lg:max-w-[var(--max-w-content)] mx-auto w-full pb-32">
         {children}
       </main>
     </div>

@@ -83,7 +83,7 @@ function SuccessContent() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8">
-      <div className="w-full max-w-[var(--max-w)] space-y-5 text-center">
+      <div className="w-full max-w-[var(--max-w)] lg:max-w-[var(--max-w-content)] space-y-5 text-center">
         <div className="relative mx-auto h-24 w-24">
           <div
             className="absolute inset-0 rounded-full"

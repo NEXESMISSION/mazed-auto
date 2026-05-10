@@ -82,7 +82,7 @@ export default function SettingsPage() {
   return (
     <AppShell noTopBar>
       <ScreenHeader title={tSettings("title")} backHref="/profile" />
-      <div className="px-4 pb-8 space-y-5">
+      <div className="px-4 pb-8 space-y-5 lg:max-w-[var(--max-w-content)] lg:mx-auto lg:px-6">
         <Section title={tSettings("account.title")}>
           <Row
             icon={<Lock className="h-4 w-4" />}

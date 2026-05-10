@@ -18,7 +18,7 @@ export default async function TransactionsPage() {
   if (!user) {
     return (
       <AppShell>
-        <div className="max-w-[var(--max-w)] mx-auto px-4 py-5 space-y-4">
+        <div className="max-w-[var(--max-w)] lg:max-w-[var(--max-w-app)] mx-auto px-4 py-5 space-y-4">
           <h1 className="text-2xl font-extrabold">Transactions</h1>
           <div className="text-center py-16 space-y-3">
             <Receipt className="h-12 w-12 text-[var(--gold)] mx-auto" />
@@ -39,7 +39,7 @@ export default async function TransactionsPage() {
 
   return (
     <AppShell>
-      <div className="max-w-[var(--max-w)] mx-auto px-4 py-5 space-y-4">
+      <div className="max-w-[var(--max-w)] lg:max-w-[var(--max-w-app)] mx-auto px-4 py-5 space-y-4">
         <TransactionsList txs={txs} />
       </div>
     </AppShell>

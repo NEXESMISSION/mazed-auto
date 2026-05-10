@@ -19,7 +19,7 @@ export default async function SellerAuctionsPage() {
   if (!user) {
     return (
       <AppShell>
-        <div className="max-w-[var(--max-w)] mx-auto px-4 py-5 space-y-5">
+        <div className="max-w-[var(--max-w)] lg:max-w-[var(--max-w-app)] mx-auto px-4 py-5 space-y-5">
           <div className="flex items-center justify-between gap-3">
             <h1 className="text-2xl font-extrabold">Mes enchères</h1>
             <Link href="/seller/new/step-1">
@@ -60,7 +60,7 @@ export default async function SellerAuctionsPage() {
 
   return (
     <AppShell>
-      <div className="max-w-[var(--max-w)] mx-auto px-4 py-5 space-y-5">
+      <div className="max-w-[var(--max-w)] lg:max-w-[var(--max-w-app)] mx-auto px-4 py-5 space-y-5">
         <div className="flex items-center justify-between gap-3">
           <h1 className="text-2xl font-extrabold">Mes enchères</h1>
           <Link href="/seller/new/step-1">

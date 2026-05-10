@@ -25,7 +25,7 @@ export function AppShell({ children, noTopBar }: Props) {
       {!noTopBar && <TopBar />}
       <main
         id="app-main"
-        className="flex-1 pb-[calc(var(--bottombar-h)+env(safe-area-inset-bottom))] will-change-transform"
+        className="flex-1 pb-[calc(var(--bottombar-h)+env(safe-area-inset-bottom))] md:pb-12 will-change-transform"
       >
         {children}
       </main>

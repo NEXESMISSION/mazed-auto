@@ -178,7 +178,7 @@ export default async function AuctionDetailPage({ params }: Props) {
         </HeroCarousel>
       </section>
 
-      <div className="px-4 pt-5 pb-4 space-y-5">
+      <div className="px-4 pt-5 pb-4 space-y-5 lg:max-w-[var(--max-w-app)] lg:mx-auto lg:px-6">
         {isFinal ? (
           <AuctionResultBanner auction={auction} />
         ) : (

@@ -106,7 +106,7 @@ export default async function ProfilePage() {
         }
       />
 
-      <div className="px-4 pb-8 space-y-5">
+      <div className="px-4 pb-8 space-y-5 lg:max-w-[var(--max-w-content)] lg:mx-auto lg:px-6">
         {/* Identity card — avatar left, name/email/role on the right */}
         <section className="rounded-2xl bg-[var(--surface)] border border-[var(--border)] p-4 flex items-center gap-4">
           <div className="relative shrink-0">

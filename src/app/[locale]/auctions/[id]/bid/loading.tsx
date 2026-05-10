@@ -8,7 +8,7 @@ export default function Loading() {
           <div className="h-3 w-1/3 rounded skeleton" />
         </div>
       </div>
-      <div className="max-w-[var(--max-w)] mx-auto px-4 py-5 space-y-4">
+      <div className="max-w-[var(--max-w)] lg:max-w-[var(--max-w-wide)] mx-auto px-4 py-5 space-y-4">
         <div className="rounded-[var(--radius-md)] border border-[var(--border)] p-5 space-y-3">
           <div className="h-3 w-16 rounded skeleton" />
           <div className="h-10 w-2/3 rounded skeleton" />

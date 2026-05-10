@@ -106,7 +106,7 @@ export default async function MessagesIndexPage() {
 
   return (
     <AppShell>
-      <div className="max-w-[var(--max-w)] mx-auto px-4 py-5 space-y-4">
+      <div className="max-w-[var(--max-w)] lg:max-w-[var(--max-w-app)] mx-auto px-4 py-5 space-y-4">
         <h1 className="text-2xl font-extrabold">Messages</h1>
 
         {conversations.length === 0 ? (

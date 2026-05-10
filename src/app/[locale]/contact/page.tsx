@@ -82,7 +82,7 @@ export default function ContactPage() {
 
   return (
     <AppShell>
-      <div className="max-w-[var(--max-w)] mx-auto px-4 py-8 md:py-12 space-y-8">
+      <div className="max-w-[var(--max-w)] lg:max-w-[var(--max-w-content)] mx-auto px-4 py-8 md:py-12 space-y-8">
         <header className="text-center space-y-2">
           <h1 className="text-[26px] font-extrabold tracking-tight leading-tight">
             Nous <span className="gradient-gold-text">contacter</span>
