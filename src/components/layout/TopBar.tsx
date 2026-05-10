@@ -22,10 +22,14 @@ export function TopBar() {
   const t = useTranslations("nav");
   const tBrand = useTranslations("brand");
 
+  // Desktop nav mirrors the mobile BottomTabBar destinations so users
+  // get the same routing on both viewports. The brand wordmark (link
+  // to /) plus these four covers all five mobile tabs.
   const NAV: { href: string; label: string }[] = [
-    { href: "/auctions", label: t("auctions") },
-    { href: "/how-it-works", label: t("howItWorks") },
-    { href: "/help", label: t("help") },
+    { href: "/auctions", label: t("browseShort") },
+    { href: "/seller/new/step-1", label: t("sellCar") },
+    { href: "/buyer/bids", label: t("myBids") },
+    { href: "/profile", label: t("myAccount") },
   ];
 
   // Both `/` and `/auctions` are home; BackButton returns null on those
@@ -36,6 +40,8 @@ export function TopBar() {
   return (
     <header
       className={cn(
+        // Mobile-only — desktop is owned by the global DesktopHeader.
+        "lg:hidden",
         "sticky top-0 z-40 bg-[#0a0a0a] border-b border-[var(--border)]",
         "shadow-[0_2px_18px_rgba(0,0,0,0.35)]",
         // Total bar = topbar-h + safe-area-inset-top (notch). Padding

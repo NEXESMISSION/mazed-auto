@@ -6,7 +6,6 @@ import { PromoBanner } from "@/components/home/PromoBanner";
 import { CmsBanner } from "@/components/home/CmsBanner";
 import { listCmsBanners } from "@/lib/cms";
 import { NewestRibbon } from "@/components/home/NewestRibbon";
-import { ContinueBiddingRail } from "@/components/home/ContinueBiddingRail";
 import { RecommendedRail } from "@/components/home/RecommendedRail";
 import { EndingSoonRail } from "@/components/home/EndingSoonRail";
 import { VipRail } from "@/components/home/VipRail";
@@ -115,9 +114,6 @@ export default async function HomePage() {
 
         {/* Urgency — countdown (24h window, regular cards) */}
         <EndingSoonRail items={filteredEndingSoon} />
-
-        {/* Personal — pulls signed-in users back in */}
-        {user && <ContinueBiddingRail userId={user.id} />}
 
         {/* Editorial */}
         <VipRail items={filteredVip} />

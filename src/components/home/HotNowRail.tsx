@@ -1,6 +1,7 @@
 import { Link } from "@/i18n/navigation";
 import { ArrowUpRight, Flame, Users } from "lucide-react";
 import { AuctionCard } from "@/components/auction/AuctionCard";
+import { ScrollableRow } from "./ScrollableRow";
 import type { HotAuction } from "@/lib/db";
 
 interface Props {
@@ -38,28 +39,29 @@ export function HotNowRail({ items }: Props) {
         </Link>
       </div>
 
-      <div className="overflow-x-auto hide-scrollbar">
-        <div className="flex gap-3 px-4 pb-1">
-          {interesting.map((auction) => (
-            <div key={auction.id} className="relative w-[230px] shrink-0">
-              <AuctionCard auction={auction} />
-              {/* Activity pill — sits above the card, top-end. Glows a
-                  subtle red so the eye locks onto it. */}
-              <span className="pointer-events-none absolute top-2.5 end-2.5 z-10 inline-flex items-center gap-1 px-2 h-6 rounded-full bg-[#ff4d2a] text-white text-[10px] font-extrabold uppercase tracking-wider shadow-[0_0_18px_rgba(255,77,42,0.55)]">
-                <Flame className="h-3 w-3" />
-                {auction.recentBids} {auction.recentBids === 1 ? "offre" : "offres"} / 1 h
-                {auction.recentBidders > 1 && (
-                  <span className="ms-0.5 inline-flex items-center gap-0.5 opacity-80">
-                    <Users className="h-2.5 w-2.5" />
-                    {auction.recentBidders}
-                  </span>
-                )}
-              </span>
-            </div>
-          ))}
-          <div className="w-1 shrink-0" />
-        </div>
-      </div>
+      <ScrollableRow trackClassName="flex gap-3 lg:gap-5 px-4 lg:px-6 pb-1">
+        {interesting.map((auction) => (
+          <div
+            key={auction.id}
+            className="relative w-[230px] lg:w-[280px] shrink-0"
+          >
+            <AuctionCard auction={auction} />
+            {/* Activity pill — sits above the card, top-end. Glows a
+                subtle red so the eye locks onto it. */}
+            <span className="pointer-events-none absolute top-2.5 end-2.5 z-10 inline-flex items-center gap-1 px-2 h-6 rounded-full bg-[#ff4d2a] text-white text-[10px] font-extrabold uppercase tracking-wider shadow-[0_0_18px_rgba(255,77,42,0.55)]">
+              <Flame className="h-3 w-3" />
+              {auction.recentBids} {auction.recentBids === 1 ? "offre" : "offres"} / 1 h
+              {auction.recentBidders > 1 && (
+                <span className="ms-0.5 inline-flex items-center gap-0.5 opacity-80">
+                  <Users className="h-2.5 w-2.5" />
+                  {auction.recentBidders}
+                </span>
+              )}
+            </span>
+          </div>
+        ))}
+        <div className="w-1 shrink-0" />
+      </ScrollableRow>
     </section>
   );
 }

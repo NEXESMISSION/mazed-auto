@@ -38,7 +38,8 @@ export function ScreenHeader({ title, subtitle, backHref, action }: Props) {
     "h-9 w-9 shrink-0 rounded-full bg-[var(--surface)] border border-[var(--gold-soft)] text-[var(--gold)] flex items-center justify-center hover:bg-[var(--gold-faint)] hover:border-[var(--gold)] active:scale-95 transition-all";
 
   return (
-    <header className="px-4 pt-4 pb-3 flex items-center gap-3">
+    // Mobile-only — desktop chrome is owned by the global DesktopHeader.
+    <header className="lg:hidden px-4 pt-4 pb-3 flex items-center gap-3">
       {backHref === null ? (
         <span className="h-9 w-9 shrink-0" />
       ) : backHref ? (

@@ -1,5 +1,5 @@
 import { Link } from "@/i18n/navigation";
-import { ArrowRight, Gavel } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { mapAuction, type AuctionRow, type BidRow } from "@/lib/db";
 import { Countdown } from "@/components/auction/Countdown";
@@ -57,11 +57,7 @@ export async function ContinueBiddingRail({ userId }: Props) {
   return (
     <section className="py-6 md:py-8 border-b border-[var(--border)]">
       <div className="max-w-[var(--max-w)] mx-auto px-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Gavel className="h-4 w-4 text-[var(--gold)]" />
-            <h2 className="text-sm font-bold">Suivez vos enchères</h2>
-          </div>
+        <div className="flex items-center justify-end mb-3">
           <Link
             href="/buyer/bids"
             className="text-[10px] text-[var(--gold)] hover:underline inline-flex items-center gap-1 font-bold uppercase tracking-wider"

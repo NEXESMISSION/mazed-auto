@@ -1,6 +1,7 @@
 import { Link } from "@/i18n/navigation";
 import { ArrowUpRight, Crown } from "lucide-react";
 import { AuctionCard } from "@/components/auction/AuctionCard";
+import { ScrollableRow } from "./ScrollableRow";
 import type { Auction } from "@/lib/types";
 
 interface Props {
@@ -26,16 +27,17 @@ export function VipRail({ items }: Props) {
         </Link>
       </div>
 
-      <div className="overflow-x-auto hide-scrollbar">
-        <div className="flex gap-3 px-4 pb-1">
-          {items.map((auction) => (
-            <div key={auction.id} className="w-[230px] shrink-0">
-              <AuctionCard auction={auction} variant="featured" />
-            </div>
-          ))}
-          <div className="w-1 shrink-0" />
-        </div>
-      </div>
+      <ScrollableRow trackClassName="flex gap-3 lg:gap-5 px-4 lg:px-6 pb-1">
+        {items.map((auction) => (
+          <div
+            key={auction.id}
+            className="w-[230px] lg:w-[280px] shrink-0"
+          >
+            <AuctionCard auction={auction} variant="featured" />
+          </div>
+        ))}
+        <div className="w-1 shrink-0" />
+      </ScrollableRow>
     </section>
   );
 }
