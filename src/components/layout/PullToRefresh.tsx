@@ -111,8 +111,16 @@ export function PullToRefresh() {
         return;
       }
       const damped = Math.min(dy * RESISTANCE, MAX_PULL_PX);
+      const wasReady = pullRef.current >= TRIGGER_PX;
+      const isReady = damped >= TRIGGER_PX;
       pullRef.current = damped;
       setPull(damped);
+      // Tactile cue at the moment the threshold is crossed (forward
+      // direction only — don't buzz when sliding back below). On
+      // browsers without the Vibration API this is a silent no-op.
+      if (isReady && !wasReady && typeof navigator !== "undefined") {
+        navigator.vibrate?.(12);
+      }
       // Suppress the document's own bounce/scroll while we own the gesture.
       if (e.cancelable) e.preventDefault();
     }
@@ -175,36 +183,97 @@ export function PullToRefresh() {
   const visible = pull > 0 || refreshing;
   const ready = pull >= TRIGGER_PX || refreshing;
   const progress = Math.min(pull / TRIGGER_PX, 1);
+  // Slightly overshoot at the threshold for a satisfying "snap" pulse —
+  // the indicator briefly inflates 1.0 → 1.18 → 1.0 the moment progress
+  // crosses 1, matching the haptic buzz fired in onTouchMove.
+  const scale = ready ? 1 + (1 - Math.abs(progress - 1)) * 0.18 + 0.04 : 1;
+
+  // Circular ring math: 56-px circle, stroke radius 24, circumference
+  // 2πr = 150.8. dashoffset shrinks from `circ` → 0 as progress 0 → 1.
+  const RING_R = 24;
+  const RING_C = 2 * Math.PI * RING_R;
+  const dashOffset = RING_C * (1 - progress);
 
   return (
     <div
       aria-hidden
       className="pointer-events-none fixed inset-x-0 top-0 z-[60] flex justify-center"
       style={{
-        transform: `translate3d(0, ${visible ? pull - 56 : -80}px, 0)`,
-        transition: refreshing || pull === 0 ? "transform 220ms ease-out" : "none",
+        transform: `translate3d(0, ${visible ? pull - 70 : -100}px, 0)`,
+        // Spring-back ease on release (back-out), no easing while dragging.
+        transition:
+          refreshing || pull === 0
+            ? "transform 360ms cubic-bezier(0.34, 1.56, 0.64, 1)"
+            : "none",
       }}
     >
       <div
-        className="h-11 w-11 rounded-full bg-[var(--surface)] border border-[var(--border)] shadow-[0_8px_24px_rgba(0,0,0,0.5)] flex items-center justify-center"
+        className="relative h-14 w-14"
         style={{
-          opacity: Math.max(0.5, progress),
-          borderColor: ready ? "var(--gold)" : "var(--border)",
-          boxShadow: ready
-            ? "0 0 0 3px var(--gold-faint), 0 8px 24px rgba(0,0,0,0.5)"
-            : "0 8px 24px rgba(0,0,0,0.5)",
+          transform: `scale(${scale})`,
+          transition: "transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1)",
         }}
       >
-        <RefreshCw
-          className={
-            "h-5 w-5 text-[var(--gold)]" +
-            (refreshing ? " animate-spin" : "")
-          }
+        {/* Soft outer glow that intensifies as the user nears the
+            threshold and stays bright while refreshing. */}
+        <div
+          className="absolute inset-[-8px] rounded-full transition-opacity duration-200"
           style={{
-            transform: refreshing ? undefined : `rotate(${progress * 270}deg)`,
-            transition: refreshing ? undefined : "none",
+            background:
+              "radial-gradient(closest-side, var(--gold-glow) 0%, transparent 70%)",
+            opacity: ready ? 0.95 : progress * 0.5,
           }}
         />
+
+        {/* Background pill — holds the icon. */}
+        <div
+          className="absolute inset-0 rounded-full bg-[var(--surface)] border shadow-[0_10px_28px_rgba(0,0,0,0.55)] flex items-center justify-center transition-colors duration-150"
+          style={{
+            borderColor: ready ? "var(--gold)" : "var(--border-strong)",
+          }}
+        >
+          <RefreshCw
+            className="h-5 w-5"
+            style={{
+              color: ready ? "var(--gold-bright)" : "var(--gold)",
+              transform: refreshing
+                ? undefined
+                : `rotate(${progress * 360}deg)`,
+              transition: refreshing
+                ? undefined
+                : "color 150ms ease-out",
+              animation: refreshing ? "spin 0.8s linear infinite" : undefined,
+            }}
+          />
+        </div>
+
+        {/* SVG circular progress ring — fills clockwise as the user pulls.
+            Sits on top of the pill so the gold arc is clearly visible
+            against the dark background. While refreshing, we hide the
+            arc and let the spinning icon carry the loading state. */}
+        <svg
+          className="absolute inset-0 h-full w-full -rotate-90"
+          viewBox="0 0 56 56"
+          style={{ opacity: refreshing ? 0 : 1, transition: "opacity 200ms" }}
+        >
+          <circle
+            cx="28"
+            cy="28"
+            r={RING_R}
+            fill="none"
+            stroke="var(--gold)"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeDasharray={RING_C}
+            strokeDashoffset={dashOffset}
+            style={{
+              transition: "stroke-dashoffset 80ms linear",
+              filter: ready
+                ? "drop-shadow(0 0 6px var(--gold-glow))"
+                : undefined,
+            }}
+          />
+        </svg>
       </div>
     </div>
   );
