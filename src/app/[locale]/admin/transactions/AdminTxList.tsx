@@ -1,13 +1,29 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Download, ArrowDownLeft, ArrowUpRight } from "lucide-react";
+import {
+  Search,
+  Download,
+  ArrowDownLeft,
+  ArrowUpRight,
+  Plus,
+  Ban,
+  Undo2,
+} from "lucide-react";
+import { useRouter } from "@/i18n/navigation";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
+import { Modal, ModalFooter } from "@/components/ui/Modal";
+import { useToast } from "@/components/ui/Toast";
 import type { TransactionRow } from "@/lib/db";
 import { formatPrice } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import {
+  voidTransactionAction,
+  createTransactionAction,
+  refundDepositAction,
+} from "@/app/[locale]/admin/actions";
 
 const typeLabels: Record<string, string> = {
   deposit: "Caution",
@@ -35,9 +51,91 @@ const statusLabels: Record<string, string> = {
 };
 
 export function AdminTxList({ initial }: { initial: TransactionRow[] }) {
+  const router = useRouter();
+  const { toast } = useToast();
   const [filter, setFilter] = useState<string>("all");
   const [q, setQ] = useState("");
   const txs = initial;
+
+  // Manual transaction modal
+  const [createOpen, setCreateOpen] = useState(false);
+  const [cUserId, setCUserId] = useState("");
+  const [cType, setCType] = useState<
+    "deposit" | "refund" | "final_payment" | "commission" | "payout"
+  >("refund");
+  const [cDirection, setCDirection] = useState<"in" | "out">("out");
+  const [cAmount, setCAmount] = useState("");
+  const [cLabel, setCLabel] = useState("");
+  const [cAuctionId, setCAuctionId] = useState("");
+  const [cReason, setCReason] = useState("");
+  const [cBusy, setCBusy] = useState(false);
+
+  async function refundDeposit(t: TransactionRow) {
+    const reason = window.prompt(
+      `Rembourser cette caution (${formatPrice(Number(t.amount))}) ?\nRaison (audit) :`,
+      "",
+    );
+    if (!reason || !reason.trim()) return;
+    const r = await refundDepositAction({
+      txId: t.id,
+      reason: reason.trim(),
+    });
+    if (!r.ok) {
+      toast("Échec : " + r.error, "error");
+      return;
+    }
+    toast("Caution remboursée", "success");
+    router.refresh();
+  }
+
+  async function voidTx(t: TransactionRow) {
+    const reason = window.prompt(
+      `Annuler la transaction ${t.ref} ?\nRaison (audit) :`,
+      "",
+    );
+    if (!reason || !reason.trim()) return;
+    const r = await voidTransactionAction({
+      txId: t.id,
+      reason: reason.trim(),
+    });
+    if (!r.ok) {
+      toast("Échec : " + r.error, "error");
+      return;
+    }
+    toast("Transaction annulée", "warning");
+    router.refresh();
+  }
+
+  async function submitCreate() {
+    const amt = Number(cAmount);
+    if (!cUserId.trim() || !Number.isFinite(amt) || amt <= 0 || !cLabel.trim()) {
+      toast("user_id, montant > 0 et libellé requis", "warning");
+      return;
+    }
+    setCBusy(true);
+    const r = await createTransactionAction({
+      userId: cUserId.trim(),
+      type: cType,
+      direction: cDirection,
+      amount: amt,
+      label: cLabel.trim(),
+      auctionId: cAuctionId.trim() || null,
+      reason: cReason.trim() || null,
+    });
+    setCBusy(false);
+    if (!r.ok) {
+      toast("Échec : " + r.error, "error");
+      return;
+    }
+    toast("Transaction créée", "success");
+    setCreateOpen(false);
+    setCUserId("");
+    setCAmount("");
+    setCLabel("");
+    setCAuctionId("");
+    setCReason("");
+    router.refresh();
+  }
 
   const filtered = txs
     .filter((t) => filter === "all" || t.type === filter)
@@ -100,15 +198,25 @@ export function AdminTxList({ initial }: { initial: TransactionRow[] }) {
     <>
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl md:text-3xl font-extrabold">Transactions</h1>
-        <Button
-          size="sm"
-          variant="secondary"
-          onClick={exportCsv}
-          disabled={filtered.length === 0}
-        >
-          <Download className="h-4 w-4" />
-          Exporter CSV
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => setCreateOpen(true)}
+          >
+            <Plus className="h-4 w-4" />
+            Créer
+          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={exportCsv}
+            disabled={filtered.length === 0}
+          >
+            <Download className="h-4 w-4" />
+            Exporter CSV
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -212,16 +320,146 @@ Aucune transaction. Exécutez seed.sql dans Supabase.
                   )}
                   {formatPrice(Number(t.amount))}
                 </div>
-                <div>
+                <div className="flex items-center gap-1">
                   <Badge variant={statusColors[t.status]} size="sm">
                     {statusLabels[t.status]}
                   </Badge>
+                  <div className="ml-auto flex items-center gap-1">
+                    {t.type === "deposit" && t.status === "completed" && (
+                      <button
+                        type="button"
+                        onClick={() => refundDeposit(t)}
+                        title="Rembourser cette caution"
+                        className="h-7 w-7 rounded-full bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center hover:border-emerald-500/40 hover:text-emerald-300 transition-colors"
+                      >
+                        <Undo2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                    {t.status !== "failed" && (
+                      <button
+                        type="button"
+                        onClick={() => voidTx(t)}
+                        title="Annuler la transaction"
+                        className="h-7 w-7 rounded-full bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center hover:border-red-500/40 hover:text-red-300 transition-colors"
+                      >
+                        <Ban className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))
           )}
         </div>
       </div>
+
+      {/* ---------- Create transaction modal ---------- */}
+      <Modal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        title="Créer une transaction manuelle"
+        description="À utiliser pour les remboursements ad hoc, ajustements de commission, crédits goodwill."
+        mobileSheet={false}
+      >
+        <div className="space-y-3">
+          <div>
+            <label className="text-[10px] uppercase tracking-[0.18em] font-bold text-[var(--foreground-muted)]">
+              ID utilisateur
+            </label>
+            <Input
+              value={cUserId}
+              onChange={(e) => setCUserId(e.target.value)}
+              placeholder="UUID"
+              className="mt-1"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[10px] uppercase tracking-[0.18em] font-bold text-[var(--foreground-muted)]">
+                Type
+              </label>
+              <select
+                value={cType}
+                onChange={(e) => setCType(e.target.value as typeof cType)}
+                className="mt-1 w-full bg-[var(--surface-2)] border border-[var(--border)] rounded-[var(--radius)] px-3 h-11 text-sm"
+              >
+                <option value="deposit">Caution</option>
+                <option value="refund">Remboursement</option>
+                <option value="final_payment">Paiement final</option>
+                <option value="commission">Commission</option>
+                <option value="payout">Virement</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] uppercase tracking-[0.18em] font-bold text-[var(--foreground-muted)]">
+                Direction
+              </label>
+              <select
+                value={cDirection}
+                onChange={(e) => setCDirection(e.target.value as "in" | "out")}
+                className="mt-1 w-full bg-[var(--surface-2)] border border-[var(--border)] rounded-[var(--radius)] px-3 h-11 text-sm"
+              >
+                <option value="in">Entrée</option>
+                <option value="out">Sortie</option>
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[10px] uppercase tracking-[0.18em] font-bold text-[var(--foreground-muted)]">
+                Montant DT
+              </label>
+              <Input
+                type="number"
+                step="0.01"
+                value={cAmount}
+                onChange={(e) => setCAmount(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] uppercase tracking-[0.18em] font-bold text-[var(--foreground-muted)]">
+                ID enchère (opt.)
+              </label>
+              <Input
+                value={cAuctionId}
+                onChange={(e) => setCAuctionId(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="text-[10px] uppercase tracking-[0.18em] font-bold text-[var(--foreground-muted)]">
+              Libellé
+            </label>
+            <Input
+              value={cLabel}
+              onChange={(e) => setCLabel(e.target.value)}
+              placeholder="Ex : Remboursement geste commercial — incident #42"
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <label className="text-[10px] uppercase tracking-[0.18em] font-bold text-[var(--foreground-muted)]">
+              Raison interne (audit)
+            </label>
+            <textarea
+              value={cReason}
+              onChange={(e) => setCReason(e.target.value)}
+              rows={2}
+              className="mt-1 w-full bg-[var(--surface-2)] border border-[var(--border)] rounded-[var(--radius)] px-3 py-2 text-sm focus:outline-none focus:border-[var(--gold)]"
+            />
+          </div>
+        </div>
+        <ModalFooter>
+          <Button variant="ghost" size="md" onClick={() => setCreateOpen(false)}>
+            Annuler
+          </Button>
+          <Button size="md" onClick={submitCreate} disabled={cBusy}>
+            {cBusy ? "Création..." : "Créer"}
+          </Button>
+        </ModalFooter>
+      </Modal>
     </>
   );
 }
