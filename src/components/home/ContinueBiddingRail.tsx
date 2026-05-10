@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { mapAuction, type AuctionRow, type BidRow } from "@/lib/db";
 import { Countdown } from "@/components/auction/Countdown";
 import { formatPrice } from "@/lib/format";
+import { thumb } from "@/lib/imageUrl";
 
 interface Props {
   userId: string;
@@ -81,8 +82,10 @@ export async function ContinueBiddingRail({ userId }: Props) {
                 <div className="aspect-[16/10] bg-[var(--surface-2)] overflow-hidden">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={auction.vehicle.imageUrls[0]}
+                    src={thumb(auction.vehicle.imageUrls[0], { width: 460, quality: 65 })}
                     alt=""
+                    loading="lazy"
+                    decoding="async"
                     className="h-full w-full object-cover"
                   />
                 </div>

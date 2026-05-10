@@ -19,6 +19,7 @@ import { AuctionCard } from "@/components/auction/AuctionCard";
 import { RateSellerButton } from "@/components/auction/RateSellerButton";
 import { RenounceButton } from "../wins/RenounceButton";
 import { formatPrice, formatTimeRemaining } from "@/lib/format";
+import { thumb } from "@/lib/imageUrl";
 import { anonSeller } from "@/lib/anon";
 import type { Auction } from "@/lib/types";
 import type { MyBid } from "./page";
@@ -156,8 +157,10 @@ function BidCard({ bid: b }: { bid: MyBid }) {
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={b.auction.vehicle.imageUrls[0]}
+          src={thumb(b.auction.vehicle.imageUrls[0], { width: 220, quality: 65 })}
           alt=""
+          loading="lazy"
+          decoding="async"
           className="h-20 w-28 rounded-[var(--radius-sm)] object-cover shrink-0"
         />
         <div className="flex-1 min-w-0">
@@ -245,8 +248,10 @@ function WinCard({ bid: w }: { bid: MyBid }) {
       <div className="flex gap-3 p-4">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={w.auction.vehicle.imageUrls[0]}
+          src={thumb(w.auction.vehicle.imageUrls[0], { width: 280, quality: 65 })}
           alt=""
+          loading="lazy"
+          decoding="async"
           className="h-24 w-32 rounded-[var(--radius-sm)] object-cover shrink-0"
         />
         <div className="flex-1 min-w-0">

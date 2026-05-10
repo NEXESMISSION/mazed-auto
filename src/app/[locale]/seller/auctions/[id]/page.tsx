@@ -19,6 +19,7 @@ import { AuctionResultBanner } from "@/components/auction/AuctionResultBanner";
 import { createClient } from "@/lib/supabase/server";
 import { getAuctionById, listRecentBids } from "@/lib/db";
 import { formatPrice } from "@/lib/format";
+import { thumb } from "@/lib/imageUrl";
 import { anonBidder } from "@/lib/anon";
 import type { AuctionStatus } from "@/lib/types";
 
@@ -114,8 +115,10 @@ Aperçu public
         <header className="flex items-start gap-4">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={auction.vehicle.imageUrls[0]}
+            src={thumb(auction.vehicle.imageUrls[0], { width: 320, quality: 70 })}
             alt=""
+            loading="lazy"
+            decoding="async"
             className="h-24 w-32 md:h-28 md:w-40 rounded-[var(--radius-md)] object-cover shrink-0"
           />
           <div className="flex-1 min-w-0">

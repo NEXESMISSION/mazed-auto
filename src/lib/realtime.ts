@@ -72,19 +72,13 @@ export function useRealtimeBids(
   const [loaded, setLoaded] = useState(initial !== undefined);
   const instanceId = useId();
 
+  // Subscription effect — kept independent of `initial` so a fresh seed
+  // arriving from the parent (e.g. SSR re-render) doesn't tear down the
+  // realtime channel and re-subscribe. Re-subscribing on every seed
+  // change burned a connection round-trip and briefly missed any bid
+  // that landed in the gap.
   useEffect(() => {
     const supabase = createClient();
-    let cancelled = false;
-
-    if (!initial) {
-      listRecentBids(supabase, auctionId, limit).then((rows) => {
-        if (!cancelled) {
-          setBids(rows);
-          setLoaded(true);
-        }
-      });
-    }
-
     const channel = supabase
       .channel(`bids:${auctionId}:${instanceId}`)
       .on(
@@ -111,10 +105,28 @@ export function useRealtimeBids(
       .subscribe();
 
     return () => {
-      cancelled = true;
       supabase.removeChannel(channel);
     };
-  }, [auctionId, limit, instanceId, initial]);
+  }, [auctionId, limit, instanceId]);
+
+  // Seed sync — runs only when there's no SSR-provided seed. Replaced
+  // with the freshly-fetched list. Independent of the subscription
+  // effect, so it won't tear down the channel.
+  useEffect(() => {
+    if (initial !== undefined) return;
+    const supabase = createClient();
+    let cancelled = false;
+    listRecentBids(supabase, auctionId, limit).then((rows) => {
+      if (cancelled) return;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setBids(rows);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setLoaded(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [auctionId, limit, initial]);
 
   return { bids, loaded };
 }

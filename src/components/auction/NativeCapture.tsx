@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/components/ui/Toast";
 import { uploadToBucket } from "@/lib/upload";
+import { compressImage, type CompressOptions } from "@/lib/imageCompress";
 
 const TAG = "[NativeCapture]";
 function log(...args: unknown[]) {
@@ -47,7 +48,21 @@ interface BaseProps {
   /** Render-prop alternative — when provided we don't render a button,
    *  the consumer renders whatever it wants and calls `open()`. */
   children?: (state: { open: () => void; uploading: boolean }) => React.ReactNode;
+  /** Per-call image compression overrides. KYC docs pass higher quality
+   *  so OCR text stays crisp; default preset is fine for vehicle
+   *  photos. Ignored for `kind === "video"`. */
+  compress?: CompressOptions;
 }
+
+// Defaults per use case. Folder name is the source of truth for picking
+// a preset since it already carries semantic meaning ("kyc" / "auctions"
+// / "carte-grise") and avoids adding another prop at every call site.
+const PRESETS: Record<string, CompressOptions> = {
+  kyc:           { maxEdge: 2200, quality: 0.92 }, // OCR-friendly
+  "carte-grise": { maxEdge: 2200, quality: 0.92 }, // OCR-friendly
+  auctions:      { maxEdge: 1920, quality: 0.85 }, // standard listing
+  default:       { maxEdge: 1920, quality: 0.85 },
+};
 
 /**
  * One-shot native capture. Tapping the trigger opens the device's OS
@@ -68,6 +83,7 @@ export function NativeCapture({
   disabled,
   className,
   children,
+  compress,
 }: BaseProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -102,8 +118,21 @@ export function NativeCapture({
     setUploading(true);
     const t0 = performance.now();
     try {
+      // Image-only client-side compression. Saves ~10-20× on bytes-on-
+      // wire and Supabase storage cost vs. uploading raw 2-3 MB phone
+      // captures. Videos pass through (browser doesn't transcode).
+      let payload: File = f;
+      if (kind === "photo" && f.type.startsWith("image/")) {
+        const preset = compress ?? PRESETS[folder] ?? PRESETS.default;
+        payload = await compressImage(f, preset);
+        log("post-compress payload", {
+          origKB: Math.round(f.size / 1024),
+          newKB: Math.round(payload.size / 1024),
+          preset,
+        });
+      }
       log("uploadToBucket → start", { folder, userId: user.id });
-      const { url, path } = await uploadToBucket(f, user.id, folder);
+      const { url, path } = await uploadToBucket(payload, user.id, folder);
       const ms = Math.round(performance.now() - t0);
       log("uploadToBucket → done", { ms, url, path });
       onCaptured(url);

@@ -30,41 +30,38 @@ const NEWEST_COUNT = 10;
 export default async function HomePage() {
   const supabase = await createClient();
 
-  // Single batched fetch — every rail has its own dedicated query so the
-  // result feels alive (Hot reads recent bids, Ending Soon reads end_time,
-  // Recently Sold reads the final state). Running them in parallel keeps
-  // the wall-clock cost roughly the same as the old single-pool approach.
-  const [
-    { data: userResp },
-    hot,
-    endingSoon,
-    newest,
-    vip,
-    recentlyEnded,
-    activitySeed,
-  ] = await Promise.all([
-    supabase.auth.getUser(),
-    listHotNow(supabase, RAIL_COUNT),
-    listEndingSoon(supabase, 24, RAIL_COUNT),
-    listNewestLive(supabase, 48, NEWEST_COUNT),
-    listFeaturedLive(supabase, RAIL_COUNT),
-    listRecentlyEnded(supabase, 72, RAIL_COUNT),
-    seedActivityItems(supabase, 8),
-  ]);
-
+  // Resolve the user first (cheap, cookie-driven) so the bid-history
+  // query can join the same parallel batch as the rails. Without this,
+  // we'd serially `await getUser()` then `await rawBids` after the rails
+  // resolved — adding ~50-100ms of round-trip latency for signed-in
+  // users.
+  const { data: userResp } = await supabase.auth.getUser();
   const user = userResp?.user ?? null;
-  // Auctions the signed-in user has already bid on — used to pull cars
-  // out of the discovery rails (don't re-recommend what they're chasing).
-  let bidIds = new Set<string>();
-  if (user) {
-    const { data: rawBids } = await supabase
-      .from("bids")
-      .select("auction_id")
-      .eq("user_id", user.id);
-    bidIds = new Set(
-      (rawBids ?? []).map((b) => b.auction_id).filter(Boolean) as string[],
-    );
-  }
+
+  const [hot, endingSoon, newest, vip, recentlyEnded, activitySeed, rawBids] =
+    await Promise.all([
+      listHotNow(supabase, RAIL_COUNT),
+      listEndingSoon(supabase, 24, RAIL_COUNT),
+      listNewestLive(supabase, 48, NEWEST_COUNT),
+      listFeaturedLive(supabase, RAIL_COUNT),
+      listRecentlyEnded(supabase, 72, RAIL_COUNT),
+      seedActivityItems(supabase, 8),
+      // Pulls auction ids the signed-in user has already bid on so the
+      // discovery rails can strip them out. Skip the round-trip entirely
+      // for guests.
+      user
+        ? supabase
+            .from("bids")
+            .select("auction_id")
+            .eq("user_id", user.id)
+        : Promise.resolve({ data: null as { auction_id: string }[] | null }),
+    ]);
+
+  const bidIds = new Set<string>(
+    (rawBids?.data ?? [])
+      .map((b) => b.auction_id)
+      .filter(Boolean) as string[],
+  );
 
   // Build the personalised "Pour vous" rail. Content-based: weight by
   // the brands + categories the user has bid on, fall back to global

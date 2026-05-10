@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useDeferredValue } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import {
@@ -113,6 +113,11 @@ function ModernBrowser({ initial }: { initial: Auction[] }) {
 
   const list = useRealtimeAuctionList(initial);
   const [search, setSearch] = useState("");
+  // Defer the heavy filter+sort recompute one frame behind keystrokes
+  // so typing stays smooth. The input still uses `search`; the
+  // memoised result reads `deferredSearch`. React picks up the latest
+  // value when the user pauses typing.
+  const deferredSearch = useDeferredValue(search);
   const [filters, setFilters] = useState<BrowseFilterState>(EMPTY_FILTERS);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [sort, setSort] = useState<SortKey>("newest");
@@ -137,7 +142,7 @@ function ModernBrowser({ initial }: { initial: Auction[] }) {
   }, [list]);
 
   const filteredAuctions = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = deferredSearch.trim().toLowerCase();
     const minPrice = Number(filters.minPrice) || 0;
     const maxPrice = Number(filters.maxPrice) || Infinity;
     const minYear = Number(filters.minYear) || 0;
@@ -195,7 +200,7 @@ function ModernBrowser({ initial }: { initial: Auction[] }) {
         sorted.sort((a, b) => b.startTime.getTime() - a.startTime.getTime());
     }
     return sorted;
-  }, [list, search, brand, body, filters, sort]);
+  }, [list, deferredSearch, brand, body, filters, sort]);
 
   // Build the active-filter chip list. Each chip carries an action that
   // clears that one dimension only, so the user can drill in and out
@@ -564,6 +569,9 @@ function ClassicHub({ initial }: { initial: Auction[] }) {
   const router = useRouter();
   const list = useRealtimeAuctionList(initial);
   const [search, setSearch] = useState("");
+  // Same trick as ModernBrowser — keep typing snappy on the brand
+  // filter, defer the actual filter recompute by one frame.
+  const deferredSearch = useDeferredValue(search);
 
   const brandIndex = useMemo(() => {
     const data = new Map<string, { count: number; image?: string }>();
@@ -599,10 +607,10 @@ function ClassicHub({ initial }: { initial: Auction[] }) {
   }, [list]);
 
   const filteredBrands = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = deferredSearch.trim().toLowerCase();
     if (!q) return brandIndex;
     return brandIndex.filter((b) => b.name.toLowerCase().includes(q));
-  }, [brandIndex, search]);
+  }, [brandIndex, deferredSearch]);
 
   return (
     <div className="pt-5 pb-8">

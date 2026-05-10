@@ -352,11 +352,15 @@ export async function seedActivityItems(
     at: number;
   }[]
 > {
+  // Filter `auction_id IS NOT NULL` server-side — without it, orphaned
+  // bid rows came back from the table and we threw them out client-side
+  // post-filter, leaving fewer than `limit` items in the rail.
   const { data } = await supabase
     .from("bids")
     .select(
       "id, auction_id, user_id, amount, placed_at, auctions:auction_id(make, model, year)",
     )
+    .not("auction_id", "is", null)
     .order("placed_at", { ascending: false })
     .limit(limit);
   if (!data) return [];
@@ -473,11 +477,18 @@ export async function getSellerById(
   return mapSeller(data as SellerRow);
 }
 
-export async function listSellers(supabase: SupabaseClient): Promise<Seller[]> {
+export async function listSellers(
+  supabase: SupabaseClient,
+  limit: number = 100,
+): Promise<Seller[]> {
+  // Capped at 100 by default — a full table scan with `select(*)` got
+  // expensive once the sellers row count grew. Callers that need more
+  // can pass an explicit limit; the admin pagination follows up later.
   const { data, error } = await supabase
     .from("sellers")
     .select("*")
-    .order("trust_score", { ascending: false });
+    .order("trust_score", { ascending: false })
+    .limit(limit);
   if (error) {
     console.error("listSellers:", error.message);
     return [];
@@ -539,9 +550,12 @@ export async function listRecentBids(
 ): Promise<BidRow[]> {
   // Order by amount first, then recency, so the highest bid is always
   // labeled "Offre la plus haute" even if a slow lower bid lands later.
+  // Project only the columns BidRow consumers actually read — `select("*")`
+  // pulled `bidder_label` and other denormalised fields that get
+  // discarded after `mapBid` anyway.
   const { data, error } = await supabase
     .from("bids")
-    .select("*")
+    .select("id, auction_id, user_id, amount, placed_at, is_auto_bid")
     .eq("auction_id", auctionId)
     .order("amount", { ascending: false })
     .order("placed_at", { ascending: false })
@@ -568,12 +582,15 @@ export async function listTransactions(
   supabase: SupabaseClient,
   opts: { userId?: string; limit?: number } = {},
 ): Promise<TransactionRow[]> {
+  // Default to 200 when no limit is passed — admin pages were calling
+  // with explicit limits but a future caller could forget and pull the
+  // whole transactions table. Belt-and-suspenders.
   let q = supabase
     .from("transactions")
     .select("*")
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(opts.limit ?? 200);
   if (opts.userId) q = q.eq("user_id", opts.userId);
-  if (opts.limit) q = q.limit(opts.limit);
   const { data, error } = await q;
   if (error) return [];
   return (data ?? []) as TransactionRow[];
@@ -631,11 +648,16 @@ export interface ReportRow {
 export async function listReports(
   supabase: SupabaseClient,
   status?: ReportRow["status"][],
+  limit: number = 200,
 ): Promise<ReportRow[]> {
+  // Capped at 200 by default — without a limit a backlog of historical
+  // reports could pull thousands of joined auction rows on the admin
+  // page load.
   let q = supabase
     .from("reports")
     .select("*, auction:auctions(*, seller:sellers(*))")
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(limit);
   if (status?.length) q = q.in("status", status);
   const { data, error } = await q;
   if (error) return [];
@@ -674,9 +696,11 @@ export async function listSellerRatings(
   sellerId: string,
   limit: number = 10,
 ): Promise<SellerRatingRow[]> {
+  // Project only the columns the UI uses — comments can be paragraph-
+  // length and adding `select("*")` pulled extra metadata never read.
   const { data, error } = await supabase
     .from("seller_ratings")
-    .select("*")
+    .select("id, seller_id, buyer_label, rating, comment, created_at")
     .eq("seller_id", sellerId)
     .order("created_at", { ascending: false })
     .limit(limit);

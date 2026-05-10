@@ -5,6 +5,7 @@ import { Link } from "@/i18n/navigation";
 import { Eye, Edit, X, Inbox } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { formatPrice, formatTimeRemaining } from "@/lib/format";
+import { thumb } from "@/lib/imageUrl";
 import type { Auction, AuctionStatus } from "@/lib/types";
 import { SellerDecisionCard } from "./SellerDecisionCard";
 
@@ -146,8 +147,10 @@ export function SellerAuctionsList({ list }: { list: Auction[] }) {
                 <div className="p-3 flex gap-3">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={a.vehicle.imageUrls[0]}
+                    src={thumb(a.vehicle.imageUrls[0], { width: 220, quality: 65 })}
                     alt=""
+                    loading="lazy"
+                    decoding="async"
                     className="h-20 w-28 rounded-[var(--radius-sm)] object-cover shrink-0"
                   />
                   <div className="flex-1 min-w-0">

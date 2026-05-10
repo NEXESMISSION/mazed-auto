@@ -78,6 +78,22 @@ export default async function RootLayout({
             (~42× smaller). The service worker also precaches it so
             subsequent loads (including the installed PWA) paint instantly. */}
         <link rel="preload" as="image" href="/loading.jpg" fetchPriority="high" />
+        {/* Preconnect to the Supabase origin so the first image / RPC
+            call doesn't eat ~200-400ms on DNS + TLS. Every page hits
+            this host (auth, image transforms, realtime). */}
+        {process.env.NEXT_PUBLIC_SUPABASE_URL && (
+          <>
+            <link
+              rel="preconnect"
+              href={process.env.NEXT_PUBLIC_SUPABASE_URL}
+              crossOrigin="anonymous"
+            />
+            <link
+              rel="dns-prefetch"
+              href={process.env.NEXT_PUBLIC_SUPABASE_URL}
+            />
+          </>
+        )}
       </head>
       <body
         className="min-h-full bg-background text-foreground font-sans"

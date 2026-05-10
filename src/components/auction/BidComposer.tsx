@@ -91,29 +91,38 @@ export function BidComposer({
       return;
     }
     const supabase = createClient();
-    // Only fetch deposit status if the parent didn't already give us one
-    // server-side.
-    if (initialDepositPaid === undefined) {
-      supabase
-        .from("transactions")
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("auction_id", auction.id)
-        .eq("type", "deposit")
-        .eq("status", "completed")
-        .limit(1)
-        .then(({ data }) => setDepositPaid((data ?? []).length > 0));
-    }
-
-    supabase
+    // Run both lookups in parallel — they're independent. Previously
+    // they kicked off in sequence (deposit then auto-bid), adding the
+    // second round-trip to the perceived "pre-bid is loading" window.
+    const depositPromise =
+      initialDepositPaid === undefined
+        ? supabase
+            .from("transactions")
+            .select("id")
+            .eq("user_id", user.id)
+            .eq("auction_id", auction.id)
+            .eq("type", "deposit")
+            .eq("status", "completed")
+            .limit(1)
+        : null;
+    const autoBidPromise = supabase
       .from("auto_bids")
       .select("max_amount, is_active")
       .eq("user_id", user.id)
       .eq("auction_id", auction.id)
-      .maybeSingle()
-      .then(({ data }) =>
-        setActiveAutoMax(data?.is_active ? Number(data.max_amount) : null),
-      );
+      .maybeSingle();
+
+    Promise.all([depositPromise, autoBidPromise]).then(
+      ([depositRes, autoRes]) => {
+        if (depositRes) {
+          setDepositPaid((depositRes.data ?? []).length > 0);
+        }
+        const autoData = autoRes.data;
+        setActiveAutoMax(
+          autoData?.is_active ? Number(autoData.max_amount) : null,
+        );
+      },
+    );
   }, [user, authLoaded, auction.id, initialDepositPaid]);
 
   useEffect(() => {
