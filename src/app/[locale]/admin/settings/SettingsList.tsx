@@ -1,11 +1,16 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Check, Edit3, Lock, X, AlertTriangle } from "lucide-react";
+import { Check, Edit3, Lock, X, AlertTriangle, ThumbsUp, ThumbsDown } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
 import { updateSettingAction } from "./actions";
+import {
+  proposeSettingAction,
+  approvePendingSettingAction,
+  rejectPendingSettingAction,
+} from "@/app/[locale]/admin/actions";
 
 export interface SettingRow {
   key: string;
@@ -15,6 +20,8 @@ export interface SettingRow {
   description: string | null;
   sensitive: boolean;
   requires_approval: boolean;
+  pending_value?: unknown;
+  pending_proposed_at?: string | null;
   updated_at: string;
 }
 
@@ -72,8 +79,53 @@ function SettingItem({ row }: { row: SettingRow }) {
   const [draft, setDraft] = useState(() => stringify(row.value));
   const [pending, start] = useTransition();
 
+  function coerce(): unknown | { error: string } {
+    try {
+      if (row.type === "number") {
+        const n = Number(draft);
+        if (!Number.isFinite(n)) return { error: "Valeur numérique invalide" };
+        return n;
+      }
+      if (row.type === "boolean") {
+        const v = draft.trim().toLowerCase();
+        if (v === "true" || v === "1") return true;
+        if (v === "false" || v === "0") return false;
+        return { error: 'Utilisez "true" ou "false"' };
+      }
+      if (row.type === "json") return JSON.parse(draft);
+      return draft;
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : "Valeur invalide" };
+    }
+  }
+
   function save() {
     start(async () => {
+      // Sensitive settings flagged requires_approval go through the
+      // 2-admin propose/approve workflow. The proposing admin's row is
+      // marked pending; a second admin must approve to commit.
+      if (row.requires_approval) {
+        const parsed = coerce();
+        if (parsed && typeof parsed === "object" && "error" in parsed) {
+          toast((parsed as { error: string }).error, "error");
+          return;
+        }
+        const r = await proposeSettingAction({
+          key: row.key,
+          newValue: parsed,
+        });
+        if (!r.ok) {
+          toast(r.error, "error");
+          return;
+        }
+        toast(
+          "Proposition enregistrée — un second admin doit approuver",
+          "info",
+        );
+        setEditing(false);
+        return;
+      }
+
       const r = await updateSettingAction(row.key, draft);
       if (!r.ok) {
         toast(r.error, "error");
@@ -87,6 +139,33 @@ function SettingItem({ row }: { row: SettingRow }) {
   function cancel() {
     setDraft(stringify(row.value));
     setEditing(false);
+  }
+
+  async function approve() {
+    start(async () => {
+      const r = await approvePendingSettingAction({ key: row.key });
+      if (!r.ok) {
+        toast(r.error, "error");
+        return;
+      }
+      toast(`✓ ${row.key} approuvé`, "success");
+    });
+  }
+
+  async function reject() {
+    const reason = window.prompt("Raison du refus :", "");
+    if (!reason || !reason.trim()) return;
+    start(async () => {
+      const r = await rejectPendingSettingAction({
+        key: row.key,
+        reason: reason.trim(),
+      });
+      if (!r.ok) {
+        toast(r.error, "error");
+        return;
+      }
+      toast("Proposition refusée", "warning");
+    });
   }
 
   return (
@@ -173,6 +252,27 @@ function SettingItem({ row }: { row: SettingRow }) {
           <span className="ms-2 text-[10px] text-[var(--foreground-subtle)]">
             mis à jour {new Date(row.updated_at).toLocaleString("fr-FR")}
           </span>
+        </div>
+      )}
+
+      {row.pending_value !== null && row.pending_value !== undefined && !editing && (
+        <div className="mt-2 rounded-[var(--radius)] bg-amber-500/10 border border-amber-500/30 p-2.5">
+          <div className="text-[10px] uppercase tracking-[0.18em] font-bold text-amber-300">
+            Modification proposée — en attente d'approbation
+          </div>
+          <div className="mt-1 flex items-center gap-2 flex-wrap">
+            <code className="text-[11px] font-mono px-2 py-1 rounded bg-[var(--surface-2)] border border-[var(--border)] text-amber-200">
+              {stringify(row.pending_value)}
+            </code>
+            <Button size="sm" variant="secondary" onClick={approve} disabled={pending}>
+              <ThumbsUp className="h-3.5 w-3.5" />
+              Approuver
+            </Button>
+            <Button size="sm" variant="ghost" onClick={reject} disabled={pending}>
+              <ThumbsDown className="h-3.5 w-3.5" />
+              Refuser
+            </Button>
+          </div>
         </div>
       )}
     </div>

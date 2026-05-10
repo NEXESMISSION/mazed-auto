@@ -21,7 +21,7 @@ export default async function AdminSettingsPage() {
     supabase
       .from("platform_settings")
       .select(
-        "key, value, type, category, description, sensitive, requires_approval, updated_at",
+        "key, value, type, category, description, sensitive, requires_approval, pending_value, pending_proposed_at, updated_at",
       )
       .order("category", { ascending: true })
       .order("key", { ascending: true }),

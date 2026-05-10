@@ -1,14 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Link } from "@/i18n/navigation";
-import { AlertTriangle, Check, X, ArrowUpRight } from "lucide-react";
+import { Link, useRouter } from "@/i18n/navigation";
+import {
+  AlertTriangle,
+  Check,
+  X,
+  ArrowUpRight,
+  Ban,
+  ShieldAlert,
+} from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { useToast } from "@/components/ui/Toast";
 import { createClient } from "@/lib/supabase/client";
 import { listReports, type ReportRow } from "@/lib/db";
 import { formatPrice } from "@/lib/format";
+import {
+  forceCancelAuctionAction,
+  banUserAction,
+} from "@/app/[locale]/admin/actions";
 
 const reasonLabels: Record<string, string> = {
   wrong_info: "Informations incorrectes",
@@ -21,8 +32,66 @@ const reasonLabels: Record<string, string> = {
 };
 
 export function ReportsList({ initial }: { initial: ReportRow[] }) {
+  const router = useRouter();
   const { toast } = useToast();
   const [reports, setReports] = useState<ReportRow[]>(initial);
+
+  async function escalateCancel(r: ReportRow) {
+    if (!r.auction_id) return;
+    const reason = window.prompt(
+      `Annuler l'enchère et rembourser toutes les cautions ?\nRaison (audit) :`,
+      reasonLabels[r.reason] ?? r.reason,
+    );
+    if (!reason || !reason.trim()) return;
+    const res = await forceCancelAuctionAction({
+      auctionId: r.auction_id,
+      reason: reason.trim(),
+    });
+    if (!res.ok) {
+      toast("Échec : " + res.error, "error");
+      return;
+    }
+    // Mark report resolved as part of the escalation.
+    const supabase = createClient();
+    await supabase
+      .from("reports")
+      .update({ status: "resolved", resolved_at: new Date().toISOString() })
+      .eq("id", r.id);
+    setReports((prev) => prev.filter((x) => x.id !== r.id));
+    toast("Enchère annulée et signalement résolu", "warning");
+    router.refresh();
+  }
+
+  async function escalateBan(r: ReportRow) {
+    const sellerId = r.auction?.seller_id;
+    if (!sellerId) {
+      toast("ID vendeur introuvable", "error");
+      return;
+    }
+    const reason = window.prompt(
+      `Suspendre le vendeur (durée 30 jours) ?\nRaison (audit) :`,
+      "Suite au signalement : " + (reasonLabels[r.reason] ?? r.reason),
+    );
+    if (!reason || !reason.trim()) return;
+    const res = await banUserAction({
+      userId: sellerId,
+      reason: reason.trim(),
+      scope: "full",
+      durationDays: 30,
+    });
+    if (!res.ok) {
+      toast("Échec : " + res.error, "error");
+      return;
+    }
+    const supabase = createClient();
+    await supabase
+      .from("reports")
+      .update({ status: "resolved", resolved_at: new Date().toISOString() })
+      .eq("id", r.id);
+    setReports((prev) => prev.filter((x) => x.id !== r.id));
+    toast("Vendeur suspendu 30 jours et signalement résolu", "warning");
+    router.refresh();
+  }
 
   useEffect(() => {
     const supabase = createClient();
@@ -149,6 +218,26 @@ Résoudre le signalement
                 <X className="h-4 w-4" />
                 Refuser
               </Button>
+              {r.auction_id && (
+                <Button
+                  size="sm"
+                  variant="danger"
+                  onClick={() => escalateCancel(r)}
+                >
+                  <Ban className="h-4 w-4" />
+                  Annuler l'enchère
+                </Button>
+              )}
+              {r.auction?.seller_id && (
+                <Button
+                  size="sm"
+                  variant="danger"
+                  onClick={() => escalateBan(r)}
+                >
+                  <ShieldAlert className="h-4 w-4" />
+                  Suspendre vendeur
+                </Button>
+              )}
             </div>
           </div>
         );
