@@ -96,11 +96,20 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Admin gate — only users whose JWT user_metadata.role === 'admin' may
-  // see /admin/*. Everyone else gets bounced home.
+  // Admin gate — accept either the legacy role flag or the new 5-role
+  // adminRole field (super_admin / admin / moderator / support / finance).
   if (path.startsWith("/admin") && user) {
-    const role = (user.user_metadata as { role?: string } | null)?.role;
-    if (role !== "admin") {
+    const meta = user.user_metadata as
+      | { role?: string; adminRole?: string }
+      | null;
+    const adminRole = meta?.adminRole;
+    const isAdmin =
+      meta?.role === "admin" ||
+      (adminRole &&
+        ["super_admin", "admin", "moderator", "support", "finance"].includes(
+          adminRole,
+        ));
+    if (!isAdmin) {
       const url = request.nextUrl.clone();
       url.pathname = localePrefix || "/";
       return NextResponse.redirect(url);

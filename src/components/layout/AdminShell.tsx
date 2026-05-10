@@ -13,6 +13,18 @@ import {
   LogOut,
   Receipt,
   Settings,
+  FileText,
+  Banknote,
+  Ban,
+  Activity,
+  Megaphone,
+  Inbox,
+  Wrench,
+  ShieldAlert,
+  TrendingUp,
+  Crown,
+  MessageSquare,
+  UserCog,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
@@ -20,12 +32,29 @@ import { useAuth } from "@/lib/auth";
 const items = [
   { href: "/admin/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
   { href: "/admin/users", label: "Utilisateurs", icon: Users },
+  { href: "/admin/admins", label: "Équipe admin", icon: Crown },
   { href: "/admin/kyc-queue", label: "File KYC", icon: ShieldCheck },
   { href: "/admin/auctions-queue", label: "Enchères à modérer", icon: Gavel },
+  {
+    href: "/admin/ownership-review",
+    label: "Vérif. propriété",
+    icon: ShieldCheck,
+  },
   { href: "/admin/reports", label: "Signalements", icon: AlertTriangle },
+  { href: "/admin/fraud", label: "Signaux fraude", icon: ShieldAlert },
+  { href: "/admin/messages", label: "Modération msg", icon: MessageSquare },
+  { href: "/admin/contact-inbox", label: "Boîte contact", icon: Inbox },
   { href: "/admin/transactions", label: "Transactions", icon: Receipt },
+  { href: "/admin/payouts", label: "Virements", icon: Banknote },
+  { href: "/admin/forfeits", label: "Cautions retenues", icon: Ban },
   { href: "/admin/analytics", label: "Analyses", icon: BarChart3 },
+  { href: "/admin/insights", label: "Insights", icon: TrendingUp },
+  { href: "/admin/activity", label: "Activité", icon: Activity },
+  { href: "/admin/broadcasts", label: "Annonces", icon: Megaphone },
+  { href: "/admin/cms", label: "Contenu", icon: FileText },
+  { href: "/admin/system", label: "Système", icon: Wrench },
   { href: "/admin/settings", label: "Paramètres", icon: Settings },
+  { href: "/admin/me", label: "Mon profil admin", icon: UserCog },
 ];
 
 interface Props {

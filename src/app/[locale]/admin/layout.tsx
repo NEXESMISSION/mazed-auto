@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import { redirect } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getAdminRole } from "@/lib/admin";
+import { AdminIdleTimer } from "@/components/admin/AdminIdleTimer";
 
 /**
  * Server-side admin gate for every `/admin/*` route. Without this,
@@ -11,13 +13,13 @@ import { createClient } from "@/lib/supabase/server";
  * Behavior:
  *  - Not signed in   → redirect to /login (preserve `?redirect=` so
  *    the user lands back on the admin path after authenticating).
- *  - Signed in, not admin → 404. We deliberately don't say "forbidden"
- *    — the admin surface should be invisible to non-admins, not
- *    advertised behind a "you can't enter" wall.
- *  - Admin → render children.
+ *  - Signed in, no admin role → 404. We deliberately don't say
+ *    "forbidden" — the admin surface should be invisible to non-admins.
+ *  - Admin → render children + idle-session watcher.
  *
- * Role lives in `user_metadata.role` and matches the SQL `is_admin()`
- * helper used by RLS (see migrate-rls-admin-fix.sql).
+ * Role resolution: super_admin / admin / moderator / support / finance
+ * via `adminRole` in user_metadata, with back-compat fallback to the
+ * legacy `role: "admin"` flag.
  */
 export default async function AdminLayout({
   children,
@@ -37,19 +39,18 @@ export default async function AdminLayout({
       href: "/login?redirect=/admin/dashboard",
       locale,
     });
-    // `redirect()` from next-intl is typed `void`, not `never`, so TS
-    // doesn't narrow `user` below this branch. Explicit return makes
-    // the narrowing flow forward.
     return null;
   }
 
-  const role = (user.user_metadata?.role ?? "buyer") as
-    | "buyer"
-    | "seller"
-    | "admin";
-  if (role !== "admin") {
+  const role = getAdminRole(user);
+  if (!role) {
     notFound();
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      <AdminIdleTimer locale={locale} />
+      {children}
+    </>
+  );
 }
