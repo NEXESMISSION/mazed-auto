@@ -105,6 +105,15 @@ with check (
   )
 );
 
--- 5) Realtime — broadcast inserts so the recipient's open chat updates live
-alter publication supabase_realtime add table public.messages;
-alter publication supabase_realtime add table public.conversations;
+-- 5) Realtime — broadcast inserts so the recipient's open chat updates live.
+-- Wrap in DO blocks so re-running doesn't raise
+-- "relation already member of publication" (42710).
+do $$ begin
+  alter publication supabase_realtime add table public.messages;
+exception when duplicate_object then null;
+end $$;
+
+do $$ begin
+  alter publication supabase_realtime add table public.conversations;
+exception when duplicate_object then null;
+end $$;

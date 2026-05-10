@@ -66,8 +66,11 @@ create table if not exists public.transactions (
 create index if not exists tx_user_idx on public.transactions (user_id, created_at desc);
 create index if not exists tx_status_idx on public.transactions (status);
 
--- Realtime publication
-alter publication supabase_realtime add table public.notifications;
+-- Realtime publication — guard against re-runs ("relation already member")
+do $$ begin
+  alter publication supabase_realtime add table public.notifications;
+exception when duplicate_object then null;
+end $$;
 
 -- Enable RLS + policies
 alter table public.seller_ratings  enable row level security;

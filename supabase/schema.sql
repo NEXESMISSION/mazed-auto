@@ -162,10 +162,23 @@ create table if not exists public.platform_stats (
 
 -- ============================================================
 -- Realtime — broadcast auction & bid changes
+-- Wrap each in DO/exception so a re-run doesn't 42710 on the
+-- "already member of publication" check.
 -- ============================================================
-alter publication supabase_realtime add table public.auctions;
-alter publication supabase_realtime add table public.bids;
-alter publication supabase_realtime add table public.notifications;
+do $$ begin
+  alter publication supabase_realtime add table public.auctions;
+exception when duplicate_object then null;
+end $$;
+
+do $$ begin
+  alter publication supabase_realtime add table public.bids;
+exception when duplicate_object then null;
+end $$;
+
+do $$ begin
+  alter publication supabase_realtime add table public.notifications;
+exception when duplicate_object then null;
+end $$;
 
 -- ============================================================
 -- Trigger: when a bid is inserted, bump the auction's
