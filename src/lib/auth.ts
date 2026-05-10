@@ -1,82 +1,47 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
-
-export interface AppUser {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  trustScore: number;
-  kycStatus: "none" | "pending" | "verified" | "rejected";
-  emailVerified: boolean;
-  phoneVerified: boolean;
-  role: "buyer" | "seller" | "admin";
-}
-
-function mapUser(u: SupabaseUser | null): AppUser | null {
-  if (!u) return null;
-  const meta = (u.user_metadata ?? {}) as Record<string, unknown>;
-  // Google OAuth puts the user's name in `full_name` / `name` / `given_name`
-  // / `family_name` rather than the firstName/lastName pair our sign-up
-  // form writes. Fall back to those so OAuth users see their real name on
-  // the home header without a follow-up profile-edit step.
-  const firstFromMeta = (meta.firstName as string) || "";
-  const lastFromMeta = (meta.lastName as string) || "";
-  let firstName = firstFromMeta;
-  let lastName = lastFromMeta;
-  if (!firstName) {
-    const given = (meta.given_name as string) || "";
-    const fullName =
-      (meta.full_name as string) || (meta.name as string) || "";
-    if (given) {
-      firstName = given;
-    } else if (fullName) {
-      const [first, ...rest] = fullName.trim().split(/\s+/);
-      firstName = first ?? "";
-      if (!lastName) lastName = rest.join(" ");
-    }
-  }
-  if (!lastName) lastName = (meta.family_name as string) || "";
-  // Phone fallback uses `||` not `??` — Supabase returns `u.phone` as
-  // `""` (empty string, not null) for OAuth users, and `??` only falls
-  // back on null/undefined. Using `??` would lock us into the empty
-  // top-level value and ignore the metadata phone we wrote during the
-  // post-signup completion step, causing PhoneCompletionGate to loop.
-  const phoneFromTop = (u.phone ?? "").trim();
-  const phoneFromMeta = ((meta.phone as string | undefined) ?? "").trim();
-  return {
-    id: u.id,
-    firstName,
-    lastName,
-    email: u.email ?? "",
-    phone: phoneFromTop || phoneFromMeta,
-    trustScore: (meta.trustScore as number) ?? 0,
-    kycStatus: (meta.kycStatus as AppUser["kycStatus"]) ?? "none",
-    emailVerified: Boolean(u.email_confirmed_at),
-    phoneVerified: Boolean(u.phone_confirmed_at),
-    role: (meta.role as AppUser["role"]) ?? "buyer",
-  };
-}
+import { useAuthState } from "@/lib/auth-provider";
+// Shared user shape + mapper live in a non-"use client" module so the
+// SSR layout can import them too — server components can't pull from
+// a "use client" file. Re-export here so existing imports keep working.
+import { mapUser, type AppUser } from "@/lib/auth-shared";
+export { mapUser } from "@/lib/auth-shared";
+export type { AppUser } from "@/lib/auth-shared";
 
 export function useAuth() {
-  const [user, setUser] = useState<AppUser | null>(null);
-  const [loaded, setLoaded] = useState(false);
+  // Prefer the shared AuthProvider context — when present, the user is
+  // already seeded from SSR so consumers render with the right value
+  // on their first paint. Fall back to a local-state machine when no
+  // provider is wrapped above (older isolated tests / storybook).
+  const ctx = useAuthState();
+  const [localUser, setLocalUser] = useState<AppUser | null>(null);
+  const [localLoaded, setLocalLoaded] = useState(false);
 
   useEffect(() => {
+    if (ctx) return; // provider already running its own subscription
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => {
-      setUser(mapUser(data.user));
-      setLoaded(true);
+      setLocalUser(mapUser(data.user));
+      setLocalLoaded(true);
     });
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(mapUser(session?.user ?? null));
+      setLocalUser(mapUser(session?.user ?? null));
     });
     return () => sub.subscription.unsubscribe();
-  }, []);
+  }, [ctx]);
+
+  const user = ctx ? ctx.user : localUser;
+  const loaded = ctx ? ctx.loaded : localLoaded;
+  // Used by signOut and update — the provider owns its own state, so
+  // when we mutate (e.g. clear on sign-out), we still want a local
+  // setter for the no-provider fallback.
+  const setUser = (u: AppUser | null) => {
+    if (!ctx) setLocalUser(u);
+    // With the provider wrapped, supabase.auth.onAuthStateChange will
+    // fire and the provider will pick up the new state automatically.
+  };
 
   const signUp = useCallback(
     async (input: {

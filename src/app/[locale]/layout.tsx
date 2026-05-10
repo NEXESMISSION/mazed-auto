@@ -6,6 +6,9 @@ import { routing } from "@/i18n/routing";
 import { ToastProvider } from "@/components/ui/Toast";
 import { OfflineOverlay } from "@/components/pwa/OfflineOverlay";
 import { ScrollToTop } from "@/components/layout/ScrollToTop";
+import { AuthProvider } from "@/lib/auth-provider";
+import { mapUser } from "@/lib/auth-shared";
+import { createClient } from "@/lib/supabase/server";
 
 // Pre-render both locales at build so navigations between them feel instant.
 export function generateStaticParams() {
@@ -53,11 +56,24 @@ export default async function LocaleLayout({ children, params }: Props) {
   // Required so server components rendered statically still see the locale.
   setRequestLocale(locale);
 
+  // Resolve the user server-side so client components below get the
+  // real value on their first render. Eliminates the auth flicker that
+  // made auth-gated UI (header icons, favorite buttons, the phone
+  // gate, the bid composer state) pop in / pop out as the local
+  // getUser() fetch resolved.
+  const supabase = await createClient();
+  const {
+    data: { user: rawUser },
+  } = await supabase.auth.getUser();
+  const initialUser = mapUser(rawUser);
+
   return (
     <NextIntlClientProvider>
-      <ScrollToTop />
-      <ToastProvider>{children}</ToastProvider>
-      <OfflineOverlay />
+      <AuthProvider initialUser={initialUser}>
+        <ScrollToTop />
+        <ToastProvider>{children}</ToastProvider>
+        <OfflineOverlay />
+      </AuthProvider>
     </NextIntlClientProvider>
   );
 }
