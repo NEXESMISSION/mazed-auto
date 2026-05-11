@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { ArrowRight, Info } from "lucide-react";
 import { CreateAuctionShell } from "@/components/layout/CreateAuctionShell";
@@ -18,6 +19,8 @@ export default function Step5Page() {
   const { toast } = useToast();
   const router = useRouter();
   const { draft, hydrated, update } = useDraft();
+  const tWiz = useTranslations("wizard");
+  const tCommon = useTranslations("common");
   const [startingPrice, setStartingPrice] = useState(draft.startingPrice ?? 30000);
   const [reservePrice, setReservePrice] = useState(draft.reservePrice ?? 35000);
   const [buyNowPrice, setBuyNowPrice] = useState(draft.buyNowPrice ?? 45000);
@@ -95,22 +98,27 @@ export default function Step5Page() {
     startingPrice,
     depositTiers ?? undefined,
   );
-  // PLAN §21.5: 7% commission, capped at 15,000 DT per transaction.
+  // PLAN §21.5: 3% commission, capped at 15,000 DT per transaction.
+  // Default rate; admins can override via platform_settings
+  // `auction.commission.seller_pct`. The wizard uses the static
+  // fallback to render the live preview; the server-side publish path
+  // re-reads the DB value at insert time so the stored commission is
+  // always authoritative.
   const commission = Math.min(
-    Math.round((reservePrice || startingPrice) * 0.07),
+    Math.round((reservePrice || startingPrice) * 0.03),
     15000,
   );
 
   function next() {
     if (!Number.isFinite(startingPrice) || startingPrice <= 0) {
       scrollToFirstInvalid(["startingPrice"]);
-      toast("Le prix de départ doit être supérieur à 0", "warning");
+      toast(tWiz("step5.toastBadStarting"), "warning");
       return;
     }
     if (hasReserve) {
       if (!Number.isFinite(reservePrice) || reservePrice <= startingPrice) {
         scrollToFirstInvalid(["reservePrice"]);
-        toast("Le prix de réserve doit être supérieur au prix de départ", "warning");
+        toast(tWiz("step5.toastBadReserve"), "warning");
         return;
       }
     }
@@ -120,8 +128,8 @@ export default function Step5Page() {
         scrollToFirstInvalid(["buyNowPrice"]);
         toast(
           hasReserve
-            ? 'Le prix "Achat immédiat" doit être supérieur au prix de réserve'
-            : 'Le prix "Achat immédiat" doit être supérieur au prix de départ',
+            ? tWiz("step5.toastBadBuyNowReserve")
+            : tWiz("step5.toastBadBuyNowStarting"),
           "warning",
         );
         return;
@@ -135,7 +143,7 @@ export default function Step5Page() {
       if (buyNowPrice < minBuyNow) {
         scrollToFirstInvalid(["buyNowPrice"]);
         toast(
-          `"Achat immédiat" doit être ≥ 1,3× le prix de départ (min ${Math.ceil(minBuyNow)} DT)`,
+          tWiz("step5.toastBadBuyNowMin", { min: Math.ceil(minBuyNow) }),
           "warning",
         );
         return;
@@ -155,14 +163,13 @@ export default function Step5Page() {
       <div className="space-y-5 lg:space-y-8">
         <div>
           <div className="hidden lg:block text-[11px] uppercase tracking-[0.22em] font-bold text-[var(--gold)]">
-            Étape 5 · Tarification
+            {tWiz("step5.eyebrow")}
           </div>
           <h1 className="text-2xl lg:text-4xl font-extrabold lg:font-black lg:tracking-tight lg:mt-2">
-            Prix et durée
+            {tWiz("step5.title")}
           </h1>
           <p className="text-sm lg:text-base text-[var(--foreground-muted)] mt-1 lg:mt-3 lg:max-w-2xl">
-            Définissez le prix de départ et la durée de l&apos;enchère. Les
-            calculs de caution et commission s&apos;actualisent en temps réel.
+            {tWiz("step5.subtitle")}
           </p>
         </div>
 
@@ -170,7 +177,7 @@ export default function Step5Page() {
         <div className="lg:grid lg:grid-cols-[1fr_360px] lg:gap-8 xl:gap-10 lg:items-start space-y-5 lg:space-y-0">
           {/* ── Inputs column ── */}
           <div className="space-y-5 lg:space-y-6 min-w-0">
-            <Field label="Prix de départ" required name="startingPrice">
+            <Field label={tWiz("step5.startingPrice")} required name="startingPrice">
               <NumberField
                 placeholder="30000"
                 value={startingPrice}
@@ -184,7 +191,9 @@ export default function Step5Page() {
                   checked={hasReserve}
                   onChange={(e) => setHasReserve(e.target.checked)}
                 />
-                <span className="font-semibold text-sm">Prix de réserve</span>
+                <span className="font-semibold text-sm">
+                  {tWiz("step5.reservePrice")}
+                </span>
               </label>
               {hasReserve && (
                 <>
@@ -194,7 +203,7 @@ export default function Step5Page() {
                     onChange={(n) => setReservePrice(n ?? 0)}
                   />
                   <p className="text-xs text-[var(--foreground-muted)] mt-1.5">
-                    La voiture n&apos;est vendue que si ce prix est atteint
+                    {tWiz("step5.reservePriceHint")}
                   </p>
                 </>
               )}
@@ -206,7 +215,9 @@ export default function Step5Page() {
                   checked={hasBuyNow}
                   onChange={(e) => setHasBuyNow(e.target.checked)}
                 />
-                <span className="font-semibold text-sm">Prix d&apos;achat immédiat</span>
+                <span className="font-semibold text-sm">
+                  {tWiz("step5.buyNowPrice")}
+                </span>
               </label>
               {hasBuyNow && (
                 <>
@@ -216,13 +227,13 @@ export default function Step5Page() {
                     onChange={(n) => setBuyNowPrice(n ?? 0)}
                   />
                   <p className="text-xs text-[var(--foreground-muted)] mt-1.5">
-                    L&apos;acheteur peut clôturer l&apos;enchère immédiatement à ce prix
+                    {tWiz("step5.buyNowHint")}
                   </p>
                 </>
               )}
             </div>
 
-            <Field label="Durée de l'enchère" required>
+            <Field label={tWiz("step5.durationLabel")} required>
               <div
                 className="grid gap-2 lg:gap-3"
                 style={{ gridTemplateColumns: `repeat(${durationOpts.length}, minmax(0, 1fr))` }}
@@ -237,7 +248,7 @@ export default function Step5Page() {
                         : "border-[var(--border)] bg-[var(--surface)] hover:border-[var(--gold-soft)]"
                     }`}
                   >
-                    {d} {d === 1 ? "jour" : "jours"}
+                    {d} {tWiz("step5.dayUnit", { count: d })}
                   </button>
                 ))}
               </div>
@@ -249,33 +260,33 @@ export default function Step5Page() {
             <div className="rounded-[var(--radius-md)] lg:rounded-2xl bg-[var(--surface)] lg:bg-[var(--surface-2)]/40 border border-[var(--border)] overflow-hidden">
               <div className="px-4 lg:px-5 py-2.5 lg:py-4 bg-[var(--surface-2)] lg:bg-transparent lg:border-b lg:border-[var(--border)] border-b border-[var(--border)]">
                 <div className="text-xs lg:text-[11px] uppercase lg:tracking-[0.22em] font-bold text-[var(--gold)]">
-                  Résumé des chiffres
+                  {tWiz("step5.summaryHeading")}
                 </div>
                 <div className="hidden lg:block mt-1 text-2xl font-black tabular-nums leading-none gradient-gold-text">
                   {formatPrice(startingPrice)}
                 </div>
                 <div className="hidden lg:block text-[11px] text-[var(--foreground-muted)] mt-0.5">
-                  Prix de départ proposé
+                  {tWiz("step5.summarySubtitle")}
                 </div>
               </div>
               <div className="p-4 lg:p-5 space-y-2 lg:space-y-3 text-sm">
-                <Row label="Prix de départ" value={formatPrice(startingPrice)} />
+                <Row label={tWiz("step5.startingPrice")} value={formatPrice(startingPrice)} />
                 {hasReserve && (
-                  <Row label="Prix de réserve" value={formatPrice(reservePrice)} />
+                  <Row label={tWiz("step5.reservePrice")} value={formatPrice(reservePrice)} />
                 )}
                 {hasBuyNow && (
-                  <Row label='Prix "Achat immédiat"' value={formatPrice(buyNowPrice)} />
+                  <Row label={tWiz("step5.summaryBuyNow")} value={formatPrice(buyNowPrice)} />
                 )}
                 <div className="border-t border-[var(--border)] my-2" />
                 <Row
-                  label="Caution par enchérisseur"
+                  label={tWiz("step5.summaryDeposit")}
                   value={formatPrice(deposit)}
-                  hint="Montant fixe — remboursée s'il ne gagne pas"
+                  hint={tWiz("step5.summaryDepositHint")}
                 />
                 <Row
-                  label="Commission Mazed (7%)"
+                  label={tWiz("step5.summaryCommission")}
                   value={formatPrice(commission)}
-                  hint="Déduite du prix de vente final"
+                  hint={tWiz("step5.summaryCommissionHint")}
                 />
               </div>
             </div>
@@ -283,8 +294,10 @@ export default function Step5Page() {
             <div className="rounded-[var(--radius)] lg:rounded-2xl bg-[var(--gold-faint)] border border-[var(--gold-soft)]/30 p-3 lg:p-4 flex gap-2 lg:gap-3 items-start">
               <Info className="h-4 w-4 lg:h-4 lg:w-4 text-[var(--gold)] shrink-0 mt-0.5" />
               <div className="text-xs lg:text-[12px] text-[var(--foreground-muted)] leading-relaxed">
-                <span className="font-semibold text-[var(--gold-bright)]">Anti-sniping :</span>{" "}
-                Toute offre dans les 5 dernières minutes prolonge l&apos;enchère de 5 minutes pour garantir l&apos;équité.
+                <span className="font-semibold text-[var(--gold-bright)]">
+                  {tWiz("step5.antiSnipeLabel")}
+                </span>{" "}
+                {tWiz("step5.antiSnipeBody")}
               </div>
             </div>
           </aside>
@@ -298,7 +311,7 @@ export default function Step5Page() {
             onClick={() => router.back()}
             className="lg:!w-auto lg:px-6"
           >
-            Retour
+            {tCommon("back")}
           </Button>
           <Button
             size="lg"
@@ -306,7 +319,7 @@ export default function Step5Page() {
             onClick={next}
             className="lg:!w-auto lg:px-8"
           >
-            Vérification finale
+            {tWiz("step5.finalReview")}
             <ArrowRight className="h-5 w-5" />
           </Button>
         </div>

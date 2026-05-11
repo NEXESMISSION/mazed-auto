@@ -20,12 +20,13 @@ export function TermsContent() {
         publier une enchère. La vérification est valable un an.
       </Section>
       <Section n="4" title="Caution de participation">
-        Les acheteurs s&apos;engagent à verser 5% du prix de départ pour
-        participer à chaque enchère. La caution est intégralement remboursée
-        en cas de défaite et confisquée en cas de retrait après victoire.
+        Les acheteurs versent une caution fixe à chaque enchère, calculée
+        selon le prix de départ (500 / 1 000 / 2 000 DT). La caution est
+        intégralement remboursée en cas de défaite et confisquée en cas
+        de retrait après victoire.
       </Section>
       <Section n="5" title="Commission Mazed">
-        Mazed prélève une commission de 7% (plafonnée à 15 000 DT) auprès du
+        Mazed prélève une commission de 3% (plafonnée à 15 000 DT) auprès du
         vendeur lors de la finalisation de la vente.
       </Section>
       <Section n="6" title="Comportements interdits">

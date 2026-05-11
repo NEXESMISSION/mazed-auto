@@ -108,5 +108,225 @@
     "titleTemplate": "%s — Mazed Auto",
     "description": "منصة موثوقة للمزادات على السيارات في تونس — تحقّق متعدّد الطبقات، مزايدة فورية، شفافية كاملة.",
     "descriptionShort": "منصة موثوقة للمزادات على السيارات في تونس."
+  },
+  "wizard": {
+    "action": {
+      "saveExit": "حفظ والخروج",
+      "retake": "إعادة تصوير الفيديو"
+    },
+    "placeholder": {
+      "choose": "اختر"
+    },
+    "transmission": {
+      "manual": "يدوي",
+      "automatic": "أوتوماتيكي"
+    },
+    "field": {
+      "make": "العلامة التجارية",
+      "model": "الطراز",
+      "year": "السنة",
+      "mileage": "المسافة المقطوعة",
+      "fuelType": "نوع الوقود",
+      "transmission": "ناقل الحركة",
+      "color": "اللون",
+      "category": "الفئة",
+      "condition": "الحالة",
+      "vin": "رقم الهيكل (VIN)",
+      "registration": "رقم اللوحة",
+      "site": "الموقع",
+      "description": "الوصف",
+      "features": "المواصفات",
+      "city": "المدينة",
+      "region": "المنطقة"
+    },
+    "step1": {
+      "eyebrow": "الخطوة 1 · تعريف المركبة",
+      "title": "بيانات المركبة",
+      "subtitle": "معلومات أساسية يحتاج المشترون لمعرفتها. جميع الحقول يتمّ التحقّق منها من قبل فريقنا قبل النشر.",
+      "modelPlaceholder": "Clio",
+      "yearPlaceholder": "2022",
+      "mileagePlaceholder": "50000",
+      "colorPlaceholder": "أبيض",
+      "vinPlaceholder": "VF1XXXXXXXXXXXX (اختياري)",
+      "registrationPlaceholder": "123 تونس 4567",
+      "descriptionPlaceholder": "اكتب وصفاً تفصيلياً للسيارة...",
+      "toastMissing": "يرجى استكمال الحقول باللون الأحمر",
+      "toastBadVin": "يجب أن يتكوّن رقم الهيكل (VIN) من 17 حرفاً دون I أو O أو Q"
+    },
+    "step2": {
+      "title": "12 صورة إلزامية",
+      "subtitle": "اضغط على المربّع: تُفتح كاميرا جهازك، تلتقط الصورة ثم تؤكّد داخل شاشة النظام.",
+      "done": "تمّ ✓",
+      "remaining": "{count} متبقّية",
+      "toastCaptured": "الصورة {n}/12 ✓"
+    },
+    "step3": {
+      "title": "فيديو السيارة",
+      "subtitle": "اتّبع القائمة أدناه أثناء التصوير. اضغط الزرّ: تُفتح كاميرا جهازك، تصوّر ثم تؤكّد داخل شاشة النظام.",
+      "contentHeading": "محتوى الفيديو",
+      "captureLabel": "تصوير السيارة",
+      "uploadSuccess": "تمّ رفع الفيديو ✓",
+      "retake": "إعادة تصوير الفيديو",
+      "tooShort": "الفيديو قصير جداً ({seconds} ث). اتّبع القائمة، المدّة الدنيا {min} ث.",
+      "tooLong": "الفيديو يتجاوز {max} ث (تم قياس {seconds} ث). أعد التصوير وفق مقاطع القائمة.",
+      "checklist": {
+        "t1Label": "لفّة 360° حول السيارة",
+        "t2Label": "فتح جميع الأبواب وعرض الداخل",
+        "t3Label": "فتح غطاء المحرّك",
+        "t4Label": "تشغيل المحرّك",
+        "t5Label": "لقطة قريبة للوحة الترقيم"
+      }
+    },
+    "step4": {
+      "title": "بطاقة الترقيم",
+      "subtitle": "اضغط على كلّ مربّع: تُفتح كاميرا جهازك، تلتقط الصورة ثم تؤكّد داخل شاشة النظام.",
+      "recto": "الوجه",
+      "verso": "الظهر",
+      "retakePhoto": "إعادة التصوير",
+      "tapToCapture": "اضغط لفتح الكاميرا",
+      "fillInfo": "أدخل معلومات بطاقة الترقيم",
+      "ownerName": "اسم المالك",
+      "ownerNamePlaceholder": "كما هو مسجّل في بطاقة الترقيم",
+      "vinOptional": "VIN (اختياري)",
+      "vinPlaceholder": "VF1XXXXXXX12345",
+      "yearOptional": "السنة (اختياري)",
+      "locked": "القفل الذهبي ✓",
+      "lockedDescription": "اسم المالك يطابق هويّتك الموثّقة",
+      "unlocked": "القفل الذهبي ✗ — الأسماء مختلفة",
+      "unlockedDescription": "بطاقة الترقيم باسم {ownerName}، وملفّ KYC باسم {kycName}. اختر السبب أدناه للمتابعة.",
+      "reasonLabel": "سبب الاختلاف",
+      "chooseReason": "اختر السبب…",
+      "additionalDocsHint": "يجب رفع وثيقة قانونية إضافية تُثبت تفويضك بالبيع.",
+      "adminReviewHint": "حالة غير قياسية — سيُنشر إعلانك بعد مراجعة يدوية من قبل المسؤول."
+    },
+    "exception": {
+      "company": "سيارة باسم شركة",
+      "agent": "وكيل المالك",
+      "inheritance": "ميراث",
+      "spouse": "زوج / زوجة",
+      "recent_purchase": "شراء حديث (لم تُحدّث البطاقة بعد)",
+      "other": "حالة أخرى (تتطلّب مراجعة المسؤول)"
+    },
+    "step5": {
+      "eyebrow": "الخطوة 5 · التسعير",
+      "title": "السعر والمدّة",
+      "subtitle": "حدّد سعر الانطلاق ومدّة المزاد. تُحدَّث حسابات الكفالة والعمولة في الزمن الحقيقي.",
+      "startingPrice": "سعر الانطلاق",
+      "reservePrice": "السعر الاحتياطي",
+      "reservePriceHint": "لن تُباع السيارة إلّا إذا تمّ بلوغ هذا السعر",
+      "buyNowPrice": "سعر الشراء الفوري",
+      "buyNowHint": "يستطيع المشتري إنهاء المزاد فوراً بهذا السعر",
+      "durationLabel": "مدّة المزاد",
+      "dayUnit": "{count, plural, =1 {يوم} =2 {يومان} few {أيّام} many {يوماً} other {يوم}}",
+      "summaryHeading": "ملخّص الأرقام",
+      "summarySubtitle": "سعر الانطلاق المقترح",
+      "summaryDeposit": "كفالة لكلّ مزايد",
+      "summaryDepositHint": "مبلغ ثابت — يُسترَدّ إذا لم يفز",
+      "summaryCommission": "عمولة Mazed (3%)",
+      "summaryCommissionHint": "تُخصم من ثمن البيع النهائي",
+      "summaryBuyNow": "سعر الشراء الفوري",
+      "antiSnipeLabel": "حماية اللحظات الأخيرة:",
+      "antiSnipeBody": "كلّ عرض في الدقائق الخمس الأخيرة يمدّد المزاد 5 دقائق لضمان الإنصاف.",
+      "toastBadStarting": "يجب أن يكون سعر الانطلاق أكبر من 0",
+      "toastBadReserve": "يجب أن يكون السعر الاحتياطي أكبر من سعر الانطلاق",
+      "toastBadBuyNowReserve": "يجب أن يكون سعر الشراء الفوري أكبر من السعر الاحتياطي",
+      "toastBadBuyNowStarting": "يجب أن يكون سعر الشراء الفوري أكبر من سعر الانطلاق",
+      "toastBadBuyNowMin": "سعر الشراء الفوري يجب أن يكون ≥ 1,3× سعر الانطلاق (الحدّ الأدنى {min} د.ت)",
+      "finalReview": "التحقّق النهائي"
+    },
+    "fuel": {
+      "gasoline": "بنزين",
+      "diesel": "ديزل",
+      "hybrid": "هجين",
+      "electric": "كهربائي"
+    },
+    "condition": {
+      "new": "جديدة",
+      "excellent": "ممتازة",
+      "good": "جيّدة",
+      "fair": "مقبولة",
+      "damaged": "متضرّرة"
+    },
+    "category": {
+      "sedan": "سيدان",
+      "suv": "دفع رباعي",
+      "hatchback": "صغيرة",
+      "pickup": "بيك أب",
+      "van": "فان",
+      "coupe": "كوبيه",
+      "convertible": "مكشوفة",
+      "wagon": "بريك"
+    },
+    "photoSlot": {
+      "front": "الواجهة الأمامية",
+      "rear": "الواجهة الخلفية",
+      "rightSide": "الجانب الأيمن",
+      "leftSide": "الجانب الأيسر",
+      "dashboard": "لوحة القيادة",
+      "odometer": "عدّاد المسافة",
+      "frontSeats": "المقاعد الأمامية",
+      "rearSeats": "المقاعد الخلفية",
+      "engine": "المحرّك",
+      "trunk": "الصندوق",
+      "tires": "الإطارات",
+      "vin": "رقم الهيكل (VIN)"
+    },
+    "kycBlock": {
+      "pendingTitle": "طلب التحقّق قيد المعالجة",
+      "pendingBody": "تستغرق المراجعة عادةً بين 10 دقائق و24 ساعة. ستصلك إشعار بالنتيجة وتُفتح إمكانية إنشاء المزادات تلقائياً.",
+      "pendingCta": "عرض حالة الطلب",
+      "rejectedTitle": "تمّ رفض التحقّق",
+      "rejectedBody": "تعذّر علينا التحقّق من هويّتك. الرجاء المحاولة بصور أوضح وبطاقة سارية المفعول.",
+      "rejectedCta": "إعادة المحاولة",
+      "noneTitle": "يرجى التحقّق من هويّتك أوّلاً",
+      "noneBody": "لحماية المشترين، يجب أن نؤكّد هويّتك قبل نشر مزادك الأوّل. لا تتجاوز العملية دقيقتَين: صورة البطاقة + سيلفي.",
+      "noneBullet1": "بطاقة تعريف سارية المفعول",
+      "noneBullet2": "سيلفي بإضاءة جيّدة",
+      "noneBullet3": "ستحصل على شارة « هويّة موثّقة »",
+      "noneCta": "ابدأ التحقّق الآن"
+    }
+  },
+  "buyer": {
+    "bids": {
+      "title": "مزاداتي",
+      "eyebrow": "مشترٍ",
+      "headlinePart1": "مزاداتي",
+      "headlinePart2": "",
+      "desktopSubtitle": "كل عروضك ومكاسبك ومفضّلتك في مكان واحد. فلتر حسب الحالة لمتابعة ما يهمّك.",
+      "browseCta": "استعراض الكتالوج"
+    }
+  },
+  "auctions": {
+    "sort": {
+      "newest": "الأحدث",
+      "endingSoon": "قريبة الانتهاء",
+      "priceAsc": "السعر تصاعدياً",
+      "priceDesc": "السعر تنازلياً",
+      "mostBids": "الأكثر مزايدة"
+    },
+    "category": {
+      "sedan": "سيدان",
+      "suv": "دفع رباعي",
+      "hatchback": "صغيرة",
+      "pickup": "بيك أب",
+      "coupe": "كوبيه",
+      "convertible": "مكشوفة",
+      "wagon": "بريك",
+      "van": "تجارية"
+    }
+  },
+  "admin": {
+    "addAdminForm": {
+      "heading": "ترقية مستخدم إلى مسؤول",
+      "hintBefore": "ابحث عن معرّف المستخدم من ",
+      "hintAfter": "، ثم الصقه هنا.",
+      "userIdPlaceholder": "معرّف UUID للمستخدم",
+      "rolePickerLabel": "الدور",
+      "toastIdRequired": "معرّف المستخدم مطلوب",
+      "confirmPromote": "ترقية {userId} إلى « {role} »؟\nسيحصل المستخدم على وصول /admin عند تسجيل الدخول التالي.",
+      "toastFailed": "فشل: {error}",
+      "toastAdded": "تمّت إضافة المسؤول",
+      "add": "إضافة"
+    }
   }
 }

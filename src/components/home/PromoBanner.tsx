@@ -63,7 +63,7 @@ const promos: {
   },
   {
     Icon: TrendingUp,
-    eyebrow: "Commission 7%",
+    eyebrow: "Commission 3%",
     title: "Vendez sans frais cachés",
     subtitle: "5 étapes simples, des milliers d'acheteurs sérieux",
     href: "/register?role=seller",

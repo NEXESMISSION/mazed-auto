@@ -28,7 +28,7 @@ export function DesktopFinalCta() {
             Icon={Tag}
             eyebrow="Vendeurs"
             title="Vendez votre voiture en 5 étapes"
-            text="Commission 7 % seulement. Votre annonce vérifiée et publiée en 24 h."
+            text="Commission 3 % seulement. Votre annonce vérifiée et publiée en 24 h."
             cta="Commencer à vendre"
             tone="dark"
           />

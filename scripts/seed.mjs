@@ -226,7 +226,7 @@ async function main() {
     { ref: "TX-A1B2", user_label: "Ahmed Ben Ali",     type: "deposit",       direction: "in",  amount: 1600,   label: "Caution Renault Clio",         status: "completed" },
     { ref: "TX-C3D4", user_label: "Mohamed Trabelsi",  type: "final_payment", direction: "in",  amount: 105250, label: "Paiement final BMW 320i",      status: "completed" },
     { ref: "TX-E5F6", user_label: "Salma Bouzid",      type: "refund",        direction: "out", amount: 1400,   label: "Remboursement Toyota Yaris",   status: "completed" },
-    { ref: "TX-G7H8", user_label: "Mazed Auto",        type: "commission",    direction: "in",  amount: 7368,   label: "Commission 7% — BMW 320i",     status: "completed" },
+    { ref: "TX-G7H8", user_label: "Mazed Auto",        type: "commission",    direction: "in",  amount: 7368,   label: "Commission 3% — BMW 320i",     status: "completed" },
     { ref: "TX-I9J0", user_label: "Karim Hammi",       type: "deposit",       direction: "in",  amount: 3400,   label: "Caution Peugeot 208",          status: "pending" },
     { ref: "TX-K1L2", user_label: "Agence AutoPro",    type: "payout",        direction: "out", amount: 97882,  label: "Virement au vendeur — BMW 320i", status: "processing" },
   ];

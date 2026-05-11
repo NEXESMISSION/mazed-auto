@@ -70,7 +70,7 @@ export const getSetting = cache(
 // and the type signature documents what each setting looks like.
 
 export const getCommissionSellerPct = () =>
-  getSetting<number>("auction.commission.seller_pct", 0.07);
+  getSetting<number>("auction.commission.seller_pct", 0.03);
 
 export const getCommissionSellerCap = () =>
   getSetting<number>("auction.commission.seller_cap", 15000);
@@ -224,6 +224,16 @@ export const getSupportAddress = () =>
   );
 export const getSupportHours = () =>
   getSetting<string>("support.hours", "9h - 18h, 7j/7");
+
+// ---------- Pricing extras (project doc §6.5 / §8.1) ----------
+export const getVipListingFee = () =>
+  getSetting<number>("auction.vip_listing_fee", 200);
+
+export const getTransportCommissionPct = () =>
+  getSetting<number>("transport.commission_pct", 0.15);
+
+export const getFreeListingsPerMonth = () =>
+  getSetting<number>("listing.free_per_month", 1);
 
 // ---------- KYC validity ----------
 export const getKycValidityDays = () =>

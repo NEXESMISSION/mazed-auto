@@ -108,5 +108,225 @@
     "titleTemplate": "%s — Mazed Auto",
     "description": "Plateforme d'enchères automobiles de confiance en Tunisie — vérification multi-couches, enchères en temps réel, transparence totale.",
     "descriptionShort": "Plateforme d'enchères automobiles de confiance en Tunisie."
+  },
+  "wizard": {
+    "action": {
+      "saveExit": "Enregistrer et quitter",
+      "retake": "Refaire la vidéo"
+    },
+    "placeholder": {
+      "choose": "Choisir"
+    },
+    "transmission": {
+      "manual": "Manuel",
+      "automatic": "Automatique"
+    },
+    "field": {
+      "make": "Marque",
+      "model": "Modèle",
+      "year": "Année",
+      "mileage": "Kilométrage",
+      "fuelType": "Carburant",
+      "transmission": "Boîte de vitesses",
+      "color": "Couleur",
+      "category": "Catégorie",
+      "condition": "Statut",
+      "vin": "Numéro de châssis (VIN)",
+      "registration": "Numéro de plaque",
+      "site": "Site",
+      "description": "Description",
+      "features": "Caractéristiques",
+      "city": "Ville",
+      "region": "Région"
+    },
+    "step1": {
+      "eyebrow": "Étape 1 · Identifiez le véhicule",
+      "title": "Données du véhicule",
+      "subtitle": "Informations essentielles que les acheteurs doivent connaître. Tous les champs sont vérifiés par notre équipe avant publication.",
+      "modelPlaceholder": "Clio",
+      "yearPlaceholder": "2022",
+      "mileagePlaceholder": "50000",
+      "colorPlaceholder": "Blanc",
+      "vinPlaceholder": "VF1XXXXXXXXXXXX (optionnel)",
+      "registrationPlaceholder": "123 Tunis 4567",
+      "descriptionPlaceholder": "Rédigez une description détaillée de la voiture...",
+      "toastMissing": "Veuillez compléter les champs en rouge",
+      "toastBadVin": "Le numéro de châssis (VIN) doit faire 17 caractères, sans I, O, ou Q"
+    },
+    "step2": {
+      "title": "12 photos obligatoires",
+      "subtitle": "Touchez une vignette : la caméra de votre appareil s'ouvre, vous prenez la photo puis vous validez dans l'écran natif.",
+      "done": "Terminé ✓",
+      "remaining": "{count} restantes",
+      "toastCaptured": "Photo {n}/12 ✓"
+    },
+    "step3": {
+      "title": "Vidéo de la voiture",
+      "subtitle": "Suivez la liste ci-dessous pendant le tournage. Touchez le bouton : la caméra de votre appareil s'ouvre, vous filmez puis validez dans l'écran natif.",
+      "contentHeading": "Contenu de la vidéo",
+      "captureLabel": "Filmer la voiture",
+      "uploadSuccess": "Vidéo téléversée ✓",
+      "retake": "Refaire la vidéo",
+      "tooShort": "La vidéo est trop courte ({seconds} s). Suivez la check-list, durée min {min} s.",
+      "tooLong": "La vidéo dépasse {max} s (mesurée {seconds} s). Refilmez en suivant les segments de la check-list.",
+      "checklist": {
+        "t1Label": "Tour à 360° autour de la voiture",
+        "t2Label": "Ouverture de toutes les portes et vue intérieure",
+        "t3Label": "Ouverture du capot moteur",
+        "t4Label": "Démarrage du moteur",
+        "t5Label": "Gros plan sur la plaque d'immatriculation"
+      }
+    },
+    "step4": {
+      "title": "Carte grise",
+      "subtitle": "Touchez chaque vignette : la caméra de votre appareil s'ouvre, vous prenez la photo puis vous validez dans l'écran natif.",
+      "recto": "Recto",
+      "verso": "Verso",
+      "retakePhoto": "Reprendre",
+      "tapToCapture": "Toucher pour ouvrir la caméra",
+      "fillInfo": "Renseignez les informations de la carte grise",
+      "ownerName": "Nom du propriétaire",
+      "ownerNamePlaceholder": "Tel qu'inscrit sur la carte grise",
+      "vinOptional": "VIN (optionnel)",
+      "vinPlaceholder": "VF1XXXXXXX12345",
+      "yearOptional": "Année (optionnel)",
+      "locked": "Verrou doré ✓",
+      "lockedDescription": "Le nom du propriétaire correspond à votre identité vérifiée",
+      "unlocked": "Verrou doré ✗ — noms différents",
+      "unlockedDescription": "La carte grise est au nom de {ownerName}, votre KYC est au nom de {kycName}. Choisissez le motif ci-dessous pour continuer.",
+      "reasonLabel": "Motif de la différence",
+      "chooseReason": "Choisir un motif…",
+      "additionalDocsHint": "Vous devrez téléverser un document juridique supplémentaire prouvant votre autorisation de vendre.",
+      "adminReviewHint": "Cas non standard — votre annonce sera publiée après vérification manuelle par un administrateur."
+    },
+    "exception": {
+      "company": "Voiture au nom d'une société",
+      "agent": "Mandataire du propriétaire",
+      "inheritance": "Héritage",
+      "spouse": "Conjoint(e)",
+      "recent_purchase": "Achat récent (carte non encore mise à jour)",
+      "other": "Autre cas (révision admin requise)"
+    },
+    "step5": {
+      "eyebrow": "Étape 5 · Tarification",
+      "title": "Prix et durée",
+      "subtitle": "Définissez le prix de départ et la durée de l'enchère. Les calculs de caution et commission s'actualisent en temps réel.",
+      "startingPrice": "Prix de départ",
+      "reservePrice": "Prix de réserve",
+      "reservePriceHint": "La voiture n'est vendue que si ce prix est atteint",
+      "buyNowPrice": "Prix d'achat immédiat",
+      "buyNowHint": "L'acheteur peut clôturer l'enchère immédiatement à ce prix",
+      "durationLabel": "Durée de l'enchère",
+      "dayUnit": "{count, plural, =1 {jour} other {jours}}",
+      "summaryHeading": "Résumé des chiffres",
+      "summarySubtitle": "Prix de départ proposé",
+      "summaryDeposit": "Caution par enchérisseur",
+      "summaryDepositHint": "Montant fixe — remboursée s'il ne gagne pas",
+      "summaryCommission": "Commission Mazed (3%)",
+      "summaryCommissionHint": "Déduite du prix de vente final",
+      "summaryBuyNow": "Prix \"Achat immédiat\"",
+      "antiSnipeLabel": "Anti-sniping :",
+      "antiSnipeBody": "Toute offre dans les 5 dernières minutes prolonge l'enchère de 5 minutes pour garantir l'équité.",
+      "toastBadStarting": "Le prix de départ doit être supérieur à 0",
+      "toastBadReserve": "Le prix de réserve doit être supérieur au prix de départ",
+      "toastBadBuyNowReserve": "Le prix \"Achat immédiat\" doit être supérieur au prix de réserve",
+      "toastBadBuyNowStarting": "Le prix \"Achat immédiat\" doit être supérieur au prix de départ",
+      "toastBadBuyNowMin": "\"Achat immédiat\" doit être ≥ 1,3× le prix de départ (min {min} DT)",
+      "finalReview": "Vérification finale"
+    },
+    "fuel": {
+      "gasoline": "Essence",
+      "diesel": "Diesel",
+      "hybrid": "Hybride",
+      "electric": "Électrique"
+    },
+    "condition": {
+      "new": "Neuf",
+      "excellent": "Excellent",
+      "good": "Bon",
+      "fair": "Acceptable",
+      "damaged": "Endommagé"
+    },
+    "category": {
+      "sedan": "Berline",
+      "suv": "SUV",
+      "hatchback": "Citadine",
+      "pickup": "Pick-up",
+      "van": "Van",
+      "coupe": "Coupé",
+      "convertible": "Cabriolet",
+      "wagon": "Break"
+    },
+    "photoSlot": {
+      "front": "Face avant",
+      "rear": "Face arrière",
+      "rightSide": "Côté droit",
+      "leftSide": "Côté gauche",
+      "dashboard": "Tableau de bord",
+      "odometer": "Compteur",
+      "frontSeats": "Sièges avant",
+      "rearSeats": "Sièges arrière",
+      "engine": "Moteur",
+      "trunk": "Coffre",
+      "tires": "Pneus",
+      "vin": "VIN (Numéro de châssis)"
+    },
+    "kycBlock": {
+      "pendingTitle": "Demande de vérification en cours",
+      "pendingBody": "L'examen prend généralement entre 10 minutes et 24 heures. Vous recevrez une notification avec le résultat et la possibilité de créer des enchères s'ouvrira automatiquement.",
+      "pendingCta": "Voir l'état de la demande",
+      "rejectedTitle": "Vérification refusée",
+      "rejectedBody": "Nous n'avons pas pu vérifier votre identité. Veuillez réessayer avec des photos plus nettes et une carte en cours de validité.",
+      "rejectedCta": "Réessayer",
+      "noneTitle": "Vérifiez votre identité d'abord",
+      "noneBody": "Pour protéger les acheteurs, nous devons confirmer votre identité avant la publication de votre première enchère. L'opération prend deux minutes : photo de carte + selfie.",
+      "noneBullet1": "Carte d'identité en cours de validité",
+      "noneBullet2": "Selfie avec un bon éclairage",
+      "noneBullet3": "Vous obtiendrez le badge « Identité vérifiée »",
+      "noneCta": "Commencer la vérification maintenant"
+    }
+  },
+  "buyer": {
+    "bids": {
+      "title": "Mes enchères",
+      "eyebrow": "Acheteur",
+      "headlinePart1": "Mes",
+      "headlinePart2": "enchères",
+      "desktopSubtitle": "Toutes vos offres, victoires, et favoris en un seul endroit. Filtrez par état pour suivre ce qui compte.",
+      "browseCta": "Parcourir le catalogue"
+    }
+  },
+  "auctions": {
+    "sort": {
+      "newest": "Plus récentes",
+      "endingSoon": "Bientôt terminées",
+      "priceAsc": "Prix croissant",
+      "priceDesc": "Prix décroissant",
+      "mostBids": "Plus enchéries"
+    },
+    "category": {
+      "sedan": "Berline",
+      "suv": "SUV",
+      "hatchback": "Citadine",
+      "pickup": "Pickup",
+      "coupe": "Coupé",
+      "convertible": "Cabriolet",
+      "wagon": "Break",
+      "van": "Utilitaire"
+    }
+  },
+  "admin": {
+    "addAdminForm": {
+      "heading": "Promouvoir un utilisateur en admin",
+      "hintBefore": "Trouvez l'ID utilisateur depuis ",
+      "hintAfter": ", puis collez-le ici.",
+      "userIdPlaceholder": "UUID utilisateur",
+      "rolePickerLabel": "Rôle",
+      "toastIdRequired": "ID utilisateur requis",
+      "confirmPromote": "Promouvoir {userId} en « {role} » ?\nL'utilisateur recevra accès à /admin lors de sa prochaine connexion.",
+      "toastFailed": "Échec : {error}",
+      "toastAdded": "Admin ajouté",
+      "add": "Ajouter"
+    }
   }
 }

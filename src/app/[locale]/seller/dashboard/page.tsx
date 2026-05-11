@@ -80,7 +80,11 @@ export default function SellerDashboardPage() {
     completed: myAuctions.filter((a) => a.status === "ended").length,
     earnings: myAuctions
       .filter((a) => a.status === "ended")
-      .reduce((s, a) => s + a.currentPrice * 0.93, 0),
+      // Commission rate (3%) is admin-tunable via platform_settings
+      // `auction.commission.seller_pct`; we use the default here for a
+      // quick client-side estimate. The exact figure is computed
+      // server-side at payout time using the actual stored rate.
+      .reduce((s, a) => s + a.currentPrice * 0.97, 0),
     bids: totalBidsReceived,
   };
 
@@ -296,7 +300,7 @@ export default function SellerDashboardPage() {
             Icon={Wallet}
             label="Revenus totaux"
             value={formatPrice(Math.round(stats.earnings))}
-            sub="Net (après commission 7 %)"
+            sub="Net (après commission 3 %)"
             tone="gold"
             valueClass="text-2xl xl:text-3xl"
           />

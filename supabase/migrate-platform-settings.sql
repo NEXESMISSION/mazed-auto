@@ -110,14 +110,14 @@ create policy "audit_admin_read" on public.settings_audit_log
 
 -- ============================================================
 -- 6) Seed defaults
--- Numbers reflect what the codebase already implements (7% commission, 5%
+-- Numbers reflect what the codebase already implements (3% commission, 5%
 -- deposit, 5min anti-sniping). Per dev_report §02, these are starting
 -- defaults that Admin will tune before public launch.
 -- ============================================================
 
 insert into public.platform_settings (key, value, type, category, description, sensitive, requires_approval) values
   -- Commissions
-  ('auction.commission.seller_pct',          '0.07'::jsonb,  'number',  'commission', 'Seller commission as a fraction (0.07 = 7%)', true,  true),
+  ('auction.commission.seller_pct',          '0.03'::jsonb,  'number',  'commission', 'Seller commission as a fraction (0.03 = 3%)', true,  true),
   ('auction.commission.seller_cap',          '15000'::jsonb, 'number',  'commission', 'Seller commission cap in DT', true,  true),
   ('auction.commission.buyer_pct',           '0'::jsonb,     'number',  'commission', 'Buyer commission as a fraction (0 = none for now)', true,  true),
   ('auction.tva_rate',                       '0.19'::jsonb,  'number',  'commission', 'VAT rate applied on commission (Tunisian TVA = 19%)', true,  true),

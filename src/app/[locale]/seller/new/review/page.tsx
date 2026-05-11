@@ -456,7 +456,7 @@ export default function ReviewPage() {
           <ul className="space-y-2 text-sm text-[var(--foreground-muted)]">
             <Bullet text="La voiture apparaîtra immédiatement sur toutes les pages d'enchères" />
             <Bullet text="Vous recevrez des notifications en temps réel pour chaque nouvelle offre" />
-            <Bullet text="Commission Mazed de 7% uniquement à la vente finale" />
+            <Bullet text="Commission Mazed de 3% uniquement à la vente finale" />
           </ul>
         </div>
         <ModalFooter>

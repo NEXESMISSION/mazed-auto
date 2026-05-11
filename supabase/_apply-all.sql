@@ -124,14 +124,14 @@ create policy "audit_admin_read" on public.settings_audit_log
 
 -- ============================================================
 -- 6) Seed defaults
--- Numbers reflect what the codebase already implements (7% commission, 5%
+-- Numbers reflect what the codebase already implements (3% commission, 5%
 -- deposit, 5min anti-sniping). Per dev_report §02, these are starting
 -- defaults that Admin will tune before public launch.
 -- ============================================================
 
 insert into public.platform_settings (key, value, type, category, description, sensitive, requires_approval) values
   -- Commissions
-  ('auction.commission.seller_pct',          '0.07'::jsonb,  'number',  'commission', 'Seller commission as a fraction (0.07 = 7%)', true,  true),
+  ('auction.commission.seller_pct',          '0.03'::jsonb,  'number',  'commission', 'Seller commission as a fraction (0.03 = 3%)', true,  true),
   ('auction.commission.seller_cap',          '15000'::jsonb, 'number',  'commission', 'Seller commission cap in DT', true,  true),
   ('auction.commission.buyer_pct',           '0'::jsonb,     'number',  'commission', 'Buyer commission as a fraction (0 = none for now)', true,  true),
   ('auction.tva_rate',                       '0.19'::jsonb,  'number',  'commission', 'VAT rate applied on commission (Tunisian TVA = 19%)', true,  true),
@@ -5198,7 +5198,7 @@ begin
              case when u.raw_user_meta_data ->> 'role' = 'admin' then 'admin' else null end)::text
                                                   as admin_role,
     u.created_at,
-    (select max(last_seen) from public.admin_sessions where user_id = u.id) as last_seen
+    (select max(sess.last_seen) from public.admin_sessions sess where sess.user_id = u.id) as last_seen
   from auth.users u
   left join public.sellers s on s.id = u.id
   where (u.raw_user_meta_data ->> 'role') = 'admin'
@@ -5277,8 +5277,8 @@ begin
       '—')::text
   from public.conversations c
   where p_search is null
-     or coalesce((select email from auth.users where id = c.buyer_id),'')  ilike '%' || p_search || '%'
-     or coalesce((select email from auth.users where id = c.seller_id),'') ilike '%' || p_search || '%'
+     or coalesce((select ub.email from auth.users ub where ub.id = c.buyer_id),'')  ilike '%' || p_search || '%'
+     or coalesce((select us.email from auth.users us where us.id = c.seller_id),'') ilike '%' || p_search || '%'
   order by coalesce(c.last_message_at, c.created_at) desc
   limit greatest(0, p_limit);
 end; $$;
@@ -5777,6 +5777,20 @@ insert into public.platform_settings (key, value, type, category, description, s
   -- Payment provider / simulation
   ('payment.simulation.failure_rate',  '0'::jsonb,    'number', 'payment',
    'Probability (0–1) that the simulated payment processor fails. Useful for QA.',
+   false, false),
+
+  -- Auction time blackout windows (PLAN §21.X)
+  -- Hours are local time in `auction.blackout.timezone`. Each entry is a
+  -- pair [startHour, endHour); endHour < startHour means the window wraps
+  -- past midnight (e.g. [23, 7) = nightly 23:00 → 07:00).
+  ('auction.blackout.enabled',       'false'::jsonb, 'boolean', 'auction',
+   'When true, sellers cannot schedule auctions to end inside a blackout window and admin extend warns before crossing one.',
+   false, false),
+  ('auction.blackout.windows',       '[[23, 7]]'::jsonb, 'json', 'auction',
+   'Array of [startHour, endHour) pairs (0–23). End hour < start hour wraps past midnight.',
+   false, false),
+  ('auction.blackout.timezone',      '"Africa/Tunis"'::jsonb, 'string', 'auction',
+   'IANA timezone used to interpret blackout hours.',
    false, false)
 on conflict (key) do nothing;
 
@@ -5878,7 +5892,7 @@ declare
     'condition','category','description','features','city','region',
     'image_urls','video_url',
     'starting_price','reserve_price','buy_now_price',
-    'bid_increment','end_time','original_end_time',
+    'bid_increment','start_time','end_time','original_end_time',
     'is_featured','is_vip',
     'carte_grise_owner_name','ownership_exception'
   ];
@@ -5944,6 +5958,7 @@ begin
                                   then nullif(p_patch ->> 'buy_now_price','')::numeric
                                 else a.buy_now_price end,
          bid_increment   = coalesce((p_patch ->> 'bid_increment')::numeric, a.bid_increment),
+         start_time      = coalesce((p_patch ->> 'start_time')::timestamptz, a.start_time),
          end_time        = coalesce((p_patch ->> 'end_time')::timestamptz, a.end_time),
          original_end_time = coalesce((p_patch ->> 'original_end_time')::timestamptz, a.original_end_time),
          is_featured     = coalesce((p_patch ->> 'is_featured')::boolean, a.is_featured),
@@ -6346,4 +6361,346 @@ begin
     (select max(last_seen) from public.admin_sessions where user_id = v_id);
 end; $$;
 grant execute on function public.admin_self_summary() to authenticated;
+
+
+-- ---------------------------------------------------------
+-- File: migrate-cms-categories.sql
+-- ---------------------------------------------------------
+
+-- ============================================================
+-- Mazed Auto — CMS categories (body types)
+--
+-- Adds an admin-managed "category" table so the home page and
+-- browse filter can show an image + localised label per body
+-- type without redeploying. The matching `VehicleCategory` TS
+-- union still drives auction.category writes, but the labels and
+-- images that users *see* now come from this table.
+--
+-- Depends on: migrate-admin-foundations.sql, migrate-cms.sql
+-- Safe to run repeatedly.
+-- ============================================================
+
+create table if not exists public.cms_categories (
+  slug         text primary key,           -- 'sedan' | 'suv' | 'hatchback' | 'pickup' | 'van' | 'coupe' | 'convertible' | 'wagon'
+  name_ar      text,
+  name_fr      text not null,
+  image_url    text,                       -- absolute URL or relative /uploads/...
+  is_visible   boolean not null default true,
+  position     int not null default 0,
+  updated_by   uuid references auth.users(id) on delete set null,
+  updated_at   timestamptz not null default now()
+);
+
+alter table public.cms_categories enable row level security;
+drop policy if exists "cms_categories_public_read" on public.cms_categories;
+create policy "cms_categories_public_read" on public.cms_categories
+  for select using (true);
+
+-- Admin write — relies on the cross-cutting admin RLS bypass set up in
+-- migrate-rls-admin-fix.sql, same pattern as the rest of the cms_* tables.
+
+insert into public.cms_categories (slug, name_fr, name_ar, position) values
+  ('sedan',       'Berline',     'سيدان',           10),
+  ('suv',         'SUV',         'دفع رباعي',       20),
+  ('hatchback',   'Citadine',    'هاتشباك',         30),
+  ('pickup',      'Pickup',      'بيك آب',          40),
+  ('coupe',       'Coupé',       'كوبيه',           50),
+  ('convertible', 'Cabriolet',   'مكشوفة',          60),
+  ('wagon',       'Break',       'بريك',            70),
+  ('van',         'Utilitaire',  'فان',             80)
+on conflict (slug) do nothing;
+
+
+-- ---------------------------------------------------------
+-- File: migrate-admin-forfeits.sql
+-- ---------------------------------------------------------
+
+-- ============================================================
+-- Mazed Auto — Admin caution (forfeit) management
+--
+-- Today forfeits happen automatically when `payment_deadline` passes
+-- (handled by `process_expired_payment_deadlines`) or when the winner
+-- voluntarily renounces from /buyer/wins. Some cases need manual
+-- intervention by an admin:
+--
+--   • Confirmed fraud / no-show before the deadline expires — force
+--     forfeit now instead of waiting.
+--   • A forfeit was applied wrongly (admin made a mistake, or the
+--     winner contested with proof of payment) — reverse it.
+--   • Legitimate reason for delay (sick, abroad) — extend the payment
+--     deadline by N days.
+--
+-- This migration adds three RPCs. All require `transaction.adjust`
+-- capability (admin, super_admin, finance roles) and log every action.
+--
+-- Depends on: migrate-admin-foundations.sql, migrate-winner-forfeit.sql
+-- Safe to run repeatedly.
+-- ============================================================
+
+-- 1) admin_force_forfeit_winner -----------------------------------------
+-- Wraps forfeit_winner_deposit() with admin RBAC + audit log. The reason
+-- is recorded in admin_audit_log AND stored in auction_forfeits as a
+-- new `admin_note` column so the UI can show why it was manually forced.
+
+alter table public.auction_forfeits
+  add column if not exists admin_note    text,
+  add column if not exists admin_user_id uuid references auth.users(id) on delete set null,
+  add column if not exists reversed_at   timestamptz,
+  add column if not exists reversed_by   uuid references auth.users(id) on delete set null,
+  add column if not exists reversed_reason text;
+
+create or replace function public.admin_force_forfeit(
+  p_auction_id uuid,
+  p_reason     text
+) returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_winner uuid;
+  v_status text;
+  v_forfeit_id uuid;
+begin
+  if not public.has_admin_capability('transaction.adjust') then
+    raise exception 'NOT_AUTHORIZED';
+  end if;
+  if p_reason is null or btrim(p_reason) = '' then
+    raise exception 'REASON_REQUIRED';
+  end if;
+
+  select current_winner_id, status
+    into v_winner, v_status
+    from public.auctions where id = p_auction_id;
+
+  if v_winner is null then raise exception 'NO_CURRENT_WINNER'; end if;
+  if v_status not in ('ended', 're_offered') then
+    raise exception 'WRONG_STATUS: %', v_status;
+  end if;
+
+  -- Delegate to the existing forfeit pipeline (handles split, ledger,
+  -- notifications, next-bidder cascade) using a synthetic reason so
+  -- the audit row is distinguishable from automatic ones.
+  perform public.forfeit_winner_deposit(
+    p_auction_id, v_winner, 'payment_deadline_expired'
+  );
+
+  -- Stamp the most recent forfeit with the admin note.
+  update public.auction_forfeits
+     set admin_note    = p_reason,
+         admin_user_id = auth.uid()
+   where id = (
+     select id from public.auction_forfeits
+     where auction_id = p_auction_id and user_id = v_winner
+     order by forfeited_at desc
+     limit 1
+   )
+   returning id into v_forfeit_id;
+
+  perform public.log_admin_action(
+    'transaction.adjust',
+    p_target_auction_id => p_auction_id,
+    p_target_id         => v_forfeit_id,
+    p_target_type       => 'auction_forfeit',
+    p_detail            => 'force_forfeit: ' || p_reason
+  );
+
+  return v_forfeit_id;
+end; $$;
+
+grant execute on function public.admin_force_forfeit(uuid, text) to authenticated;
+
+-- 2) admin_reverse_forfeit ---------------------------------------------
+-- Marks a forfeit row as reversed and writes compensating transactions.
+-- We don't delete the audit row — the original entry is permanent.
+
+create or replace function public.admin_reverse_forfeit(
+  p_forfeit_id uuid,
+  p_reason     text
+) returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_auction_id   uuid;
+  v_user_id      uuid;
+  v_seller_id    uuid;
+  v_seller_amt   numeric;
+  v_platform_amt numeric;
+  v_amount       numeric;
+  v_user_label   text;
+begin
+  if not public.has_admin_capability('transaction.adjust') then
+    raise exception 'NOT_AUTHORIZED';
+  end if;
+  if p_reason is null or btrim(p_reason) = '' then
+    raise exception 'REASON_REQUIRED';
+  end if;
+
+  select f.auction_id, f.user_id, f.seller_share, f.platform_share, f.amount, f.user_label
+    into v_auction_id, v_user_id, v_seller_amt, v_platform_amt, v_amount, v_user_label
+    from public.auction_forfeits f
+   where f.id = p_forfeit_id and f.reversed_at is null
+   for update;
+
+  if v_auction_id is null then
+    raise exception 'FORFEIT_NOT_FOUND_OR_ALREADY_REVERSED';
+  end if;
+
+  select seller_id into v_seller_id
+    from public.auctions where id = v_auction_id;
+
+  -- Compensating ledger entries (negative direction = 'out').
+  insert into public.transactions (ref, user_id, user_label, auction_id, type, direction, amount, label, status)
+  values (
+    'TX-RV-' || substring(gen_random_uuid()::text from 1 for 8),
+    v_seller_id, null, v_auction_id, 'refund', 'out', v_seller_amt,
+    'Annulation forfait — part vendeur remboursée',
+    'completed'
+  );
+  insert into public.transactions (ref, user_id, user_label, auction_id, type, direction, amount, label, status)
+  values (
+    'TX-RV-' || substring(gen_random_uuid()::text from 1 for 8),
+    null, 'Mazed Auto', v_auction_id, 'refund', 'out', v_platform_amt,
+    'Annulation forfait — part plateforme reversée',
+    'completed'
+  );
+  -- Caution returned to the bidder.
+  insert into public.transactions (ref, user_id, user_label, auction_id, type, direction, amount, label, status)
+  values (
+    'TX-RV-' || substring(gen_random_uuid()::text from 1 for 8),
+    v_user_id, v_user_label, v_auction_id, 'refund', 'out', v_amount,
+    'Caution restituée — forfait annulé',
+    'completed'
+  );
+
+  update public.auction_forfeits
+     set reversed_at     = now(),
+         reversed_by     = auth.uid(),
+         reversed_reason = p_reason
+   where id = p_forfeit_id;
+
+  insert into public.notifications (user_id, auction_id, kind, title, body)
+  values (v_user_id, v_auction_id, 'deposit_refunded',
+    'Caution restituée',
+    'L''administration a annulé le forfait — votre caution de ' ||
+      v_amount::text || ' DT vous a été restituée. Motif : ' || p_reason
+  );
+
+  perform public.log_admin_action(
+    'transaction.adjust',
+    p_target_auction_id => v_auction_id,
+    p_target_id         => p_forfeit_id,
+    p_target_type       => 'auction_forfeit',
+    p_detail            => 'reverse_forfeit: ' || p_reason
+  );
+end; $$;
+
+grant execute on function public.admin_reverse_forfeit(uuid, text) to authenticated;
+
+-- 3) admin_extend_payment_deadline -------------------------------------
+-- Push the payment deadline of a finished auction back by N days so
+-- the current winner has more time to pay. Notifies the winner.
+
+create or replace function public.admin_extend_payment_deadline(
+  p_auction_id uuid,
+  p_days       int,
+  p_reason     text
+) returns timestamptz
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_old timestamptz;
+  v_new timestamptz;
+  v_winner uuid;
+  v_status text;
+begin
+  if not public.has_admin_capability('transaction.adjust') then
+    raise exception 'NOT_AUTHORIZED';
+  end if;
+  if p_days is null or p_days <= 0 then
+    raise exception 'DAYS_REQUIRED';
+  end if;
+  if p_reason is null or btrim(p_reason) = '' then
+    raise exception 'REASON_REQUIRED';
+  end if;
+
+  select payment_deadline, current_winner_id, status
+    into v_old, v_winner, v_status
+    from public.auctions where id = p_auction_id for update;
+
+  if v_winner is null then raise exception 'NO_CURRENT_WINNER'; end if;
+  if v_status not in ('ended', 're_offered') then
+    raise exception 'WRONG_STATUS: %', v_status;
+  end if;
+
+  v_new := coalesce(v_old, now()) + make_interval(days => p_days);
+
+  update public.auctions
+     set payment_deadline = v_new
+   where id = p_auction_id;
+
+  insert into public.notifications (user_id, auction_id, kind, title, body)
+  values (v_winner, p_auction_id, 'payment_due',
+    'Délai de paiement prolongé',
+    'L''administration a prolongé votre délai de paiement de ' ||
+      p_days::text || ' jours. Nouvelle échéance : ' ||
+      to_char(v_new at time zone 'Africa/Tunis', 'DD/MM/YYYY HH24:MI') ||
+      '. Motif : ' || p_reason
+  );
+
+  perform public.log_admin_action(
+    'transaction.adjust',
+    p_target_auction_id => p_auction_id,
+    p_target_type       => 'auction',
+    p_detail            => 'extend_payment_deadline +' || p_days::text || 'd: ' || p_reason
+  );
+
+  return v_new;
+end; $$;
+
+grant execute on function public.admin_extend_payment_deadline(uuid, int, text) to authenticated;
+
+-- 4) View: pending payment deadlines ----------------------------------
+-- Convenience view for /admin/forfeits — auctions whose payment
+-- deadline is approaching or already expired. The sweep auto-forfeits
+-- expired rows on the next interaction, but admins can see the queue
+-- in advance and decide to extend / force-forfeit early.
+
+create or replace view public.admin_pending_payment_deadlines as
+select
+  a.id                as auction_id,
+  a.make, a.model, a.year,
+  a.current_price,
+  a.participation_deposit,
+  a.current_winner_id,
+  a.payment_deadline,
+  a.status,
+  coalesce(
+    (select btrim(coalesce(u.raw_user_meta_data->>'firstName','') || ' ' ||
+                  coalesce(u.raw_user_meta_data->>'lastName',''))
+       from auth.users u where u.id = a.current_winner_id),
+    'Acheteur'
+  )::text             as winner_label,
+  case
+    when a.payment_deadline <= now() then 'expired'
+    when a.payment_deadline <= now() + interval '24 hours' then 'soon'
+    else 'pending'
+  end                 as urgency
+from public.auctions a
+where a.status in ('ended','re_offered')
+  and a.current_winner_id is not null
+  and a.payment_deadline is not null
+  and not exists (
+    select 1 from public.transactions t
+    where t.auction_id = a.id
+      and t.user_id    = a.current_winner_id
+      and t.type       = 'final_payment'
+      and t.status     = 'completed'
+  );
+
+grant select on public.admin_pending_payment_deadlines to authenticated;
 
