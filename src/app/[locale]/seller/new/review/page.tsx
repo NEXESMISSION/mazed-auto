@@ -13,6 +13,8 @@ import { useAuth } from "@/lib/auth";
 import { useDraft, clearDraft } from "@/lib/draft";
 import { createClient } from "@/lib/supabase/client";
 import { formatPrice, formatNumber } from "@/lib/format";
+import { isInBlackout, type BlackoutWindow } from "@/lib/blackout";
+import { pickDepositFromTiers, type DepositTier } from "@/lib/deposit";
 
 const fuelLabels: Record<string, string> = {
   gasoline: "Essence",
@@ -115,22 +117,79 @@ export default function ReviewPage() {
     const now = new Date();
     const endTime = new Date(now.getTime() + durationMs);
 
+    // Blackout window enforcement — admins can mark hours of the day
+    // (typically late night) as off-limits for auction closings so the
+    // last 5 minutes don't run while nobody's awake to defend a bid.
+    try {
+      const { data: rows } = await supabase
+        .from("platform_settings")
+        .select("key, value")
+        .in("key", [
+          "auction.blackout.enabled",
+          "auction.blackout.windows",
+          "auction.blackout.timezone",
+        ]);
+      const byKey = new Map(
+        (rows ?? []).map((r) => [r.key, r.value as unknown]),
+      );
+      const enabled = byKey.get("auction.blackout.enabled") === true;
+      if (enabled) {
+        const windows = (byKey.get("auction.blackout.windows") ?? [[23, 7]]) as
+          | BlackoutWindow[]
+          | unknown;
+        const timezone =
+          (byKey.get("auction.blackout.timezone") as string | undefined) ??
+          "Africa/Tunis";
+        const safeWindows: BlackoutWindow[] = Array.isArray(windows)
+          ? (windows as BlackoutWindow[]).filter(
+              (w) =>
+                Array.isArray(w) &&
+                w.length === 2 &&
+                w.every((n) => typeof n === "number"),
+            )
+          : [];
+        if (isInBlackout(endTime, safeWindows, timezone)) {
+          setPublishing(false);
+          toast(
+            "L'heure de fin tombe dans une plage interdite. Choisissez une autre durée.",
+            "warning",
+          );
+          return;
+        }
+      }
+    } catch {
+      // If the settings table is missing on a fresh checkout, fall
+      // through to insert without blackout enforcement.
+    }
+
     // Bid-increment tiers live in platform_settings so the admin can
     // tune them without a redeploy. Falls back to the legacy 250/500/1000
     // ladder if the row is missing or malformed.
     let bidIncrement = 250;
+    // Tiered fixed-amount entry deposit. Same admin-tunable pattern as
+    // bid increments. Falls back to the spec defaults if the row is
+    // missing on a fresh checkout.
+    let participationDeposit = pickDepositFromTiers(startingPrice);
     try {
-      const { data: tierRow } = await supabase
-        .from("platform_settings")
-        .select("value")
-        .eq("key", "listing.bid_increment_tiers")
-        .maybeSingle();
-      const tiers = (tierRow?.value ?? []) as Array<{
+      const [{ data: incrRow }, { data: depRow }] = await Promise.all([
+        supabase
+          .from("platform_settings")
+          .select("value")
+          .eq("key", "listing.bid_increment_tiers")
+          .maybeSingle(),
+        supabase
+          .from("platform_settings")
+          .select("value")
+          .eq("key", "auction.deposit.tiers")
+          .maybeSingle(),
+      ]);
+
+      const incrTiers = (incrRow?.value ?? []) as Array<{
         max: number | null;
         increment: number;
       }>;
-      if (Array.isArray(tiers) && tiers.length > 0) {
-        const match = tiers.find(
+      if (Array.isArray(incrTiers) && incrTiers.length > 0) {
+        const match = incrTiers.find(
           (t) => t.max === null || startingPrice < t.max,
         );
         if (match && Number.isFinite(match.increment)) {
@@ -144,9 +203,18 @@ export default function ReviewPage() {
               ? 500
               : 250;
       }
+
+      const depTiers = depRow?.value as unknown;
+      if (Array.isArray(depTiers) && depTiers.length > 0) {
+        participationDeposit = pickDepositFromTiers(
+          startingPrice,
+          depTiers as DepositTier[],
+        );
+      }
     } catch {
       bidIncrement =
         startingPrice >= 100000 ? 1000 : startingPrice >= 30000 ? 500 : 250;
+      // participationDeposit stays at the default from pickDepositFromTiers above.
     }
 
     const { data: auction, error: auctionErr } = await supabase
@@ -172,7 +240,7 @@ export default function ReviewPage() {
         reserve_price: draft.reservePrice ?? null,
         buy_now_price: draft.buyNowPrice ?? null,
         current_price: startingPrice,
-        participation_deposit: Math.round(startingPrice * 0.05),
+        participation_deposit: participationDeposit,
         bid_increment: bidIncrement,
         start_time: now.toISOString(),
         end_time: endTime.toISOString(),

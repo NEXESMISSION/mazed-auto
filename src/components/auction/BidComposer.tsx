@@ -350,7 +350,7 @@ export function BidComposer({
         tone="muted"
         icon={<Lock className="h-7 w-7" />}
         title="Connectez-vous pour enchérir"
-        body="Vous aurez besoin d'un compte vérifié, puis de payer la caution de participation (5%) pour rejoindre n'importe quelle enchère."
+        body="Vous aurez besoin d'un compte vérifié, puis de payer la caution de participation pour rejoindre n'importe quelle enchère."
         ctaLabel="Se connecter"
         onCta={() => router.push(`/login?redirect=/auctions/${auction.id}`)}
         auction={auction}
@@ -416,7 +416,7 @@ export function BidComposer({
         }
         auction={auction}
         bullets={[
-          "5% du prix de départ, réserve votre place dans l'enchère",
+          "Montant fixe selon le prix de départ — réserve votre place dans l'enchère",
           "Intégralement remboursée sous 24 heures si vous ne gagnez pas",
           "Déduite du prix final si vous gagnez",
         ]}
@@ -686,7 +686,7 @@ export function BidComposer({
 
       <Modal open={showRules} onClose={() => setShowRules(false)} title="Règles de l'enchère">
         <ul className="space-y-3 text-sm text-[var(--foreground-muted)] leading-relaxed">
-          <li>• <strong className="text-foreground">Caution 5%:</strong> Payée une fois par enchère, remboursée si vous ne gagnez pas.</li>
+          <li>• <strong className="text-foreground">Caution :</strong> Montant fixe (500 / 1 000 / 2 000 DT selon le prix de départ), payée une fois par enchère, remboursée si vous ne gagnez pas.</li>
           <li>• <strong className="text-foreground">Anti-Sniping:</strong> Toute offre dans les 5 dernières minutes prolonge l'enchère de 5 minutes.</li>
           <li>• <strong className="text-foreground">Réserve :</strong> Si le prix de réserve n'est pas atteint, l'enchère n'est pas conclue.</li>
           <li>• <strong className="text-foreground">Plafond automatique :</strong> Vous fixez un montant maximum caché. Le système enchérit pour vous au minimum nécessaire pour devancer le 2ᵉ plafond — jamais plus.</li>

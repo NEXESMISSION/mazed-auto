@@ -13,6 +13,9 @@
 
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { isInBlackout, type BlackoutWindow } from "@/lib/blackout";
+
+export { isInBlackout, type BlackoutWindow };
 
 const TTL_MS = 60_000;
 
@@ -80,6 +83,27 @@ export const getTvaRate = () =>
 
 export const getDepositStartingPct = () =>
   getSetting<number>("auction.deposit.starting_pct", 0.05);
+
+// Tiered fixed-amount deposit. Pure ladder + types live in lib/deposit.ts
+// so client components can import them without dragging the server-only
+// supabase client (via next/headers) into the browser bundle. This file
+// only adds the DB-aware `getDepositTiers()` / `pickDeposit()` server
+// helpers on top.
+import {
+  pickDepositFromTiers,
+  DEFAULT_DEPOSIT_TIERS,
+  type DepositTier,
+} from "./deposit";
+export type { DepositTier } from "./deposit";
+
+export const getDepositTiers = () =>
+  getSetting<DepositTier[]>("auction.deposit.tiers", DEFAULT_DEPOSIT_TIERS);
+
+/** Pick the deposit amount for a given starting price (server-side). */
+export async function pickDeposit(startingPrice: number): Promise<number> {
+  const tiers = await getDepositTiers();
+  return pickDepositFromTiers(startingPrice, tiers);
+}
 
 export const getAntiSnipingWindowMinutes = () =>
   getSetting<number>("auction.anti_sniping.window_minutes", 5);
@@ -155,6 +179,31 @@ export async function pickBidIncrement(startingPrice: number): Promise<number> {
     if (t.max === null || startingPrice < t.max) return t.increment;
   }
   return tiers[tiers.length - 1]?.increment ?? 250;
+}
+
+// ---------- Auction time blackout (PLAN §21.X) ----------
+// Sellers shouldn't be able to schedule end times during dead hours
+// (e.g. middle of the night) because nobody will be awake to defend
+// their bid. Admins declare blocked hour windows in platform_settings
+// and the seller wizard + admin reschedule modal honour them.
+
+export const getAuctionBlackoutEnabled = () =>
+  getSetting<boolean>("auction.blackout.enabled", false);
+
+export const getAuctionBlackoutWindows = () =>
+  getSetting<BlackoutWindow[]>("auction.blackout.windows", [[23, 7]]);
+
+export const getAuctionBlackoutTimezone = () =>
+  getSetting<string>("auction.blackout.timezone", "Africa/Tunis");
+
+/** Bundle all three blackout settings in one round-trip. */
+export async function getAuctionBlackoutConfig() {
+  const [enabled, windows, timezone] = await Promise.all([
+    getAuctionBlackoutEnabled(),
+    getAuctionBlackoutWindows(),
+    getAuctionBlackoutTimezone(),
+  ]);
+  return { enabled, windows, timezone };
 }
 
 // ---------- Forfeit rules (PLAN §21.4) ----------

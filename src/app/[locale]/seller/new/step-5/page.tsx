@@ -12,6 +12,7 @@ import { useDraft } from "@/lib/draft";
 import { useToast } from "@/components/ui/Toast";
 import { scrollToFirstInvalid } from "@/lib/validation";
 import { createClient } from "@/lib/supabase/client";
+import { pickDepositFromTiers, type DepositTier } from "@/lib/deposit";
 
 export default function Step5Page() {
   const { toast } = useToast();
@@ -26,21 +27,36 @@ export default function Step5Page() {
   // Duration choices come from platform_settings so admins can offer
   // 5/10/20-day options without touching code. Falls back to 3/7/14.
   const [durationOpts, setDurationOpts] = useState<number[]>([3, 7, 14]);
+  // Admin-tunable deposit tiers. Defaults match lib/config.ts; the DB
+  // copy is the source of truth once the wizard publishes.
+  const [depositTiers, setDepositTiers] = useState<DepositTier[] | null>(null);
   useEffect(() => {
     let cancelled = false;
-    createClient()
-      .from("platform_settings")
-      .select("value")
-      .eq("key", "listing.duration_options")
-      .maybeSingle()
-      .then(({ data }) => {
-        if (cancelled) return;
-        const v = data?.value as unknown;
-        if (Array.isArray(v) && v.every((x) => typeof x === "number")) {
-          // eslint-disable-next-line react-hooks/set-state-in-effect
-          setDurationOpts(v as number[]);
-        }
-      });
+    const supa = createClient();
+    Promise.all([
+      supa
+        .from("platform_settings")
+        .select("value")
+        .eq("key", "listing.duration_options")
+        .maybeSingle(),
+      supa
+        .from("platform_settings")
+        .select("value")
+        .eq("key", "auction.deposit.tiers")
+        .maybeSingle(),
+    ]).then(([durRes, tierRes]) => {
+      if (cancelled) return;
+      const d = durRes.data?.value as unknown;
+      if (Array.isArray(d) && d.every((x) => typeof x === "number")) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setDurationOpts(d as number[]);
+      }
+      const t = tierRes.data?.value as unknown;
+      if (Array.isArray(t)) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setDepositTiers(t as DepositTier[]);
+      }
+    });
     return () => {
       cancelled = true;
     };
@@ -70,7 +86,15 @@ export default function Step5Page() {
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [hydrated, draft.startingPrice, draft.reservePrice, draft.buyNowPrice, draft.durationDays]);
 
-  const deposit = Math.round(startingPrice * 0.05);
+  // Tiered fixed-amount deposit — see lib/config.ts `pickDepositSync`.
+  // Defaults (admin-overridable via platform_settings.auction.deposit.tiers):
+  //   <20 000 DT  → 500 DT
+  //   <100 000 DT → 1 000 DT
+  //   otherwise   → 2 000 DT
+  const deposit = pickDepositFromTiers(
+    startingPrice,
+    depositTiers ?? undefined,
+  );
   // PLAN §21.5: 7% commission, capped at 15,000 DT per transaction.
   const commission = Math.min(
     Math.round((reservePrice || startingPrice) * 0.07),
@@ -244,9 +268,9 @@ export default function Step5Page() {
                 )}
                 <div className="border-t border-[var(--border)] my-2" />
                 <Row
-                  label="Caution par enchérisseur (5%)"
+                  label="Caution par enchérisseur"
                   value={formatPrice(deposit)}
-                  hint="Remboursée s'il ne gagne pas"
+                  hint="Montant fixe — remboursée s'il ne gagne pas"
                 />
                 <Row
                   label="Commission Mazed (7%)"
