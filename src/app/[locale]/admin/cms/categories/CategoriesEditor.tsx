@@ -138,47 +138,59 @@ function Row({
   isNew?: boolean;
 }) {
   return (
-    <div className="grid md:grid-cols-[120px_140px_140px_1fr_80px_80px_auto] gap-2 p-3 items-center">
-      <Input
-        value={item.slug}
-        disabled={!isNew}
-        onChange={(e) => onChange({ ...item, slug: e.target.value })}
-        placeholder="slug"
-      />
-      <Input
-        value={item.name_fr}
-        onChange={(e) => onChange({ ...item, name_fr: e.target.value })}
-        placeholder="Nom (FR)"
-      />
-      <Input
-        value={item.name_ar ?? ""}
-        onChange={(e) => onChange({ ...item, name_ar: e.target.value || null })}
-        placeholder="الاسم (AR)"
-      />
-      <div className="flex items-center gap-2 min-w-0">
-        {item.image_url && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={item.image_url}
-            alt=""
-            className="h-9 w-9 rounded object-cover ring-1 ring-[var(--border)] shrink-0"
-          />
-        )}
+    <div className="grid md:grid-cols-[120px_140px_140px_1fr_80px_80px_auto] gap-2 p-3 md:items-center">
+      <MobileLabel label="Slug">
         <Input
-          value={item.image_url ?? ""}
-          onChange={(e) =>
-            onChange({ ...item, image_url: e.target.value || null })
-          }
-          placeholder="URL image"
+          value={item.slug}
+          disabled={!isNew}
+          onChange={(e) => onChange({ ...item, slug: e.target.value })}
+          placeholder="slug"
         />
-      </div>
-      <Input
-        type="number"
-        value={item.position}
-        onChange={(e) =>
-          onChange({ ...item, position: Number(e.target.value) })
-        }
-      />
+      </MobileLabel>
+      <MobileLabel label="Nom (FR)">
+        <Input
+          value={item.name_fr}
+          onChange={(e) => onChange({ ...item, name_fr: e.target.value })}
+          placeholder="Nom (FR)"
+        />
+      </MobileLabel>
+      <MobileLabel label="الاسم (AR)">
+        <Input
+          value={item.name_ar ?? ""}
+          onChange={(e) =>
+            onChange({ ...item, name_ar: e.target.value || null })
+          }
+          placeholder="الاسم (AR)"
+        />
+      </MobileLabel>
+      <MobileLabel label="Image URL">
+        <div className="flex items-center gap-2 min-w-0">
+          {item.image_url && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={item.image_url}
+              alt=""
+              className="h-9 w-9 rounded object-cover ring-1 ring-[var(--border)] shrink-0"
+            />
+          )}
+          <Input
+            value={item.image_url ?? ""}
+            onChange={(e) =>
+              onChange({ ...item, image_url: e.target.value || null })
+            }
+            placeholder="URL image"
+          />
+        </div>
+      </MobileLabel>
+      <MobileLabel label="Position">
+        <Input
+          type="number"
+          value={item.position}
+          onChange={(e) =>
+            onChange({ ...item, position: Number(e.target.value) })
+          }
+        />
+      </MobileLabel>
       <label className="inline-flex items-center gap-1 text-xs">
         <input
           type="checkbox"
@@ -189,7 +201,7 @@ function Row({
         />
         visible
       </label>
-      <div className="flex gap-2 items-center">
+      <div className="flex gap-2 items-center flex-wrap justify-end md:flex-nowrap">
         {onCancel && (
           <Button size="sm" variant="ghost" onClick={onCancel}>
             ✕
@@ -204,6 +216,25 @@ function Row({
           </Button>
         )}
       </div>
+    </div>
+  );
+}
+
+/** Mobile-only label above the field; hidden on md+ where the cards
+ *  read as a single horizontal row. */
+function MobileLabel({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <div className="md:hidden text-[10px] uppercase tracking-[0.18em] font-bold text-[var(--foreground-muted)] mb-1">
+        {label}
+      </div>
+      {children}
     </div>
   );
 }

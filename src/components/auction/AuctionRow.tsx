@@ -1,7 +1,7 @@
 "use client";
 
 import { Link } from "@/i18n/navigation";
-import { Clock, Gavel, Users } from "lucide-react";
+import { Clock, Gavel, Users, Crown } from "lucide-react";
 import { Countdown } from "./Countdown";
 import { auctionCode, formatPrice } from "@/lib/format";
 import { thumb } from "@/lib/imageUrl";
@@ -19,7 +19,14 @@ const FINAL_STATUSES = new Set([
  * the browse page. Same data, denser layout: small thumbnail on the
  * start, title + meta in the middle, price + countdown on the end.
  */
-export function AuctionRow({ auction }: { auction: Auction }) {
+export function AuctionRow({
+  auction,
+  isTrustedSeller = false,
+}: {
+  auction: Auction;
+  /** When true, render a small "Confiance" pill in the meta row. */
+  isTrustedSeller?: boolean;
+}) {
   const { vehicle, currentPrice, totalParticipants, totalBids, endTime } =
     auction;
   const isOver =
@@ -72,6 +79,15 @@ export function AuctionRow({ auction }: { auction: Auction }) {
           </span>
           <span className="text-[var(--foreground-subtle)]">·</span>
           <span className="truncate">{vehicle.city}</span>
+          {isTrustedSeller && (
+            <span
+              title="Vendeur de confiance"
+              className="inline-flex items-center gap-0.5 px-1.5 h-4 rounded-full bg-[var(--gold-faint)] border border-[var(--gold)]/30 text-[var(--gold)] text-[9px] font-extrabold uppercase tracking-wider"
+            >
+              <Crown className="h-2 w-2" strokeWidth={2.5} />
+              Confiance
+            </span>
+          )}
         </div>
       </div>
 

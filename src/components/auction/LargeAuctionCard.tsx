@@ -1,7 +1,7 @@
 "use client";
 
 import { Link } from "@/i18n/navigation";
-import { Clock, Gavel, Users, MapPin } from "lucide-react";
+import { Clock, Gavel, Users, MapPin, Crown } from "lucide-react";
 import { Countdown } from "./Countdown";
 import { FavoriteButton } from "./FavoriteButton";
 import { auctionCode, formatPrice } from "@/lib/format";
@@ -23,7 +23,15 @@ const FINAL_STATUSES = new Set([
  * users who prefer detail over density can read every listing without
  * tapping in.
  */
-export function LargeAuctionCard({ auction }: { auction: Auction }) {
+export function LargeAuctionCard({
+  auction,
+  isTrustedSeller = false,
+}: {
+  auction: Auction;
+  /** When true, render the "Vendeur de confiance" pill in the
+   *  top-end stack next to the countdown. */
+  isTrustedSeller?: boolean;
+}) {
   const { vehicle, currentPrice, totalParticipants, totalBids, endTime } =
     auction;
   const isOver =
@@ -68,11 +76,22 @@ export function LargeAuctionCard({ auction }: { auction: Auction }) {
               />
             </span>
           )}
-          <FavoriteButton
-            auctionId={auction.id}
-            size="sm"
-            className="bg-black/50 backdrop-blur-md text-white border-white/10 hover:bg-black/70"
-          />
+          <div className="flex items-center gap-2">
+            {isTrustedSeller && (
+              <span
+                title="Vendeur de confiance"
+                className="inline-flex items-center gap-1 px-2 h-7 rounded-full bg-black/65 backdrop-blur-md border border-[var(--gold)]/40 text-[var(--gold)] text-[10px] font-extrabold uppercase tracking-wider"
+              >
+                <Crown className="h-3 w-3" strokeWidth={2.5} />
+                Confiance
+              </span>
+            )}
+            <FavoriteButton
+              auctionId={auction.id}
+              size="sm"
+              className="bg-black/50 backdrop-blur-md text-white border-white/10 hover:bg-black/70"
+            />
+          </div>
         </div>
 
         {/* Bottom — title, price, meta */}

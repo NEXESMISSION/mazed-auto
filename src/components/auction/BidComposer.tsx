@@ -579,8 +579,27 @@ export function BidComposer({
             </div>
           </div>
 
-          {/* Action: full-width primary + secondary text links underneath */}
-          <div className="space-y-2.5 lg:space-y-3">
+          {/* Action: full-width primary + secondary text links underneath.
+              Mobile: sticks to the bottom of the viewport so users never
+              lose sight of the bid CTA while scrolling through the
+              vehicle details / bid history. The backdrop-blur container
+              bleeds to screen edges and respects the iOS home-indicator
+              safe area. Desktop layout stays inline (lg: resets the
+              sticky positioning and background). */}
+          <div
+            className={cn(
+              "space-y-2.5",
+              // Mobile sticky shell
+              "sticky bottom-0 z-30 -mx-4 px-4 py-3",
+              "bg-[#0a0a0a]/95 backdrop-blur-xl",
+              "border-t border-[var(--border)]",
+              "pb-[calc(0.75rem+env(safe-area-inset-bottom))]",
+              // Desktop reset — stays inline inside the card
+              "lg:static lg:bottom-auto lg:mx-0 lg:px-0 lg:py-0",
+              "lg:bg-transparent lg:backdrop-blur-none",
+              "lg:border-0 lg:pb-0 lg:space-y-3",
+            )}
+          >
             <Button
               size="md"
               fullWidth

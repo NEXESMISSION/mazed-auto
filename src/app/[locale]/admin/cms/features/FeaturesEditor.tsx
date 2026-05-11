@@ -132,41 +132,51 @@ function Row({
   isNew?: boolean;
 }) {
   return (
-    <div className="grid md:grid-cols-[140px_1fr_1fr_120px_80px_auto] gap-2 p-3 items-center">
-      <Input
-        value={item.slug}
-        disabled={!isNew}
-        onChange={(e) => onChange({ ...item, slug: e.target.value })}
-        placeholder="slug"
-      />
-      <Input
-        value={item.label_fr}
-        onChange={(e) => onChange({ ...item, label_fr: e.target.value })}
-        placeholder="Libellé FR"
-      />
-      <Input
-        dir="rtl"
-        value={item.label_ar ?? ""}
-        onChange={(e) =>
-          onChange({ ...item, label_ar: e.target.value || null })
-        }
-        placeholder="بالعربية"
-      />
-      <Input
-        value={item.category ?? ""}
-        onChange={(e) =>
-          onChange({ ...item, category: e.target.value || null })
-        }
-        placeholder="Catégorie"
-      />
-      <Input
-        type="number"
-        value={item.position}
-        onChange={(e) =>
-          onChange({ ...item, position: Number(e.target.value) })
-        }
-      />
-      <div className="flex gap-2 items-center">
+    <div className="grid md:grid-cols-[140px_1fr_1fr_120px_80px_auto] gap-2 p-3 md:items-center">
+      <MobileLabel label="Slug">
+        <Input
+          value={item.slug}
+          disabled={!isNew}
+          onChange={(e) => onChange({ ...item, slug: e.target.value })}
+          placeholder="slug"
+        />
+      </MobileLabel>
+      <MobileLabel label="Libellé FR">
+        <Input
+          value={item.label_fr}
+          onChange={(e) => onChange({ ...item, label_fr: e.target.value })}
+          placeholder="Libellé FR"
+        />
+      </MobileLabel>
+      <MobileLabel label="بالعربية">
+        <Input
+          dir="rtl"
+          value={item.label_ar ?? ""}
+          onChange={(e) =>
+            onChange({ ...item, label_ar: e.target.value || null })
+          }
+          placeholder="بالعربية"
+        />
+      </MobileLabel>
+      <MobileLabel label="Catégorie">
+        <Input
+          value={item.category ?? ""}
+          onChange={(e) =>
+            onChange({ ...item, category: e.target.value || null })
+          }
+          placeholder="Catégorie"
+        />
+      </MobileLabel>
+      <MobileLabel label="Position">
+        <Input
+          type="number"
+          value={item.position}
+          onChange={(e) =>
+            onChange({ ...item, position: Number(e.target.value) })
+          }
+        />
+      </MobileLabel>
+      <div className="flex gap-2 items-center flex-wrap justify-end md:flex-nowrap">
         <label className="inline-flex items-center gap-1 text-xs">
           <input
             type="checkbox"
@@ -191,6 +201,23 @@ function Row({
           </Button>
         )}
       </div>
+    </div>
+  );
+}
+
+function MobileLabel({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <div className="md:hidden text-[10px] uppercase tracking-[0.18em] font-bold text-[var(--foreground-muted)] mb-1">
+        {label}
+      </div>
+      {children}
     </div>
   );
 }

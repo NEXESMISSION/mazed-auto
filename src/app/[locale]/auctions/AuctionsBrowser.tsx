@@ -504,13 +504,21 @@ function ModernBrowser({
       ) : viewMode === "list" ? (
         <div className="mt-3 px-4 space-y-2 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
           {filteredAuctions.map((auction) => (
-            <AuctionRow key={auction.id} auction={auction} />
+            <AuctionRow
+              key={auction.id}
+              auction={auction}
+              isTrustedSeller={trustedSellers.has(auction.seller.id)}
+            />
           ))}
         </div>
       ) : (
         <div className="mt-3 px-4 space-y-3 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
           {filteredAuctions.map((auction) => (
-            <LargeAuctionCard key={auction.id} auction={auction} />
+            <LargeAuctionCard
+              key={auction.id}
+              auction={auction}
+              isTrustedSeller={trustedSellers.has(auction.seller.id)}
+            />
           ))}
         </div>
       )}

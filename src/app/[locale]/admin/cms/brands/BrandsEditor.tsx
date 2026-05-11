@@ -128,31 +128,43 @@ function Row({
   isNew?: boolean;
 }) {
   return (
-    <div className="grid md:grid-cols-[140px_1fr_120px_80px_auto] gap-2 p-3 items-center">
-      <Input
-        value={item.slug}
-        disabled={!isNew}
-        onChange={(e) => onChange({ ...item, slug: e.target.value })}
-        placeholder="slug"
-      />
-      <Input
-        value={item.display_name}
-        onChange={(e) => onChange({ ...item, display_name: e.target.value })}
-        placeholder="Nom affiché"
-      />
-      <Input
-        value={item.logo_url ?? ""}
-        onChange={(e) => onChange({ ...item, logo_url: e.target.value || null })}
-        placeholder="logo URL"
-      />
-      <Input
-        type="number"
-        value={item.position}
-        onChange={(e) =>
-          onChange({ ...item, position: Number(e.target.value) })
-        }
-      />
-      <div className="flex gap-2 items-center">
+    <div className="grid md:grid-cols-[140px_1fr_120px_80px_auto] gap-2 p-3 md:items-center">
+      <MobileLabel label="Slug">
+        <Input
+          value={item.slug}
+          disabled={!isNew}
+          onChange={(e) => onChange({ ...item, slug: e.target.value })}
+          placeholder="slug"
+        />
+      </MobileLabel>
+      <MobileLabel label="Nom affiché">
+        <Input
+          value={item.display_name}
+          onChange={(e) =>
+            onChange({ ...item, display_name: e.target.value })
+          }
+          placeholder="Nom affiché"
+        />
+      </MobileLabel>
+      <MobileLabel label="Logo URL">
+        <Input
+          value={item.logo_url ?? ""}
+          onChange={(e) =>
+            onChange({ ...item, logo_url: e.target.value || null })
+          }
+          placeholder="logo URL"
+        />
+      </MobileLabel>
+      <MobileLabel label="Position">
+        <Input
+          type="number"
+          value={item.position}
+          onChange={(e) =>
+            onChange({ ...item, position: Number(e.target.value) })
+          }
+        />
+      </MobileLabel>
+      <div className="flex gap-2 items-center flex-wrap justify-end md:flex-nowrap">
         <label className="inline-flex items-center gap-1 text-xs">
           <input
             type="checkbox"
@@ -177,6 +189,25 @@ function Row({
           </Button>
         )}
       </div>
+    </div>
+  );
+}
+
+/** Mobile-only label above the field; hides on md+ where the column
+ *  header already exists (or the field name is self-evident). */
+function MobileLabel({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <div className="md:hidden text-[10px] uppercase tracking-[0.18em] font-bold text-[var(--foreground-muted)] mb-1">
+        {label}
+      </div>
+      {children}
     </div>
   );
 }
