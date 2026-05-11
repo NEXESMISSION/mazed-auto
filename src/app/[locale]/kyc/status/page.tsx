@@ -1,17 +1,64 @@
 "use client";
 
-import { Link } from "@/i18n/navigation";
-import { CheckCircle2, ShieldCheck, Clock } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link, useRouter } from "@/i18n/navigation";
+import { CheckCircle2, ShieldCheck, Clock, RefreshCw } from "lucide-react";
 import { KYCShell } from "@/components/layout/KYCShell";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/client";
 
 export default function KYCStatusPage() {
   const { user, loaded } = useAuth();
+  const router = useRouter();
+  const [refreshing, setRefreshing] = useState(false);
+
   // Default to "pending" while the user object is hydrating — the user
   // just submitted, so showing them the waiting screen is the right
   // optimistic guess.
   const status = loaded ? user?.kycStatus ?? "pending" : "pending";
+
+  // Force-refresh the auth session on mount and periodically. The KYC
+  // status lives in user_metadata, which Supabase only re-syncs to the
+  // client JWT when the session refreshes. Without this, an admin
+  // approval lands in the DB but the user keeps seeing "pending" on
+  // this page until they sign out and back in.
+  useEffect(() => {
+    if (!loaded) return;
+    if (status === "verified") return; // nothing to wait for
+    const supabase = createClient();
+    let cancelled = false;
+
+    async function refresh() {
+      if (cancelled) return;
+      try {
+        await supabase.auth.refreshSession();
+      } catch {
+        // ignore — auth state subscription will pick up next time
+      }
+    }
+
+    // First refresh on mount.
+    refresh();
+    // Poll every 15s so a freshly-approved user sees the green state
+    // without having to manually hit "Re-vérifier".
+    const id = setInterval(refresh, 15_000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [loaded, status]);
+
+  async function manualRefresh() {
+    setRefreshing(true);
+    try {
+      const supabase = createClient();
+      await supabase.auth.refreshSession();
+      router.refresh();
+    } finally {
+      setRefreshing(false);
+    }
+  }
 
   if (status === "rejected") {
     return (
@@ -153,6 +200,17 @@ export default function KYCStatusPage() {
         </div>
 
         <div className="space-y-2">
+          <Button
+            size="lg"
+            fullWidth
+            onClick={manualRefresh}
+            disabled={refreshing}
+          >
+            <RefreshCw
+              className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
+            />
+            {refreshing ? "Vérification..." : "Re-vérifier le statut"}
+          </Button>
           <Link href="/auctions">
             <Button size="lg" variant="secondary" fullWidth>
               Parcourir les enchères en attendant

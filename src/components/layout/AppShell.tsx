@@ -5,6 +5,7 @@ import { SideSwipeNav } from "./SideSwipeNav";
 import { PhoneCompletionGate } from "./PhoneCompletionGate";
 import { MaintenanceBanner } from "./MaintenanceBanner";
 import { DesktopHeader } from "./DesktopHeader";
+import { KycReminderPopup } from "./KycReminderPopup";
 
 interface Props {
   children: React.ReactNode;
@@ -45,6 +46,10 @@ export function AppShell({ children, noTopBar }: Props) {
           via Google OAuth (or any path that didn't capture a phone).
           Stays up until they submit a valid number. */}
       <PhoneCompletionGate />
+      {/* Soft, skippable KYC nudge — only shows when the signed-in user
+          hasn't verified yet, and snoozes 24h after every dismissal so
+          it doesn't nag on every page navigation. */}
+      <KycReminderPopup />
     </div>
   );
 }
