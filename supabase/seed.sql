@@ -202,25 +202,9 @@ values
    now() - interval '36 hours', now() + interval '60 hours', now() + interval '60 hours',
    'active', false, 12, 7, true, true, '[]'::jsonb),
 
-  -- 6. Toyota Yaris 2020 — entry-level + new-seller alert
-  ('aaaaaaa6-6666-6666-6666-aaaaaaaaaaaa',
-   '55555555-5555-5555-5555-555555555555',
-   'Toyota','Yaris',2020,52000,'gasoline','manual','Bleu',
-   'good','hatchback',
-   'Yaris économique, faible consommation (5.5L/100), entretien en concession, pneus neufs.',
-   ARRAY['Climatisation','ABS','Airbags','Système audio'],
-   'Nabeul','Centre-Est',
-   ARRAY[
-     'https://images.unsplash.com/photo-1549924231-f129b911e442?w=1200&h=800&fit=crop&q=80',
-     'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=1200&h=800&fit=crop&q=80',
-     'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=1200&h=800&fit=crop&q=80',
-     'https://images.unsplash.com/photo-1502877338535-766e1452684a?w=1200&h=800&fit=crop&q=80'
-   ],
-   null,
-   28000, null, null, 28500, 1400, 250,
-   now() - interval '2 hours', now() + interval '120 hours', now() + interval '120 hours',
-   'active', true, 2, 2, false, false,
-   '[{"type":"warning","title":"Nouveau vendeur sur la plateforme","detail":"Ce compte a moins d''un mois","suggestion":"Consultez la politique de la plateforme avant d''enchérir"}]'::jsonb),
+  -- 6. (removed) Toyota Yaris 2020 — dropped at the user's request.
+  -- The id aaaaaaa6-... is intentionally left dead: any FK rows that
+  -- still reference it should fail cleanly rather than silently re-seed.
 
   -- ── ACTIVE — SUVs ───────────────────────────────────────
   -- 7. Hyundai Tucson 2023 — VIP family SUV
