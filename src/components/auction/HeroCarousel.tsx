@@ -149,23 +149,35 @@ export function HeroCarousel({
           willChange: "transform",
         }}
       >
-        {images.map((src, i) => (
-          <div
-            key={i}
-            className="relative h-full w-full shrink-0"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={thumb(src, { width: 1280, quality: 75 })}
-              alt={`${alt} ${i + 1}`}
-              loading={i === 0 ? "eager" : "lazy"}
-              decoding="async"
-              fetchPriority={i === 0 ? "high" : "auto"}
-              draggable={false}
-              className="h-full w-full object-cover pointer-events-none"
-            />
-          </div>
-        ))}
+        {images.map((src, i) => {
+          // Only the active frame, its immediate neighbours, and (for the
+          // first paint) the front frame ever render the <img>. Everything
+          // else stays as an empty <div> until the user navigates close
+          // enough — saves 8-10 image fetches on every page load.
+          const distance = Math.min(
+            Math.abs(i - active),
+            images.length - Math.abs(i - active),
+          );
+          const shouldRender = i === 0 || distance <= 1;
+          return (
+            <div key={i} className="relative h-full w-full shrink-0">
+              {shouldRender && (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={thumb(src, { width: 1024, quality: 72 })}
+                  srcSet={`${thumb(src, { width: 640, quality: 70 })} 640w, ${thumb(src, { width: 1024, quality: 72 })} 1024w, ${thumb(src, { width: 1440, quality: 72 })} 1440w`}
+                  sizes="(min-width: 1024px) 800px, 100vw"
+                  alt={`${alt} ${i + 1}`}
+                  loading={i === 0 ? "eager" : "lazy"}
+                  decoding="async"
+                  fetchPriority={i === 0 ? "high" : "auto"}
+                  draggable={false}
+                  className="h-full w-full object-cover pointer-events-none"
+                />
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* Children (gradients, floating buttons, title overlays) sit on top */}
