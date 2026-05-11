@@ -3,8 +3,10 @@ import { Link, redirect } from "@/i18n/navigation";
 import { ChevronLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getAuctionById, listRecentBids } from "@/lib/db";
+import { auctionCode } from "@/lib/format";
 import { BidComposer } from "@/components/auction/BidComposer";
 import { AuctionEndModal } from "@/components/auction/AuctionEndModal";
+import { DesktopBidHero } from "@/components/auction/DesktopBidHero";
 import { BidHistoryRealtime } from "./BidHistoryRealtime";
 
 export const dynamic = "force-dynamic";
@@ -87,8 +89,10 @@ export default async function BidPage({ params, searchParams }: Props) {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Slim header — circle back + label */}
-      <header className="sticky top-0 z-40 h-[var(--topbar-h)] bg-[#0e0e0e] border-b border-[var(--border)] flex items-center px-4 gap-3">
+      {/* ============================================================
+          MOBILE header — slim sticky bar with back + title.
+          ============================================================ */}
+      <header className="lg:hidden sticky top-0 z-40 h-[var(--topbar-h)] bg-[#0e0e0e] border-b border-[var(--border)] flex items-center px-4 gap-3">
         <Link
           href={`/auctions/${id}`}
           aria-label="Retour"
@@ -106,32 +110,97 @@ export default async function BidPage({ params, searchParams }: Props) {
         </div>
       </header>
 
-      {/* Pops once if the auction ends mid-bid */}
+      {/* ============================================================
+          DESKTOP header — taller sticky bar. "Détails" pill on the
+          start, big eyebrow + title in the middle, tracking code on
+          the end. Reads like a cockpit, not a phone toolbar.
+          ============================================================ */}
+      <header className="hidden lg:block sticky top-0 z-40 bg-[#0a0a0a]/90 backdrop-blur-xl border-b border-[var(--border)]">
+        <div className="max-w-[var(--max-w-wide)] mx-auto px-8 h-20 flex items-center gap-6">
+          <Link
+            href={`/auctions/${id}`}
+            className="inline-flex items-center gap-2 h-10 ps-3 pe-4 rounded-full ring-1 ring-[var(--border)] hover:ring-[var(--gold)] hover:text-[var(--gold)] text-sm font-bold transition-colors"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Détails
+          </Link>
+          <div className="min-w-0 flex-1">
+            <div className="text-[10px] uppercase tracking-[0.22em] font-extrabold text-[var(--gold)]">
+              Placer une enchère
+            </div>
+            <div className="mt-0.5 text-lg font-black truncate tracking-tight">
+              {auction.vehicle.make} {auction.vehicle.model}{" "}
+              <span className="text-[var(--foreground-muted)] font-light">
+                {auction.vehicle.year}
+              </span>
+            </div>
+          </div>
+          <span className="font-mono text-[11px] text-[var(--foreground-subtle)] tracking-[0.1em] tabular-nums shrink-0">
+            {auctionCode(auction.id)}
+          </span>
+        </div>
+      </header>
+
+      {/* Pops once if the auction ends mid-bid — already realtime-aware */}
       <AuctionEndModal auction={auction} userId={user?.id ?? null} />
 
-      <div className="max-w-[var(--max-w)] mx-auto px-4 pt-4 pb-10 space-y-4 lg:max-w-[var(--max-w-wide)] lg:grid lg:grid-cols-[1fr_360px] lg:gap-6 lg:space-y-0 lg:items-start lg:px-6">
-        <BidComposer
-          auction={auction}
-          initialAction={action ?? null}
-          initialDepositPaid={initialDepositPaid}
-        />
+      {userIsBidder ? (
+        // ============================================================
+        // ACTIVE BID — user has cleared every gate. Render the composer
+        // alongside live context + bid history.
+        //
+        // Mobile:  composer + history stack vertically (DOM order).
+        // Desktop: 2-col grid where DesktopBidHero + history land on
+        //          the start (lg:col-start-1) and the sticky composer
+        //          on the end (lg:col-start-2). DOM order is composer
+        //          first so mobile keeps the existing UX.
+        // ============================================================
+        <div className="max-w-[var(--max-w)] mx-auto px-4 pt-4 pb-10 space-y-5 lg:max-w-[var(--max-w-wide)] lg:px-8 lg:pt-10 lg:pb-16 lg:space-y-0 lg:grid lg:grid-cols-[1.4fr_440px] xl:grid-cols-[1.4fr_480px] lg:gap-10 xl:gap-12">
+          {/* ── Composer (DOM 1, mobile-top, desktop-right) ── */}
+          <aside className="lg:col-start-2 lg:row-start-1 lg:sticky lg:top-[calc(5rem+1.5rem)] lg:self-start">
+            <div className="lg:rounded-[24px] lg:bg-[var(--surface)] lg:ring-1 lg:ring-[var(--border)] lg:p-7 lg:shadow-[0_30px_80px_-30px_rgba(0,0,0,0.6)]">
+              <BidComposer
+                auction={auction}
+                initialAction={action ?? null}
+                initialDepositPaid={initialDepositPaid}
+              />
+            </div>
+          </aside>
 
-        {/* Live bid history — only shown when the user is actually in the
-            auction. For users still on a gate (login / KYC / deposit) we
-            hide it; surfacing other people's bids while they're locked out
-            of bidding turned out to feel like a tease. On desktop the
-            history sits in a sticky sidebar so the user can keep an eye
-            on the room while crafting their bid. */}
-        {userIsBidder && (
-          <div className="pt-2 lg:pt-0 lg:sticky lg:top-[calc(var(--topbar-h)+1rem)]">
-            <BidHistoryRealtime
-              auctionId={auction.id}
-              totalBids={auction.totalBids}
-              initialBids={initialBids}
-            />
+          {/* ── Vehicle hero + bid history (DOM 2, mobile-bottom, desktop-left) ── */}
+          <div className="lg:col-start-1 lg:row-start-1 space-y-6 lg:space-y-8 min-w-0">
+            {/* Desktop-only — vehicle hero + live stats card */}
+            <div className="hidden lg:block">
+              <DesktopBidHero initialAuction={auction} />
+            </div>
+
+            {/* Live bid history — both viewports. On desktop it's wrapped
+                in a card; on mobile it stays transparent (matches the
+                previous mobile UX exactly). */}
+            <div className="lg:rounded-[var(--radius-md)] lg:bg-[var(--surface)] lg:border lg:border-[var(--border)] lg:p-6">
+              <BidHistoryRealtime
+                auctionId={auction.id}
+                totalBids={auction.totalBids}
+                initialBids={initialBids}
+              />
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        // ============================================================
+        // GATE — user has not cleared a gate (login / KYC / deposit /
+        // own auction). The composer renders its own 2-col PreBidGate
+        // layout on desktop, so the page wrapper just provides
+        // breathing room around it.
+        // ============================================================
+        <div className="max-w-[var(--max-w)] mx-auto px-4 pt-4 pb-10 lg:max-w-[var(--max-w-wide)] lg:px-8 lg:pt-10 lg:pb-16">
+          <BidComposer
+            auction={auction}
+            initialAction={action ?? null}
+            initialDepositPaid={initialDepositPaid}
+          />
+        </div>
+      )}
     </div>
   );
 }

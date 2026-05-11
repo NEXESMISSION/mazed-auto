@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/layout/AppShell";
+import { RouteLoading } from "@/components/layout/RouteLoading";
 
 /**
  * Skeleton for /messages — title row, then a single divided card
@@ -7,6 +8,7 @@ import { AppShell } from "@/components/layout/AppShell";
 export default function Loading() {
   return (
     <AppShell>
+      <RouteLoading>
       <div className="max-w-[var(--max-w)] lg:max-w-[var(--max-w-app)] mx-auto px-4 py-5 space-y-4">
         <div className="h-7 w-32 rounded skeleton" />
 
@@ -25,6 +27,7 @@ export default function Loading() {
           ))}
         </div>
       </div>
+      </RouteLoading>
     </AppShell>
   );
 }

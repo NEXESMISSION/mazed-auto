@@ -44,7 +44,7 @@ begin
              case when u.raw_user_meta_data ->> 'role' = 'admin' then 'admin' else null end)::text
                                                   as admin_role,
     u.created_at,
-    (select max(last_seen) from public.admin_sessions where user_id = u.id) as last_seen
+    (select max(sess.last_seen) from public.admin_sessions sess where sess.user_id = u.id) as last_seen
   from auth.users u
   left join public.sellers s on s.id = u.id
   where (u.raw_user_meta_data ->> 'role') = 'admin'

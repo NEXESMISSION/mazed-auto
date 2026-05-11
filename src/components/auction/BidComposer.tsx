@@ -13,12 +13,17 @@ import {
   Wallet,
   ShieldCheck,
   Lock,
+  Gauge,
+  Users,
+  Clock,
+  ArrowRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Modal, ModalFooter } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { Countdown } from "@/components/auction/Countdown";
 import { formatPrice } from "@/lib/format";
+import { thumb } from "@/lib/imageUrl";
 import { cn } from "@/lib/utils";
 import { useRealtimeAuction } from "@/lib/realtime";
 import { useAuth } from "@/lib/auth";
@@ -298,7 +303,35 @@ export function BidComposer({
   }
 
   if (!auctionLive) {
-    return null;
+    // Auction flipped to ended/cancelled/reserve_not_met while the user
+    // was on the page. The AuctionEndModal pops a celebration/sympathy
+    // popup; this inline state replaces the bid form so the column
+    // doesn't read as broken/empty once the modal is dismissed.
+    return (
+      <div className="space-y-4 lg:space-y-5 text-center py-4 lg:py-6">
+        <div className="mx-auto h-12 w-12 lg:h-16 lg:w-16 rounded-full bg-red-500/15 ring-1 ring-red-500/30 text-red-300 flex items-center justify-center">
+          <Lock className="h-5 w-5 lg:h-7 lg:w-7" />
+        </div>
+        <div>
+          <div className="text-base lg:text-xl font-extrabold lg:font-black">
+            Cette enchère est terminée
+          </div>
+          <p className="mt-1.5 text-xs lg:text-sm text-[var(--foreground-muted)] leading-relaxed max-w-xs mx-auto">
+            Les offres ne sont plus acceptées. Consultez les détails pour
+            voir le résultat.
+          </p>
+        </div>
+        <Button
+          size="md"
+          fullWidth
+          variant="secondary"
+          onClick={() => router.push(`/auctions/${auction.id}`)}
+          className="lg:h-12"
+        >
+          Voir le résultat
+        </Button>
+      </div>
+    );
   }
 
   // ── Pre-bid gates ───────────────────────────────────────────────────────
@@ -320,9 +353,7 @@ export function BidComposer({
         body="Vous aurez besoin d'un compte vérifié, puis de payer la caution de participation (5%) pour rejoindre n'importe quelle enchère."
         ctaLabel="Se connecter"
         onCta={() => router.push(`/login?redirect=/auctions/${auction.id}`)}
-        currentPrice={auction.currentPrice}
-        endTime={auction.endTime}
-        totalBids={auction.totalBids}
+        auction={auction}
       />
     );
   }
@@ -336,9 +367,7 @@ export function BidComposer({
         body="Vous ne pouvez pas enchérir sur une enchère que vous publiez. Suivez l'activité des enchérisseurs depuis le Tableau du vendeur."
         ctaLabel="Voir les statistiques de l'enchère"
         onCta={() => router.push(`/seller/auctions/${auction.id}`)}
-        currentPrice={auction.currentPrice}
-        endTime={auction.endTime}
-        totalBids={auction.totalBids}
+        auction={auction}
       />
     );
   }
@@ -352,9 +381,7 @@ export function BidComposer({
         body="Nous devons confirmer votre identité une seule fois avant que vous puissiez enchérir. La vérification prend deux minutes."
         ctaLabel="Commencer la vérification"
         onCta={() => router.push("/kyc/start")}
-        currentPrice={auction.currentPrice}
-        endTime={auction.endTime}
-        totalBids={auction.totalBids}
+        auction={auction}
       />
     );
   }
@@ -387,9 +414,7 @@ export function BidComposer({
             `/payment/checkout?type=deposit&amount=${auction.participationDeposit}&auction=${auction.id}`,
           )
         }
-        currentPrice={auction.currentPrice}
-        endTime={auction.endTime}
-        totalBids={auction.totalBids}
+        auction={auction}
         bullets={[
           "5% du prix de départ, réserve votre place dans l'enchère",
           "Intégralement remboursée sous 24 heures si vous ne gagnez pas",
@@ -404,12 +429,12 @@ export function BidComposer({
   const ctaDisabled = submitting;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 lg:space-y-6">
       {/* Status — single inline run, no flex tricks */}
-      <div className="flex items-center gap-2 text-[11px] text-[var(--foreground-muted)] flex-wrap">
+      <div className="flex items-center gap-2 text-[11px] lg:text-[12px] text-[var(--foreground-muted)] flex-wrap">
         <span className="inline-flex items-center gap-1.5">
           <span className="h-1.5 w-1.5 rounded-full bg-[var(--gold)] pulse-gold" />
-          <span className="text-[10px] font-bold text-[var(--gold)] uppercase tracking-[0.2em]">
+          <span className="text-[10px] lg:text-[11px] font-bold text-[var(--gold)] uppercase tracking-[0.2em]">
             En direct
           </span>
         </span>
@@ -424,15 +449,17 @@ export function BidComposer({
         </button>
       </div>
 
-      {/* Price block — vertical stack, all left-aligned */}
+      {/* Price block — vertical stack, all left-aligned. Bigger on desktop. */}
       <div>
-        <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-[var(--foreground-subtle)] mb-1">
+        <div className="text-[10px] lg:text-[11px] uppercase tracking-[0.2em] lg:tracking-[0.22em] font-bold text-[var(--foreground-subtle)] lg:text-[var(--foreground-muted)] mb-1 lg:mb-1.5">
           Prix actuel
         </div>
-        <div className="text-3xl font-extrabold tabular-nums leading-none gradient-gold-text">
-          {formatPrice(auction.currentPrice)}
+        <div className="text-3xl lg:text-[44px] xl:text-[52px] font-extrabold lg:font-black tabular-nums leading-none gradient-gold-text">
+          <span key={auction.currentPrice} className="inline-block animate-fade-in">
+            {formatPrice(auction.currentPrice)}
+          </span>
         </div>
-        <div className="text-[11px] text-[var(--foreground-muted)] mt-2 tabular-nums">
+        <div className="text-[11px] lg:text-[12px] text-[var(--foreground-muted)] mt-2 lg:mt-3 tabular-nums">
           {auction.totalBids} {auction.totalBids === 1 ? "offre" : "offres"} · {auction.totalParticipants} {auction.totalParticipants === 1 ? "participant" : "participants"}
           {auction.reservePrice && (
             <>
@@ -458,14 +485,14 @@ export function BidComposer({
           <div className="h-px bg-[var(--border)]" />
 
           {/* Bid input section */}
-          <div className="space-y-2">
+          <div className="space-y-2 lg:space-y-3">
             <div className="flex items-baseline justify-between">
-              <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-[var(--foreground-muted)]">
+              <span className="text-[10px] lg:text-[11px] uppercase tracking-[0.2em] lg:tracking-[0.22em] font-bold text-[var(--foreground-muted)]">
                 Votre offre
               </span>
               <span
                 className={cn(
-                  "tabular-nums font-bold text-[11px]",
+                  "tabular-nums font-bold text-[11px] lg:text-[12px]",
                   amount < minBid
                     ? "text-[var(--danger)]"
                     : amount === minBid
@@ -483,7 +510,7 @@ export function BidComposer({
 
             <div
               className={cn(
-                "flex items-stretch h-12 rounded-[var(--radius)] overflow-hidden border transition-colors",
+                "flex items-stretch h-12 lg:h-16 rounded-[var(--radius)] lg:rounded-2xl overflow-hidden border transition-colors",
                 amount < minBid
                   ? "border-[var(--danger)]/50"
                   : "border-[var(--border)] focus-within:border-[var(--gold)]",
@@ -493,9 +520,9 @@ export function BidComposer({
                 onClick={() => setAmount((v) => Math.max(minBid, v - inc))}
                 disabled={amount <= minBid}
                 aria-label="Réduire"
-                className="px-3 bg-[var(--surface-2)] hover:bg-[var(--surface-3)] disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center"
+                className="px-3 lg:px-5 bg-[var(--surface-2)] hover:bg-[var(--surface-3)] disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center"
               >
-                <Minus className="h-4 w-4" />
+                <Minus className="h-4 w-4 lg:h-5 lg:w-5" />
               </button>
               <input
                 type="text"
@@ -522,25 +549,25 @@ export function BidComposer({
                     Number.isFinite(n) && n >= minBid ? n : minBid;
                   setAmountStr(String(clamped));
                 }}
-                className="flex-1 bg-transparent text-center text-xl font-extrabold tabular-nums focus:outline-none"
+                className="flex-1 bg-transparent text-center text-xl lg:text-2xl xl:text-3xl font-extrabold tabular-nums focus:outline-none"
                 aria-label="votre offre"
               />
               <button
                 onClick={() => setAmount((v) => Math.max(minBid, v) + inc)}
                 aria-label="Incrément"
-                className="px-3 bg-[var(--surface-2)] hover:bg-[var(--surface-3)] flex items-center justify-center"
+                className="px-3 lg:px-5 bg-[var(--surface-2)] hover:bg-[var(--surface-3)] flex items-center justify-center"
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-4 w-4 lg:h-5 lg:w-5" />
               </button>
             </div>
 
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 lg:gap-2">
               {presets.map((p) => (
                 <button
                   key={p.key}
                   onClick={() => setAmount(p.amount)}
                   className={cn(
-                    "h-7 px-2.5 rounded-full text-[11px] font-bold tabular-nums transition-colors",
+                    "h-7 lg:h-9 px-2.5 lg:px-4 rounded-full text-[11px] lg:text-[12px] font-bold tabular-nums transition-colors",
                     amount === p.amount
                       ? "bg-[var(--gold)] text-black"
                       : "bg-[var(--surface-2)] border border-[var(--border)] text-[var(--foreground-muted)] hover:border-[var(--gold)]/50 hover:text-foreground",
@@ -553,28 +580,29 @@ export function BidComposer({
           </div>
 
           {/* Action: full-width primary + secondary text links underneath */}
-          <div className="space-y-2.5">
+          <div className="space-y-2.5 lg:space-y-3">
             <Button
               size="md"
               fullWidth
               onClick={handleBidClick}
               disabled={ctaDisabled}
+              className="lg:h-14 lg:text-base lg:rounded-full"
             >
-              <Gavel className="h-4 w-4" />
+              <Gavel className="h-4 w-4 lg:h-5 lg:w-5" />
               {ctaLabel}
             </Button>
 
-            <div className="flex items-center justify-center gap-3 text-[11px]">
+            <div className="flex items-center justify-center gap-3 text-[11px] lg:text-[12px]">
               <button
                 onClick={() => setShowAuto(true)}
                 className={cn(
-                  "inline-flex items-center gap-1 font-semibold transition-colors",
+                  "inline-flex items-center gap-1 lg:gap-1.5 font-semibold transition-colors",
                   activeAutoMax
                     ? "text-[var(--gold)]"
                     : "text-[var(--foreground-muted)] hover:text-[var(--gold)]",
                 )}
               >
-                <Bot className="h-3 w-3" />
+                <Bot className="h-3 w-3 lg:h-3.5 lg:w-3.5" />
                 {activeAutoMax
                   ? `Plafond ${formatPrice(activeAutoMax)}`
                   : "Plafond automatique"}
@@ -584,9 +612,9 @@ export function BidComposer({
                   <span className="text-[var(--border-strong)]">·</span>
                   <button
                     onClick={handleBuyNowClick}
-                    className="inline-flex items-center gap-1 font-semibold text-[var(--foreground-muted)] hover:text-[var(--gold)] transition-colors"
+                    className="inline-flex items-center gap-1 lg:gap-1.5 font-semibold text-[var(--foreground-muted)] hover:text-[var(--gold)] transition-colors"
                   >
-                    <Zap className="h-3 w-3" />
+                    <Zap className="h-3 w-3 lg:h-3.5 lg:w-3.5" />
                     Achat immédiat {formatPrice(auction.buyNowPrice)}
                   </button>
                 </>
@@ -752,6 +780,13 @@ export function BidComposer({
  * Replaces the bid composer when the user can't actually bid yet — login,
  * KYC, deposit, own-auction. Looks distinctly *not* like a bid form so the
  * user knows the next step is something else.
+ *
+ * Two layouts kept in parallel:
+ *   - Mobile (<lg): compact card stack — same shape it always was.
+ *   - Desktop (lg+): magazine-style 2-col split — vehicle hero on the
+ *     start, gate card on the end with much bigger typography and trust
+ *     signals. The user sees which car they're committing money to right
+ *     next to the deposit CTA.
  */
 function PreBidGate({
   tone,
@@ -762,9 +797,7 @@ function PreBidGate({
   ctaIcon,
   onCta,
   bullets,
-  currentPrice,
-  endTime,
-  totalBids,
+  auction,
 }: {
   tone: "muted" | "warning" | "gold";
   icon: React.ReactNode;
@@ -774,10 +807,11 @@ function PreBidGate({
   ctaIcon?: React.ReactNode;
   onCta: () => void;
   bullets?: string[];
-  currentPrice: number;
-  endTime: Date;
-  totalBids: number;
+  auction: Auction;
 }) {
+  const { vehicle, currentPrice, endTime, totalBids, totalParticipants } =
+    auction;
+
   const palette = {
     muted: {
       ring: "border-[var(--border)]",
@@ -798,59 +832,231 @@ function PreBidGate({
   }[tone];
 
   return (
-    <div className="space-y-4">
-      {/* Tight inline context — current price on the start, live pill +
-          countdown + bid count on the end. The "En direct" pill makes the
-          live state legible at a glance (was just a tiny dot before). */}
-      <div className="flex items-baseline justify-between gap-3 flex-wrap">
-        <div className="text-2xl font-extrabold tabular-nums leading-none gradient-gold-text">
-          {formatPrice(currentPrice)}
-        </div>
-        <div className="text-[11px] text-[var(--foreground-muted)] inline-flex items-center gap-2">
-          <span className="inline-flex items-center gap-1 px-1.5 h-5 rounded-full bg-[var(--gold-faint)] border border-[var(--gold)]/30 text-[var(--gold)] text-[10px] font-bold uppercase tracking-[0.15em]">
-            <span className="h-1.5 w-1.5 rounded-full bg-[var(--gold)] pulse-gold" />
-            En direct
-          </span>
-          <Countdown endTime={endTime} size="sm" withIcon={false} className="text-[11px]" />
-          <span className="text-[var(--border-strong)]">·</span>
-          <span className="tabular-nums">{totalBids} {totalBids === 1 ? "offre" : "offres"}</span>
-        </div>
-      </div>
-
-      {/* Gate card — this is where the user's eye should land */}
-      <div
-        className={`rounded-[var(--radius-md)] border ${palette.ring} ${palette.bg} p-5 space-y-4`}
-      >
-        <div className="flex items-start gap-3">
-          <div
-            className={`h-12 w-12 rounded-full ${palette.iconBg} flex items-center justify-center shrink-0`}
-          >
-            {icon}
+    <>
+      {/* ==================================================================
+          MOBILE (<lg) — original compact layout, untouched.
+          ================================================================== */}
+      <div className="lg:hidden space-y-4">
+        {/* Tight inline context — current price on the start, live pill +
+            countdown + bid count on the end. */}
+        <div className="flex items-baseline justify-between gap-3 flex-wrap">
+          <div className="text-2xl font-extrabold tabular-nums leading-none gradient-gold-text">
+            {formatPrice(currentPrice)}
           </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="font-extrabold text-base leading-tight">{title}</h3>
-            <p className="text-xs text-[var(--foreground-muted)] mt-1.5 leading-relaxed">
-              {body}
-            </p>
+          <div className="text-[11px] text-[var(--foreground-muted)] inline-flex items-center gap-2">
+            <span className="inline-flex items-center gap-1 px-1.5 h-5 rounded-full bg-[var(--gold-faint)] border border-[var(--gold)]/30 text-[var(--gold)] text-[10px] font-bold uppercase tracking-[0.15em]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[var(--gold)] pulse-gold" />
+              En direct
+            </span>
+            <Countdown endTime={endTime} size="sm" withIcon={false} className="text-[11px]" />
+            <span className="text-[var(--border-strong)]">·</span>
+            <span className="tabular-nums">{totalBids} {totalBids === 1 ? "offre" : "offres"}</span>
           </div>
         </div>
 
-        {bullets && bullets.length > 0 && (
-          <ul className="space-y-1.5 text-xs text-[var(--foreground-muted)] ms-1">
-            {bullets.map((b, i) => (
-              <li key={i} className="flex items-start gap-2">
-                <CheckCircle2 className="h-3.5 w-3.5 text-[var(--gold)] shrink-0 mt-0.5" />
-                <span>{b}</span>
-              </li>
-            ))}
-          </ul>
-        )}
+        <div
+          className={`rounded-[var(--radius-md)] border ${palette.ring} ${palette.bg} p-5 space-y-4`}
+        >
+          <div className="flex items-start gap-3">
+            <div
+              className={`h-12 w-12 rounded-full ${palette.iconBg} flex items-center justify-center shrink-0`}
+            >
+              {icon}
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-extrabold text-base leading-tight">{title}</h3>
+              <p className="text-xs text-[var(--foreground-muted)] mt-1.5 leading-relaxed">
+                {body}
+              </p>
+            </div>
+          </div>
 
-        <Button onClick={onCta} size="md" fullWidth>
-          {ctaIcon}
-          {ctaLabel}
-        </Button>
+          {bullets && bullets.length > 0 && (
+            <ul className="space-y-1.5 text-xs text-[var(--foreground-muted)] ms-1">
+              {bullets.map((b, i) => (
+                <li key={i} className="flex items-start gap-2">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-[var(--gold)] shrink-0 mt-0.5" />
+                  <span>{b}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <Button onClick={onCta} size="md" fullWidth>
+            {ctaIcon}
+            {ctaLabel}
+          </Button>
+        </div>
       </div>
-    </div>
+
+      {/* ==================================================================
+          DESKTOP (lg+) — magazine 2-col layout: vehicle hero + gate card.
+          ================================================================== */}
+      <div className="hidden lg:grid grid-cols-[1.1fr_1fr] gap-8 xl:gap-10 items-start">
+        {/* ── Vehicle hero ── */}
+        <div className="relative rounded-[28px] overflow-hidden ring-1 ring-white/10 bg-[var(--surface)] aspect-[4/3]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={thumb(vehicle.imageUrls[0], { width: 1200, quality: 75 })}
+            alt={`${vehicle.make} ${vehicle.model}`}
+            className="absolute inset-0 h-full w-full object-cover"
+            draggable={false}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-black/20" />
+
+          {/* Top — live pill + countdown */}
+          <div className="absolute inset-x-0 top-0 p-5 flex items-start justify-between gap-3">
+            <span className="inline-flex items-center gap-2 px-3 h-8 rounded-full bg-emerald-500/15 ring-1 ring-emerald-500/40 backdrop-blur-md">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-60" />
+                <span className="relative h-2 w-2 rounded-full bg-emerald-400" />
+              </span>
+              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-300">
+                En direct
+              </span>
+            </span>
+            <span className="inline-flex items-center gap-2 px-3 h-8 rounded-full bg-black/60 backdrop-blur-md ring-1 ring-white/10 text-white">
+              <Clock className="h-3.5 w-3.5 text-[var(--gold)]" />
+              <Countdown
+                endTime={endTime}
+                size="sm"
+                withIcon={false}
+                className="text-[12px] font-bold tabular-nums text-white"
+              />
+            </span>
+          </div>
+
+          {/* Bottom — title + price */}
+          <div className="absolute inset-x-0 bottom-0 p-7">
+            <div className="text-[10px] uppercase tracking-[0.22em] font-bold text-[var(--gold)] mb-1.5">
+              Vous enchérissez sur
+            </div>
+            <h2 className="text-3xl xl:text-[34px] font-black text-white leading-[1.05] tracking-tight">
+              {vehicle.make} {vehicle.model}
+            </h2>
+            <div className="mt-1.5 text-base text-white/75 font-light flex items-center gap-3 flex-wrap">
+              <span>{vehicle.year}</span>
+              {vehicle.color && (
+                <>
+                  <span className="h-1 w-1 rounded-full bg-white/40" />
+                  <span>{vehicle.color}</span>
+                </>
+              )}
+              {vehicle.mileage > 0 && (
+                <>
+                  <span className="h-1 w-1 rounded-full bg-white/40" />
+                  <span className="inline-flex items-center gap-1.5">
+                    <Gauge className="h-4 w-4" />
+                    {Intl.NumberFormat("fr-TN").format(vehicle.mileage)} km
+                  </span>
+                </>
+              )}
+            </div>
+
+            <div className="mt-5 flex items-end justify-between gap-4">
+              <div>
+                <div className="text-[10px] uppercase tracking-[0.18em] font-bold text-white/60">
+                  Prix actuel
+                </div>
+                <div className="mt-1 text-[34px] xl:text-[40px] font-black gradient-gold-text tabular-nums leading-none">
+                  {formatPrice(currentPrice)}
+                </div>
+              </div>
+              <div className="flex items-center gap-4 text-white/85 text-[13px] pb-1.5">
+                <span className="inline-flex items-center gap-1.5 tabular-nums">
+                  <Gavel className="h-4 w-4 text-[var(--gold)]" />
+                  {totalBids} {totalBids === 1 ? "offre" : "offres"}
+                </span>
+                <span className="inline-flex items-center gap-1.5 tabular-nums">
+                  <Users className="h-4 w-4 text-[var(--gold)]" />
+                  {totalParticipants}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Gate card (right column) ── */}
+        <div
+          className={`relative overflow-hidden rounded-[28px] border ${palette.ring} ${palette.bg} p-9 xl:p-10`}
+        >
+          {/* Decorative glow for the gold (deposit) tone */}
+          {tone === "gold" && (
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -top-20 -end-20 h-56 w-56 rounded-full bg-[var(--gold)] blur-3xl opacity-20"
+            />
+          )}
+
+          <div className="relative space-y-7">
+            <div
+              className={`h-16 w-16 rounded-2xl ${palette.iconBg} flex items-center justify-center`}
+            >
+              {icon}
+            </div>
+
+            <div>
+              <h3 className="text-3xl xl:text-[34px] font-black tracking-tight leading-[1.1]">
+                {title}
+              </h3>
+              <p className="mt-3 text-[15px] text-[var(--foreground-muted)] leading-relaxed">
+                {body}
+              </p>
+            </div>
+
+            {bullets && bullets.length > 0 && (
+              <ul className="space-y-3">
+                {bullets.map((b, i) => (
+                  <li
+                    key={i}
+                    className="flex items-start gap-3 rounded-xl bg-black/20 ring-1 ring-white/5 p-3.5"
+                  >
+                    <span className="h-7 w-7 rounded-full bg-[var(--gold)]/20 ring-1 ring-[var(--gold)]/40 text-[var(--gold)] flex items-center justify-center shrink-0">
+                      <CheckCircle2 className="h-4 w-4" />
+                    </span>
+                    <span className="text-[14px] text-foreground/90 leading-snug">
+                      {b}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <button
+              type="button"
+              onClick={onCta}
+              className={cn(
+                "group inline-flex items-center justify-center gap-2 w-full h-14 rounded-full font-extrabold text-[15px] transition-transform hover:scale-[1.01] active:scale-[0.99]",
+                tone === "gold"
+                  ? "bg-[var(--gold)] text-black shadow-[var(--shadow-gold)]"
+                  : tone === "warning"
+                    ? "bg-amber-400 text-black shadow-[0_8px_24px_-4px_rgba(245,158,11,0.5)]"
+                    : "bg-foreground text-background",
+              )}
+            >
+              {ctaIcon}
+              {ctaLabel}
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            </button>
+
+            {/* Tiny reassurance footer — only on the gold (deposit) tone
+                where money is changing hands. */}
+            {tone === "gold" && (
+              <div className="flex items-center justify-center gap-4 text-[11px] text-[var(--foreground-subtle)] pt-1">
+                <span className="inline-flex items-center gap-1.5">
+                  <ShieldCheck className="h-3.5 w-3.5 text-[var(--gold)]" />
+                  Paiement sécurisé
+                </span>
+                <span className="text-[var(--border-strong)]">·</span>
+                <span className="inline-flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5 text-[var(--gold)]" />
+                  Remboursement sous 24 h
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </>
   );
 }

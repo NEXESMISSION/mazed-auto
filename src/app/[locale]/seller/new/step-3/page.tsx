@@ -17,6 +17,64 @@ const checklist = [
   { time: "55-60s", label: "Gros plan sur la plaque d'immatriculation" },
 ];
 
+// PLAN §12 says the tour video runs ~60 seconds. Accept anything from
+// 30 s (covers a fast checklist run) up to 90 s (small tolerance over the
+// nominal cap) — reject runaway uploads earlier so the seller doesn't
+// burn bandwidth on a clip the review queue will throw out anyway.
+const MIN_VIDEO_S = 30;
+const MAX_VIDEO_S = 90;
+
+function readVideoDuration(file: File): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const v = document.createElement("video");
+    v.preload = "metadata";
+    v.muted = true;
+    v.src = url;
+    const cleanup = () => URL.revokeObjectURL(url);
+    v.onloadedmetadata = () => {
+      const d = Number.isFinite(v.duration) ? v.duration : 0;
+      cleanup();
+      resolve(d);
+    };
+    v.onerror = () => {
+      cleanup();
+      reject(new Error("Impossible de lire la vidéo"));
+    };
+  });
+}
+
+async function validateVideo(
+  file: File,
+): Promise<{ ok: true } | { ok: false; reason: string }> {
+  try {
+    const duration = await readVideoDuration(file);
+    if (!Number.isFinite(duration) || duration <= 0) {
+      // Some Android encoders don't write a duration into the moov atom
+      // until the file is fully muxed. Accept the upload rather than
+      // blocking a seller on a metadata quirk; the review queue is the
+      // final gate.
+      return { ok: true };
+    }
+    if (duration < MIN_VIDEO_S) {
+      return {
+        ok: false,
+        reason: `La vidéo est trop courte (${Math.round(duration)} s). Suivez la check-list, durée min ${MIN_VIDEO_S} s.`,
+      };
+    }
+    if (duration > MAX_VIDEO_S) {
+      return {
+        ok: false,
+        reason: `La vidéo dépasse ${MAX_VIDEO_S} s (mesurée ${Math.round(duration)} s). Refilmez en suivant les segments de la check-list.`,
+      };
+    }
+    return { ok: true };
+  } catch {
+    // Probe failed — let the upload proceed and rely on server-side review.
+    return { ok: true };
+  }
+}
+
 export default function Step3Page() {
   const router = useRouter();
   const { toast } = useToast();
@@ -67,6 +125,7 @@ export default function Step3Page() {
             folder="auction-video"
             label="Filmer la voiture"
             onCaptured={handleCaptured}
+            validate={validateVideo}
           />
         )}
 

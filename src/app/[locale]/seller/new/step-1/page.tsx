@@ -100,26 +100,31 @@ export default function Step1Page() {
         .select("slug, name_fr, position")
         .eq("is_active", true)
         .order("position", { ascending: true }),
-    ]).then(([brandsRes, featRes, citiesRes]) => {
-      if (cancelled) return;
-      if (brandsRes.data && brandsRes.data.length > 0) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setMakes(brandsRes.data.map((b) => b.display_name as string));
-      }
-      if (featRes.data && featRes.data.length > 0) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setFeatureOpts(featRes.data.map((f) => f.label_fr as string));
-      }
-      if (citiesRes.data && citiesRes.data.length > 0) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setCityOpts(
-          citiesRes.data.map((c) => ({
-            slug: c.slug as string,
-            name: c.name_fr as string,
-          })),
-        );
-      }
-    });
+    ])
+      .then(([brandsRes, featRes, citiesRes]) => {
+        if (cancelled) return;
+        if (brandsRes.data && brandsRes.data.length > 0) {
+          // eslint-disable-next-line react-hooks/set-state-in-effect
+          setMakes(brandsRes.data.map((b) => b.display_name as string));
+        }
+        if (featRes.data && featRes.data.length > 0) {
+          // eslint-disable-next-line react-hooks/set-state-in-effect
+          setFeatureOpts(featRes.data.map((f) => f.label_fr as string));
+        }
+        if (citiesRes.data && citiesRes.data.length > 0) {
+          // eslint-disable-next-line react-hooks/set-state-in-effect
+          setCityOpts(
+            citiesRes.data.map((c) => ({
+              slug: c.slug as string,
+              name: c.name_fr as string,
+            })),
+          );
+        }
+      })
+      .catch(() => {
+        // CMS unreachable — keep the inline FALLBACK_* lists so the form
+        // stays usable. Admins will see this in Supabase logs.
+      });
     return () => {
       cancelled = true;
     };
@@ -171,15 +176,21 @@ export default function Step1Page() {
 
   return (
     <CreateAuctionShell current={0}>
-      <div className="space-y-5">
+      <div className="space-y-5 lg:space-y-8">
         <div>
-          <h1 className="text-2xl font-extrabold">Données du véhicule</h1>
-          <p className="text-sm text-[var(--foreground-muted)] mt-1">
-            Informations essentielles que les acheteurs doivent connaître
+          <div className="hidden lg:block text-[11px] uppercase tracking-[0.22em] font-bold text-[var(--gold)]">
+            Étape 1 · Identifiez le véhicule
+          </div>
+          <h1 className="text-2xl lg:text-4xl font-extrabold lg:font-black lg:tracking-tight lg:mt-2">
+            Données du véhicule
+          </h1>
+          <p className="text-sm lg:text-base text-[var(--foreground-muted)] mt-1 lg:mt-3 lg:max-w-2xl">
+            Informations essentielles que les acheteurs doivent connaître. Tous
+            les champs sont vérifiés par notre équipe avant publication.
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-5">
           <Field label="Marque" name="make">
             <select
               className="select-field"
@@ -278,51 +289,53 @@ export default function Step1Page() {
           </Field>
         </div>
 
-        <Field label="Statut" name="condition">
-          <select
-            className="select-field"
-            value={draft.condition ?? ""}
-            onChange={(e) =>
-              update({
-                condition:
-                  (e.target.value as typeof draft.condition) || undefined,
-              })
-            }
-          >
-            <option value="">Choisir</option>
-            {conditions.map((c) => (
-              <option key={c.v} value={c.v}>
-                {c.l}
-              </option>
-            ))}
-          </select>
-        </Field>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 lg:gap-5">
+          <Field label="Statut" name="condition">
+            <select
+              className="select-field"
+              value={draft.condition ?? ""}
+              onChange={(e) =>
+                update({
+                  condition:
+                    (e.target.value as typeof draft.condition) || undefined,
+                })
+              }
+            >
+              <option value="">Choisir</option>
+              {conditions.map((c) => (
+                <option key={c.v} value={c.v}>
+                  {c.l}
+                </option>
+              ))}
+            </select>
+          </Field>
 
-        <Field label="Numéro de châssis (VIN)" name="vin">
-          <Input
-            placeholder="VF1XXXXXXXXXXXX (17 caractères, optionnel)"
-            value={draft.vin ?? ""}
-            maxLength={17}
-            onChange={(e) =>
-              update({
-                vin: e.target.value
-                  .toUpperCase()
-                  .replace(/[^A-HJ-NPR-Z0-9]/g, ""),
-              })
-            }
-          />
-        </Field>
+          <Field label="Numéro de châssis (VIN)" name="vin">
+            <Input
+              placeholder="VF1XXXXXXXXXXXX (optionnel)"
+              value={draft.vin ?? ""}
+              maxLength={17}
+              onChange={(e) =>
+                update({
+                  vin: e.target.value
+                    .toUpperCase()
+                    .replace(/[^A-HJ-NPR-Z0-9]/g, ""),
+                })
+              }
+            />
+          </Field>
 
-        <Field label="Numéro de plaque">
-          <Input
-            placeholder="123 Tunis 4567"
-            value={draft.registration ?? ""}
-            onChange={(e) => update({ registration: e.target.value })}
-          />
-        </Field>
+          <Field label="Numéro de plaque">
+            <Input
+              placeholder="123 Tunis 4567"
+              value={draft.registration ?? ""}
+              onChange={(e) => update({ registration: e.target.value })}
+            />
+          </Field>
+        </div>
 
         <Field label="Site" name="city">
-          <div className="grid grid-cols-2 gap-2" data-field="region">
+          <div className="grid grid-cols-2 gap-2 lg:gap-3" data-field="region">
             <Input
               placeholder="Ville"
               value={draft.city ?? ""}
@@ -350,12 +363,12 @@ export default function Step1Page() {
             rows={4}
             value={draft.description ?? ""}
             onChange={(e) => update({ description: e.target.value })}
-            className="w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-base text-foreground placeholder:text-[var(--foreground-subtle)] focus:border-[var(--gold)] focus:outline-none focus:ring-1 focus:ring-[var(--gold)]/30 resize-none"
+            className="w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--surface)] px-4 py-3 lg:py-4 text-base lg:text-[15px] text-foreground placeholder:text-[var(--foreground-subtle)] focus:border-[var(--gold)] focus:outline-none focus:ring-1 focus:ring-[var(--gold)]/30 resize-none lg:min-h-[140px]"
           />
         </Field>
 
         <Field label="Caractéristiques">
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 lg:gap-2.5">
             {featureOpts.map((f) => {
               const checked = features.includes(f);
               return (
@@ -363,7 +376,7 @@ export default function Step1Page() {
                   type="button"
                   key={f}
                   onClick={() => toggleFeature(f)}
-                  className={`px-3 py-1.5 rounded-full border text-sm transition-colors ${
+                  className={`px-3 lg:px-4 py-1.5 lg:py-2 rounded-full border text-sm lg:text-[13px] font-medium lg:font-semibold transition-colors ${
                     checked
                       ? "bg-[var(--gold)] text-black border-[var(--gold)]"
                       : "border-[var(--border)] text-foreground hover:border-[var(--gold)]"
@@ -376,16 +389,22 @@ export default function Step1Page() {
           </div>
         </Field>
 
-        <div className="pt-4 flex flex-col-reverse sm:flex-row gap-2">
+        <div className="pt-4 lg:pt-6 lg:border-t lg:border-[var(--border)] flex flex-col-reverse sm:flex-row gap-2 lg:gap-3 lg:justify-end">
           <Button
             variant="ghost"
             size="lg"
             fullWidth
             onClick={() => router.push("/seller/dashboard")}
+            className="lg:!w-auto lg:px-6"
           >
             Enregistrer et quitter
           </Button>
-          <Button size="lg" fullWidth onClick={next}>
+          <Button
+            size="lg"
+            fullWidth
+            onClick={next}
+            className="lg:!w-auto lg:px-8"
+          >
             Continuer
             <ArrowRight className="h-5 w-5" />
           </Button>

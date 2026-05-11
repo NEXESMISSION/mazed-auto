@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/layout/AppShell";
+import { RouteLoading } from "@/components/layout/RouteLoading";
 
 /**
  * Generic top-level skeleton — mirrors the home composition (avatar row +
@@ -9,7 +10,8 @@ import { AppShell } from "@/components/layout/AppShell";
 export default function Loading() {
   return (
     <AppShell noTopBar>
-      <div className="px-4 pt-6">
+      <RouteLoading>
+        <div className="px-4 pt-6">
         {/* Identity row */}
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-full skeleton shrink-0" />
@@ -60,6 +62,7 @@ export default function Loading() {
           ))}
         </div>
       </div>
+      </RouteLoading>
     </AppShell>
   );
 }

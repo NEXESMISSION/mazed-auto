@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/layout/AppShell";
+import { RouteLoading } from "@/components/layout/RouteLoading";
 
 /**
  * Skeleton for /buyer/bids — ScreenHeader (no back), tab strip
@@ -8,6 +9,7 @@ import { AppShell } from "@/components/layout/AppShell";
 export default function Loading() {
   return (
     <AppShell noTopBar>
+      <RouteLoading>
       {/* ScreenHeader */}
       <div className="px-4 pt-4 pb-3 flex items-center gap-3">
         <span className="h-10 w-10 shrink-0" />
@@ -55,6 +57,7 @@ export default function Loading() {
           ))}
         </div>
       </div>
+      </RouteLoading>
     </AppShell>
   );
 }

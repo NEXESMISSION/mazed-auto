@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { LogIn } from "lucide-react";
 import { HeaderIcons } from "./HeaderIcons";
-import { Avatar } from "@/components/ui/Avatar";
+import { ProfileMenu } from "./ProfileMenu";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
@@ -85,13 +85,7 @@ export function DesktopHeader() {
         <div className="flex items-center gap-2 shrink-0">
           <HeaderIcons hideWhenSignedOut={false} ghost />
           {loaded && user ? (
-            <Link
-              href="/profile"
-              className="h-9 w-9 rounded-full overflow-hidden ring-1 ring-[var(--border)] hover:ring-[var(--gold)] transition-colors"
-              aria-label="Profil"
-            >
-              <Avatar size="sm" alt={user.firstName || user.email || ""} />
-            </Link>
+            <ProfileMenu user={user} />
           ) : (
             <Link
               href="/login"

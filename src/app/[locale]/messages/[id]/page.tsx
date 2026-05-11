@@ -59,46 +59,53 @@ export default async function ConversationPage({ params }: Props) {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-40 h-[var(--topbar-h)] bg-[#0a0a0a] border-b border-[var(--border)] flex items-center px-4 gap-3">
-        <Link
-          href="/messages"
-          aria-label="Retour"
-          className="h-9 w-9 rounded-full bg-[var(--surface)] border border-[var(--border)] flex items-center justify-center hover:border-[var(--gold-soft)] transition-colors"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Link>
-        <Avatar size="sm" alt={otherName} />
-        <div className="flex-1 min-w-0">
-          <div className="font-bold text-sm truncate">{otherName}</div>
-          {conversation.auctions && (
-            <div className="text-[11px] text-[var(--foreground-muted)] truncate">
-              {conversation.auctions.make} {conversation.auctions.model}{" "}
-              {conversation.auctions.year}
+      {/* Header — slim on mobile, taller and contained on desktop */}
+      <header className="sticky top-0 z-40 bg-[#0a0a0a]/95 backdrop-blur-xl border-b border-[var(--border)]">
+        <div className="h-[var(--topbar-h)] lg:h-20 lg:max-w-[var(--max-w-app)] lg:mx-auto lg:px-8 flex items-center px-4 gap-3 lg:gap-4">
+          <Link
+            href="/messages"
+            aria-label="Retour"
+            className="h-9 w-9 lg:h-10 lg:w-10 rounded-full bg-[var(--surface)] border border-[var(--gold-soft)] text-[var(--gold)] flex items-center justify-center hover:bg-[var(--gold-faint)] hover:border-[var(--gold)] active:scale-95 transition-all"
+          >
+            <ChevronLeft className="h-4 w-4 lg:h-5 lg:w-5" strokeWidth={2.5} />
+          </Link>
+          <Avatar size="sm" alt={otherName} className="lg:!h-11 lg:!w-11" />
+          <div className="flex-1 min-w-0">
+            <div className="font-bold lg:font-extrabold text-sm lg:text-base truncate">
+              {otherName}
             </div>
+            {conversation.auctions && (
+              <div className="text-[11px] lg:text-[12px] text-[var(--foreground-muted)] truncate">
+                {conversation.auctions.make} {conversation.auctions.model}{" "}
+                {conversation.auctions.year}
+              </div>
+            )}
+          </div>
+          {conversation.auction_id && (
+            <Link
+              href={`/auctions/${conversation.auction_id}`}
+              className="inline-flex items-center gap-1.5 h-9 lg:h-10 px-3 lg:px-4 rounded-full ring-1 ring-[var(--gold)]/40 lg:ring-[var(--border)] hover:ring-[var(--gold)] text-[11px] lg:text-[12px] text-[var(--gold)] hover:text-[var(--gold)] font-bold transition-colors"
+            >
+              Voir l&apos;enchère
+            </Link>
           )}
         </div>
-        {conversation.auction_id && (
-          <Link
-            href={`/auctions/${conversation.auction_id}`}
-            className="text-[11px] text-[var(--gold)] font-bold hover:underline"
-          >
-            Offre l'enchère
-          </Link>
-        )}
       </header>
 
-      <ChatThread
-        conversationId={id}
-        userId={user.id}
-        initialMessages={initialMessages}
-      />
+      {/* Chat thread — full-width on mobile, contained on desktop */}
+      <div className="flex-1 lg:max-w-[var(--max-w-app)] lg:mx-auto lg:w-full lg:px-0 flex flex-col min-h-0">
+        <ChatThread
+          conversationId={id}
+          userId={user.id}
+          initialMessages={initialMessages}
+        />
+      </div>
 
       {initialMessages.length === 0 && (
         <div className="absolute inset-0 -z-10 flex items-center justify-center pointer-events-none">
           <div className="text-center text-[var(--foreground-muted)] space-y-2">
-            <MessageSquare className="h-10 w-10 mx-auto opacity-30" />
-            <div className="text-xs">Commencer Conversation</div>
+            <MessageSquare className="h-10 w-10 lg:h-14 lg:w-14 mx-auto opacity-30" />
+            <div className="text-xs lg:text-sm">Commencer la conversation</div>
           </div>
         </div>
       )}

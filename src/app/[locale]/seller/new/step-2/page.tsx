@@ -71,33 +71,39 @@ export default function Step2Page() {
 
   return (
     <CreateAuctionShell current={1}>
-      <div className="space-y-5">
+      <div className="space-y-5 lg:space-y-8">
         <div>
-          <h1 className="text-2xl font-extrabold">12 photos obligatoires</h1>
-          <p className="text-sm text-[var(--foreground-muted)] mt-1">
+          <div className="hidden lg:block text-[11px] uppercase tracking-[0.22em] font-bold text-[var(--gold)]">
+            Étape 2 · Photos
+          </div>
+          <h1 className="text-2xl lg:text-4xl font-extrabold lg:font-black lg:tracking-tight lg:mt-2">
+            12 photos obligatoires
+          </h1>
+          <p className="text-sm lg:text-base text-[var(--foreground-muted)] mt-1 lg:mt-3 lg:max-w-2xl">
             Touchez une vignette : la caméra de votre appareil s&apos;ouvre,
             vous prenez la photo puis vous validez dans l&apos;écran natif.
           </p>
         </div>
 
         {/* Progress */}
-        <div className="rounded-[var(--radius)] bg-[var(--surface)] border border-[var(--border)] p-3">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-semibold">
+        <div className="rounded-[var(--radius)] lg:rounded-2xl bg-[var(--surface)] lg:bg-[var(--surface-2)]/50 border border-[var(--border)] p-3 lg:p-5">
+          <div className="flex items-center justify-between mb-2 lg:mb-3">
+            <span className="text-sm lg:text-base font-semibold lg:font-bold">
               <span
-                className={
-                  allDone ? "text-[var(--success)]" : "text-[var(--gold)]"
-                }
+                className={cn(
+                  "tabular-nums lg:text-xl",
+                  allDone ? "text-[var(--success)]" : "text-[var(--gold)]",
+                )}
               >
                 {filled}
               </span>{" "}
-              / 12
+              <span className="text-[var(--foreground-muted)]">/ 12</span>
             </span>
-            <span className="text-xs text-[var(--foreground-muted)]">
+            <span className="text-xs lg:text-sm text-[var(--foreground-muted)] font-semibold">
               {allDone ? "Terminé ✓" : `${12 - filled} restantes`}
             </span>
           </div>
-          <div className="h-1.5 rounded-full bg-[var(--surface-2)] overflow-hidden">
+          <div className="h-1.5 lg:h-2 rounded-full bg-[var(--surface-2)] lg:bg-[var(--surface)] overflow-hidden">
             <div
               className={cn(
                 "h-full transition-all",
@@ -108,7 +114,7 @@ export default function Step2Page() {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-2.5 lg:gap-4">
           {photoSlots.map((slot, i) => (
             <NativeCapture
               key={i}
@@ -133,12 +139,13 @@ export default function Step2Page() {
           ))}
         </div>
 
-        <div className="pt-4 flex flex-col-reverse sm:flex-row gap-2">
+        <div className="pt-4 lg:pt-6 lg:border-t lg:border-[var(--border)] flex flex-col-reverse sm:flex-row gap-2 lg:gap-3 lg:justify-end">
           <Button
             variant="ghost"
             size="lg"
             fullWidth
             onClick={() => router.back()}
+            className="lg:!w-auto lg:px-6"
           >
             Retour
           </Button>
@@ -147,6 +154,7 @@ export default function Step2Page() {
             fullWidth
             disabled={!allDone}
             onClick={() => router.push("/seller/new/step-3")}
+            className="lg:!w-auto lg:px-8"
           >
             Continuer
             <ArrowRight className="h-5 w-5" />
@@ -174,6 +182,7 @@ function SlotTile({
     <button
       onClick={onTap}
       disabled={uploading}
+      aria-label={`Photo ${index + 1} sur 12 — ${slot.label}${photo ? " (prise)" : " (à prendre)"}`}
       className={cn(
         "relative aspect-square rounded-[var(--radius)] border-2 border-dashed overflow-hidden transition-colors",
         uploading
@@ -191,27 +200,27 @@ function SlotTile({
             alt={slot.label}
             className="h-full w-full object-cover"
           />
-          <div className="absolute top-1 right-1 h-5 w-5 rounded-full bg-[var(--success)] flex items-center justify-center">
-            <Check className="h-3 w-3 text-white" strokeWidth={3} />
+          <div className="absolute top-1 right-1 lg:top-2 lg:right-2 h-5 w-5 lg:h-7 lg:w-7 rounded-full bg-[var(--success)] flex items-center justify-center">
+            <Check className="h-3 w-3 lg:h-4 lg:w-4 text-white" strokeWidth={3} />
           </div>
-          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black to-transparent p-1.5">
-            <div className="text-[9px] font-semibold text-white text-center">
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black to-transparent p-1.5 lg:p-3">
+            <div className="text-[9px] lg:text-[12px] font-semibold lg:font-bold text-white text-center">
               {index + 1}. {slot.label}
             </div>
           </div>
         </>
       ) : (
-        <div className="absolute inset-0 flex flex-col items-center justify-center p-1.5 text-center">
-          <slot.Icon className="h-6 w-6 text-[var(--gold)] mb-1" />
-          <div className="text-[9px] font-semibold leading-tight">
+        <div className="absolute inset-0 flex flex-col items-center justify-center p-1.5 lg:p-3 text-center">
+          <slot.Icon className="h-6 w-6 lg:h-9 lg:w-9 text-[var(--gold)] mb-1 lg:mb-2" />
+          <div className="text-[9px] lg:text-[13px] font-semibold lg:font-bold leading-tight">
             {index + 1}. {slot.label}
           </div>
-          <Camera className="h-3.5 w-3.5 text-[var(--foreground-muted)] mt-1" />
+          <Camera className="h-3.5 w-3.5 lg:h-4 lg:w-4 text-[var(--foreground-muted)] mt-1 lg:mt-2" />
         </div>
       )}
       {uploading && (
         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
-          <Loader2 className="h-6 w-6 text-[var(--gold)] animate-spin" />
+          <Loader2 className="h-6 w-6 lg:h-8 lg:w-8 text-[var(--gold)] animate-spin" />
         </div>
       )}
     </button>

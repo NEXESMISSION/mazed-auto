@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/layout/AppShell";
+import { RouteLoading } from "@/components/layout/RouteLoading";
 
 /**
  * Skeleton for /seller/dashboard. Mirrors both the mobile and desktop
@@ -7,6 +8,7 @@ import { AppShell } from "@/components/layout/AppShell";
 export default function Loading() {
   return (
     <AppShell>
+      <RouteLoading>
       {/* MOBILE skeleton */}
       <div className="lg:hidden max-w-[var(--max-w)] mx-auto px-4 py-5 space-y-6">
         <div className="flex items-center justify-between">
@@ -116,6 +118,7 @@ export default function Loading() {
           </div>
         </div>
       </div>
+      </RouteLoading>
     </AppShell>
   );
 }

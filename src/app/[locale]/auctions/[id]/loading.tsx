@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/layout/AppShell";
+import { RouteLoading } from "@/components/layout/RouteLoading";
 
 /**
  * Loading skeleton for the auction detail screen — mirrors the actual
@@ -8,6 +9,7 @@ import { AppShell } from "@/components/layout/AppShell";
 export default function Loading() {
   return (
     <AppShell noTopBar>
+      <RouteLoading>
       {/* Hero — same on both viewports */}
       <div className="h-[58vh] min-h-[440px] max-h-[560px] skeleton rounded-none" />
 
@@ -88,6 +90,7 @@ export default function Loading() {
           </div>
         </div>
       </div>
+      </RouteLoading>
     </AppShell>
   );
 }

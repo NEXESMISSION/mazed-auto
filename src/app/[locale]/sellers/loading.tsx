@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/layout/AppShell";
+import { RouteLoading } from "@/components/layout/RouteLoading";
 
 /**
  * Skeleton for /sellers — mirrors the directory layout: ScreenHeader
@@ -8,6 +9,7 @@ import { AppShell } from "@/components/layout/AppShell";
 export default function Loading() {
   return (
     <AppShell noTopBar>
+      <RouteLoading>
       {/* ScreenHeader — title only */}
       <div className="px-4 pt-4 pb-3 flex items-center gap-3">
         <span className="h-10 w-10 shrink-0" />
@@ -45,6 +47,7 @@ export default function Loading() {
           ))}
         </ul>
       </div>
+      </RouteLoading>
     </AppShell>
   );
 }

@@ -146,8 +146,40 @@ export default async function BuyerBidsPage() {
 
   return (
     <AppShell noTopBar>
-      <ScreenHeader title="Mes enchères" backHref="/" />
-      <div className="px-4 pb-8 space-y-4 lg:max-w-[var(--max-w-app)] lg:mx-auto lg:px-6">
+      {/* Mobile header */}
+      <div className="lg:hidden">
+        <ScreenHeader title="Mes enchères" backHref="/" />
+      </div>
+
+      {/* Desktop magazine header */}
+      <div className="hidden lg:block max-w-[var(--max-w-wide)] mx-auto px-8 pt-10 pb-6">
+        <div className="flex items-end justify-between gap-6">
+          <div>
+            <div className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] font-bold text-[var(--gold)]">
+              <Gavel className="h-3.5 w-3.5" />
+              Acheteur
+            </div>
+            <h1 className="mt-2 text-4xl xl:text-5xl font-black tracking-tight leading-[1.05]">
+              Mes <span className="gradient-gold-text">enchères</span>
+            </h1>
+            <p className="mt-3 text-base text-[var(--foreground-muted)] max-w-2xl">
+              Toutes vos offres, victoires, et favoris en un seul endroit.
+              Filtrez par état pour suivre ce qui compte.
+            </p>
+          </div>
+          <Link
+            href="/auctions"
+            className="shrink-0 inline-flex items-center gap-2 h-11 px-5 rounded-full ring-1 ring-[var(--border)] hover:ring-[var(--gold)] hover:text-[var(--gold)] text-sm font-bold transition-colors"
+          >
+            <Gavel className="h-4 w-4" />
+            Parcourir le catalogue
+          </Link>
+        </div>
+        <div className="mt-6 h-px w-full bg-gradient-to-r from-[var(--border)] via-[var(--border)] to-transparent" />
+      </div>
+
+      {/* Tabs + lists */}
+      <div className="px-4 pb-8 space-y-4 lg:max-w-[var(--max-w-wide)] lg:mx-auto lg:px-8">
         <BidsTabs bids={bids} watchlist={watchlist} />
       </div>
     </AppShell>

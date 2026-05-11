@@ -76,56 +76,61 @@ export default async function DepositsPage() {
 
   return (
     <AppShell>
-      <div className="max-w-[var(--max-w)] lg:max-w-[var(--max-w-app)] mx-auto px-4 py-5 space-y-5">
+      <div className="max-w-[var(--max-w)] lg:max-w-[var(--max-w-app)] mx-auto px-4 py-5 lg:px-8 lg:py-10 space-y-5 lg:space-y-7">
         <Header />
 
         {/* Hero balance card — fintech-clean. Big number, status pills,
             soft gold halo. The "5% caution" is the central figure of
             this page so it gets all the visual weight. */}
-        <section className="relative overflow-hidden rounded-[var(--radius-lg)] bg-gradient-to-br from-[#1a1408] via-[var(--surface)] to-[var(--surface-2)] border border-[var(--gold-soft)]/40 p-6">
+        <section className="relative overflow-hidden rounded-[var(--radius-lg)] lg:rounded-[28px] bg-gradient-to-br from-[#1a1408] via-[var(--surface)] to-[var(--surface-2)] border border-[var(--gold-soft)]/40 lg:ring-1 lg:ring-[var(--gold)]/20 lg:border-0 p-6 lg:p-10">
           <div
-            className="pointer-events-none absolute -top-20 -right-12 h-48 w-48 rounded-full"
+            className="pointer-events-none absolute -top-20 -right-12 lg:-top-24 lg:-right-24 h-48 w-48 lg:h-72 lg:w-72 rounded-full"
             style={{
               background:
                 "radial-gradient(circle, rgba(212,175,55,0.22), transparent 70%)",
             }}
           />
           <div className="relative">
-            <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-[var(--foreground-muted)]">
+            <div className="text-[10px] lg:text-[11px] uppercase tracking-[0.2em] lg:tracking-[0.22em] font-bold text-[var(--foreground-muted)]">
               Total bloqué
             </div>
-            <div className="text-[40px] font-extrabold gradient-gold-text tabular-nums leading-none mt-1.5">
+            <div className="text-[40px] lg:text-[64px] xl:text-[72px] font-extrabold lg:font-black gradient-gold-text tabular-nums leading-none mt-1.5 lg:mt-3">
               {formatPrice(totalHeld)}
             </div>
-            <div className="mt-3 flex flex-wrap items-center gap-3 text-xs">
-              <span className="inline-flex items-center gap-1.5 text-[var(--foreground-muted)]">
-                <Lock className="h-3.5 w-3.5 text-[var(--gold)]" />
-                {heldCount} {heldCount === 1 ? "caution" : "cautions"} en cours
+            <div className="mt-3 lg:mt-5 flex flex-wrap items-center gap-3 lg:gap-4 text-xs lg:text-sm">
+              <span className="inline-flex items-center gap-1.5 lg:gap-2 text-[var(--foreground-muted)]">
+                <Lock className="h-3.5 w-3.5 lg:h-4 lg:w-4 text-[var(--gold)]" />
+                <span className="font-semibold lg:font-bold tabular-nums">
+                  {heldCount}
+                </span>{" "}
+                {heldCount === 1 ? "caution" : "cautions"} en cours
               </span>
               <span className="text-[var(--foreground-subtle)]">·</span>
-              <span className="inline-flex items-center gap-1.5 text-[var(--foreground-muted)]">
-                <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
-                {formatPrice(refundedTotal)} remboursés à ce jour
+              <span className="inline-flex items-center gap-1.5 lg:gap-2 text-[var(--foreground-muted)]">
+                <ShieldCheck className="h-3.5 w-3.5 lg:h-4 lg:w-4 text-emerald-400" />
+                <span className="font-semibold lg:font-bold tabular-nums">
+                  {formatPrice(refundedTotal)}
+                </span>{" "}
+                remboursés à ce jour
               </span>
             </div>
           </div>
         </section>
 
-        {/* Quiet info row — what is this, why is it safe. Replaces the
-            wall-of-text paragraph with three short tile-grade explanations. */}
-        <section className="grid grid-cols-3 gap-2.5">
+        {/* Quiet info row — what is this, why is it safe. */}
+        <section className="grid grid-cols-3 gap-2.5 lg:gap-5">
           <InfoTile
-            icon={<Lock className="h-4 w-4" />}
+            icon={<Lock className="h-4 w-4 lg:h-5 lg:w-5" />}
             title="5%"
             subtitle="Caution par enchère"
           />
           <InfoTile
-            icon={<ShieldCheck className="h-4 w-4" />}
+            icon={<ShieldCheck className="h-4 w-4 lg:h-5 lg:w-5" />}
             title="Séquestre"
             subtitle="Compte dédié"
           />
           <InfoTile
-            icon={<Calendar className="h-4 w-4" />}
+            icon={<Calendar className="h-4 w-4 lg:h-5 lg:w-5" />}
             title="Auto"
             subtitle="Remboursée si perdue"
           />
@@ -225,12 +230,18 @@ export default async function DepositsPage() {
 function Header() {
   return (
     <div>
-      <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-[var(--foreground-muted)]">
+      <div className="inline-flex items-center gap-2 text-[10px] lg:text-[11px] uppercase tracking-[0.2em] lg:tracking-[0.22em] font-bold text-[var(--gold)]">
+        <Wallet className="h-3.5 w-3.5" />
         Compte séquestre
       </div>
-      <h1 className="text-2xl font-extrabold flex items-center gap-2 mt-1">
-        Mes cautions
+      <h1 className="text-2xl lg:text-4xl xl:text-5xl font-extrabold lg:font-black lg:tracking-tight mt-1 lg:mt-2 lg:leading-[1.05]">
+        Mes <span className="gradient-gold-text">cautions</span>
       </h1>
+      <p className="hidden lg:block mt-3 text-base text-[var(--foreground-muted)] max-w-2xl">
+        Toutes vos cautions, leur état actuel, et l&apos;historique des
+        remboursements. Stockées sur un compte séquestre dédié et
+        remboursées automatiquement.
+      </p>
     </div>
   );
 }
@@ -245,13 +256,17 @@ function InfoTile({
   subtitle: string;
 }) {
   return (
-    <div className="rounded-[var(--radius-md)] bg-[var(--surface)] border border-[var(--border)] p-3 text-center">
-      <div className="mx-auto h-8 w-8 rounded-full bg-[var(--gold-faint)] text-[var(--gold)] flex items-center justify-center">
+    <div className="rounded-[var(--radius-md)] lg:rounded-2xl bg-[var(--surface)] border border-[var(--border)] p-3 lg:p-5 text-center lg:text-start lg:flex lg:items-center lg:gap-4">
+      <div className="mx-auto lg:mx-0 h-8 w-8 lg:h-12 lg:w-12 rounded-full lg:rounded-xl bg-[var(--gold-faint)] ring-1 ring-[var(--gold)]/30 text-[var(--gold)] flex items-center justify-center shrink-0">
         {icon}
       </div>
-      <div className="mt-2 font-extrabold tabular-nums">{title}</div>
-      <div className="text-[10px] text-[var(--foreground-muted)] mt-0.5 leading-tight">
-        {subtitle}
+      <div className="lg:min-w-0">
+        <div className="mt-2 lg:mt-0 text-base lg:text-2xl font-extrabold lg:font-black tabular-nums leading-tight">
+          {title}
+        </div>
+        <div className="text-[10px] lg:text-[12px] text-[var(--foreground-muted)] mt-0.5 leading-tight">
+          {subtitle}
+        </div>
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/layout/AppShell";
+import { RouteLoading } from "@/components/layout/RouteLoading";
 
 /**
  * Skeleton for /notifications — slim back row, header (title + read-all
@@ -8,6 +9,7 @@ import { AppShell } from "@/components/layout/AppShell";
 export default function Loading() {
   return (
     <AppShell noTopBar>
+      <RouteLoading>
       {/* Slim back row */}
       <div className="px-4 pt-4 pb-1">
         <div className="h-10 w-10 rounded-full skeleton" />
@@ -43,6 +45,7 @@ export default function Loading() {
           ))}
         </div>
       </div>
+      </RouteLoading>
     </AppShell>
   );
 }

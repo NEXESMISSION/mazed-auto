@@ -45,7 +45,14 @@ export function ChatThread({
         "id",
         unread.map((m) => m.id),
       )
-      .then(() => undefined);
+      .then(({ error }) => {
+        // Failing to mark as read isn't fatal — the user can still see
+        // and send. Surface the error in the console so flaky inboxes
+        // are diagnosable instead of silently growing an unread count.
+        if (error) {
+          console.warn("[ChatThread] mark-as-read failed:", error.message);
+        }
+      });
   }, [messages, userId]);
 
   async function send() {
@@ -67,7 +74,7 @@ export function ChatThread({
     <>
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto px-4 py-4 space-y-2"
+        className="flex-1 overflow-y-auto px-4 lg:px-8 py-4 lg:py-6 space-y-2 lg:space-y-3"
       >
         {messages.map((m, i) => {
           const mine = m.sender_id === userId;
@@ -82,13 +89,13 @@ export function ChatThread({
             <div
               key={m.id}
               className={cn(
-                "max-w-[80%] flex flex-col",
+                "max-w-[80%] lg:max-w-[65%] flex flex-col",
                 mine ? "items-end self-end ms-auto" : "items-start self-start",
               )}
             >
               <div
                 className={cn(
-                  "px-3.5 py-2 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap break-words",
+                  "px-3.5 lg:px-4 py-2 lg:py-2.5 rounded-2xl text-sm lg:text-[15px] leading-relaxed whitespace-pre-wrap break-words shadow-sm",
                   mine
                     ? "bg-[var(--gold)] text-black rounded-bl-md"
                     : "bg-[var(--surface)] border border-[var(--border)] rounded-br-md",
@@ -98,7 +105,7 @@ export function ChatThread({
                 {m.body}
               </div>
               {!grouped && (
-                <span className="text-[10px] text-[var(--foreground-subtle)] mt-1 px-1">
+                <span className="text-[10px] lg:text-[11px] text-[var(--foreground-subtle)] mt-1 px-1 tabular-nums">
                   {formatTime(m.created_at)}
                 </span>
               )}
@@ -107,13 +114,13 @@ export function ChatThread({
         })}
       </div>
 
-      <div className="sticky bottom-0 bg-[#0a0a0a] border-t border-[var(--border)] px-3 py-3 pb-[calc(12px+env(safe-area-inset-bottom))]">
+      <div className="sticky bottom-0 bg-[#0a0a0a]/95 backdrop-blur-xl border-t border-[var(--border)] px-3 lg:px-8 py-3 lg:py-5 pb-[calc(12px+env(safe-area-inset-bottom))] lg:pb-5">
         <form
           onSubmit={(e) => {
             e.preventDefault();
             send();
           }}
-          className="flex items-end gap-2"
+          className="flex items-end gap-2 lg:gap-3"
         >
           <textarea
             value={body}
@@ -126,15 +133,15 @@ export function ChatThread({
             }}
             placeholder="Écrire un message..."
             rows={1}
-            className="flex-1 min-h-[40px] max-h-32 px-3 py-2.5 rounded-[var(--radius)] bg-[var(--surface)] border border-[var(--border)] text-sm focus:border-[var(--gold)] focus:outline-none resize-none"
+            className="flex-1 min-h-[40px] lg:min-h-[48px] max-h-32 px-3 lg:px-4 py-2.5 lg:py-3 rounded-[var(--radius)] lg:rounded-2xl bg-[var(--surface)] border border-[var(--border)] text-sm lg:text-[15px] focus:border-[var(--gold)] focus:outline-none resize-none"
           />
           <button
             type="submit"
             aria-label="Envoyer"
             disabled={!body.trim() || sending}
-            className="h-10 w-10 shrink-0 rounded-full bg-gradient-to-b from-[var(--gold-bright)] to-[var(--gold)] shadow-[var(--shadow-gold)] flex items-center justify-center text-black disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95"
+            className="h-10 w-10 lg:h-12 lg:w-12 shrink-0 rounded-full bg-gradient-to-b from-[var(--gold-bright)] to-[var(--gold)] shadow-[var(--shadow-gold)] flex items-center justify-center text-black disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95"
           >
-            <Send className="h-4 w-4" />
+            <Send className="h-4 w-4 lg:h-5 lg:w-5" />
           </button>
         </form>
       </div>

@@ -109,113 +109,220 @@ export function SellerAuctionsList({ list }: { list: Auction[] }) {
         </div>
       )}
 
-      <div className="flex gap-2 overflow-x-auto hide-scrollbar -mx-4 px-4 border-b border-[var(--border)]">
+      <div className="flex gap-2 lg:gap-1 overflow-x-auto hide-scrollbar -mx-4 px-4 lg:mx-0 lg:px-0 border-b border-[var(--border)]">
         {tabs.map((t) => (
           <button
             key={t.value}
             onClick={() => setTab(t.value)}
-            className={`shrink-0 pb-2 px-3 -mb-px font-semibold text-sm transition-colors border-b-2 ${
+            className={`shrink-0 pb-2 lg:pb-3 px-3 lg:px-5 -mb-px font-semibold lg:font-bold text-sm lg:text-[15px] transition-colors border-b-2 ${
               tab === t.value
                 ? "text-[var(--gold)] border-[var(--gold)]"
                 : "text-[var(--foreground-muted)] border-transparent hover:text-foreground"
             }`}
           >
-            {t.label} ({counts[t.value]})
+            {t.label}{" "}
+            <span
+              className={`ms-1 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] tabular-nums font-extrabold ${
+                tab === t.value
+                  ? "bg-[var(--gold)] text-black"
+                  : "bg-[var(--surface-2)] text-[var(--foreground-muted)]"
+              }`}
+            >
+              {counts[t.value]}
+            </span>
           </button>
         ))}
       </div>
 
       {filtered.length === 0 ? (
-        <div className="text-center py-16 space-y-3">
-          <div className="mx-auto h-14 w-14 rounded-full bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center text-[var(--foreground-muted)]">
-            <Inbox className="h-7 w-7" />
+        <div className="text-center py-16 lg:py-24 space-y-3">
+          <div className="mx-auto h-14 w-14 lg:h-20 lg:w-20 rounded-full bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center text-[var(--foreground-muted)]">
+            <Inbox className="h-7 w-7 lg:h-10 lg:w-10" />
           </div>
-          <div className="font-bold">Aucune enchère dans cette section</div>
-          <p className="text-sm text-[var(--foreground-muted)] mt-1">
-            Elles apparaîtront ici dès qu'elles seront disponibles
+          <div className="font-bold lg:text-lg">Aucune enchère dans cette section</div>
+          <p className="text-sm text-[var(--foreground-muted)] mt-1 max-w-md mx-auto">
+            Elles apparaîtront ici dès qu&apos;elles seront disponibles
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-3 lg:space-y-4">
           {filtered.map((a) => {
             const sb = statusBadge[a.status];
             return (
               <div
                 key={a.id}
-                className="rounded-[var(--radius-md)] bg-[var(--surface)] border border-[var(--border)] overflow-hidden"
+                className="rounded-[var(--radius-md)] lg:rounded-2xl bg-[var(--surface)] border border-[var(--border)] lg:ring-1 lg:ring-[var(--border)] lg:border-0 overflow-hidden lg:hover:ring-[var(--gold-soft)] lg:transition-colors"
               >
-                <div className="p-3 flex gap-3">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={thumb(a.vehicle.imageUrls[0], { width: 220, quality: 65 })}
-                    alt=""
-                    loading="lazy"
-                    decoding="async"
-                    className="h-20 w-28 rounded-[var(--radius-sm)] object-cover shrink-0"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <div className="font-bold text-sm line-clamp-1">
-                          {a.vehicle.make} {a.vehicle.model} {a.vehicle.year}
+                {/* Mobile-shaped row + actions strip */}
+                <div className="lg:hidden">
+                  <div className="p-3 flex gap-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={thumb(a.vehicle.imageUrls[0], { width: 220, quality: 65 })}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      className="h-20 w-28 rounded-[var(--radius-sm)] object-cover shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="font-bold text-sm line-clamp-1">
+                            {a.vehicle.make} {a.vehicle.model} {a.vehicle.year}
+                          </div>
+                          <div className="text-xs text-[var(--foreground-muted)] mt-0.5">
+                            {a.status === "ended"
+                              ? "Terminé"
+                              : `Se termine dans ${formatTimeRemaining(a.endTime)}`}
+                          </div>
                         </div>
-                        <div className="text-xs text-[var(--foreground-muted)] mt-0.5">
-                          {a.status === "ended"
-                            ? "Terminé"
-                            : `Se termine dans ${formatTimeRemaining(a.endTime)}`}
-                        </div>
+                        <Badge variant={sb.variant} size="sm">
+                          {sb.label}
+                        </Badge>
                       </div>
-                      <Badge variant={sb.variant} size="sm">
-                        {sb.label}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center justify-between mt-2 text-xs">
-                      <div>
-                        <div className="text-[var(--foreground-muted)]">
-                          Prix actuel
+                      <div className="flex items-center justify-between mt-2 text-xs">
+                        <div>
+                          <div className="text-[var(--foreground-muted)]">Prix actuel</div>
+                          <div className="font-bold text-[var(--gold)]">
+                            {formatPrice(a.currentPrice)}
+                          </div>
                         </div>
-                        <div className="font-bold text-[var(--gold)]">
-                          {formatPrice(a.currentPrice)}
+                        <div className="text-left">
+                          <div className="text-[var(--foreground-muted)]">Offres</div>
+                          <div className="font-bold">{a.totalBids}</div>
                         </div>
-                      </div>
-                      <div className="text-left">
-                        <div className="text-[var(--foreground-muted)]">
-                          Offres
-                        </div>
-                        <div className="font-bold">{a.totalBids}</div>
                       </div>
                     </div>
                   </div>
+                  <div className="flex border-t border-[var(--border)] divide-x divide-[var(--border)] divide-x-reverse">
+                    <Link
+                      href={`/seller/auctions/${a.id}`}
+                      className="flex-1 py-2.5 text-center text-xs font-semibold hover:bg-[var(--surface-2)] flex items-center justify-center gap-1.5"
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                      Voir
+                    </Link>
+                    {(a.status === "pending_review" || a.totalBids === 0) &&
+                      a.status !== "ended" &&
+                      a.status !== "cancelled" && (
+                        <Link
+                          href={`/seller/new/step-1?edit=${a.id}`}
+                          className="flex-1 py-2.5 text-center text-xs font-semibold hover:bg-[var(--surface-2)] flex items-center justify-center gap-1.5"
+                        >
+                          <Edit className="h-3.5 w-3.5" />
+                          Modifier
+                        </Link>
+                      )}
+                    {(a.status === "active" || a.status === "ending") &&
+                      a.totalBids === 0 && (
+                        <Link
+                          href={`/seller/auctions/${a.id}`}
+                          className="flex-1 py-2.5 text-center text-xs font-semibold text-[var(--danger)] hover:bg-red-500/10 flex items-center justify-center gap-1.5"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                          Annuler
+                        </Link>
+                      )}
+                  </div>
                 </div>
-                <div className="flex border-t border-[var(--border)] divide-x divide-[var(--border)] divide-x-reverse">
-                  <Link
-                    href={`/seller/auctions/${a.id}`}
-                    className="flex-1 py-2.5 text-center text-xs font-semibold hover:bg-[var(--surface-2)] flex items-center justify-center gap-1.5"
-                  >
-                    <Eye className="h-3.5 w-3.5" />
-                    Voir
-                  </Link>
-                  {(a.status === "pending_review" || a.totalBids === 0) &&
-                    a.status !== "ended" &&
-                    a.status !== "cancelled" && (
-                      <Link
-                        href={`/seller/new/step-1?edit=${a.id}`}
-                        className="flex-1 py-2.5 text-center text-xs font-semibold hover:bg-[var(--surface-2)] flex items-center justify-center gap-1.5"
-                      >
-                        <Edit className="h-3.5 w-3.5" />
-                        Modifier
-                      </Link>
-                    )}
-                  {(a.status === "active" || a.status === "ending") &&
-                    a.totalBids === 0 && (
-                      <Link
-                        href={`/seller/auctions/${a.id}`}
-                        className="flex-1 py-2.5 text-center text-xs font-semibold text-[var(--danger)] hover:bg-red-500/10 flex items-center justify-center gap-1.5"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                        Annuler
-                      </Link>
-                    )}
+
+                {/* Desktop row — wider photo, inline stats, action chips */}
+                <div className="hidden lg:flex items-stretch">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={thumb(a.vehicle.imageUrls[0], { width: 480, quality: 70 })}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    className="w-56 xl:w-64 h-40 xl:h-44 object-cover shrink-0"
+                  />
+                  <div className="flex-1 min-w-0 p-6 xl:p-7 flex flex-col justify-between gap-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0">
+                        <h3 className="text-xl xl:text-2xl font-extrabold tracking-tight leading-tight line-clamp-1">
+                          {a.vehicle.make} {a.vehicle.model}{" "}
+                          <span className="text-[var(--foreground-muted)] font-light">
+                            {a.vehicle.year}
+                          </span>
+                        </h3>
+                        <div className="mt-1.5 text-[13px] text-[var(--foreground-muted)] flex items-center gap-2 flex-wrap">
+                          {a.vehicle.color && <span>{a.vehicle.color}</span>}
+                          {a.vehicle.mileage > 0 && (
+                            <>
+                              <span className="h-1 w-1 rounded-full bg-[var(--border-strong)]" />
+                              <span>
+                                {Intl.NumberFormat("fr-TN").format(
+                                  a.vehicle.mileage,
+                                )}{" "}
+                                km
+                              </span>
+                            </>
+                          )}
+                          <span className="h-1 w-1 rounded-full bg-[var(--border-strong)]" />
+                          <span>
+                            {a.status === "ended"
+                              ? "Terminé"
+                              : `Se termine dans ${formatTimeRemaining(a.endTime)}`}
+                          </span>
+                        </div>
+                      </div>
+                      <Badge variant={sb.variant} size="lg" className="shrink-0">
+                        {sb.label}
+                      </Badge>
+                    </div>
+
+                    <div className="flex items-end justify-between gap-6">
+                      <div className="flex items-end gap-7">
+                        <div>
+                          <div className="text-[10px] uppercase tracking-[0.18em] font-bold text-[var(--foreground-muted)]">
+                            Prix actuel
+                          </div>
+                          <div className="mt-1 text-2xl font-black tabular-nums leading-none gradient-gold-text">
+                            {formatPrice(a.currentPrice)}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-[10px] uppercase tracking-[0.18em] font-bold text-[var(--foreground-muted)]">
+                            Offres
+                          </div>
+                          <div className="mt-1 text-2xl font-black tabular-nums leading-none">
+                            {a.totalBids}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Link
+                          href={`/seller/auctions/${a.id}`}
+                          className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-[var(--gold)] text-black font-extrabold text-[12px] shadow-[var(--shadow-gold)] hover:scale-[1.02] transition-transform"
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                          Voir l&apos;activité
+                        </Link>
+                        {(a.status === "pending_review" || a.totalBids === 0) &&
+                          a.status !== "ended" &&
+                          a.status !== "cancelled" && (
+                            <Link
+                              href={`/seller/new/step-1?edit=${a.id}`}
+                              className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full ring-1 ring-[var(--border)] hover:ring-[var(--gold)] hover:text-[var(--gold)] text-[12px] font-bold transition-colors"
+                            >
+                              <Edit className="h-3.5 w-3.5" />
+                              Modifier
+                            </Link>
+                          )}
+                        {(a.status === "active" || a.status === "ending") &&
+                          a.totalBids === 0 && (
+                            <Link
+                              href={`/seller/auctions/${a.id}`}
+                              className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full ring-1 ring-red-500/30 text-red-300 hover:bg-red-500/10 text-[12px] font-bold transition-colors"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                              Annuler
+                            </Link>
+                          )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             );

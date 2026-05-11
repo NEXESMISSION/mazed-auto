@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/layout/AppShell";
+import { RouteLoading } from "@/components/layout/RouteLoading";
 
 /**
  * Skeleton for /settings — ScreenHeader + 4-5 grouped list cards each
@@ -7,6 +8,7 @@ import { AppShell } from "@/components/layout/AppShell";
 export default function Loading() {
   return (
     <AppShell noTopBar>
+      <RouteLoading>
       {/* ScreenHeader */}
       <div className="px-4 pt-4 pb-3 flex items-center gap-3">
         <div className="h-10 w-10 rounded-full skeleton shrink-0" />
@@ -34,6 +36,7 @@ export default function Loading() {
           </div>
         ))}
       </div>
+      </RouteLoading>
     </AppShell>
   );
 }

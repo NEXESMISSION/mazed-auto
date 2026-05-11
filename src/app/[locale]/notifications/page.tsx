@@ -36,8 +36,20 @@ export default async function NotificationsPage() {
 
   return (
     <AppShell noTopBar>
-      <BackRow />
-      <div className="px-4 pb-8 space-y-4 lg:max-w-[var(--max-w-content)] lg:mx-auto lg:px-6">
+      {/* Mobile back row */}
+      <div className="lg:hidden">
+        <BackRow />
+      </div>
+
+      {/* Desktop magazine eyebrow strip */}
+      <div className="hidden lg:block max-w-[var(--max-w-content)] mx-auto px-8 pt-10 pb-6">
+        <div className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] font-bold text-[var(--gold)]">
+          <Bell className="h-3.5 w-3.5" />
+          Centre de notifications
+        </div>
+      </div>
+
+      <div className="px-4 pb-8 space-y-4 lg:max-w-[var(--max-w-content)] lg:mx-auto lg:px-8 lg:pb-16">
         <NotificationsList userId={user.id} initial={initial} />
       </div>
     </AppShell>

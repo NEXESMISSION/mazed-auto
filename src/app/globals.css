@@ -284,6 +284,17 @@ a {
   animation: skeleton-pulse 1.6s ease-in-out infinite;
 }
 
+/* Desktop opts out of the mobile splash screen.
+   The splash ships a phone-portrait JPG (720x1520) — stretching it across
+   a 1280px+ viewport reads as "broken full-bleed image", not as a branded
+   splash. The route-level loading skeletons are now hidden via the
+   `RouteLoading` wrapper in components/layout, which also paints the
+   centered desktop spinner — keep that logic in JSX, not CSS, so the
+   spinner can render alongside it. */
+@media (min-width: 1024px) {
+  #mazed-splash { display: none !important; }
+}
+
 /* Number tick animation */
 @keyframes tick {
   0% { transform: translateY(0); opacity: 1; }

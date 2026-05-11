@@ -3,6 +3,11 @@
 import { useEffect, useState, useCallback } from "react";
 
 const KEY = "mazed_auction_draft";
+// Drafts persist for 7 days. The wizard has photos, a video and a carte
+// grise upload — losing all of that to a tab refresh (the previous
+// sessionStorage behaviour) was a real foot-gun. After a week we treat
+// the in-flight draft as abandoned and clear it on next read.
+const TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 export interface AuctionDraft {
   // step 1
@@ -50,11 +55,34 @@ export interface AuctionDraft {
   durationDays?: 3 | 7 | 14;
 }
 
+interface Envelope {
+  v: 1;
+  savedAt: number;
+  draft: AuctionDraft;
+}
+
 function read(): AuctionDraft {
   if (typeof window === "undefined") return {};
   try {
-    const raw = sessionStorage.getItem(KEY);
-    return raw ? (JSON.parse(raw) as AuctionDraft) : {};
+    const raw = localStorage.getItem(KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as Envelope | AuctionDraft;
+    // Legacy shape (older sessionStorage payloads) was the raw draft.
+    // Accept it once, then re-write under the envelope on next update.
+    if (
+      typeof parsed === "object" &&
+      parsed !== null &&
+      "savedAt" in parsed &&
+      "draft" in parsed
+    ) {
+      const env = parsed as Envelope;
+      if (Date.now() - env.savedAt > TTL_MS) {
+        localStorage.removeItem(KEY);
+        return {};
+      }
+      return env.draft ?? {};
+    }
+    return (parsed as AuctionDraft) ?? {};
   } catch {
     return {};
   }
@@ -62,13 +90,14 @@ function read(): AuctionDraft {
 
 function write(d: AuctionDraft) {
   if (typeof window === "undefined") return;
-  sessionStorage.setItem(KEY, JSON.stringify(d));
+  const env: Envelope = { v: 1, savedAt: Date.now(), draft: d };
+  localStorage.setItem(KEY, JSON.stringify(env));
   window.dispatchEvent(new Event("mazed-draft-change"));
 }
 
 export function clearDraft() {
   if (typeof window === "undefined") return;
-  sessionStorage.removeItem(KEY);
+  localStorage.removeItem(KEY);
   window.dispatchEvent(new Event("mazed-draft-change"));
 }
 
@@ -77,9 +106,11 @@ export function useDraft() {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
     setDraft(read());
     setHydrated(true);
     const onChange = () => setDraft(read());
+    /* eslint-enable react-hooks/set-state-in-effect */
     window.addEventListener("mazed-draft-change", onChange);
     window.addEventListener("storage", onChange);
     return () => {

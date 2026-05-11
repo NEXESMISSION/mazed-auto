@@ -106,21 +106,37 @@ export default async function MessagesIndexPage() {
 
   return (
     <AppShell>
-      <div className="max-w-[var(--max-w)] lg:max-w-[var(--max-w-app)] mx-auto px-4 py-5 space-y-4">
-        <h1 className="text-2xl font-extrabold">Messages</h1>
+      <div className="max-w-[var(--max-w)] lg:max-w-[var(--max-w-app)] mx-auto px-4 py-5 lg:px-8 lg:py-10 space-y-4 lg:space-y-6">
+        <div>
+          <div className="hidden lg:inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] font-bold text-[var(--gold)]">
+            <MessageSquare className="h-3.5 w-3.5" />
+            Conversations
+          </div>
+          <h1 className="text-2xl lg:text-4xl xl:text-5xl font-extrabold lg:font-black lg:tracking-tight lg:mt-2 lg:leading-[1.05]">
+            Messages
+          </h1>
+          {conversations.length > 0 && (
+            <p className="hidden lg:block mt-3 text-base text-[var(--foreground-muted)] max-w-2xl">
+              {conversations.length}{" "}
+              {conversations.length === 1 ? "conversation" : "conversations"}.
+              Identités anonymisées des deux côtés — vous reconnaîtrez la voiture,
+              pas l&apos;acheteur.
+            </p>
+          )}
+        </div>
 
         {conversations.length === 0 ? (
-          <div className="text-center py-16 space-y-3">
-            <div className="mx-auto h-14 w-14 rounded-full bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center text-[var(--foreground-muted)]">
-              <MessageSquare className="h-7 w-7" />
+          <div className="text-center py-16 lg:py-24 space-y-3">
+            <div className="mx-auto h-14 w-14 lg:h-20 lg:w-20 rounded-full bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center text-[var(--foreground-muted)]">
+              <MessageSquare className="h-7 w-7 lg:h-10 lg:w-10" />
             </div>
-            <div className="font-bold">Aucune conversation</div>
-            <p className="text-sm text-[var(--foreground-muted)]">
-              Démarrez une conversation avec un vendeur depuis la page d'enchère
+            <div className="font-bold lg:text-lg">Aucune conversation</div>
+            <p className="text-sm text-[var(--foreground-muted)] max-w-md mx-auto">
+              Démarrez une conversation avec un vendeur depuis la page d&apos;enchère
             </p>
           </div>
         ) : (
-          <div className="rounded-[var(--radius-md)] bg-[var(--surface)] border border-[var(--border)] divide-y divide-[var(--border)] overflow-hidden">
+          <div className="rounded-[var(--radius-md)] lg:rounded-2xl bg-[var(--surface)] border border-[var(--border)] lg:ring-1 lg:ring-[var(--border)] lg:border-0 divide-y divide-[var(--border)] overflow-hidden">
             {conversations.map((c) => {
               const otherId =
                 c.buyer_id === user.id ? c.seller_id : c.buyer_id;
@@ -139,24 +155,33 @@ export default async function MessagesIndexPage() {
                 <Link
                   key={c.id}
                   href={`/messages/${c.id}`}
-                  className="flex items-center gap-3 p-3 hover:bg-[var(--surface-2)] transition-colors"
+                  className="flex items-center gap-3 lg:gap-4 p-3 lg:p-5 hover:bg-[var(--surface-2)] transition-colors"
                 >
-                  <Avatar size="md" alt={otherLabel} />
+                  <Avatar
+                    size="md"
+                    alt={otherLabel}
+                    className="lg:!h-12 lg:!w-12"
+                  />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
-                      <div className="font-bold text-sm truncate">
+                      <div className="font-bold lg:font-extrabold text-sm lg:text-base truncate">
                         {otherLabel}
                       </div>
-                      <div className="text-[10px] text-[var(--foreground-subtle)] tabular-nums shrink-0">
+                      <div className="text-[10px] lg:text-[11px] text-[var(--foreground-subtle)] tabular-nums shrink-0">
                         {last ? formatRel(last.created_at) : ""}
                       </div>
                     </div>
-                    <div className="flex items-center justify-between gap-2 mt-0.5">
-                      <div className="text-xs text-[var(--foreground-muted)] truncate">
+                    {subtitle && (
+                      <div className="hidden lg:block text-[11px] uppercase tracking-[0.15em] font-bold text-[var(--gold)]/70 mt-0.5 truncate">
+                        {subtitle}
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between gap-2 mt-0.5 lg:mt-1">
+                      <div className="text-xs lg:text-[13px] text-[var(--foreground-muted)] truncate">
                         {last?.body ?? subtitle ?? "Démarrer la conversation"}
                       </div>
                       {(last?.unread ?? 0) > 0 && (
-                        <span className="min-w-[18px] h-[18px] px-1.5 rounded-full bg-[var(--gold)] text-black text-[10px] font-extrabold flex items-center justify-center tabular-nums">
+                        <span className="min-w-[18px] lg:min-w-[22px] h-[18px] lg:h-[22px] px-1.5 lg:px-2 rounded-full bg-[var(--gold)] text-black text-[10px] lg:text-[11px] font-extrabold flex items-center justify-center tabular-nums shadow-[var(--shadow-gold)]">
                           {last!.unread}
                         </span>
                       )}

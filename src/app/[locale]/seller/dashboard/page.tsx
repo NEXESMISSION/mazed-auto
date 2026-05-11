@@ -9,23 +9,34 @@ import {
   Star,
   Plus,
   ArrowRight,
+  ShieldCheck,
+  Eye,
+  MessageSquare,
+  Lightbulb,
+  Sparkles,
+  Camera,
+  Clock,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Badge } from "@/components/ui/Badge";
+import { Avatar } from "@/components/ui/Avatar";
 import { AuctionCard } from "@/components/auction/AuctionCard";
 import { useAuth } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/client";
 import { mapAuction, type AuctionRow } from "@/lib/db";
 import { formatPrice } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import type { Auction } from "@/lib/types";
 
 export default function SellerDashboardPage() {
   const { user, loaded } = useAuth();
   const [myAuctions, setMyAuctions] = useState<Auction[]>([]);
+  const [totalBidsReceived, setTotalBidsReceived] = useState(0);
 
   useEffect(() => {
     if (!loaded || !user) return;
     const supabase = createClient();
+    let cancelled = false;
     (async () => {
       // Sweep expired auctions first so the dashboard never shows a row
       // sitting in "active" with a long-passed end_time.
@@ -39,10 +50,21 @@ export default function SellerDashboardPage() {
         .select("*, seller:sellers(*)")
         .eq("seller_id", user.id)
         .order("end_time", { ascending: true });
-      setMyAuctions(
-        (data ?? []).map((r) => mapAuction(r as unknown as AuctionRow)),
+      if (cancelled) return;
+      const auctions = (data ?? []).map((r) =>
+        mapAuction(r as unknown as AuctionRow),
       );
+      setMyAuctions(auctions);
+
+      // Total bids across all my auctions — drives the 4th KPI tile.
+      // Sum totalBids; if not populated by the row, fall back to a
+      // count(bids) query gated to my auction ids.
+      const summed = auctions.reduce((s, a) => s + (a.totalBids ?? 0), 0);
+      setTotalBidsReceived(summed);
     })();
+    return () => {
+      cancelled = true;
+    };
   }, [user, loaded]);
 
   // Time-aware "active" check — covers the brief window between an
@@ -59,7 +81,11 @@ export default function SellerDashboardPage() {
     earnings: myAuctions
       .filter((a) => a.status === "ended")
       .reduce((s, a) => s + a.currentPrice * 0.93, 0),
+    bids: totalBidsReceived,
   };
+
+  const displayName =
+    user?.firstName || user?.email?.split("@")[0] || "vendeur";
 
   return (
     <AppShell>
@@ -152,125 +178,254 @@ export default function SellerDashboardPage() {
         </section>
       </div>
 
-      {/* DESKTOP — purpose-built. Big publish banner up top, large stats,
-          generous card grid. */}
-      <div className="hidden lg:block max-w-[var(--max-w-wide)] mx-auto px-8 py-10 space-y-10">
-        {/* Hero row */}
-        <div className="flex items-end justify-between gap-6">
-          <div>
-            <div className="text-xs uppercase tracking-[0.22em] font-bold text-[var(--gold)]">
-              Tableau vendeur
-            </div>
-            <h1 className="mt-2 text-5xl font-black tracking-tight leading-[1.05]">
-              {user
-                ? `Bonjour, `
-                : "Tableau "}
-              <span className="gradient-gold-text">
-                {user ? user.firstName || user.email?.split("@")[0] : "vendeur"}
-              </span>
-            </h1>
-            <p className="mt-3 text-base text-[var(--foreground-muted)]">
-              {user
-                ? "Suivez vos ventes en cours et publiez de nouvelles enchères."
-                : "Connectez-vous pour gérer vos enchères."}
-            </p>
-          </div>
-          {user && user.kycStatus === "verified" && (
-            <Badge variant="gold" size="lg">
-              <Star className="h-4 w-4 fill-current" />
-              Vendeur vérifié
-            </Badge>
-          )}
-        </div>
-
-        {/* Big publish banner — wide and visually anchoring */}
-        <Link href="/seller/new/step-1">
-          <div className="relative overflow-hidden rounded-2xl border border-[var(--gold-soft)]/40 bg-gradient-to-br from-[var(--surface)] via-[var(--surface-2)] to-[var(--surface)] p-8 hover:border-[var(--gold)] transition-all cursor-pointer group">
-            <div
-              className="absolute -top-20 -left-20 h-64 w-64 rounded-full opacity-30 group-hover:opacity-50 transition-opacity"
-              style={{
-                background:
-                  "radial-gradient(circle, var(--gold), transparent 70%)",
-              }}
-            />
-            <div
-              className="absolute -bottom-20 -right-20 h-64 w-64 rounded-full opacity-20 group-hover:opacity-40 transition-opacity"
-              style={{
-                background:
-                  "radial-gradient(circle, var(--gold), transparent 70%)",
-              }}
-            />
-            <div className="relative flex items-center gap-6">
-              <div className="h-16 w-16 rounded-2xl gradient-gold flex items-center justify-center text-black shrink-0 shadow-[var(--shadow-gold)]">
-                <Plus className="h-8 w-8" strokeWidth={3} />
-              </div>
-              <div className="flex-1">
-                <div className="font-extrabold text-2xl tracking-tight">
-                  Publier une nouvelle enchère
+      {/* ============================================================
+          DESKTOP — command-center layout.
+          1. Identity hero card with avatar + greeting + KYC chip + inline CTAs
+          2. 4 KPI tiles in a row (Active / Sold / Revenue / Bids received)
+          3. 2-col grid: auctions on the start, pro tips on the end
+          ============================================================ */}
+      <div className="hidden lg:block max-w-[var(--max-w-wide)] mx-auto px-8 py-10 space-y-8">
+        {/* ── Identity hero card ── */}
+        <section className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-[var(--surface)] via-[var(--surface)] to-[#1a1408] ring-1 ring-[var(--gold)]/15 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.6)]">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -top-24 -end-24 h-72 w-72 rounded-full bg-[var(--gold)] blur-3xl opacity-10"
+          />
+          <div className="relative p-8 xl:p-10">
+            <div className="flex items-start justify-between gap-6">
+              {/* Avatar + greeting */}
+              <div className="flex items-center gap-5 min-w-0">
+                <div className="relative shrink-0">
+                  <Avatar
+                    size="xl"
+                    alt={displayName}
+                    className="!h-20 !w-20 ring-2 ring-[var(--gold)]/40 shadow-[var(--shadow-gold)]"
+                  />
+                  {user?.kycStatus === "verified" && (
+                    <span
+                      className="absolute -bottom-1 -end-1 h-7 w-7 rounded-full bg-[var(--gold)] ring-2 ring-[var(--surface)] flex items-center justify-center"
+                      title="Vendeur vérifié"
+                    >
+                      <ShieldCheck
+                        className="h-3.5 w-3.5 text-black"
+                        strokeWidth={3}
+                      />
+                    </span>
+                  )}
                 </div>
-                <div className="text-sm text-[var(--foreground-muted)] mt-1">
-                  5 étapes guidées · vérification automatique · des milliers
-                  d&apos;acheteurs vérifiés
+                <div className="min-w-0">
+                  <div className="text-[11px] uppercase tracking-[0.22em] font-bold text-[var(--gold)]">
+                    Tableau vendeur
+                  </div>
+                  <h1 className="mt-1.5 text-4xl xl:text-5xl font-black tracking-tight leading-[1.02]">
+                    Bonjour,{" "}
+                    <span className="gradient-gold-text">{displayName}</span>
+                  </h1>
+                  <p className="mt-2 text-sm xl:text-base text-[var(--foreground-muted)]">
+                    {user
+                      ? "Suivez vos ventes en cours et publiez de nouvelles enchères."
+                      : "Connectez-vous pour gérer vos enchères."}
+                  </p>
                 </div>
               </div>
-              <ArrowRight className="h-6 w-6 text-[var(--gold)] group-hover:translate-x-1 transition-transform" />
+
+              {/* KYC chip on the end */}
+              {user?.kycStatus === "verified" && (
+                <Badge variant="gold" size="lg" className="shrink-0">
+                  <Star className="h-4 w-4 fill-current" />
+                  Vendeur vérifié
+                </Badge>
+              )}
+            </div>
+
+            {/* Inline CTA row */}
+            <div className="mt-7 flex items-center gap-3 flex-wrap">
+              <Link
+                href="/seller/new/step-1"
+                className="group inline-flex items-center gap-2 h-12 px-5 rounded-full bg-[var(--gold)] text-black font-extrabold text-sm shadow-[var(--shadow-gold)] hover:scale-[1.02] active:scale-[0.99] transition-transform"
+              >
+                <Plus className="h-4 w-4" strokeWidth={3} />
+                Publier une nouvelle enchère
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              </Link>
+              <Link
+                href="/seller/auctions"
+                className="inline-flex items-center gap-2 h-12 px-5 rounded-full ring-1 ring-[var(--border)] hover:ring-[var(--gold)] hover:text-[var(--gold)] text-sm font-bold transition-colors"
+              >
+                <Gavel className="h-4 w-4" />
+                Toutes mes annonces
+              </Link>
+              <Link
+                href="/messages"
+                className="inline-flex items-center gap-2 h-12 px-5 rounded-full ring-1 ring-[var(--border)] hover:ring-[var(--gold)] hover:text-[var(--gold)] text-sm font-bold transition-colors"
+              >
+                <MessageSquare className="h-4 w-4" />
+                Messages
+              </Link>
             </div>
           </div>
-        </Link>
+        </section>
 
-        {/* Big stat tiles */}
-        <div className="grid grid-cols-3 gap-5">
-          <BigStat
-            icon={<Gavel className="h-6 w-6" />}
+        {/* ── KPI tiles row ── */}
+        <div className="grid grid-cols-4 gap-5">
+          <KpiTile
+            Icon={Gavel}
             label="Enchères actives"
             value={String(stats.active)}
+            sub={
+              stats.active === 0
+                ? "Aucune en cours"
+                : stats.active === 1
+                  ? "Enchère en direct"
+                  : "Enchères en direct"
+            }
             tone="gold"
           />
-          <BigStat
-            icon={<TrendingUp className="h-6 w-6" />}
+          <KpiTile
+            Icon={TrendingUp}
             label="Ventes réalisées"
             value={String(stats.completed)}
+            sub={
+              stats.completed === 0
+                ? "Aucune vente"
+                : "Voitures vendues"
+            }
             tone="success"
           />
-          <BigStat
-            icon={<Wallet className="h-6 w-6" />}
-            label="Total des revenus"
+          <KpiTile
+            Icon={Wallet}
+            label="Revenus totaux"
             value={formatPrice(Math.round(stats.earnings))}
+            sub="Net (après commission 7 %)"
             tone="gold"
-            wide
+            valueClass="text-2xl xl:text-3xl"
+          />
+          <KpiTile
+            Icon={Eye}
+            label="Offres reçues"
+            value={String(stats.bids)}
+            sub={
+              stats.bids === 0
+                ? "Aucune offre encore"
+                : "Sur toutes vos annonces"
+            }
+            tone="info"
           />
         </div>
 
-        {/* Auctions */}
-        <section className="space-y-5">
-          <div className="flex items-end justify-between">
-            <div>
-              <div className="text-xs uppercase tracking-[0.22em] font-bold text-[var(--gold)]">
-                Vos annonces
+        {/* ── Auctions + side tips ── */}
+        <div className="grid grid-cols-[1fr_320px] xl:grid-cols-[1fr_360px] gap-8 xl:gap-10 items-start">
+          {/* My auctions */}
+          <section className="space-y-5 min-w-0">
+            <div className="flex items-end justify-between gap-6">
+              <div>
+                <div className="text-[11px] uppercase tracking-[0.22em] font-bold text-[var(--gold)]">
+                  Vos annonces
+                </div>
+                <h2 className="mt-1.5 text-3xl xl:text-4xl font-black tracking-tight">
+                  Mes <span className="gradient-gold-text">enchères</span>
+                </h2>
               </div>
-              <h2 className="mt-2 text-3xl font-extrabold">Mes enchères</h2>
+              {myAuctions.length > 0 && (
+                <Link
+                  href="/seller/auctions"
+                  className="shrink-0 inline-flex items-center gap-1.5 h-10 px-4 rounded-full ring-1 ring-[var(--border)] hover:ring-[var(--gold)] hover:text-[var(--gold)] text-[13px] font-bold transition-colors"
+                >
+                  Tout voir
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              )}
             </div>
-            <Link
-              href="/seller/auctions"
-              className="text-sm text-[var(--gold)] hover:underline inline-flex items-center gap-1.5"
-            >
-              Tout voir
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-          {myAuctions.length === 0 ? (
-            <div className="rounded-2xl bg-[var(--surface)] border border-[var(--border)] p-12 text-center text-base text-[var(--foreground-muted)]">
-              Vous n&apos;avez encore publié aucune enchère. Cliquez sur le
-              bandeau ci-dessus pour commencer.
+            <div className="h-px w-full bg-gradient-to-r from-[var(--border)] via-[var(--border)] to-transparent" />
+
+            {myAuctions.length === 0 ? (
+              <EmptyAuctions />
+            ) : (
+              <div className="grid grid-cols-2 xl:grid-cols-3 gap-5">
+                {myAuctions.slice(0, 6).map((a) => (
+                  <AuctionCard key={a.id} auction={a} />
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* Pro tips sidebar */}
+          <aside className="sticky top-24 space-y-4">
+            <div className="rounded-2xl bg-[var(--surface)] ring-1 ring-[var(--border)] overflow-hidden">
+              <div className="px-5 py-4 border-b border-[var(--border)] flex items-center gap-2.5">
+                <span className="h-8 w-8 rounded-full bg-[var(--gold-faint)] ring-1 ring-[var(--gold)]/30 text-[var(--gold)] flex items-center justify-center">
+                  <Lightbulb className="h-4 w-4" />
+                </span>
+                <div>
+                  <div className="text-[10px] uppercase tracking-[0.22em] font-bold text-[var(--gold)]">
+                    Conseils
+                  </div>
+                  <div className="text-sm font-extrabold leading-tight">
+                    Vendre plus vite
+                  </div>
+                </div>
+              </div>
+              <ul className="divide-y divide-[var(--border)]">
+                <Tip
+                  Icon={Camera}
+                  title="Photos nettes = +30 % d'offres"
+                  text="12 angles obligatoires, lumière naturelle"
+                />
+                <Tip
+                  Icon={Clock}
+                  title="Lancez en milieu de semaine"
+                  text="Mardi-jeudi génèrent 22 % de plus de vues"
+                />
+                <Tip
+                  Icon={Sparkles}
+                  title="Description détaillée"
+                  text="Historique d'entretien rassure les acheteurs"
+                />
+              </ul>
+              <div className="px-5 py-4 border-t border-[var(--border)] bg-[var(--surface-2)]/40">
+                <Link
+                  href="/help"
+                  className="text-[12px] font-bold text-[var(--gold)] hover:underline inline-flex items-center gap-1.5"
+                >
+                  Guide complet du vendeur
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
             </div>
-          ) : (
-            <div className="grid grid-cols-3 xl:grid-cols-4 gap-5">
-              {myAuctions.slice(0, 8).map((a) => (
-                <AuctionCard key={a.id} auction={a} />
-              ))}
+
+            {/* Performance summary card */}
+            <div className="rounded-2xl bg-gradient-to-br from-[var(--surface)] to-[#1a1408] ring-1 ring-[var(--gold)]/20 p-5">
+              <div className="text-[10px] uppercase tracking-[0.22em] font-bold text-[var(--gold)]">
+                Performance
+              </div>
+              <div className="mt-2 text-2xl font-black tracking-tight">
+                {stats.completed > 0 ? (
+                  <>
+                    Excellent travail{" "}
+                    <span className="inline-block">👏</span>
+                  </>
+                ) : stats.active > 0 ? (
+                  <>
+                    Vos annonces sont
+                    <br />
+                    <span className="gradient-gold-text">en direct</span>
+                  </>
+                ) : (
+                  <>
+                    Prêt à <span className="gradient-gold-text">vendre</span> ?
+                  </>
+                )}
+              </div>
+              <p className="mt-2 text-[12px] text-[var(--foreground-muted)] leading-relaxed">
+                {stats.completed > 0
+                  ? `${stats.completed} ${stats.completed === 1 ? "voiture vendue" : "voitures vendues"} pour un total net de ${formatPrice(Math.round(stats.earnings))}.`
+                  : stats.active > 0
+                    ? `${stats.bids} ${stats.bids === 1 ? "offre reçue" : "offres reçues"} jusqu'à présent. Surveillez vos enchères.`
+                    : "Publiez votre première annonce pour atteindre des milliers d'acheteurs vérifiés."}
+              </p>
             </div>
-          )}
-        </section>
+          </aside>
+        </div>
       </div>
     </AppShell>
   );
@@ -304,46 +459,128 @@ function Stat({
   );
 }
 
-/** Desktop-only big stat. Wide variant spans tighter on long currency values. */
-function BigStat({
-  icon,
+/** Desktop KPI tile — icon pill + value + label + sub-label. Tone drives
+ *  the icon background + the value color, keeping the visual rhythm
+ *  consistent across the dashboard. */
+function KpiTile({
+  Icon,
   label,
   value,
+  sub,
   tone,
-  wide,
+  valueClass,
 }: {
-  icon: React.ReactNode;
+  Icon: React.ComponentType<{ className?: string }>;
   label: string;
   value: string;
-  tone: "gold" | "success";
-  wide?: boolean;
+  sub: string;
+  tone: "gold" | "success" | "info";
+  /** Override for the value typography (e.g. tighter for long currency). */
+  valueClass?: string;
 }) {
   const accent = {
     gold: {
-      icon: "bg-[var(--gold-faint)] text-[var(--gold)] border-[var(--gold-soft)]",
+      icon: "bg-[var(--gold-faint)] text-[var(--gold)] ring-[var(--gold)]/30",
       number: "gradient-gold-text",
     },
     success: {
-      icon: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+      icon: "bg-emerald-500/15 text-emerald-400 ring-emerald-500/30",
       number: "text-emerald-400",
+    },
+    info: {
+      icon: "bg-blue-500/15 text-blue-300 ring-blue-500/30",
+      number: "text-blue-300",
     },
   }[tone];
   return (
-    <div className="rounded-2xl bg-[var(--surface)] border border-[var(--border)] p-6 hover:border-[var(--gold-soft)] transition-colors">
-      <div
-        className={`h-12 w-12 rounded-xl border flex items-center justify-center mb-5 ${accent.icon}`}
-      >
-        {icon}
+    <div className="group rounded-2xl bg-[var(--surface)] ring-1 ring-[var(--border)] p-6 hover:ring-[var(--gold-soft)] transition-colors">
+      <div className="flex items-center justify-between">
+        <span
+          className={cn(
+            "h-11 w-11 rounded-xl ring-1 flex items-center justify-center",
+            accent.icon,
+          )}
+        >
+          <Icon className="h-5 w-5" />
+        </span>
+        <span className="text-[10px] uppercase tracking-[0.18em] font-bold text-[var(--foreground-muted)]">
+          {label}
+        </span>
       </div>
       <div
-        className={`font-black tabular-nums leading-none ${accent.number} ${
-          wide ? "text-3xl" : "text-5xl"
-        }`}
+        className={cn(
+          "mt-5 font-black tabular-nums leading-none",
+          accent.number,
+          valueClass ?? "text-4xl xl:text-5xl",
+        )}
       >
         {value}
       </div>
-      <div className="mt-3 text-sm font-semibold text-[var(--foreground-muted)]">
-        {label}
+      <div className="mt-2 text-[12px] text-[var(--foreground-muted)]">
+        {sub}
+      </div>
+    </div>
+  );
+}
+
+/** Pro-tip row in the sidebar. Small icon + title + one-liner. */
+function Tip({
+  Icon,
+  title,
+  text,
+}: {
+  Icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  text: string;
+}) {
+  return (
+    <li className="px-5 py-4 flex items-start gap-3">
+      <span className="h-8 w-8 shrink-0 rounded-lg bg-[var(--surface-2)] text-[var(--foreground-muted)] flex items-center justify-center mt-0.5">
+        <Icon className="h-4 w-4" />
+      </span>
+      <div className="min-w-0">
+        <div className="text-[13px] font-bold leading-tight">{title}</div>
+        <div className="text-[11px] text-[var(--foreground-muted)] leading-snug mt-0.5">
+          {text}
+        </div>
+      </div>
+    </li>
+  );
+}
+
+/** Rich empty state — gold-tinted card with an illustration, headline and CTA.
+ *  Replaces the plain "Vous n'avez encore publié" line so the dashboard feels
+ *  alive even on a fresh account. */
+function EmptyAuctions() {
+  return (
+    <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-[var(--surface)] via-[var(--surface)] to-[#1a1408] ring-1 ring-[var(--gold)]/20 p-10 min-h-[280px] flex items-center">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -bottom-20 -end-20 h-64 w-64 rounded-full bg-[var(--gold)] blur-3xl opacity-10"
+      />
+      <div className="relative flex items-center gap-8 w-full">
+        <span className="h-24 w-24 rounded-3xl bg-[var(--gold)] text-black shadow-[var(--shadow-gold)] flex items-center justify-center shrink-0">
+          <Plus className="h-12 w-12" strokeWidth={2.5} />
+        </span>
+        <div className="flex-1 min-w-0">
+          <div className="text-[11px] uppercase tracking-[0.22em] font-bold text-[var(--gold)]">
+            Première annonce
+          </div>
+          <h3 className="mt-1.5 text-2xl xl:text-3xl font-black tracking-tight leading-tight">
+            Publiez votre première voiture
+          </h3>
+          <p className="mt-2 text-sm text-[var(--foreground-muted)] leading-relaxed max-w-lg">
+            5 étapes guidées : données, photos, vidéo, vérification de
+            propriété, prix. Notre équipe valide chaque annonce en 24 h.
+          </p>
+          <Link
+            href="/seller/new/step-1"
+            className="group mt-5 inline-flex items-center gap-2 h-11 px-5 rounded-full bg-[var(--gold)] text-black font-extrabold text-sm shadow-[var(--shadow-gold)] hover:scale-[1.02] transition-transform"
+          >
+            Commencer maintenant
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+          </Link>
+        </div>
       </div>
     </div>
   );

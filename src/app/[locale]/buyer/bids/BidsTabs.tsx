@@ -97,18 +97,27 @@ export function BidsTabs({
 
   return (
     <>
-      <div className="flex gap-2 overflow-x-auto hide-scrollbar -mx-4 px-4 border-b border-[var(--border)]">
+      <div className="flex gap-2 lg:gap-1 overflow-x-auto hide-scrollbar -mx-4 px-4 lg:mx-0 lg:px-0 border-b border-[var(--border)]">
         {tabs.map((t) => (
           <button
             key={t.value}
             onClick={() => setTab(t.value)}
-            className={`shrink-0 pb-2 px-3 -mb-px font-semibold text-sm transition-colors border-b-2 ${
+            className={`shrink-0 pb-2 lg:pb-3 px-3 lg:px-5 -mb-px font-semibold lg:font-bold text-sm lg:text-[15px] transition-colors border-b-2 ${
               tab === t.value
                 ? "text-[var(--gold)] border-[var(--gold)]"
                 : "text-[var(--foreground-muted)] border-transparent hover:text-foreground"
             }`}
           >
-            {t.label} ({counts[t.value]})
+            {t.label}{" "}
+            <span
+              className={`ms-1 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] tabular-nums font-extrabold ${
+                tab === t.value
+                  ? "bg-[var(--gold)] text-black"
+                  : "bg-[var(--surface-2)] text-[var(--foreground-muted)]"
+              }`}
+            >
+              {counts[t.value]}
+            </span>
           </button>
         ))}
       </div>
@@ -120,7 +129,7 @@ export function BidsTabs({
           // Card grid for the watchlist — same component as the browse
           // grid. A compact list of MyBids would feel out of place here
           // since favourites carry no per-row "I bid X" data.
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mt-2">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 lg:gap-5 mt-2 lg:mt-4">
             {watchlist.map((a) => (
               <AuctionCard key={a.id} auction={a} />
             ))}
@@ -129,7 +138,7 @@ export function BidsTabs({
       ) : filteredBids.length === 0 ? (
         renderEmpty(tab, counts, setTab)
       ) : (
-        <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
+        <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-5 lg:space-y-0 lg:mt-4">
           {filteredBids.map((b) =>
             tab === "won" ? (
               <WinCard key={b.auction.id} bid={b} />
@@ -244,94 +253,287 @@ function WinCard({ bid: w }: { bid: MyBid }) {
   const auctionLabel = `${w.auction.vehicle.make} ${w.auction.vehicle.model} ${w.auction.vehicle.year}`;
   const remaining = Math.max(0, w.myBid - w.deposit);
   return (
-    <div className="rounded-[var(--radius-md)] bg-[var(--surface)] border border-[var(--gold-soft)]/40 overflow-hidden shadow-[0_0_24px_rgba(212,175,55,0.08)]">
-      <div className="flex gap-3 p-4">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={thumb(w.auction.vehicle.imageUrls[0], { width: 280, quality: 65 })}
-          alt=""
-          loading="lazy"
-          decoding="async"
-          className="h-24 w-32 rounded-[var(--radius-sm)] object-cover shrink-0"
-        />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start gap-2">
-            <Trophy className="h-4 w-4 text-[var(--gold)] mt-0.5 shrink-0" />
-            <div className="min-w-0">
-              <div className="font-bold">{auctionLabel}</div>
-              <div className="text-xs text-[var(--foreground-muted)] mt-0.5">
-                {anonSeller(w.auction.seller.id)}
+    <>
+      {/* ============================================================
+          MOBILE — original compact card, untouched.
+          ============================================================ */}
+      <div className="lg:hidden rounded-[var(--radius-md)] bg-[var(--surface)] border border-[var(--gold-soft)]/40 overflow-hidden shadow-[0_0_24px_rgba(212,175,55,0.08)]">
+        <div className="flex gap-3 p-4">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={thumb(w.auction.vehicle.imageUrls[0], { width: 280, quality: 65 })}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            className="h-24 w-32 rounded-[var(--radius-sm)] object-cover shrink-0"
+          />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start gap-2">
+              <Trophy className="h-4 w-4 text-[var(--gold)] mt-0.5 shrink-0" />
+              <div className="min-w-0">
+                <div className="font-bold">{auctionLabel}</div>
+                <div className="text-xs text-[var(--foreground-muted)] mt-0.5">
+                  {anonSeller(w.auction.seller.id)}
+                </div>
               </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
+              <div>
+                <div className="text-[var(--foreground-muted)]">
+                  Votre offre gagnante
+                </div>
+                <div className="font-bold gradient-gold-text tabular-nums">
+                  {formatPrice(w.myBid)}
+                </div>
+              </div>
+              <div className="text-end">
+                <div className="text-[var(--foreground-muted)]">
+                  Statut du paiement
+                </div>
+                {w.finalPaid ? (
+                  <Badge variant="success" size="sm">Payé</Badge>
+                ) : w.auction.status === "re_offered" ? (
+                  <Badge variant="warning" size="sm">Re-proposée à votre prix</Badge>
+                ) : (
+                  <Badge variant="warning" size="sm">En attente</Badge>
+                )}
+              </div>
+            </div>
+            {w.finalPaid && (
+              <div className="mt-3 flex justify-end">
+                <RateSellerButton
+                  sellerId={w.auction.seller.id}
+                  sellerName={anonSeller(w.auction.seller.id)}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {!w.finalPaid && (
+          <div className="border-t border-[var(--border)]">
+            <div className="p-3 bg-amber-500/5">
+              <div className="flex items-center gap-2 text-amber-400 text-xs font-semibold mb-1">
+                <Clock className="h-3.5 w-3.5" />
+                Finalisez le paiement pour récupérer la voiture
+              </div>
+              <div className="text-xs text-[var(--foreground-muted)]">
+                Montant restant : {formatPrice(remaining)} (après déduction de
+                la caution {formatPrice(w.deposit)})
+              </div>
+            </div>
+            <div className="p-3 flex flex-col sm:flex-row gap-2">
+              <Link
+                href={`/payment/checkout?type=final&auction=${w.auction.id}&amount=${remaining}`}
+                className="flex-1"
+              >
+                <Button size="md" fullWidth>
+                  Payer maintenant
+                </Button>
+              </Link>
+              <RenounceButton
+                auctionId={w.auction.id}
+                deposit={w.deposit}
+                auctionLabel={auctionLabel}
+              />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
-            <div>
-              <div className="text-[var(--foreground-muted)]">
-                Votre offre gagnante
-              </div>
-              <div className="font-bold gradient-gold-text tabular-nums">
-                {formatPrice(w.myBid)}
-              </div>
-            </div>
-            <div className="text-end">
-              <div className="text-[var(--foreground-muted)]">
-                Statut du paiement
-              </div>
-              {w.finalPaid ? (
-                <Badge variant="success" size="sm">
-                  Payé
-                </Badge>
-              ) : w.auction.status === "re_offered" ? (
-                <Badge variant="warning" size="sm">
-                  Re-proposée à votre prix
-                </Badge>
-              ) : (
-                <Badge variant="warning" size="sm">
-                  En attente
-                </Badge>
+        )}
+      </div>
+
+      {/* ============================================================
+          DESKTOP — trophy magazine card. Big photo banner with trophy
+          ribbon overlay, body with paid/unpaid state styled distinctly:
+            - Paid:   subdued surface, "Notez le vendeur" CTA
+            - Unpaid: amber accent strip + clear "Payer maintenant" + renounce
+          ============================================================ */}
+      <div className="hidden lg:block rounded-[24px] overflow-hidden ring-1 ring-[var(--gold-soft)]/40 bg-[var(--surface)] shadow-[0_30px_80px_-30px_rgba(0,0,0,0.5)]">
+        {/* Banner — auction photo with trophy ribbon */}
+        <Link
+          href={`/auctions/${w.auction.id}`}
+          className="relative block aspect-[16/7] overflow-hidden group"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={thumb(w.auction.vehicle.imageUrls[0], { width: 900, quality: 70 })}
+            alt={auctionLabel}
+            className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+            draggable={false}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/45 to-transparent" />
+
+          {/* Top — trophy pill (won) + payment status */}
+          <div className="absolute inset-x-0 top-0 p-5 flex items-center justify-between gap-3">
+            <span className="inline-flex items-center gap-2 px-3 h-8 rounded-full bg-[var(--gold)] text-black text-[11px] font-extrabold uppercase tracking-[0.18em] shadow-[var(--shadow-gold)]">
+              <Trophy className="h-3.5 w-3.5" />
+              Vous avez gagné
+            </span>
+            {w.finalPaid ? (
+              <span className="inline-flex items-center gap-1.5 px-3 h-8 rounded-full bg-emerald-500/15 ring-1 ring-emerald-500/40 text-emerald-300 text-[11px] font-extrabold uppercase tracking-[0.15em] backdrop-blur-md">
+                <Trophy className="h-3 w-3" />
+                Payé
+              </span>
+            ) : w.auction.status === "re_offered" ? (
+              <span className="inline-flex items-center gap-1.5 px-3 h-8 rounded-full bg-amber-500/15 ring-1 ring-amber-500/40 text-amber-300 text-[11px] font-extrabold uppercase tracking-[0.15em] backdrop-blur-md">
+                Re-proposée
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-3 h-8 rounded-full bg-amber-500/15 ring-1 ring-amber-500/40 text-amber-300 text-[11px] font-extrabold uppercase tracking-[0.15em] backdrop-blur-md">
+                <Clock className="h-3 w-3" />
+                Paiement en attente
+              </span>
+            )}
+          </div>
+
+          {/* Bottom — title + seller */}
+          <div className="absolute inset-x-0 bottom-0 p-6">
+            <h3 className="text-2xl xl:text-3xl font-black text-white leading-tight tracking-tight">
+              {w.auction.vehicle.make} {w.auction.vehicle.model}{" "}
+              <span className="font-light text-white/70">
+                {w.auction.vehicle.year}
+              </span>
+            </h3>
+            <div className="mt-1 text-[13px] text-white/70 flex items-center gap-2 flex-wrap">
+              <span>{anonSeller(w.auction.seller.id)}</span>
+              {w.auction.vehicle.color && (
+                <>
+                  <span className="h-1 w-1 rounded-full bg-white/40" />
+                  <span>{w.auction.vehicle.color}</span>
+                </>
+              )}
+              {w.auction.vehicle.mileage > 0 && (
+                <>
+                  <span className="h-1 w-1 rounded-full bg-white/40" />
+                  <span>
+                    {Intl.NumberFormat("fr-TN").format(w.auction.vehicle.mileage)} km
+                  </span>
+                </>
               )}
             </div>
           </div>
-          {w.finalPaid && (
-            <div className="mt-3 flex justify-end">
+        </Link>
+
+        {/* Body — pricing summary + actions */}
+        <div className="p-6 xl:p-7 space-y-5">
+          {/* Pricing row */}
+          <div className="grid grid-cols-3 divide-x divide-[var(--border)] rounded-2xl bg-[var(--surface-2)]/40 ring-1 ring-[var(--border)] overflow-hidden">
+            <Cell
+              label="Votre offre gagnante"
+              value={formatPrice(w.myBid)}
+              tone="gold"
+            />
+            <Cell
+              label="Caution (déduite)"
+              value={`− ${formatPrice(w.deposit)}`}
+              tone="muted"
+            />
+            <Cell
+              label={w.finalPaid ? "Payé" : "Reste à payer"}
+              value={
+                w.finalPaid ? formatPrice(w.myBid) : formatPrice(remaining)
+              }
+              tone={w.finalPaid ? "success" : "amber"}
+            />
+          </div>
+
+          {w.finalPaid ? (
+            // Paid state — rate the seller
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex items-center gap-3">
+                <span className="h-10 w-10 rounded-full bg-emerald-500/15 ring-1 ring-emerald-500/30 text-emerald-300 flex items-center justify-center">
+                  <Trophy className="h-5 w-5" />
+                </span>
+                <div>
+                  <div className="text-sm font-extrabold leading-tight">
+                    Paiement effectué
+                  </div>
+                  <div className="text-[12px] text-[var(--foreground-muted)] leading-tight mt-0.5">
+                    Contactez le vendeur pour la livraison
+                  </div>
+                </div>
+              </div>
               <RateSellerButton
                 sellerId={w.auction.seller.id}
                 sellerName={anonSeller(w.auction.seller.id)}
               />
             </div>
+          ) : (
+            // Unpaid state — amber call-out + payment CTA
+            <>
+              <div className="rounded-2xl bg-amber-500/10 ring-1 ring-amber-500/30 p-4 flex items-start gap-3">
+                <span className="h-9 w-9 rounded-full bg-amber-500/20 text-amber-300 flex items-center justify-center shrink-0">
+                  <Clock className="h-4 w-4" />
+                </span>
+                <div className="min-w-0">
+                  <div className="text-sm font-extrabold text-amber-200 leading-tight">
+                    Finalisez le paiement pour récupérer la voiture
+                  </div>
+                  <div className="text-[12px] text-[var(--foreground-muted)] leading-snug mt-1">
+                    Montant restant{" "}
+                    <span className="font-bold tabular-nums text-foreground">
+                      {formatPrice(remaining)}
+                    </span>{" "}
+                    après déduction de la caution{" "}
+                    <span className="tabular-nums">
+                      {formatPrice(w.deposit)}
+                    </span>
+                    .
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 flex-wrap">
+                <Link
+                  href={`/payment/checkout?type=final&auction=${w.auction.id}&amount=${remaining}`}
+                  className="flex-1 min-w-[200px]"
+                >
+                  <Button
+                    size="md"
+                    fullWidth
+                    className="!h-12 lg:rounded-full lg:text-base"
+                  >
+                    Payer maintenant {formatPrice(remaining)}
+                  </Button>
+                </Link>
+                <RenounceButton
+                  auctionId={w.auction.id}
+                  deposit={w.deposit}
+                  auctionLabel={auctionLabel}
+                />
+              </div>
+            </>
           )}
         </div>
       </div>
+    </>
+  );
+}
 
-      {!w.finalPaid && (
-        <div className="border-t border-[var(--border)]">
-          <div className="p-3 bg-amber-500/5">
-            <div className="flex items-center gap-2 text-amber-400 text-xs font-semibold mb-1">
-              <Clock className="h-3.5 w-3.5" />
-              Finalisez le paiement pour récupérer la voiture
-            </div>
-            <div className="text-xs text-[var(--foreground-muted)]">
-              Montant restant : {formatPrice(remaining)} (après déduction de
-              la caution {formatPrice(w.deposit)})
-            </div>
-          </div>
-          <div className="p-3 flex flex-col sm:flex-row gap-2">
-            <Link
-              href={`/payment/checkout?type=final&auction=${w.auction.id}&amount=${remaining}`}
-              className="flex-1"
-            >
-              <Button size="md" fullWidth>
-                Payer maintenant
-              </Button>
-            </Link>
-            <RenounceButton
-              auctionId={w.auction.id}
-              deposit={w.deposit}
-              auctionLabel={auctionLabel}
-            />
-          </div>
-        </div>
-      )}
+/** Small data cell inside the desktop WinCard pricing strip. */
+function Cell({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone: "gold" | "muted" | "amber" | "success";
+}) {
+  const color: Record<typeof tone, string> = {
+    gold: "gradient-gold-text",
+    muted: "text-[var(--foreground-muted)]",
+    amber: "text-amber-300",
+    success: "text-emerald-300",
+  };
+  return (
+    <div className="p-4 xl:p-5">
+      <div className="text-[10px] uppercase tracking-[0.18em] font-bold text-[var(--foreground-muted)]">
+        {label}
+      </div>
+      <div
+        className={`mt-1.5 text-xl xl:text-2xl font-black tabular-nums leading-none ${color[tone]}`}
+      >
+        {value}
+      </div>
     </div>
   );
 }

@@ -1,7 +1,6 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { BrowseHeader } from "@/components/layout/BrowseHeader";
-import { createClient } from "@/lib/supabase/server";
-import { listAuctions } from "@/lib/db";
+import { getLiveAuctionsCached } from "@/lib/home-cache";
 import { AuctionsBrowser } from "./AuctionsBrowser";
 import { BrowseViewToggle } from "./BrowseViewToggle";
 
@@ -13,9 +12,12 @@ interface Props {
 }
 
 export default async function AuctionsPage({ searchParams }: Props) {
-  const { view } = await searchParams;
-  const supabase = await createClient();
-  const auctions = await listAuctions(supabase, {});
+  const [{ view }, auctions] = await Promise.all([
+    searchParams,
+    // Cached 30s — public read, RLS filters out non-live auctions
+    // already, so the full list is shareable across users.
+    getLiveAuctionsCached(),
+  ]);
 
   return (
     <AppShell noTopBar>

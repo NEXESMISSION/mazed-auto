@@ -9,7 +9,7 @@ import {
   Building2,
   Lock,
   ArrowRight,
-  ArrowLeft,
+  ChevronLeft,
   AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -119,23 +119,25 @@ function CheckoutContent() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      {/* Header */}
-      <header className="flex items-center justify-between p-4 border-b border-[var(--border)]">
-        <button
-          onClick={() => router.back()}
-          className="h-9 w-9 rounded-full hover:bg-[var(--surface-2)] flex items-center justify-center"
-          aria-label="Retour"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </button>
-        <div className="flex items-center gap-2 font-bold text-sm">
-          <Lock className="h-4 w-4 text-[var(--gold)]" />
-Paiement sécurisé
+      {/* Header — slim sticky bar, scales up on desktop */}
+      <header className="sticky top-0 z-40 bg-[#0a0a0a]/90 backdrop-blur-xl border-b border-[var(--border)]">
+        <div className="max-w-md lg:max-w-[var(--max-w-content)] mx-auto px-4 lg:px-8 h-14 lg:h-16 flex items-center justify-between">
+          <button
+            onClick={() => router.back()}
+            className="h-9 w-9 lg:h-10 lg:w-10 rounded-full bg-[var(--surface)] border border-[var(--gold-soft)] text-[var(--gold)] flex items-center justify-center hover:bg-[var(--gold-faint)] hover:border-[var(--gold)] active:scale-95 transition-all"
+            aria-label="Retour"
+          >
+            <ChevronLeft className="h-4 w-4 lg:h-5 lg:w-5" strokeWidth={2.5} />
+          </button>
+          <div className="flex items-center gap-2 font-bold text-sm lg:text-base">
+            <Lock className="h-4 w-4 lg:h-4.5 lg:w-4.5 text-[var(--gold)]" />
+            Paiement sécurisé
+          </div>
+          <div className="w-9 lg:w-10" />
         </div>
-        <div className="w-9" />
       </header>
 
-      <main className="flex-1 max-w-md mx-auto w-full p-4 pb-32 md:pb-4 space-y-4">
+      <main className="flex-1 max-w-md lg:max-w-[var(--max-w-content)] mx-auto w-full p-4 lg:px-8 lg:py-10 pb-32 md:pb-4 space-y-4 lg:space-y-6">
         {block ? (
           <div className="rounded-[var(--radius-md)] bg-amber-500/10 border border-amber-500/40 p-5 text-center space-y-3">
             <AlertTriangle className="h-10 w-10 text-amber-400 mx-auto" />
@@ -160,17 +162,23 @@ Voir l'enchère
 ⚠ Paiement simulé à des fins de test
         </Badge>
 
-        {/* Summary */}
-        <div className="rounded-[var(--radius-md)] bg-[var(--surface)] border border-[var(--border)] p-4">
-          <div className="text-xs text-[var(--foreground-muted)] mb-1">
-            {type === "deposit"
-              ? "Caution de participation (5%)"
-              : type === "final"
-                ? "Prix final de la voiture"
-                : "Montant"}
-          </div>
-          <div className="text-3xl font-extrabold gradient-gold-text tabular-nums">
-            {formatPrice(amount)}
+        {/* Summary — bigger, more confident on desktop */}
+        <div className="relative overflow-hidden rounded-[var(--radius-md)] lg:rounded-2xl bg-[var(--surface)] border border-[var(--border)] lg:ring-1 lg:ring-[var(--gold)]/20 lg:border-0 p-4 lg:p-7">
+          <div
+            aria-hidden
+            className="hidden lg:block pointer-events-none absolute -top-20 -end-20 h-56 w-56 rounded-full bg-[var(--gold)] blur-3xl opacity-15"
+          />
+          <div className="relative">
+            <div className="text-[10px] lg:text-[11px] uppercase tracking-[0.18em] lg:tracking-[0.22em] font-bold text-[var(--foreground-muted)]">
+              {type === "deposit"
+                ? "Caution de participation (5%)"
+                : type === "final"
+                  ? "Prix final de la voiture"
+                  : "Montant"}
+            </div>
+            <div className="mt-1.5 lg:mt-3 text-3xl lg:text-[48px] xl:text-[56px] font-extrabold lg:font-black gradient-gold-text tabular-nums leading-none">
+              {formatPrice(amount)}
+            </div>
           </div>
         </div>
 

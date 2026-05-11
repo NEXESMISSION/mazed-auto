@@ -52,6 +52,11 @@ interface BaseProps {
    *  so OCR text stays crisp; default preset is fine for vehicle
    *  photos. Ignored for `kind === "video"`. */
   compress?: CompressOptions;
+  /** Optional pre-upload validation. Runs on the raw picked File before
+   *  compression / upload. Return `{ ok: false, reason }` to abort and
+   *  surface a toast — useful for things like video duration limits
+   *  that would otherwise cost a round trip to discover. */
+  validate?: (file: File) => Promise<{ ok: true } | { ok: false; reason: string }>;
 }
 
 // Defaults per use case. Folder name is the source of truth for picking
@@ -84,6 +89,7 @@ export function NativeCapture({
   className,
   children,
   compress,
+  validate,
 }: BaseProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -115,6 +121,14 @@ export function NativeCapture({
       lastModified: f?.lastModified,
     });
     if (!f || !user) return;
+    if (validate) {
+      const v = await validate(f);
+      if (!v.ok) {
+        log("validate rejected", { reason: v.reason });
+        toast(v.reason, "warning");
+        return;
+      }
+    }
     setUploading(true);
     const t0 = performance.now();
     try {

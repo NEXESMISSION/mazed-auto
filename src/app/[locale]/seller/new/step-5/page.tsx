@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { ArrowRight, Info } from "lucide-react";
 import { CreateAuctionShell } from "@/components/layout/CreateAuctionShell";
@@ -16,7 +16,7 @@ import { createClient } from "@/lib/supabase/client";
 export default function Step5Page() {
   const { toast } = useToast();
   const router = useRouter();
-  const { draft, update } = useDraft();
+  const { draft, hydrated, update } = useDraft();
   const [startingPrice, setStartingPrice] = useState(draft.startingPrice ?? 30000);
   const [reservePrice, setReservePrice] = useState(draft.reservePrice ?? 35000);
   const [buyNowPrice, setBuyNowPrice] = useState(draft.buyNowPrice ?? 45000);
@@ -51,6 +51,24 @@ export default function Step5Page() {
   const [hasBuyNow, setHasBuyNow] = useState(
     draft.buyNowPrice !== undefined ? Boolean(draft.buyNowPrice) : true,
   );
+
+  // Local state is seeded from `draft` on first render, but `draft` is empty
+  // until sessionStorage hydrates one tick later. On back-nav from /review
+  // the user would otherwise see the defaults instead of their real values
+  // — re-seed once we have the hydrated draft.
+  const seededRef = useRef(false);
+  useEffect(() => {
+    if (!hydrated || seededRef.current) return;
+    seededRef.current = true;
+    /* eslint-disable react-hooks/set-state-in-effect */
+    if (draft.startingPrice !== undefined) setStartingPrice(draft.startingPrice);
+    if (draft.reservePrice !== undefined) setReservePrice(draft.reservePrice);
+    if (draft.buyNowPrice !== undefined) setBuyNowPrice(draft.buyNowPrice);
+    if (draft.durationDays !== undefined) setDuration(draft.durationDays);
+    setHasReserve(draft.reservePrice !== undefined ? Boolean(draft.reservePrice) : true);
+    setHasBuyNow(draft.buyNowPrice !== undefined ? Boolean(draft.buyNowPrice) : true);
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [hydrated, draft.startingPrice, draft.reservePrice, draft.buyNowPrice, draft.durationDays]);
 
   const deposit = Math.round(startingPrice * 0.05);
   // PLAN §21.5: 7% commission, capped at 15,000 DT per transaction.
@@ -110,133 +128,161 @@ export default function Step5Page() {
 
   return (
     <CreateAuctionShell current={4}>
-      <div className="space-y-5">
+      <div className="space-y-5 lg:space-y-8">
         <div>
-          <h1 className="text-2xl font-extrabold">Prix et durée</h1>
-          <p className="text-sm text-[var(--foreground-muted)] mt-1">
-            Définissez le prix de départ et la durée de l'enchère
+          <div className="hidden lg:block text-[11px] uppercase tracking-[0.22em] font-bold text-[var(--gold)]">
+            Étape 5 · Tarification
+          </div>
+          <h1 className="text-2xl lg:text-4xl font-extrabold lg:font-black lg:tracking-tight lg:mt-2">
+            Prix et durée
+          </h1>
+          <p className="text-sm lg:text-base text-[var(--foreground-muted)] mt-1 lg:mt-3 lg:max-w-2xl">
+            Définissez le prix de départ et la durée de l&apos;enchère. Les
+            calculs de caution et commission s&apos;actualisent en temps réel.
           </p>
         </div>
 
-        <Field label="Prix de départ" required name="startingPrice">
-          <NumberField
-            placeholder="30000"
-            value={startingPrice}
-            onChange={(n) => setStartingPrice(n ?? 0)}
-          />
-        </Field>
-
-        <div data-field="reservePrice">
-          <label className="flex items-center gap-2.5 cursor-pointer mb-2">
-            <Checkbox
-              checked={hasReserve}
-              onChange={(e) => setHasReserve(e.target.checked)}
-            />
-            <span className="font-semibold text-sm">Prix de réserve</span>
-          </label>
-          {hasReserve && (
-            <>
+        {/* Desktop: 2-col split — inputs on the start, live summary on the end */}
+        <div className="lg:grid lg:grid-cols-[1fr_360px] lg:gap-8 xl:gap-10 lg:items-start space-y-5 lg:space-y-0">
+          {/* ── Inputs column ── */}
+          <div className="space-y-5 lg:space-y-6 min-w-0">
+            <Field label="Prix de départ" required name="startingPrice">
               <NumberField
-                placeholder="35000"
-                value={reservePrice}
-                onChange={(n) => setReservePrice(n ?? 0)}
+                placeholder="30000"
+                value={startingPrice}
+                onChange={(n) => setStartingPrice(n ?? 0)}
               />
-              <p className="text-xs text-[var(--foreground-muted)] mt-1.5">
-                La voiture n'est vendue que si ce prix est atteint
-              </p>
-            </>
-          )}
-        </div>
+            </Field>
 
-        <div data-field="buyNowPrice">
-          <label className="flex items-center gap-2.5 cursor-pointer mb-2">
-            <Checkbox
-              checked={hasBuyNow}
-              onChange={(e) => setHasBuyNow(e.target.checked)}
-            />
-            <span className="font-semibold text-sm">Prix d&apos;achat immédiat</span>
-          </label>
-          {hasBuyNow && (
-            <>
-              <NumberField
-                placeholder="45000"
-                value={buyNowPrice}
-                onChange={(n) => setBuyNowPrice(n ?? 0)}
-              />
-              <p className="text-xs text-[var(--foreground-muted)] mt-1.5">
-                L&apos;acheteur peut clôturer l&apos;enchère immédiatement à ce prix
-              </p>
-            </>
-          )}
-        </div>
+            <div data-field="reservePrice">
+              <label className="flex items-center gap-2.5 cursor-pointer mb-2">
+                <Checkbox
+                  checked={hasReserve}
+                  onChange={(e) => setHasReserve(e.target.checked)}
+                />
+                <span className="font-semibold text-sm">Prix de réserve</span>
+              </label>
+              {hasReserve && (
+                <>
+                  <NumberField
+                    placeholder="35000"
+                    value={reservePrice}
+                    onChange={(n) => setReservePrice(n ?? 0)}
+                  />
+                  <p className="text-xs text-[var(--foreground-muted)] mt-1.5">
+                    La voiture n&apos;est vendue que si ce prix est atteint
+                  </p>
+                </>
+              )}
+            </div>
 
-        <Field label="Durée de l'enchère" required>
-          <div
-            className="grid gap-2"
-            style={{ gridTemplateColumns: `repeat(${durationOpts.length}, minmax(0, 1fr))` }}
-          >
-            {durationOpts.map((d) => (
-              <button
-                key={d}
-                onClick={() => setDuration(d as 3 | 7 | 14)}
-                className={`h-12 rounded-[var(--radius)] border-2 font-bold text-sm transition-colors ${
-                  duration === d
-                    ? "bg-[var(--gold)] text-black border-[var(--gold)]"
-                    : "border-[var(--border)] bg-[var(--surface)] hover:border-[var(--gold-soft)]"
-                }`}
+            <div data-field="buyNowPrice">
+              <label className="flex items-center gap-2.5 cursor-pointer mb-2">
+                <Checkbox
+                  checked={hasBuyNow}
+                  onChange={(e) => setHasBuyNow(e.target.checked)}
+                />
+                <span className="font-semibold text-sm">Prix d&apos;achat immédiat</span>
+              </label>
+              {hasBuyNow && (
+                <>
+                  <NumberField
+                    placeholder="45000"
+                    value={buyNowPrice}
+                    onChange={(n) => setBuyNowPrice(n ?? 0)}
+                  />
+                  <p className="text-xs text-[var(--foreground-muted)] mt-1.5">
+                    L&apos;acheteur peut clôturer l&apos;enchère immédiatement à ce prix
+                  </p>
+                </>
+              )}
+            </div>
+
+            <Field label="Durée de l'enchère" required>
+              <div
+                className="grid gap-2 lg:gap-3"
+                style={{ gridTemplateColumns: `repeat(${durationOpts.length}, minmax(0, 1fr))` }}
               >
-                {d} {d === 1 ? "jour" : "jours"}
-              </button>
-            ))}
+                {durationOpts.map((d) => (
+                  <button
+                    key={d}
+                    onClick={() => setDuration(d as 3 | 7 | 14)}
+                    className={`h-12 lg:h-14 rounded-[var(--radius)] lg:rounded-2xl border-2 font-bold text-sm lg:text-base transition-colors ${
+                      duration === d
+                        ? "bg-[var(--gold)] text-black border-[var(--gold)]"
+                        : "border-[var(--border)] bg-[var(--surface)] hover:border-[var(--gold-soft)]"
+                    }`}
+                  >
+                    {d} {d === 1 ? "jour" : "jours"}
+                  </button>
+                ))}
+              </div>
+            </Field>
           </div>
-        </Field>
 
-        {/* Summary */}
-        <div className="rounded-[var(--radius-md)] bg-[var(--surface)] border border-[var(--border)] overflow-hidden">
-          <div className="px-4 py-2.5 bg-[var(--surface-2)] border-b border-[var(--border)] text-xs font-bold text-[var(--gold)]">
-Résumé des chiffres
-          </div>
-          <div className="p-4 space-y-2 text-sm">
-            <Row label="Prix de départ" value={formatPrice(startingPrice)} />
-            {hasReserve && (
-              <Row label="Prix de réserve" value={formatPrice(reservePrice)} />
-            )}
-            {hasBuyNow && (
-              <Row label='Prix "Achat immédiat"' value={formatPrice(buyNowPrice)} />
-            )}
-            <div className="border-t border-[var(--border)] my-2" />
-            <Row
-              label="Caution par enchérisseur (5%)"
-              value={formatPrice(deposit)}
-              hint="Remboursée s'il ne gagne pas"
-            />
-            <Row
-              label="Commission Mazed (7%)"
-              value={formatPrice(commission)}
-              hint="Déduite du prix de vente final"
-            />
-          </div>
+          {/* ── Live summary column (sticky on desktop) ── */}
+          <aside className="lg:sticky lg:top-[calc(4rem+1.5rem)] lg:self-start space-y-5 lg:space-y-4">
+            <div className="rounded-[var(--radius-md)] lg:rounded-2xl bg-[var(--surface)] lg:bg-[var(--surface-2)]/40 border border-[var(--border)] overflow-hidden">
+              <div className="px-4 lg:px-5 py-2.5 lg:py-4 bg-[var(--surface-2)] lg:bg-transparent lg:border-b lg:border-[var(--border)] border-b border-[var(--border)]">
+                <div className="text-xs lg:text-[11px] uppercase lg:tracking-[0.22em] font-bold text-[var(--gold)]">
+                  Résumé des chiffres
+                </div>
+                <div className="hidden lg:block mt-1 text-2xl font-black tabular-nums leading-none gradient-gold-text">
+                  {formatPrice(startingPrice)}
+                </div>
+                <div className="hidden lg:block text-[11px] text-[var(--foreground-muted)] mt-0.5">
+                  Prix de départ proposé
+                </div>
+              </div>
+              <div className="p-4 lg:p-5 space-y-2 lg:space-y-3 text-sm">
+                <Row label="Prix de départ" value={formatPrice(startingPrice)} />
+                {hasReserve && (
+                  <Row label="Prix de réserve" value={formatPrice(reservePrice)} />
+                )}
+                {hasBuyNow && (
+                  <Row label='Prix "Achat immédiat"' value={formatPrice(buyNowPrice)} />
+                )}
+                <div className="border-t border-[var(--border)] my-2" />
+                <Row
+                  label="Caution par enchérisseur (5%)"
+                  value={formatPrice(deposit)}
+                  hint="Remboursée s'il ne gagne pas"
+                />
+                <Row
+                  label="Commission Mazed (7%)"
+                  value={formatPrice(commission)}
+                  hint="Déduite du prix de vente final"
+                />
+              </div>
+            </div>
+
+            <div className="rounded-[var(--radius)] lg:rounded-2xl bg-[var(--gold-faint)] border border-[var(--gold-soft)]/30 p-3 lg:p-4 flex gap-2 lg:gap-3 items-start">
+              <Info className="h-4 w-4 lg:h-4 lg:w-4 text-[var(--gold)] shrink-0 mt-0.5" />
+              <div className="text-xs lg:text-[12px] text-[var(--foreground-muted)] leading-relaxed">
+                <span className="font-semibold text-[var(--gold-bright)]">Anti-sniping :</span>{" "}
+                Toute offre dans les 5 dernières minutes prolonge l&apos;enchère de 5 minutes pour garantir l&apos;équité.
+              </div>
+            </div>
+          </aside>
         </div>
 
-        <div className="rounded-[var(--radius)] bg-[var(--gold-faint)] border border-[var(--gold-soft)]/30 p-3 flex gap-2 items-start">
-          <Info className="h-4 w-4 text-[var(--gold)] shrink-0 mt-0.5" />
-          <div className="text-xs text-[var(--foreground-muted)] leading-relaxed">
-            <span className="font-semibold text-[var(--gold-bright)]">Anti-sniping :</span>{" "}
-            Toute offre dans les 5 dernières minutes prolonge l'enchère de 5 minutes pour garantir l'équité.
-          </div>
-        </div>
-
-        <div className="pt-4 flex flex-col-reverse sm:flex-row gap-2">
+        <div className="pt-4 lg:pt-6 lg:border-t lg:border-[var(--border)] flex flex-col-reverse sm:flex-row gap-2 lg:gap-3 lg:justify-end">
           <Button
             variant="ghost"
             size="lg"
             fullWidth
             onClick={() => router.back()}
+            className="lg:!w-auto lg:px-6"
           >
             Retour
           </Button>
-          <Button size="lg" fullWidth onClick={next}>
-Vérification finale
+          <Button
+            size="lg"
+            fullWidth
+            onClick={next}
+            className="lg:!w-auto lg:px-8"
+          >
+            Vérification finale
             <ArrowRight className="h-5 w-5" />
           </Button>
         </div>

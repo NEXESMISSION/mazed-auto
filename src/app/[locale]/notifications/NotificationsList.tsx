@@ -94,53 +94,74 @@ export function NotificationsList({ userId, initial }: Props) {
 
   return (
     <>
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-extrabold">Notifications</h1>
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-2xl lg:text-4xl xl:text-5xl font-extrabold lg:font-black lg:tracking-tight">
+          Notifications
+        </h1>
         <Button
           variant="ghost"
           size="sm"
           onClick={readAll}
           disabled={unreadCount === 0}
+          className="lg:h-11 lg:px-4 lg:text-sm"
         >
           <Check className="h-4 w-4" />
           Tout marquer lu
         </Button>
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 lg:gap-2.5">
         <button
           onClick={() => setFilter("all")}
-          className={`px-4 h-9 rounded-full text-sm font-semibold transition-colors ${
+          className={`px-4 lg:px-5 h-9 lg:h-10 rounded-full text-sm font-semibold lg:font-bold transition-colors ${
             filter === "all"
               ? "bg-[var(--gold)] text-black"
-              : "bg-[var(--surface)] border border-[var(--border)]"
+              : "bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--gold-soft)]"
           }`}
         >
-          Tous ({items.length})
+          Tous{" "}
+          <span
+            className={`ms-1 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] tabular-nums font-extrabold ${
+              filter === "all"
+                ? "bg-black/15 text-black"
+                : "bg-[var(--surface-2)] text-[var(--foreground-muted)]"
+            }`}
+          >
+            {items.length}
+          </span>
         </button>
         <button
           onClick={() => setFilter("unread")}
-          className={`px-4 h-9 rounded-full text-sm font-semibold transition-colors ${
+          className={`px-4 lg:px-5 h-9 lg:h-10 rounded-full text-sm font-semibold lg:font-bold transition-colors ${
             filter === "unread"
               ? "bg-[var(--gold)] text-black"
-              : "bg-[var(--surface)] border border-[var(--border)]"
+              : "bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--gold-soft)]"
           }`}
         >
-          Non lus ({unreadCount})
+          Non lus{" "}
+          <span
+            className={`ms-1 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] tabular-nums font-extrabold ${
+              filter === "unread"
+                ? "bg-black/15 text-black"
+                : "bg-[var(--surface-2)] text-[var(--foreground-muted)]"
+            }`}
+          >
+            {unreadCount}
+          </span>
         </button>
       </div>
 
       {filtered.length === 0 ? (
-        <div className="text-center py-16 space-y-2">
-          <Bell className="h-10 w-10 text-[var(--foreground-muted)] mx-auto" />
-          <div className="text-[var(--foreground-muted)]">
+        <div className="text-center py-16 lg:py-24 space-y-2">
+          <Bell className="h-10 w-10 lg:h-14 lg:w-14 text-[var(--foreground-muted)] mx-auto" />
+          <div className="text-[var(--foreground-muted)] lg:text-base font-bold lg:font-extrabold">
             {filter === "unread"
               ? "Aucune notification non lue"
               : "Aucune notification"}
           </div>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-2 lg:space-y-2.5">
           {filtered.map((n) => {
             const meta = kindMeta[n.kind];
             const Icon = meta.icon;
@@ -151,34 +172,36 @@ export function NotificationsList({ userId, initial }: Props) {
                 href={href}
                 onClick={() => !n.is_read && markRead(n.id)}
                 className={cn(
-                  "block rounded-[var(--radius)] border p-3 transition-colors hover:bg-[var(--surface-2)]",
+                  "block rounded-[var(--radius)] lg:rounded-2xl border p-3 lg:p-4 transition-colors hover:bg-[var(--surface-2)]",
                   n.is_read
                     ? "bg-[var(--surface)] border-[var(--border)]"
                     : "bg-[var(--gold-faint)]/30 border-[var(--gold-soft)]/30",
                 )}
               >
-                <div className="flex gap-3">
+                <div className="flex gap-3 lg:gap-4">
                   <div
                     className={cn(
-                      "shrink-0 h-10 w-10 rounded-full flex items-center justify-center",
+                      "shrink-0 h-10 w-10 lg:h-12 lg:w-12 rounded-full flex items-center justify-center",
                       meta.color,
                     )}
                   >
-                    <Icon className="h-5 w-5" />
+                    <Icon className="h-5 w-5 lg:h-5.5 lg:w-5.5" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
-                      <div className="font-bold text-sm">{n.title}</div>
+                      <div className="font-bold lg:font-extrabold text-sm lg:text-base">
+                        {n.title}
+                      </div>
                       {!n.is_read && (
-                        <span className="shrink-0 h-2 w-2 rounded-full bg-[var(--gold)]" />
+                        <span className="shrink-0 h-2 w-2 lg:h-2.5 lg:w-2.5 rounded-full bg-[var(--gold)] mt-2" />
                       )}
                     </div>
                     {n.body && (
-                      <p className="text-sm text-[var(--foreground-muted)] mt-0.5 line-clamp-2">
+                      <p className="text-sm lg:text-[14px] text-[var(--foreground-muted)] mt-0.5 lg:mt-1 line-clamp-2 leading-relaxed">
                         {n.body}
                       </p>
                     )}
-                    <div className="text-[10px] text-[var(--foreground-subtle)] mt-1">
+                    <div className="text-[10px] lg:text-[11px] text-[var(--foreground-subtle)] mt-1 lg:mt-1.5 tabular-nums">
                       {formatRelative(n.created_at)}
                     </div>
                   </div>

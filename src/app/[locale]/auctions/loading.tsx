@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/layout/AppShell";
+import { RouteLoading } from "@/components/layout/RouteLoading";
 
 /**
  * Skeleton for the search/results screen — pill search bar, "Results"
@@ -8,6 +9,7 @@ import { AppShell } from "@/components/layout/AppShell";
 export default function Loading() {
   return (
     <AppShell noTopBar>
+      <RouteLoading>
       <div className="pt-5">
         {/* Pill search */}
         <div className="px-4">
@@ -47,6 +49,7 @@ export default function Loading() {
           </div>
         </div>
       </div>
+      </RouteLoading>
     </AppShell>
   );
 }

@@ -6,6 +6,7 @@ import { Gavel } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { formatPrice } from "@/lib/format";
 import { anonBidder } from "@/lib/anon";
+import { DesktopArrowSlider } from "./DesktopArrowSlider";
 
 export interface ActivityItem {
   id: string;
@@ -131,8 +132,9 @@ export function LiveActivityTicker({ initial }: Props = {}) {
   const marquee = [...items, ...items];
 
   return (
-    <section className="mt-5" aria-label="Activité en direct">
-      <div className="px-4 mb-2 flex items-center gap-1.5">
+    <section className="mt-5 lg:mt-14" aria-label="Activité en direct">
+      {/* Mobile eyebrow */}
+      <div className="lg:hidden px-4 mb-2 flex items-center gap-1.5">
         <span className="relative flex h-2 w-2">
           <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-60" />
           <span className="relative h-2 w-2 rounded-full bg-emerald-400" />
@@ -145,37 +147,89 @@ export function LiveActivityTicker({ initial }: Props = {}) {
         </span>
       </div>
 
-      <div className="marquee-viewport">
-        {/* Each item carries its own me-3 — keeps the -50% loop seam
-            math intact (trailing gap counts) and wins specificity vs.
-            the Tailwind preflight. Don't add `gap-N` to the track. */}
+      {/* Desktop header — magazine style */}
+      <div className="hidden lg:block px-8 mb-6">
+        <div className="flex items-end justify-between gap-6">
+          <div>
+            <div className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] font-bold text-emerald-300">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-60" />
+                <span className="relative h-2 w-2 rounded-full bg-emerald-400" />
+              </span>
+              En direct · {items.length} mises
+            </div>
+            <h2 className="mt-1.5 text-3xl xl:text-4xl font-black tracking-tight">
+              Le marché <span className="gradient-gold-text">en mouvement</span>
+            </h2>
+            <p className="mt-1.5 text-sm text-[var(--foreground-muted)]">
+              Chaque enchère placée s&apos;affiche ici en temps réel
+            </p>
+          </div>
+        </div>
+        <div className="mt-5 h-px w-full bg-gradient-to-r from-[var(--border)] via-[var(--border)] to-transparent" />
+      </div>
+
+      {/* Mobile — CSS marquee, untouched */}
+      <div className="lg:hidden marquee-viewport">
         <div className="marquee-track marquee-track--rapid px-3">
           {marquee.map((it, i) => (
-            <Link
+            <Pill
               key={`${it.id}-${i}`}
-              href={it.auctionId ? `/auctions/${it.auctionId}` : "/auctions"}
-              aria-hidden={i >= items.length ? true : undefined}
-              tabIndex={i >= items.length ? -1 : undefined}
-              className="shrink-0 me-3 inline-flex items-center gap-2 px-3 h-9 rounded-full bg-[var(--surface)] border border-[var(--border)] text-[12px] hover:border-[var(--gold-soft)] transition-colors"
-            >
-              <Gavel className="h-3.5 w-3.5 text-[var(--gold)]" />
-              <span className="font-bold text-foreground">{it.bidder}</span>
-              <span className="text-[var(--foreground-muted)]">a misé</span>
-              <span className="font-bold tabular-nums text-[var(--gold)]">
-                {formatPrice(it.amount)}
-              </span>
-              <span className="text-[var(--foreground-muted)]">sur</span>
-              <span className="font-semibold text-foreground line-clamp-1 max-w-[180px]">
-                {it.vehicle}
-              </span>
-              <span className="text-[10px] text-[var(--foreground-subtle)] tabular-nums">
-                {timeAgo(it.at)}
-              </span>
-            </Link>
+              item={it}
+              ariaHidden={i >= items.length}
+            />
           ))}
         </div>
       </div>
+
+      {/* Desktop — arrow slider with auto-advance */}
+      <div className="hidden lg:block">
+        <DesktopArrowSlider
+          ariaLabel="Activité en direct"
+          trackClassName="flex gap-3 px-6 pb-1"
+          intervalMs={4500}
+        >
+          {marquee.map((it, i) => (
+            <Pill
+              key={`${it.id}-${i}-desk`}
+              item={it}
+              ariaHidden={i >= items.length}
+            />
+          ))}
+        </DesktopArrowSlider>
+      </div>
     </section>
+  );
+}
+
+function Pill({
+  item,
+  ariaHidden,
+}: {
+  item: ActivityItem;
+  ariaHidden?: boolean;
+}) {
+  return (
+    <Link
+      href={item.auctionId ? `/auctions/${item.auctionId}` : "/auctions"}
+      aria-hidden={ariaHidden || undefined}
+      tabIndex={ariaHidden ? -1 : undefined}
+      className="shrink-0 me-3 lg:me-0 inline-flex items-center gap-2 px-3 lg:px-4 h-9 lg:h-11 rounded-full bg-[var(--surface)] border border-[var(--border)] text-[12px] lg:text-[13px] hover:border-[var(--gold-soft)] transition-colors"
+    >
+      <Gavel className="h-3.5 w-3.5 text-[var(--gold)]" />
+      <span className="font-bold text-foreground">{item.bidder}</span>
+      <span className="text-[var(--foreground-muted)]">a misé</span>
+      <span className="font-bold tabular-nums text-[var(--gold)]">
+        {formatPrice(item.amount)}
+      </span>
+      <span className="text-[var(--foreground-muted)]">sur</span>
+      <span className="font-semibold text-foreground line-clamp-1 max-w-[180px]">
+        {item.vehicle}
+      </span>
+      <span className="text-[10px] text-[var(--foreground-subtle)] tabular-nums">
+        {timeAgo(item.at)}
+      </span>
+    </Link>
   );
 }
 

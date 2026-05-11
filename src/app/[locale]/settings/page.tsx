@@ -81,8 +81,28 @@ export default function SettingsPage() {
 
   return (
     <AppShell noTopBar>
-      <ScreenHeader title={tSettings("title")} backHref="/profile" />
-      <div className="px-4 pb-8 space-y-5 lg:max-w-[var(--max-w-content)] lg:mx-auto lg:px-6">
+      {/* Mobile header */}
+      <div className="lg:hidden">
+        <ScreenHeader title={tSettings("title")} backHref="/profile" />
+      </div>
+
+      {/* Desktop magazine header */}
+      <div className="hidden lg:block max-w-[var(--max-w-content)] mx-auto px-8 pt-10 pb-6">
+        <div className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] font-bold text-[var(--gold)]">
+          <Shield className="h-3.5 w-3.5" />
+          Compte
+        </div>
+        <h1 className="mt-2 text-4xl xl:text-5xl font-black tracking-tight leading-[1.05]">
+          {tSettings("title")}
+        </h1>
+        <p className="mt-3 text-base text-[var(--foreground-muted)] max-w-2xl">
+          Mot de passe, langue, notifications et sécurité — tout au même
+          endroit.
+        </p>
+        <div className="mt-6 h-px w-full bg-gradient-to-r from-[var(--border)] via-[var(--border)] to-transparent" />
+      </div>
+
+      <div className="px-4 pb-8 space-y-5 lg:space-y-7 lg:max-w-[var(--max-w-content)] lg:mx-auto lg:px-8 lg:pb-16">
         <Section title={tSettings("account.title")}>
           <Row
             icon={<Lock className="h-4 w-4" />}
@@ -450,10 +470,10 @@ function Section({
 }) {
   return (
     <section>
-      <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-[var(--foreground-muted)] mb-2 px-1">
+      <div className="text-[10px] lg:text-[11px] uppercase tracking-[0.2em] lg:tracking-[0.22em] font-bold text-[var(--foreground-muted)] lg:text-[var(--gold)] mb-2 lg:mb-3 px-1 lg:px-0">
         {title}
       </div>
-      <div className="rounded-[var(--radius-md)] bg-[var(--surface)] border border-[var(--border)] divide-y divide-[var(--border)] overflow-hidden">
+      <div className="rounded-[var(--radius-md)] lg:rounded-2xl bg-[var(--surface)] border border-[var(--border)] lg:ring-1 lg:ring-[var(--border)] lg:border-0 divide-y divide-[var(--border)] overflow-hidden">
         {children}
       </div>
     </section>
@@ -480,25 +500,29 @@ function Row({
     <button
       onClick={disabled ? undefined : onClick}
       disabled={disabled}
-      className={`w-full p-4 flex items-center gap-3 transition-colors text-start ${
+      className={`w-full p-4 lg:p-5 flex items-center gap-3 lg:gap-4 transition-colors text-start ${
         disabled
           ? "opacity-60 cursor-not-allowed"
           : "hover:bg-[var(--surface-2)]"
       }`}
     >
       <div
-        className={`shrink-0 ${danger ? "text-[var(--danger)]" : "text-[var(--gold)]"}`}
+        className={`shrink-0 h-9 w-9 lg:h-10 lg:w-10 rounded-lg flex items-center justify-center ${
+          danger
+            ? "bg-red-500/15 text-[var(--danger)]"
+            : "bg-[var(--gold-faint)] text-[var(--gold)]"
+        }`}
       >
         {icon}
       </div>
       <div className="flex-1 min-w-0">
         <div
-          className={`font-semibold text-sm ${danger ? "text-[var(--danger)]" : ""}`}
+          className={`font-semibold lg:font-bold text-sm lg:text-[15px] ${danger ? "text-[var(--danger)]" : ""}`}
         >
           {label}
         </div>
         {sub && (
-          <div className="text-xs text-[var(--foreground-muted)] mt-0.5 line-clamp-1">
+          <div className="text-xs lg:text-[12px] text-[var(--foreground-muted)] mt-0.5 line-clamp-1">
             {sub}
           </div>
         )}
@@ -508,7 +532,7 @@ function Row({
           {comingSoon}
         </span>
       ) : (
-        <ChevronRight className="h-4 w-4 text-[var(--foreground-subtle)]" />
+        <ChevronRight className="h-4 w-4 lg:h-5 lg:w-5 text-[var(--foreground-subtle)]" />
       )}
     </button>
   );

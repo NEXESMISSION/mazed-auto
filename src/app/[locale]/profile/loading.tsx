@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/layout/AppShell";
+import { RouteLoading } from "@/components/layout/RouteLoading";
 
 /**
  * Skeleton for /profile — mirrors the actual page composition: header
@@ -9,6 +10,7 @@ import { AppShell } from "@/components/layout/AppShell";
 export default function Loading() {
   return (
     <AppShell noTopBar>
+      <RouteLoading>
       {/* ScreenHeader — title + trailing settings button */}
       <div className="px-4 pt-4 pb-3 flex items-center gap-3">
         <span className="h-10 w-10 shrink-0" />
@@ -59,6 +61,7 @@ export default function Loading() {
           <div className="rounded-2xl bg-[var(--surface)] border border-[var(--border)] h-12" />
         </div>
       </div>
+      </RouteLoading>
     </AppShell>
   );
 }
