@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { Link, redirect } from "@/i18n/navigation";
 import {
   ShieldCheck,
@@ -45,6 +46,7 @@ export default async function NewAuctionGateLayout({
 
   // Anything else: render a blocker page in place of the wizard. Clear what
   // the user has to do, with one obvious next step.
+  const t = await getTranslations({ locale, namespace: "wizard.kycBlock" });
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <main className="flex-1 max-w-md mx-auto w-full px-4 py-10 flex flex-col justify-center">
@@ -55,15 +57,14 @@ export default async function NewAuctionGateLayout({
                 <Hourglass className="h-8 w-8" />
               </div>
               <div>
-                <h1 className="text-xl font-extrabold">Demande de vérification en cours</h1>
+                <h1 className="text-xl font-extrabold">{t("pendingTitle")}</h1>
                 <p className="text-sm text-[var(--foreground-muted)] mt-2 leading-relaxed">
-                  L'examen prend généralement entre 10 minutes et 24 heures. Vous recevrez une notification
-                  avec le résultat et la possibilité de créer des enchères s'ouvrira automatiquement.
+                  {t("pendingBody")}
                 </p>
               </div>
               <Link href="/kyc/status" className="block">
                 <Button variant="secondary" size="md" fullWidth>
-                  Voir l'état de la demande
+                  {t("pendingCta")}
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
@@ -74,15 +75,14 @@ export default async function NewAuctionGateLayout({
                 <ShieldAlert className="h-8 w-8" />
               </div>
               <div>
-                <h1 className="text-xl font-extrabold">Vérification refusée</h1>
+                <h1 className="text-xl font-extrabold">{t("rejectedTitle")}</h1>
                 <p className="text-sm text-[var(--foreground-muted)] mt-2 leading-relaxed">
-                  Nous n'avons pas pu vérifier votre identité. Veuillez réessayer avec des photos plus
-                  nettes et une carte en cours de validité.
+                  {t("rejectedBody")}
                 </p>
               </div>
               <Link href="/kyc/start" className="block">
                 <Button size="md" fullWidth>
-                  Réessayer
+                  {t("rejectedCta")}
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
@@ -93,31 +93,28 @@ export default async function NewAuctionGateLayout({
                 <Lock className="h-8 w-8" />
               </div>
               <div>
-                <h1 className="text-xl font-extrabold">
-                  Vérifiez votre identité d'abord
-                </h1>
+                <h1 className="text-xl font-extrabold">{t("noneTitle")}</h1>
                 <p className="text-sm text-[var(--foreground-muted)] mt-2 leading-relaxed">
-                  Pour protéger les acheteurs, nous devons confirmer votre identité avant la publication de
-                  votre première enchère. L'opération prend deux minutes : photo de carte + selfie.
+                  {t("noneBody")}
                 </p>
               </div>
               <ul className="text-start text-xs text-[var(--foreground-muted)] space-y-2">
                 <li className="flex items-center gap-2">
                   <ShieldCheck className="h-3.5 w-3.5 text-[var(--gold)] shrink-0" />
-                  Carte d'identité en cours de validité
+                  {t("noneBullet1")}
                 </li>
                 <li className="flex items-center gap-2">
                   <ShieldCheck className="h-3.5 w-3.5 text-[var(--gold)] shrink-0" />
-                  Selfie avec un bon éclairage
+                  {t("noneBullet2")}
                 </li>
                 <li className="flex items-center gap-2">
                   <ShieldCheck className="h-3.5 w-3.5 text-[var(--gold)] shrink-0" />
-                  Vous obtiendrez le badge &quot;Identité vérifiée&quot;
+                  {t("noneBullet3")}
                 </li>
               </ul>
               <Link href="/kyc/start" className="block">
                 <Button size="md" fullWidth>
-                  Commencer la vérification maintenant
+                  {t("noneCta")}
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>

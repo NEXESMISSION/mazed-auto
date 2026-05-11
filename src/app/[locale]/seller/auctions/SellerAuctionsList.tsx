@@ -187,7 +187,7 @@ export function SellerAuctionsList({ list }: { list: Auction[] }) {
                             {formatPrice(a.currentPrice)}
                           </div>
                         </div>
-                        <div className="text-left">
+                        <div className="text-start">
                           <div className="text-[var(--foreground-muted)]">Offres</div>
                           <div className="font-bold">{a.totalBids}</div>
                         </div>

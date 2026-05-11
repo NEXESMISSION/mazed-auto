@@ -1,7 +1,7 @@
 "use client";
 
 import { Link } from "@/i18n/navigation";
-import { ArrowUpRight, Clock, Gavel, Users } from "lucide-react";
+import { ArrowUpRight, Clock, Gavel, Users, Crown } from "lucide-react";
 import { Countdown } from "./Countdown";
 import { FavoriteButton } from "./FavoriteButton";
 import { auctionCode, formatPrice } from "@/lib/format";
@@ -19,6 +19,11 @@ const FINAL_STATUSES = new Set([
 interface Props {
   auction: Auction;
   variant?: "default" | "featured";
+  /** When true, render a "Vendeur de confiance" pill on the card.
+   *  The caller is responsible for deciding (typically via the
+   *  `sellers_search_priority` RPC). Default false to keep the card
+   *  visually clean on free-tier listings. */
+  isTrustedSeller?: boolean;
 }
 
 /**
@@ -27,12 +32,24 @@ interface Props {
  * counters underneath. Matches the dark-gold remix of the modern marketplace
  * card pattern.
  */
-export function AuctionCard({ auction, variant = "default" }: Props) {
+export function AuctionCard({
+  auction,
+  variant = "default",
+  isTrustedSeller = false,
+}: Props) {
   const { vehicle, currentPrice, totalParticipants, totalBids, endTime } =
     auction;
   const isFeatured = variant === "featured";
+  // Status check is the primary signal. We *also* compare endTime to
+  // now so a row whose backend sweep hasn't run yet still reads as
+  // Terminée — the rails are cached for 30s and an auction could end
+  // mid-cache-window. Date.now() during render is impure but the
+  // visual is intentionally non-deterministic (a countdown ticking
+  // down past zero must flip the card), so we accept the cost.
   const isOver =
-    FINAL_STATUSES.has(auction.status) || endTime.getTime() <= Date.now();
+    FINAL_STATUSES.has(auction.status) ||
+    // eslint-disable-next-line react-hooks/purity
+    endTime.getTime() <= Date.now();
 
   return (
     <Link
@@ -90,11 +107,22 @@ export function AuctionCard({ auction, variant = "default" }: Props) {
           </div>
 
           {/* Featured / VIP / alert badges — second row of pills if any */}
-          {(auction.isVip || isFeatured) && (
-            <div className="absolute top-2.5 end-2.5">
-              <span className="inline-flex items-center px-2 h-6 rounded-full bg-[var(--gold)] text-black text-[10px] font-extrabold uppercase tracking-wider shadow-[var(--shadow-gold)]">
-                {auction.isVip ? "VIP" : "En vedette"}
-              </span>
+          {(auction.isVip || isFeatured || isTrustedSeller) && (
+            <div className="absolute top-2.5 end-2.5 flex flex-col items-end gap-1.5">
+              {(auction.isVip || isFeatured) && (
+                <span className="inline-flex items-center px-2 h-6 rounded-full bg-[var(--gold)] text-black text-[10px] font-extrabold uppercase tracking-wider shadow-[var(--shadow-gold)]">
+                  {auction.isVip ? "VIP" : "En vedette"}
+                </span>
+              )}
+              {isTrustedSeller && (
+                <span
+                  title="Vendeur de confiance"
+                  className="inline-flex items-center gap-1 px-2 h-6 rounded-full bg-black/65 backdrop-blur-md border border-[var(--gold)]/40 text-[var(--gold)] text-[10px] font-extrabold uppercase tracking-wider"
+                >
+                  <Crown className="h-2.5 w-2.5" strokeWidth={2.5} />
+                  Confiance
+                </span>
+              )}
             </div>
           )}
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import {
   ShieldCheck,
@@ -11,18 +12,19 @@ import { KYCShell } from "@/components/layout/KYCShell";
 import { Button } from "@/components/ui/Button";
 
 export default function KYCStartPage() {
+  const t = useTranslations("kyc.start");
   return (
     // current=-1 hides the stepper — this is the prep screen, before step 1
-    <KYCShell current={-1} title="Avant de commencer">
+    <KYCShell current={-1} title={t("shellTitle")}>
       <div className="space-y-6">
         <div className="text-center space-y-3">
           <div className="mx-auto h-16 w-16 rounded-full bg-[var(--gold-faint)] flex items-center justify-center shadow-[var(--shadow-gold)]">
             <ShieldCheck className="h-7 w-7 text-[var(--gold)]" />
           </div>
           <div>
-            <h1 className="text-2xl font-extrabold">Vérifiez votre identité</h1>
+            <h1 className="text-2xl font-extrabold">{t("heading")}</h1>
             <p className="text-sm text-[var(--foreground-muted)] leading-relaxed mt-2">
-~ Deux minutes seulement. Nous le faisons une seule fois pour protéger les acheteurs et vendeurs.
+              {t("subtitle")}
             </p>
           </div>
         </div>
@@ -30,18 +32,18 @@ export default function KYCStartPage() {
         {/* Prerequisites — what the user needs in hand BEFORE starting */}
         <div>
           <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-[var(--foreground-muted)] mb-2">
-Ayez avec vous
+            {t("preheading")}
           </div>
           <ul className="space-y-2">
             <Prep
               icon={<CreditCard className="h-4 w-4" />}
-              title="Carte d'identité nationale valide"
-              text="Le recto et le verso doivent être nets"
+              title={t("prepCardTitle")}
+              text={t("prepCardText")}
             />
             <Prep
               icon={<Sun className="h-4 w-4" />}
-              title="Bon éclairage"
-              text="Évitez les reflets et les ombres sur la carte"
+              title={t("prepLightTitle")}
+              text={t("prepLightText")}
             />
           </ul>
         </div>
@@ -49,19 +51,19 @@ Ayez avec vous
         {/* Step preview — gives a sense of what's coming */}
         <div className="rounded-[var(--radius-md)] bg-[var(--surface)] border border-[var(--border)] p-4">
           <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-[var(--foreground-muted)] mb-3">
-            Étapes
+            {t("stepsHeading")}
           </div>
           <ol className="space-y-2.5 text-sm">
-            <PreviewStep num={1} label="Recto de la carte" />
-            <PreviewStep num={2} label="Verso de la carte" />
-            <PreviewStep num={3} label="Selfie en direct (rotation de la tête + sourire)" />
-            <PreviewStep num={4} label="Vérification automatique" highlight />
+            <PreviewStep num={1} label={t("previewStep1")} />
+            <PreviewStep num={2} label={t("previewStep2")} />
+            <PreviewStep num={3} label={t("previewStep3")} />
+            <PreviewStep num={4} label={t("previewStep4")} highlight />
           </ol>
         </div>
 
         <Link href="/kyc/id-front" className="block">
           <Button size="xl" fullWidth>
-            Commencer maintenant
+            {t("cta")}
             <ArrowRight className="h-5 w-5" />
           </Button>
         </Link>

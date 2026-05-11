@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import {
   Gavel,
@@ -11,18 +12,27 @@ import {
   AlertTriangle,
   Check,
   Bell,
+  Clock,
+  Star,
+  ShieldAlert,
+  CheckCircle2,
+  CreditCard,
+  RefreshCcw,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useRealtimeNotifications } from "@/lib/realtime";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
-import type { NotificationRow } from "@/lib/db";
+import type { NotificationKind, NotificationRow } from "@/lib/db";
 
-const kindMeta: Record<
-  NotificationRow["kind"],
-  { icon: LucideIcon; color: string; href?: (n: NotificationRow) => string }
-> = {
+interface KindEntry {
+  icon: LucideIcon;
+  color: string;
+  href?: (n: NotificationRow) => string;
+}
+
+const kindMeta: Record<NotificationKind, KindEntry> = {
   outbid: {
     icon: TrendingDown,
     color: "text-amber-400 bg-amber-500/15",
@@ -63,6 +73,72 @@ const kindMeta: Record<
   },
   reminder: { icon: Bell, color: "text-[var(--gold)] bg-[var(--gold-faint)]" },
   system: { icon: ShieldCheck, color: "text-[var(--gold)] bg-[var(--gold-faint)]" },
+  // v2 expansion ---------------------------------------------------------
+  kyc_approved: {
+    icon: ShieldCheck,
+    color: "text-emerald-400 bg-emerald-500/15",
+    href: () => "/kyc/status",
+  },
+  kyc_rejected: {
+    icon: ShieldAlert,
+    color: "text-red-400 bg-red-500/15",
+    href: () => "/kyc/status",
+  },
+  kyc_expires_soon: {
+    icon: Clock,
+    color: "text-amber-400 bg-amber-500/15",
+    href: () => "/kyc/status",
+  },
+  auction_starting_soon: {
+    icon: Clock,
+    color: "text-[var(--gold)] bg-[var(--gold-faint)]",
+    href: (n) => (n.auction_id ? `/auctions/${n.auction_id}` : "/buyer/bids"),
+  },
+  reserve_not_met: {
+    icon: AlertTriangle,
+    color: "text-amber-400 bg-amber-500/15",
+    href: () => "/seller/auctions",
+  },
+  auction_extended: {
+    icon: Clock,
+    color: "text-amber-400 bg-amber-500/15",
+    href: (n) => (n.auction_id ? `/auctions/${n.auction_id}` : "/buyer/bids"),
+  },
+  deposit_refunded: {
+    icon: RefreshCcw,
+    color: "text-emerald-400 bg-emerald-500/15",
+    href: () => "/transactions",
+  },
+  deposit_forfeited: {
+    icon: AlertTriangle,
+    color: "text-red-400 bg-red-500/15",
+    href: () => "/transactions",
+  },
+  payment_received: {
+    icon: CreditCard,
+    color: "text-emerald-400 bg-emerald-500/15",
+    href: () => "/transactions",
+  },
+  rating_request: {
+    icon: Star,
+    color: "text-[var(--gold)] bg-[var(--gold-faint)]",
+    href: (n) => (n.auction_id ? `/auctions/${n.auction_id}` : "/buyer/bids"),
+  },
+  new_report: {
+    icon: ShieldAlert,
+    color: "text-red-400 bg-red-500/15",
+    href: () => "/seller/auctions",
+  },
+  account_blocked: {
+    icon: ShieldAlert,
+    color: "text-red-400 bg-red-500/15",
+    href: () => "/profile",
+  },
+};
+
+const FALLBACK_META: KindEntry = {
+  icon: CheckCircle2,
+  color: "text-[var(--gold)] bg-[var(--gold-faint)]",
 };
 
 interface Props {
@@ -70,12 +146,47 @@ interface Props {
   initial: NotificationRow[];
 }
 
-export function NotificationsList({ userId, initial }: Props) {
-  const { items } = useRealtimeNotifications(userId, initial);
-  const [filter, setFilter] = useState<"all" | "unread">("all");
+const PAGE_SIZE = 50;
 
-  const filtered = filter === "unread" ? items.filter((n) => !n.is_read) : items;
-  const unreadCount = items.filter((n) => !n.is_read).length;
+export function NotificationsList({ userId, initial }: Props) {
+  const { items: liveItems } = useRealtimeNotifications(userId, initial);
+  const [filter, setFilter] = useState<"all" | "unread">("all");
+  const [older, setOlder] = useState<NotificationRow[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(initial.length === PAGE_SIZE);
+  const locale = useLocale();
+
+  // Merge realtime + older pages. Realtime is the source of truth for
+  // the first page (it handles inserts/updates); the "older" array
+  // only grows when the user clicks load-more. Dedup by id in case the
+  // realtime stream overlaps with a pagination fetch.
+  const allItems = (() => {
+    if (older.length === 0) return liveItems;
+    const seen = new Set(liveItems.map((n) => n.id));
+    return [...liveItems, ...older.filter((n) => !seen.has(n.id))];
+  })();
+  const filtered =
+    filter === "unread" ? allItems.filter((n) => !n.is_read) : allItems;
+  const unreadCount = allItems.filter((n) => !n.is_read).length;
+
+  async function loadMore() {
+    if (loading || !hasMore || allItems.length === 0) return;
+    setLoading(true);
+    const supabase = createClient();
+    // Cursor: anything older than the current oldest row's created_at.
+    const oldest = allItems[allItems.length - 1];
+    const { data } = await supabase
+      .from("notifications")
+      .select("*")
+      .eq("user_id", userId)
+      .lt("created_at", oldest.created_at)
+      .order("created_at", { ascending: false })
+      .limit(PAGE_SIZE);
+    const rows = (data ?? []) as NotificationRow[];
+    setOlder((prev) => [...prev, ...rows]);
+    setHasMore(rows.length === PAGE_SIZE);
+    setLoading(false);
+  }
 
   async function readAll() {
     if (unreadCount === 0) return;
@@ -127,7 +238,7 @@ export function NotificationsList({ userId, initial }: Props) {
                 : "bg-[var(--surface-2)] text-[var(--foreground-muted)]"
             }`}
           >
-            {items.length}
+            {allItems.length}
           </span>
         </button>
         <button
@@ -163,7 +274,10 @@ export function NotificationsList({ userId, initial }: Props) {
       ) : (
         <div className="space-y-2 lg:space-y-2.5">
           {filtered.map((n) => {
-            const meta = kindMeta[n.kind];
+            // Fallback so a new kind (added to the CHECK constraint but
+            // not yet to `kindMeta`) renders cleanly instead of crashing
+            // with "Cannot read property 'icon' of undefined".
+            const meta = kindMeta[n.kind] ?? FALLBACK_META;
             const Icon = meta.icon;
             const href = meta.href?.(n) ?? "/notifications";
             return (
@@ -202,27 +316,56 @@ export function NotificationsList({ userId, initial }: Props) {
                       </p>
                     )}
                     <div className="text-[10px] lg:text-[11px] text-[var(--foreground-subtle)] mt-1 lg:mt-1.5 tabular-nums">
-                      {formatRelative(n.created_at)}
+                      {formatRelative(n.created_at, locale)}
                     </div>
                   </div>
                 </div>
               </Link>
             );
           })}
+          {/* Load-more — only when the "all" filter is active. When
+              filtering for unread, all loaded rows that are still
+              unread are already visible; "older" rows on the server
+              that are still unread can be fetched with the same
+              loadMore() (cursor by created_at) so we surface it too. */}
+          {hasMore && (
+            <div className="pt-2 lg:pt-3 flex justify-center">
+              <Button
+                variant="secondary"
+                size="md"
+                onClick={loadMore}
+                disabled={loading}
+                className="min-w-[200px]"
+              >
+                {loading ? "…" : locale === "ar" ? "تحميل المزيد" : "Charger plus"}
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </>
   );
 }
 
-function formatRelative(iso: string): string {
-  const diff = Math.max(0, Date.now() - new Date(iso).getTime());
-  const min = Math.floor(diff / 60_000);
-  if (min < 1) return "à l'instant";
-  if (min < 60) return `Il y a ${min} min`;
+/**
+ * Locale-aware relative time. Uses Intl.RelativeTimeFormat so Arabic
+ * users get "منذ 5 دقائق" instead of the hard-coded French. Picks the
+ * largest unit (minute → hour → day) so the label stays compact.
+ */
+function formatRelative(iso: string, locale: string): string {
+  const tag = locale === "ar" ? "ar-TN" : "fr-TN";
+  const diffMs = Math.max(0, Date.now() - new Date(iso).getTime());
+  const min = Math.floor(diffMs / 60_000);
+  // Within the first minute, fall back to a hand-rolled label so the
+  // RelativeTimeFormat doesn't return "il y a 0 minute".
+  if (min < 1) {
+    return locale === "ar" ? "الآن" : "à l'instant";
+  }
+  const rtf = new Intl.RelativeTimeFormat(tag, { numeric: "auto" });
+  if (min < 60) return rtf.format(-min, "minute");
   const hr = Math.floor(min / 60);
-  if (hr < 24) return `Il y a ${hr} h`;
+  if (hr < 24) return rtf.format(-hr, "hour");
   const days = Math.floor(hr / 24);
-  if (days < 30) return `Il y a ${days} ${days === 1 ? "jour" : "jours"}`;
-  return new Date(iso).toLocaleDateString("fr-TN");
+  if (days < 30) return rtf.format(-days, "day");
+  return new Date(iso).toLocaleDateString(tag);
 }

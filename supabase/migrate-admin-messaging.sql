@@ -62,8 +62,8 @@ begin
       '—')::text
   from public.conversations c
   where p_search is null
-     or coalesce((select email from auth.users where id = c.buyer_id),'')  ilike '%' || p_search || '%'
-     or coalesce((select email from auth.users where id = c.seller_id),'') ilike '%' || p_search || '%'
+     or coalesce((select ub.email from auth.users ub where ub.id = c.buyer_id),'')  ilike '%' || p_search || '%'
+     or coalesce((select us.email from auth.users us where us.id = c.seller_id),'') ilike '%' || p_search || '%'
   order by coalesce(c.last_message_at, c.created_at) desc
   limit greatest(0, p_limit);
 end; $$;

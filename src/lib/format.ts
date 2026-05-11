@@ -58,3 +58,22 @@ export function auctionCode(id: string): string {
   const hex = (id || "").replace(/[^a-fA-F0-9]/g, "").slice(0, 6).toUpperCase();
   return `MA-${hex.padEnd(6, "0")}`;
 }
+
+/**
+ * Locale-aware date/time formatter. Defaults to French (Tunisia) so
+ * existing call sites that don't pass a locale keep their current
+ * output, but pages can opt in with the active locale from
+ * useLocale() / getLocale() and Arabic users see Arabic numerals +
+ * date order instead of the legacy "fr-TN" / "fr-FR" hard-codings.
+ */
+export function formatDateTime(
+  d: Date | string | number,
+  locale: string = "fr-TN",
+  options?: Intl.DateTimeFormatOptions,
+): string {
+  // Map next-intl locale codes to BCP-47 tags. The app uses bare "fr"
+  // and "ar" — Intl prefers a region for date-formatting nuances.
+  const tag =
+    locale === "ar" ? "ar-TN" : locale === "fr" ? "fr-TN" : locale;
+  return new Date(d).toLocaleString(tag, options);
+}

@@ -7,9 +7,10 @@ import type { Auction } from "@/lib/types";
 
 interface Props {
   items: Auction[];
+  trustedSellerIds?: Set<string>;
 }
 
-export function RecommendedRail({ items }: Props) {
+export function RecommendedRail({ items, trustedSellerIds }: Props) {
   if (items.length === 0) return null;
 
   return (
@@ -46,7 +47,10 @@ export function RecommendedRail({ items }: Props) {
                 aria-hidden={i >= items.length ? true : undefined}
                 className="w-[230px] shrink-0 snap-center"
               >
-                <AuctionCard auction={auction} />
+                <AuctionCard
+                  auction={auction}
+                  isTrustedSeller={trustedSellerIds?.has(auction.seller.id) ?? false}
+                />
               </div>
             ))}
           </div>

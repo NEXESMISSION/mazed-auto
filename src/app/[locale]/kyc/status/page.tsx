@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { CheckCircle2, ShieldCheck, Clock, RefreshCw } from "lucide-react";
 import { KYCShell } from "@/components/layout/KYCShell";
@@ -11,6 +12,7 @@ import { createClient } from "@/lib/supabase/client";
 export default function KYCStatusPage() {
   const { user, loaded } = useAuth();
   const router = useRouter();
+  const t = useTranslations("kyc.status");
   const [refreshing, setRefreshing] = useState(false);
 
   // Default to "pending" while the user object is hydrating — the user
@@ -68,23 +70,20 @@ export default function KYCStatusPage() {
             <span className="text-4xl">✗</span>
           </div>
           <div>
-            <h2 className="text-xl font-bold">
-              Nous n&apos;avons pas pu vérifier votre identité
-            </h2>
+            <h2 className="text-xl font-bold">{t("rejectedTitle")}</h2>
             <p className="text-sm text-[var(--foreground-muted)] mt-2 leading-relaxed">
-              Vérifiez la qualité des photos et de la vidéo selfie, puis
-              réessayez. Si le problème persiste, contactez le support.
+              {t("rejectedBody")}
             </p>
           </div>
           <div className="space-y-2">
             <Link href="/kyc/start">
               <Button size="lg" fullWidth>
-                Réessayer
+                {t("rejectedRetryCta")}
               </Button>
             </Link>
             <Link href="/help">
               <Button size="lg" variant="ghost" fullWidth>
-                Contacter le support
+                {t("rejectedSupportCta")}
               </Button>
             </Link>
           </div>
@@ -114,34 +113,31 @@ export default function KYCStatusPage() {
           </div>
 
           <div>
-            <h2 className="text-2xl font-extrabold">Vérifié avec succès</h2>
+            <h2 className="text-2xl font-extrabold">{t("verifiedTitle")}</h2>
             <p className="text-sm text-[var(--foreground-muted)] mt-2 leading-relaxed">
-              Félicitations ! Votre compte est maintenant vérifié et vous
-              pouvez créer vos enchères ou participer aux enchères en toute
-              confiance.
+              {t("verifiedBody")}
             </p>
           </div>
 
           <div className="rounded-[var(--radius-md)] bg-[var(--gold-faint)] border border-[var(--gold-soft)]/40 p-4">
             <div className="flex items-center justify-center gap-2 text-[var(--gold)] font-bold mb-1">
               <ShieldCheck className="h-5 w-5" />
-              Votre identité est vérifiée
+              {t("verifiedBadge")}
             </div>
             <div className="text-xs text-[var(--foreground-muted)]">
-              Le badge &quot;Identité vérifiée&quot; apparaît sur chacune de
-              vos enchères
+              {t("verifiedBadgeHint")}
             </div>
           </div>
 
           <div className="space-y-2">
             <Link href="/seller/dashboard">
               <Button size="lg" fullWidth>
-                Commencer comme vendeur
+                {t("startSellerCta")}
               </Button>
             </Link>
             <Link href="/auctions">
               <Button size="lg" variant="ghost" fullWidth>
-                Parcourir les enchères
+                {t("browseAuctionsCta")}
               </Button>
             </Link>
           </div>
@@ -169,31 +165,28 @@ export default function KYCStatusPage() {
         </div>
 
         <div>
-          <h2 className="text-2xl font-extrabold">Dossier en cours d&apos;examen</h2>
+          <h2 className="text-2xl font-extrabold">{t("pendingTitle")}</h2>
           <p className="text-sm text-[var(--foreground-muted)] mt-2 leading-relaxed">
-            Nous avons bien reçu votre carte d&apos;identité et votre selfie.
-            Un administrateur va vérifier manuellement votre visage, vos
-            documents et les autres informations.
+            {t("pendingBody")}
           </p>
         </div>
 
-        <div className="rounded-[var(--radius-md)] bg-[var(--surface)] border border-[var(--border)] p-4 text-left space-y-3">
+        <div className="rounded-[var(--radius-md)] bg-[var(--surface)] border border-[var(--border)] p-4 text-start space-y-3">
           <div className="flex items-start gap-3">
             <Clock className="h-5 w-5 text-[var(--gold)] shrink-0 mt-0.5" />
             <div className="text-sm">
-              <div className="font-bold">Délai de vérification : 1 à 2 jours</div>
+              <div className="font-bold">{t("delayTitle")}</div>
               <div className="text-xs text-[var(--foreground-muted)] mt-0.5 leading-relaxed">
-                Vous recevrez une notification dès que la décision sera prise.
+                {t("delayBody")}
               </div>
             </div>
           </div>
           <div className="flex items-start gap-3">
             <ShieldCheck className="h-5 w-5 text-[var(--gold)] shrink-0 mt-0.5" />
             <div className="text-sm">
-              <div className="font-bold">Pas encore d&apos;accès vendeur</div>
+              <div className="font-bold">{t("noAccessTitle")}</div>
               <div className="text-xs text-[var(--foreground-muted)] mt-0.5 leading-relaxed">
-                Vous pourrez créer une enchère ou enchérir une fois la
-                vérification approuvée.
+                {t("noAccessBody")}
               </div>
             </div>
           </div>
@@ -209,16 +202,16 @@ export default function KYCStatusPage() {
             <RefreshCw
               className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
             />
-            {refreshing ? "Vérification..." : "Re-vérifier le statut"}
+            {refreshing ? t("refreshing") : t("refreshCta")}
           </Button>
           <Link href="/auctions">
             <Button size="lg" variant="secondary" fullWidth>
-              Parcourir les enchères en attendant
+              {t("browseCta")}
             </Button>
           </Link>
           <Link href="/">
             <Button size="lg" variant="ghost" fullWidth>
-              Retour à l&apos;accueil
+              {t("homeCta")}
             </Button>
           </Link>
         </div>

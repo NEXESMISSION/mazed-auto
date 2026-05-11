@@ -18,7 +18,7 @@ import { Countdown } from "@/components/auction/Countdown";
 import { AuctionResultBanner } from "@/components/auction/AuctionResultBanner";
 import { createClient } from "@/lib/supabase/server";
 import { getAuctionById, listRecentBids } from "@/lib/db";
-import { formatPrice } from "@/lib/format";
+import { formatDateTime, formatPrice } from "@/lib/format";
 import { thumb } from "@/lib/imageUrl";
 import { anonBidder } from "@/lib/anon";
 import type { AuctionStatus } from "@/lib/types";
@@ -246,7 +246,7 @@ Aucune offre pour le moment
                     </div>
                     <div className="text-[11px] text-[var(--foreground-muted)] inline-flex items-center gap-1">
                       <Clock className="h-3 w-3" />
-                      {new Date(b.placed_at).toLocaleString("fr-TN", {
+                      {formatDateTime(b.placed_at, locale, {
                         dateStyle: "short",
                         timeStyle: "short",
                       })}

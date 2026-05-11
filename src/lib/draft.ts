@@ -53,6 +53,11 @@ export interface AuctionDraft {
   reservePrice?: number;
   buyNowPrice?: number;
   durationDays?: 3 | 7 | 14;
+
+  // step 5 — paid boosts (see auction.featured_listing_fee / vip / top_of_search settings)
+  boostFeatured?: boolean;     // appear on home page
+  boostVip?: boolean;          // VIP push notifications
+  boostTopOfSearch?: boolean;  // pinned 24h on top of search
 }
 
 interface Envelope {

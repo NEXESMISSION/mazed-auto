@@ -7,9 +7,10 @@ import type { Auction } from "@/lib/types";
 
 interface Props {
   items: Auction[];
+  trustedSellerIds?: Set<string>;
 }
 
-export function VipRail({ items }: Props) {
+export function VipRail({ items, trustedSellerIds }: Props) {
   if (items.length === 0) return null;
 
   return (
@@ -44,7 +45,11 @@ export function VipRail({ items }: Props) {
         <ScrollableRow trackClassName="flex gap-3 px-4 pb-1">
           {items.map((auction) => (
             <div key={auction.id} className="w-[230px] shrink-0">
-              <AuctionCard auction={auction} variant="featured" />
+              <AuctionCard
+                auction={auction}
+                variant="featured"
+                isTrustedSeller={trustedSellerIds?.has(auction.seller.id) ?? false}
+              />
             </div>
           ))}
           <div className="w-1 shrink-0" />
@@ -68,6 +73,7 @@ export function VipRail({ items }: Props) {
               key={auction.id}
               auction={auction}
               variant="featured"
+              isTrustedSeller={trustedSellerIds?.has(auction.seller.id) ?? false}
             />
           ))}
         </div>

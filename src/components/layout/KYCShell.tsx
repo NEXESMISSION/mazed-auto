@@ -5,18 +5,16 @@ import { Link } from "@/i18n/navigation";
 import { ChevronLeft, X, ShieldCheck } from "lucide-react";
 import { Stepper } from "./Stepper";
 
-const steps = [
-  { label: "Recto de la carte" },
-  { label: "Verso de la carte" },
-  { label: "Selfie" },
-  { label: "Vérification" },
-];
+const STEP_KEYS = ["idFront", "idBack", "selfie", "verify"] as const;
 
 interface Props {
   /** 0 = front, 1 = back, 2 = selfie, 3 = verify. -1 hides stepper (intro/status). */
   current: number;
   children: React.ReactNode;
   backHref?: string;
+  /** Optional override for the shell title; defaults to the translated
+   *  "Vérification d'identité". Passed as a translated string by callers
+   *  that want a step-specific heading (e.g. kyc/start). */
   title?: string;
 }
 
@@ -33,9 +31,12 @@ export function KYCShell({
   current,
   children,
   backHref = "/",
-  title = "Vérification d'identité",
+  title,
 }: Props) {
   const tCommon = useTranslations("common");
+  const tKyc = useTranslations("kyc");
+  const resolvedTitle = title ?? tKyc("shell.title");
+  const steps = STEP_KEYS.map((k) => ({ label: tKyc(`stepLabel.${k}`) }));
   const showStepper = current >= 0;
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -51,7 +52,7 @@ export function KYCShell({
           >
             <ChevronLeft className="h-6 w-6" strokeWidth={2.5} />
           </Link>
-          <div className="font-bold text-sm">{title}</div>
+          <div className="font-bold text-sm">{resolvedTitle}</div>
           <Link
             href="/"
             aria-label={tCommon("cancel")}
@@ -91,7 +92,7 @@ export function KYCShell({
                 KYC
               </div>
               <div className="mt-0.5 text-base font-black truncate tracking-tight">
-                {title}
+                {resolvedTitle}
               </div>
             </div>
             <Link

@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { AdminShell } from "@/components/layout/AdminShell";
 import { Badge } from "@/components/ui/Badge";
 import { createClient } from "@/lib/supabase/server";
@@ -8,6 +9,7 @@ export const revalidate = 0;
 
 interface Props {
   searchParams: Promise<{ action?: string; user?: string; q?: string }>;
+  params: Promise<{ locale: string }>;
 }
 
 interface AuditRow {
@@ -24,8 +26,10 @@ interface AuditRow {
   created_at: string;
 }
 
-export default async function AdminActivityPage({ searchParams }: Props) {
+export default async function AdminActivityPage({ searchParams, params }: Props) {
   const sp = await searchParams;
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "admin.activity" });
   const supabase = await createClient();
   let q = supabase
     .from("admin_audit_log")
@@ -43,53 +47,51 @@ export default async function AdminActivityPage({ searchParams }: Props) {
     <AdminShell>
       <div className="p-4 md:p-6 space-y-4 max-w-5xl">
         <div className="flex items-center justify-between gap-3">
-          <h1 className="text-2xl md:text-3xl font-extrabold">
-            Activité administrative
-          </h1>
+          <h1 className="text-2xl md:text-3xl font-extrabold">{t("title")}</h1>
           <Badge variant="gold">{rows.length}</Badge>
         </div>
-        <p className="text-xs text-[var(--foreground-muted)]">
-          Toutes les actions admin (KYC, modération, transactions, paramètres,
-          virements). Lecture seule, ordre antéchronologique.
-        </p>
+        <p className="text-xs text-[var(--foreground-muted)]">{t("intro")}</p>
 
         <form className="flex gap-2 flex-wrap">
           <input
             name="action"
             defaultValue={sp.action ?? ""}
-            placeholder="Préfixe action (ex : auction.)"
+            placeholder={t("filterActionPlaceholder")}
+            aria-label={t("filterActionPlaceholder")}
             className="bg-[var(--surface-2)] border border-[var(--border)] rounded-[var(--radius)] px-3 h-11 text-sm flex-1 min-w-[200px]"
           />
           <input
             name="user"
             defaultValue={sp.user ?? ""}
-            placeholder="ID utilisateur cible"
+            placeholder={t("filterUserPlaceholder")}
+            aria-label={t("filterUserPlaceholder")}
             className="bg-[var(--surface-2)] border border-[var(--border)] rounded-[var(--radius)] px-3 h-11 text-sm flex-1 min-w-[200px]"
           />
           <input
             name="q"
             defaultValue={sp.q ?? ""}
-            placeholder="Texte dans détail"
+            placeholder={t("filterDetailPlaceholder")}
+            aria-label={t("filterDetailPlaceholder")}
             className="bg-[var(--surface-2)] border border-[var(--border)] rounded-[var(--radius)] px-3 h-11 text-sm flex-1 min-w-[200px]"
           />
           <button
             type="submit"
             className="bg-[var(--gold)] text-black font-bold h-11 px-4 rounded-[var(--radius)] text-sm"
           >
-            Filtrer
+            {t("filterCta")}
           </button>
         </form>
 
         {error && (
           <div className="rounded-[var(--radius)] bg-red-500/10 border border-red-500/30 p-3 text-sm text-red-200">
-            Erreur : {error.message}
+            {t("error", { error: error.message })}
           </div>
         )}
 
         <div className="rounded-[var(--radius-md)] bg-[var(--surface)] border border-[var(--border)] divide-y divide-[var(--border)]">
           {rows.length === 0 && (
             <div className="p-12 text-center text-sm text-[var(--foreground-muted)]">
-              Aucune activité.
+              {t("empty")}
             </div>
           )}
           {rows.map((r) => (
@@ -118,7 +120,7 @@ export default async function AdminActivityPage({ searchParams }: Props) {
                 {r.target_auction_id && (
                   <Link
                     href={`/admin/auctions/${r.target_auction_id}`}
-                    className="text-[11px] text-[var(--gold)] hover:underline ml-3"
+                    className="text-[11px] text-[var(--gold)] hover:underline ms-3"
                   >
                     Auction → {r.target_auction_id.slice(0, 8)}
                   </Link>
@@ -126,7 +128,7 @@ export default async function AdminActivityPage({ searchParams }: Props) {
                 {r.metadata != null && (
                   <details className="mt-1">
                     <summary className="text-[10px] text-[var(--foreground-muted)] cursor-pointer">
-                      metadata
+                      {t("metadataLabel")}
                     </summary>
                     <pre className="text-[10px] font-mono bg-[var(--surface-2)] p-2 rounded mt-1 overflow-auto max-h-40">
                       {JSON.stringify(r.metadata, null, 2)}

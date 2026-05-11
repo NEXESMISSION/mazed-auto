@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { ArrowRight, Info } from "lucide-react";
+import { ArrowRight, Info, Star, Crown, ArrowUp } from "lucide-react";
 import { CreateAuctionShell } from "@/components/layout/CreateAuctionShell";
 import { Button } from "@/components/ui/Button";
 import { NumberField } from "@/components/ui/NumberField";
@@ -33,31 +33,97 @@ export default function Step5Page() {
   // Admin-tunable deposit tiers. Defaults match lib/config.ts; the DB
   // copy is the source of truth once the wizard publishes.
   const [depositTiers, setDepositTiers] = useState<DepositTier[] | null>(null);
+
+  // Paid boost add-ons + the per-plan discount of the signed-in user.
+  // Fees come from platform_settings (auction.*_fee). The discount is
+  // pulled from the user's active plan; 0 if the user has no plan.
+  const [boostFeatured, setBoostFeatured] = useState(
+    draft.boostFeatured ?? false,
+  );
+  const [boostVip, setBoostVip] = useState(draft.boostVip ?? false);
+  const [boostTopOfSearch, setBoostTopOfSearch] = useState(
+    draft.boostTopOfSearch ?? false,
+  );
+  const [boostFees, setBoostFees] = useState({
+    featured: 50,
+    vip: 200,
+    topOfSearch: 30,
+  });
+  const [boostDiscountPct, setBoostDiscountPct] = useState(0);
+  // Plan-bound max auction duration. -1/null = no plan cap (all
+  // durationOpts allowed). Filtered against durationOpts before render.
+  const [planMaxDuration, setPlanMaxDuration] = useState<number | null>(null);
+  const [planName, setPlanName] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;
     const supa = createClient();
     Promise.all([
       supa
         .from("platform_settings")
-        .select("value")
-        .eq("key", "listing.duration_options")
-        .maybeSingle(),
-      supa
-        .from("platform_settings")
-        .select("value")
-        .eq("key", "auction.deposit.tiers")
-        .maybeSingle(),
-    ]).then(([durRes, tierRes]) => {
+        .select("key, value")
+        .in("key", [
+          "listing.duration_options",
+          "auction.deposit.tiers",
+          "auction.featured_listing_fee",
+          "auction.vip_listing_fee",
+          "auction.top_of_search_fee",
+        ]),
+      supa.auth.getUser(),
+    ]).then(async ([settingsRes, userRes]) => {
       if (cancelled) return;
-      const d = durRes.data?.value as unknown;
-      if (Array.isArray(d) && d.every((x) => typeof x === "number")) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setDurationOpts(d as number[]);
+      const settingsRows = settingsRes.data ?? [];
+      const byKey = new Map<string, unknown>(
+        settingsRows.map((r) => [r.key as string, r.value as unknown]),
+      );
+      const dur = byKey.get("listing.duration_options");
+      if (Array.isArray(dur) && dur.every((x) => typeof x === "number")) {
+        setDurationOpts(dur as number[]);
       }
-      const t = tierRes.data?.value as unknown;
-      if (Array.isArray(t)) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setDepositTiers(t as DepositTier[]);
+      const tiers = byKey.get("auction.deposit.tiers");
+      if (Array.isArray(tiers)) {
+        setDepositTiers(tiers as DepositTier[]);
+      }
+      const nFeatured = Number(byKey.get("auction.featured_listing_fee"));
+      const nVip = Number(byKey.get("auction.vip_listing_fee"));
+      const nTop = Number(byKey.get("auction.top_of_search_fee"));
+      setBoostFees({
+        featured: Number.isFinite(nFeatured) ? nFeatured : 50,
+        vip: Number.isFinite(nVip) ? nVip : 200,
+        topOfSearch: Number.isFinite(nTop) ? nTop : 30,
+      });
+
+      // Look up the user's active plan: applies the featured-listing
+      // discount AND caps the duration picker. The view already filters
+      // to active+cancelled-but-entitled rows.
+      const uid = userRes.data?.user?.id;
+      if (uid) {
+        const { data: subRow } = await supa
+          .from("user_active_subscription")
+          .select("plan_slug, plan_name, max_listing_duration_days")
+          .eq("user_id", uid)
+          .maybeSingle();
+        if (cancelled) return;
+        if (subRow?.plan_slug) {
+          const { data: planRow } = await supa
+            .from("cms_subscription_plans")
+            .select("featured_listing_discount_pct, max_listing_duration_days")
+            .eq("slug", subRow.plan_slug)
+            .maybeSingle();
+          if (cancelled) return;
+          const pct = Number(
+            planRow?.featured_listing_discount_pct ?? 0,
+          );
+          setBoostDiscountPct(Number.isFinite(pct) ? pct : 0);
+          const maxDays = Number(
+            planRow?.max_listing_duration_days ??
+              subRow.max_listing_duration_days ??
+              0,
+          );
+          if (Number.isFinite(maxDays) && maxDays > 0) {
+            setPlanMaxDuration(maxDays);
+          }
+          setPlanName((subRow.plan_name as string | null) ?? null);
+        }
       }
     });
     return () => {
@@ -89,6 +155,23 @@ export default function Step5Page() {
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [hydrated, draft.startingPrice, draft.reservePrice, draft.buyNowPrice, draft.durationDays]);
 
+  // Apply the plan cap to the duration picker (if any).
+  const effectiveDurationOpts =
+    planMaxDuration !== null
+      ? durationOpts.filter((d) => d <= planMaxDuration)
+      : durationOpts;
+
+  // If the user previously chose a duration that the new plan no longer
+  // allows, clamp it to the highest still-allowed option.
+  useEffect(() => {
+    if (effectiveDurationOpts.length === 0) return;
+    if (!effectiveDurationOpts.includes(duration)) {
+      const fallback = effectiveDurationOpts[effectiveDurationOpts.length - 1];
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setDuration(fallback as 3 | 7 | 14);
+    }
+  }, [effectiveDurationOpts, duration]);
+
   // Tiered fixed-amount deposit — see lib/config.ts `pickDepositSync`.
   // Defaults (admin-overridable via platform_settings.auction.deposit.tiers):
   //   <20 000 DT  → 500 DT
@@ -108,6 +191,17 @@ export default function Step5Page() {
     Math.round((reservePrice || startingPrice) * 0.03),
     15000,
   );
+
+  // Compute applied boost fee with the plan discount.
+  const applyDiscount = (n: number) =>
+    Math.max(0, Math.round(n * (1 - boostDiscountPct / 100)));
+  const featuredFee = applyDiscount(boostFees.featured);
+  const vipFee = applyDiscount(boostFees.vip);
+  const topOfSearchFee = applyDiscount(boostFees.topOfSearch);
+  const boostTotal =
+    (boostFeatured ? featuredFee : 0) +
+    (boostVip ? vipFee : 0) +
+    (boostTopOfSearch ? topOfSearchFee : 0);
 
   function next() {
     if (!Number.isFinite(startingPrice) || startingPrice <= 0) {
@@ -154,6 +248,9 @@ export default function Step5Page() {
       reservePrice: hasReserve ? reservePrice : undefined,
       buyNowPrice: hasBuyNow ? buyNowPrice : undefined,
       durationDays: duration,
+      boostFeatured,
+      boostVip,
+      boostTopOfSearch,
     });
     router.push("/seller/new/review");
   }
@@ -236,9 +333,11 @@ export default function Step5Page() {
             <Field label={tWiz("step5.durationLabel")} required>
               <div
                 className="grid gap-2 lg:gap-3"
-                style={{ gridTemplateColumns: `repeat(${durationOpts.length}, minmax(0, 1fr))` }}
+                style={{
+                  gridTemplateColumns: `repeat(${Math.max(1, effectiveDurationOpts.length)}, minmax(0, 1fr))`,
+                }}
               >
-                {durationOpts.map((d) => (
+                {effectiveDurationOpts.map((d) => (
                   <button
                     key={d}
                     onClick={() => setDuration(d as 3 | 7 | 14)}
@@ -252,7 +351,56 @@ export default function Step5Page() {
                   </button>
                 ))}
               </div>
+              {planMaxDuration !== null &&
+                effectiveDurationOpts.length < durationOpts.length && (
+                  <p className="text-[11px] text-[var(--foreground-muted)] mt-1.5">
+                    Votre plan{planName ? ` ${planName}` : ""} limite la durée
+                    à {planMaxDuration} jours.
+                  </p>
+                )}
             </Field>
+
+            {/* PAID BOOSTS (admin-managed fees, optional plan discount) */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <label className="text-xs font-semibold text-[var(--foreground-muted)]">
+                  Visibilité supplémentaire (facultatif)
+                </label>
+                {boostDiscountPct > 0 && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--gold-faint)] border border-[var(--gold)]/30 text-[10px] font-bold text-[var(--gold)] uppercase tracking-[0.15em]">
+                    <Star className="h-2.5 w-2.5" />
+                    −{boostDiscountPct}% avec votre plan
+                  </span>
+                )}
+              </div>
+              <BoostRow
+                checked={boostFeatured}
+                onChange={setBoostFeatured}
+                icon={<Star className="h-4 w-4" strokeWidth={2.5} />}
+                title="En vedette"
+                subtitle="Apparaît sur la page d'accueil pendant toute la durée"
+                full={boostFees.featured}
+                applied={featuredFee}
+              />
+              <BoostRow
+                checked={boostVip}
+                onChange={setBoostVip}
+                icon={<Crown className="h-4 w-4" strokeWidth={2.5} />}
+                title="VIP"
+                subtitle="Push aux utilisateurs actifs + encadré premium"
+                full={boostFees.vip}
+                applied={vipFee}
+              />
+              <BoostRow
+                checked={boostTopOfSearch}
+                onChange={setBoostTopOfSearch}
+                icon={<ArrowUp className="h-4 w-4" strokeWidth={2.5} />}
+                title="Tête de recherche 24h"
+                subtitle="Pinné en haut des résultats pendant 24h"
+                full={boostFees.topOfSearch}
+                applied={topOfSearchFee}
+              />
+            </div>
           </div>
 
           {/* ── Live summary column (sticky on desktop) ── */}
@@ -288,6 +436,17 @@ export default function Step5Page() {
                   value={formatPrice(commission)}
                   hint={tWiz("step5.summaryCommissionHint")}
                 />
+                {boostTotal > 0 && (
+                  <Row
+                    label="Boosts payants"
+                    value={formatPrice(boostTotal)}
+                    hint={
+                      boostDiscountPct > 0
+                        ? `Inclut −${boostDiscountPct}% de remise plan`
+                        : "Facturés au moment de la publication"
+                    }
+                  />
+                )}
               </div>
             </div>
 
@@ -368,5 +527,92 @@ function Row({
       </div>
       <div className="font-bold tabular-nums">{value}</div>
     </div>
+  );
+}
+
+function BoostRow({
+  checked,
+  onChange,
+  icon,
+  title,
+  subtitle,
+  full,
+  applied,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+  full: number;
+  applied: number;
+}) {
+  const hasDiscount = applied < full;
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!checked)}
+      aria-pressed={checked}
+      className={`w-full text-start flex items-center gap-3 p-3.5 rounded-2xl border-2 transition-all ${
+        checked
+          ? "border-[var(--gold)] bg-[var(--gold-faint)] shadow-[var(--shadow-gold)]"
+          : "border-[var(--border)] bg-[var(--surface)] hover:border-[var(--gold-soft)] hover:bg-[var(--surface-2)]/40"
+      }`}
+    >
+      <span
+        className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+          checked
+            ? "bg-[var(--gold)] text-black"
+            : "bg-[var(--surface-2)] text-[var(--foreground-muted)]"
+        }`}
+      >
+        {icon}
+      </span>
+      <div className="flex-1 min-w-0">
+        <div
+          className={`font-bold text-sm leading-tight ${
+            checked ? "text-foreground" : ""
+          }`}
+        >
+          {title}
+        </div>
+        <div className="text-[11px] text-[var(--foreground-muted)] mt-0.5 leading-snug">
+          {subtitle}
+        </div>
+      </div>
+      <div className="text-end shrink-0 tabular-nums">
+        {hasDiscount && (
+          <div className="text-[10px] line-through text-[var(--foreground-subtle)] leading-none">
+            {full} DT
+          </div>
+        )}
+        <div
+          className={`text-sm font-extrabold leading-tight ${
+            checked ? "text-[var(--gold-bright)]" : "text-[var(--gold)]"
+          }`}
+        >
+          {applied} DT
+        </div>
+      </div>
+      <span
+        className={`h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
+          checked
+            ? "border-[var(--gold)] bg-[var(--gold)] text-black"
+            : "border-[var(--border)] bg-transparent"
+        }`}
+      >
+        {checked && (
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3"
+            className="h-3 w-3"
+          >
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        )}
+      </span>
+    </button>
   );
 }

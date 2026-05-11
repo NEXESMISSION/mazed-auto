@@ -49,7 +49,7 @@ export function VideoButton({ url, poster }: Props) {
               setOpen(false);
             }}
             aria-label="Fermer"
-            className="absolute top-4 right-4 h-10 w-10 rounded-full bg-[var(--surface)] border border-[var(--border)] flex items-center justify-center hover:bg-[var(--surface-2)] transition-colors z-10"
+            className="absolute top-4 end-4 h-10 w-10 rounded-full bg-[var(--surface)] border border-[var(--border)] flex items-center justify-center hover:bg-[var(--surface-2)] transition-colors z-10"
           >
             <X className="h-5 w-5" />
           </button>

@@ -20,7 +20,7 @@ export default function Loading() {
       <div className="px-4 pb-8 space-y-5">
         {Array.from({ length: 4 }).map((_, gi) => (
           <div key={gi}>
-            <div className="h-2 w-24 rounded skeleton mb-2 ml-1" />
+            <div className="h-2 w-24 rounded skeleton mb-2 ms-1" />
             <div className="rounded-[var(--radius-md)] bg-[var(--surface)] border border-[var(--border)] divide-y divide-[var(--border)] overflow-hidden">
               {Array.from({ length: gi === 1 ? 1 : 3 }).map((_, ri) => (
                 <div key={ri} className="flex items-center gap-3 p-4">

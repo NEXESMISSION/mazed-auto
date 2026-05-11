@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Check, AlertTriangle } from "lucide-react";
 import { KYCShell } from "@/components/layout/KYCShell";
@@ -9,11 +10,7 @@ import { useAuth } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/client";
 import { clearKycDraft, readKycDraft } from "@/lib/kycDraft";
 
-const checks = [
-  "Téléversement des documents…",
-  "Enregistrement de votre dossier…",
-  "Mise en file pour examen humain…",
-];
+const CHECK_KEYS = ["checkUpload", "checkSave", "checkQueue"] as const;
 
 const TAG = "[KYC/processing]";
 
@@ -44,22 +41,34 @@ interface DetailedError {
 export default function KYCProcessingPage() {
   const router = useRouter();
   const { user, loaded, update } = useAuth();
+  const t = useTranslations("kyc.processing");
   const [step, setStep] = useState(0);
   const [error, setError] = useState<DetailedError | null>(null);
   const submittedRef = useRef(false);
 
-  // Snapshot the volatile context values in refs. The effect below depends
-  // ONLY on `loaded` so the submit() promise is never torn down mid-flight
-  // by a re-render — the previous version was killed when update() flipped
-  // user.kycStatus, which fired the auth listener, mutated the `user`
-  // object, ran the effect's cleanup, and skipped the trailing
-  // router.push("/kyc/status") via a stale `cancelled` flag.
+  // Snapshot the volatile context values in refs. The submit effect
+  // below depends ONLY on `loaded` so its promise is never torn down
+  // mid-flight by a re-render — the previous version was killed when
+  // update() flipped user.kycStatus, which fired the auth listener,
+  // mutated the `user` object, ran the submit effect's cleanup, and
+  // skipped the trailing router.push("/kyc/status") via a stale
+  // `cancelled` flag.
+  //
+  // The ref-writes used to happen in the render body (`userRef.current
+  // = user;` etc.), which the React 19 purity lint rule flags — and
+  // it's technically wrong: render shouldn't have side effects. Sync
+  // the refs from an effect instead. The effect runs in the commit
+  // phase, so by the time submit() reads userRef.current the values
+  // are up-to-date (submit() is launched from a DIFFERENT effect
+  // below that depends on `loaded`, not on these refs).
   const userRef = useRef(user);
   const updateRef = useRef(update);
   const routerRef = useRef(router);
-  userRef.current = user;
-  updateRef.current = update;
-  routerRef.current = router;
+  useEffect(() => {
+    userRef.current = user;
+    updateRef.current = update;
+    routerRef.current = router;
+  });
 
   useEffect(() => {
     log("mount", {
@@ -88,7 +97,7 @@ export default function KYCProcessingPage() {
         err("no user in context — aborting");
         if (!unmounted)
           setError({
-            message: "Vous devez être connecté pour finaliser la vérification.",
+            message: t("errorUserMissing"),
           });
         return;
       }
@@ -110,8 +119,7 @@ export default function KYCProcessingPage() {
         });
         if (!unmounted)
           setError({
-            message:
-              "Documents manquants. Veuillez recommencer depuis le début.",
+            message: t("errorDraftMissing"),
           });
         return;
       }
@@ -207,7 +215,7 @@ export default function KYCProcessingPage() {
       err("submit() threw", e);
       if (!unmounted) {
         setError({
-          message: e instanceof Error ? e.message : "Erreur inattendue",
+          message: e instanceof Error ? e.message : t("errorUnexpected"),
           raw: e,
         });
       }
@@ -216,7 +224,11 @@ export default function KYCProcessingPage() {
       log("effect cleanup");
       unmounted = true;
     };
-  }, [loaded]);
+    // `t` is closed over inside submit() for the error toasts; include it
+    // so a mid-flow locale switch picks up the new locale's strings (the
+    // submittedRef guard already blocks duplicate submissions, so adding
+    // it to deps is safe and idempotent).
+  }, [loaded, t]);
 
   if (error) {
     return (
@@ -226,23 +238,23 @@ export default function KYCProcessingPage() {
             <AlertTriangle className="h-8 w-8 text-red-400" />
           </div>
           <div>
-            <h2 className="text-xl font-bold">Une erreur est survenue</h2>
+            <h2 className="text-xl font-bold">{t("errorTitle")}</h2>
             <p className="text-sm text-[var(--foreground-muted)] mt-2 leading-relaxed">
               {error.message}
             </p>
             {(error.code || error.hint || error.details) && (
-              <div className="mt-3 text-left text-[11px] font-mono text-[var(--foreground-muted)] bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] p-3 space-y-1">
+              <div className="mt-3 text-start text-[11px] font-mono text-[var(--foreground-muted)] bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] p-3 space-y-1">
                 {error.code && <div>code: {error.code}</div>}
                 {error.hint && <div>hint: {error.hint}</div>}
                 {error.details && <div>details: {error.details}</div>}
               </div>
             )}
             <p className="text-[10px] text-[var(--foreground-subtle)] mt-2">
-              Voir la console du navigateur pour les détails complets.
+              {t("errorConsoleHint")}
             </p>
           </div>
           <Button size="lg" fullWidth onClick={() => router.push("/kyc/start")}>
-            Recommencer la vérification
+            {t("retryCta")}
           </Button>
         </div>
       </KYCShell>
@@ -257,19 +269,19 @@ export default function KYCProcessingPage() {
             <div className="absolute inset-0 rounded-full border-4 border-[var(--gold)] border-t-transparent animate-spin" />
             <div className="absolute inset-3 rounded-full bg-[var(--gold-faint)]" />
           </div>
-          <h2 className="text-xl font-bold">Envoi de votre dossier</h2>
+          <h2 className="text-xl font-bold">{t("title")}</h2>
           <p className="text-sm text-[var(--foreground-muted)] mt-1">
-            Quelques secondes…
+            {t("subtitle")}
           </p>
         </div>
 
         <div className="space-y-2">
-          {checks.map((check, i) => {
+          {CHECK_KEYS.map((key, i) => {
             const done = i < step;
             const active = i === step;
             return (
               <div
-                key={i}
+                key={key}
                 className="flex items-center gap-3 p-3 rounded-[var(--radius)] bg-[var(--surface)] border border-[var(--border)]"
               >
                 <div
@@ -295,7 +307,7 @@ export default function KYCProcessingPage() {
                         : "text-[var(--foreground-subtle)]"
                   }`}
                 >
-                  {check}
+                  {t(key)}
                 </span>
               </div>
             );

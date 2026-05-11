@@ -27,6 +27,7 @@ import { formatPrice } from "@/lib/format";
 import { thumb } from "@/lib/imageUrl";
 import { AdminUserActions } from "./AdminUserActions";
 import { ActivityLog } from "./ActivityLog";
+import { AdminSubscriptionPanel } from "./AdminSubscriptionPanel";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -91,26 +92,48 @@ export default async function AdminUserDetailsPage({ params }: Props) {
     };
   }
 
-  const [auctions, activity, warnings, bans] = await Promise.all([
-    listAuctionsBySeller(supabase, seller.id),
-    listUserActivity(supabase, seller.id, 50),
-    supabase
-      .from("user_warnings")
-      .select("id, severity, body, issued_at, dismissed_at")
-      .eq("user_id", seller.id)
-      .order("issued_at", { ascending: false })
-      .limit(20)
-      .then((r) => r.data ?? []),
-    supabase
-      .from("user_bans")
-      .select(
-        "id, scope, reason, banned_at, banned_until, lifted_at, lift_reason",
-      )
-      .eq("user_id", seller.id)
-      .order("banned_at", { ascending: false })
-      .limit(10)
-      .then((r) => r.data ?? []),
-  ]);
+  const [auctions, activity, warnings, bans, activeSub, plans] =
+    await Promise.all([
+      listAuctionsBySeller(supabase, seller.id),
+      listUserActivity(supabase, seller.id, 50),
+      supabase
+        .from("user_warnings")
+        .select("id, severity, body, issued_at, dismissed_at")
+        .eq("user_id", seller.id)
+        .order("issued_at", { ascending: false })
+        .limit(20)
+        .then((r) => r.data ?? []),
+      supabase
+        .from("user_bans")
+        .select(
+          "id, scope, reason, banned_at, banned_until, lifted_at, lift_reason",
+        )
+        .eq("user_id", seller.id)
+        .order("banned_at", { ascending: false })
+        .limit(10)
+        .then((r) => r.data ?? []),
+      supabase
+        .from("user_active_subscription")
+        .select(
+          "subscription_id, plan_slug, plan_name, listings_per_month, listings_remaining, current_period_end, expires_at",
+        )
+        .eq("user_id", seller.id)
+        .maybeSingle()
+        .then((r) => r.data),
+      supabase
+        .from("cms_subscription_plans")
+        .select("slug, name_fr, monthly_price, listings_per_month")
+        .order("position", { ascending: true })
+        .then(
+          (r) =>
+            (r.data ?? []) as {
+              slug: string;
+              name_fr: string;
+              monthly_price: number;
+              listings_per_month: number;
+            }[],
+        ),
+    ]);
   const totalSales = auctions
     .filter((a) => a.status === "ended")
     .reduce((s, a) => s + a.currentPrice, 0);
@@ -202,6 +225,24 @@ export default async function AdminUserDetailsPage({ params }: Props) {
             value={formatPrice(totalSales)}
           />
         </div>
+
+        <AdminSubscriptionPanel
+          userId={seller.id}
+          plans={plans}
+          activeSub={
+            activeSub
+              ? {
+                  subscriptionId: activeSub.subscription_id as string,
+                  planSlug: activeSub.plan_slug as string,
+                  planName: activeSub.plan_name as string,
+                  listingsPerMonth: Number(activeSub.listings_per_month),
+                  listingsRemaining: Number(activeSub.listings_remaining),
+                  currentPeriodEnd: activeSub.current_period_end as string,
+                  expiresAt: activeSub.expires_at as string | null,
+                }
+              : null
+          }
+        />
 
         <Section title="Informations de contact">
           <div className="grid md:grid-cols-2 gap-3">

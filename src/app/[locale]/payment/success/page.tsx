@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useRef, useState } from "react";
+import { useLocale } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import {
@@ -11,7 +12,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { formatPrice } from "@/lib/format";
+import { formatDateTime, formatPrice } from "@/lib/format";
 import { useAuth } from "@/lib/auth";
 
 // Once recording succeeds for a deposit-with-auction payment, we hold the
@@ -23,6 +24,7 @@ const AUTO_REDIRECT_MS = 1800;
 function SuccessContent() {
   const params = useSearchParams();
   const router = useRouter();
+  const locale = useLocale();
   const { user, loaded } = useAuth();
   const amount = Number(params.get("amount") ?? 0);
   const type = (params.get("type") ?? "deposit") as
@@ -31,6 +33,7 @@ function SuccessContent() {
     | "subscription";
   const auctionId = params.get("auction");
   const isBuyNow = params.get("buy_now") === "1";
+  const subId = params.get("sub");
   const ref = useRef("TX-" + Math.random().toString(36).slice(2, 10).toUpperCase());
   const fired = useRef(false);
   const [recorded, setRecorded] = useState<"pending" | "ok" | "failed">("pending");
@@ -41,7 +44,18 @@ function SuccessContent() {
   const hasDeepLink = type === "deposit" && Boolean(auctionId);
   const deepLinkHref = `/auctions/${auctionId}/bid`;
 
+  // Subscription payments don't go through /api/payment/record — the
+  // activation flow on /payment/return owns the ledger entry via the
+  // `complete_subscription_from_payment` RPC. Forward the user there
+  // immediately so we don't double-charge in the transactions table.
   useEffect(() => {
+    if (type !== "subscription" || !subId) return;
+    const url = `/payment/return?sub=${encodeURIComponent(subId)}&simulated=1`;
+    router.replace(url);
+  }, [type, subId, router]);
+
+  useEffect(() => {
+    if (type === "subscription") return; // handled by the redirect above
     if (!loaded || !user || recorded !== "pending") return;
     // Guard against React strict-mode double-invoke in dev.
     if (fired.current) return;
@@ -118,7 +132,7 @@ function SuccessContent() {
           )}
         </div>
 
-        <div className="rounded-[var(--radius-md)] bg-[var(--surface)] border border-[var(--border)] p-4 text-right space-y-2">
+        <div className="rounded-[var(--radius-md)] bg-[var(--surface)] border border-[var(--border)] p-4 text-end space-y-2">
           <Row label="Numéro de transaction" mono>
             {ref.current}
           </Row>
@@ -126,7 +140,7 @@ function SuccessContent() {
             <span className="tabular-nums">{formatPrice(amount)}</span>
           </Row>
           <Row label="Date">
-            {new Date().toLocaleString("fr-TN")}
+            {formatDateTime(new Date(), locale)}
           </Row>
           <Row label="Statut">
             <span

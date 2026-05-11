@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useTranslations } from "next-intl";
 import { CheckCircle2, XCircle, AlertTriangle, Info, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -33,12 +34,14 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     (message: string, variant: ToastVariant = "info") => {
       const newId = ++id;
       setToasts((prev) => [...prev, { id: newId, message, variant }]);
-      // Short auto-dismiss — toast is feedback, not a banner. 900ms is
-      // long enough to read a short message but short enough not to
-      // linger over the content.
+      // Auto-dismiss timeout scales with severity. Earlier we used a
+      // flat 900 ms which cut off long error messages — payment failures
+      // like "Carte refusée — vérifiez le solde et réessayez avec un
+      // autre moyen de paiement" need closer to 4 seconds to read.
+      const ms = variant === "error" || variant === "warning" ? 4500 : 1800;
       setTimeout(() => {
         setToasts((prev) => prev.filter((t) => t.id !== newId));
-      }, 900);
+      }, ms);
     },
     [],
   );
@@ -88,6 +91,7 @@ const variantStyles: Record<
 
 function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
   const { icon: Icon, accent, iconColor } = variantStyles[toast.variant];
+  const tCommon = useTranslations("common");
   return (
     <div
       className={cn(
@@ -107,7 +111,7 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
       </div>
       <button
         onClick={onClose}
-        aria-label="Fermer"
+        aria-label={tCommon("close")}
         className="shrink-0 h-7 w-7 rounded-full flex items-center justify-center text-[var(--foreground-muted)] hover:bg-[var(--surface-2)] hover:text-foreground transition-colors"
       >
         <X className="h-3.5 w-3.5" />

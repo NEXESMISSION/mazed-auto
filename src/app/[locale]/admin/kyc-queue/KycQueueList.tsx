@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Check, X, ImageIcon, Video as VideoIcon, Layers, CheckSquare, Square } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -28,6 +29,7 @@ export interface KycSubmission {
 
 export function KycQueueList({ items: initial }: { items: KycSubmission[] }) {
   const { toast } = useToast();
+  const t = useTranslations("admin.kycQueue");
   const [items, setItems] = useState(initial);
   const [busy, setBusy] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -55,15 +57,13 @@ export function KycQueueList({ items: initial }: { items: KycSubmission[] }) {
     let reason: string | null = null;
     if (decision === "rejected") {
       reason = window.prompt(
-        `Motif de rejet en bloc (appliqué aux ${selected.size} dossiers) :`,
-        "Documents insuffisants",
+        t("bulkRejectPrompt", { count: selected.size }),
+        t("bulkRejectDefault"),
       );
       if (reason === null) return;
     } else {
       if (
-        !window.confirm(
-          `Approuver ${selected.size} dossiers KYC ? L'opération est consignée.`,
-        )
+        !window.confirm(t("bulkApproveConfirm", { count: selected.size }))
       )
         return;
     }
@@ -75,14 +75,16 @@ export function KycQueueList({ items: initial }: { items: KycSubmission[] }) {
     });
     setBulkBusy(false);
     if (!r.ok) {
-      toast("Échec : " + r.error, "error");
+      toast(t("toastFail", { error: r.error }), "error");
       return;
     }
     const count = r.data?.count ?? 0;
     setItems((arr) => arr.filter((i) => !selected.has(i.id)));
     setSelected(new Set());
     toast(
-      `${count} dossier${count > 1 ? "s" : ""} ${decision === "approved" ? "approuvé" : "refusé"}${count > 1 ? "s" : ""}`,
+      decision === "approved"
+        ? t("toastBulkApproved", { count })
+        : t("toastBulkRejected", { count }),
       decision === "approved" ? "success" : "warning",
     );
   }
@@ -105,21 +107,18 @@ export function KycQueueList({ items: initial }: { items: KycSubmission[] }) {
     });
     setBusy(null);
     if (error) {
-      toast("Échec : " + error.message, "error");
+      toast(t("toastFail", { error: error.message }), "error");
       return;
     }
     setItems((arr) => arr.filter((i) => i.id !== submission.id));
     toast(
-      decision === "approved" ? "Dossier accepté" : "Dossier refusé",
+      decision === "approved" ? t("toastApproved") : t("toastRejected"),
       decision === "approved" ? "success" : "warning",
     );
   }
 
   function reject(submission: KycSubmission) {
-    const reason = window.prompt(
-      "Motif du refus (visible par l'utilisateur) :",
-      "Documents flous ou illisibles",
-    );
+    const reason = window.prompt(t("rejectPrompt"), t("rejectDefault"));
     if (reason === null) return;
     decide(submission, "rejected", reason.trim() || undefined);
   }
@@ -139,10 +138,13 @@ export function KycQueueList({ items: initial }: { items: KycSubmission[] }) {
               <Square className="h-4 w-4" />
             )}
             {selected.size === 0
-              ? "Tout sélectionner"
+              ? t("selectAll")
               : selected.size === items.length
-                ? "Tout désélectionner"
-                : `${selected.size}/${items.length} sélectionnés`}
+                ? t("deselectAll")
+                : t("selectedCount", {
+                    selected: selected.size,
+                    total: items.length,
+                  })}
           </button>
           {selected.size > 0 && (
             <>
@@ -152,7 +154,7 @@ export function KycQueueList({ items: initial }: { items: KycSubmission[] }) {
                 disabled={bulkBusy}
               >
                 <Check className="h-4 w-4" />
-                Approuver ({selected.size})
+                {t("bulkApprove", { count: selected.size })}
               </Button>
               <Button
                 size="sm"
@@ -161,7 +163,7 @@ export function KycQueueList({ items: initial }: { items: KycSubmission[] }) {
                 disabled={bulkBusy}
               >
                 <X className="h-4 w-4" />
-                Refuser ({selected.size})
+                {t("bulkReject", { count: selected.size })}
               </Button>
             </>
           )}
@@ -182,7 +184,7 @@ export function KycQueueList({ items: initial }: { items: KycSubmission[] }) {
                 type="button"
                 onClick={() => toggle(item.id)}
                 className="shrink-0 mt-1 text-[var(--foreground-muted)] hover:text-[var(--gold)]"
-                aria-label="Sélectionner"
+                aria-label={t("selectAria")}
               >
                 {selected.has(item.id) ? (
                   <CheckSquare className="h-5 w-5 text-[var(--gold)]" />
@@ -192,30 +194,31 @@ export function KycQueueList({ items: initial }: { items: KycSubmission[] }) {
               </button>
               <div>
                 <div className="font-bold">
-                  {item.full_name || "Nom non renseigné"}
+                  {item.full_name || t("unnamed")}
                 </div>
                 <div className="text-xs text-[var(--foreground-muted)] mt-0.5 font-mono">
-                  user: {item.user_id.slice(0, 8)}…
+                  {t("userIdPrefix")} {item.user_id.slice(0, 8)}…
                 </div>
                 <div className="text-[10px] text-[var(--foreground-subtle)] mt-0.5">
-                  Soumis le{" "}
-                  {new Date(item.submitted_at).toLocaleString("fr-FR")}
+                  {t("submittedAt", {
+                    date: new Date(item.submitted_at).toLocaleString("fr-FR"),
+                  })}
                 </div>
               </div>
             </div>
             <Badge variant="warning" size="sm">
-              En attente
+              {t("pending")}
             </Badge>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <DocCard
-              label="Carte — recto"
+              label={t("docFront")}
               url={item.id_front_url}
               kind="image"
             />
             <DocCard
-              label="Carte — verso"
+              label={t("docBack")}
               url={item.id_back_url}
               kind="image"
             />
@@ -228,13 +231,13 @@ export function KycQueueList({ items: initial }: { items: KycSubmission[] }) {
             {item.selfie_video_url ? (
               isVideoUrl(item.selfie_video_url) ? (
                 <DocCard
-                  label="Selfie en direct"
+                  label={t("docSelfieLive")}
                   url={item.selfie_video_url}
                   kind="video"
                 />
               ) : (
                 <DocCard
-                  label="Selfie — 3 poses"
+                  label={t("docSelfieTriptych")}
                   url={item.selfie_video_url}
                   kind="triptych"
                   className="sm:col-span-3"
@@ -242,21 +245,19 @@ export function KycQueueList({ items: initial }: { items: KycSubmission[] }) {
               )
             ) : item.selfie_image_url ? (
               <DocCard
-                label="Selfie"
+                label={t("docSelfie")}
                 url={item.selfie_image_url}
                 kind="image"
               />
             ) : (
               <div className="rounded-[var(--radius)] border border-dashed border-[var(--border)] p-3 text-center text-xs text-[var(--foreground-muted)]">
-                Pas de selfie
+                {t("docNoSelfie")}
               </div>
             )}
           </div>
 
           <div className="text-xs text-[var(--foreground-muted)] leading-relaxed">
-            <b>Vérifiez :</b> les trois poses (face / droite / gauche) appartiennent
-            bien à la même personne et au visage de la carte ; textes nets ;
-            carte non expirée ; aucune retouche visible.
+            {t("verifyHint")}
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -266,7 +267,7 @@ export function KycQueueList({ items: initial }: { items: KycSubmission[] }) {
               disabled={busy === item.id}
             >
               <Check className="h-4 w-4" />
-              Accepter
+              {t("approve")}
             </Button>
             <Button
               size="sm"
@@ -275,7 +276,7 @@ export function KycQueueList({ items: initial }: { items: KycSubmission[] }) {
               disabled={busy === item.id}
             >
               <X className="h-4 w-4" />
-              Refuser
+              {t("reject")}
             </Button>
           </div>
         </div>

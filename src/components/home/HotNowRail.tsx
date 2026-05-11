@@ -7,6 +7,10 @@ import type { HotAuction } from "@/lib/db";
 
 interface Props {
   items: HotAuction[];
+  /** Seller IDs whose active plan grants `has_trusted_seller_badge`.
+   *  When the seller's id is in the set, the AuctionCard renders the
+   *  "Confiance" pill. Optional — defaults to no badges shown. */
+  trustedSellerIds?: Set<string>;
 }
 
 /**
@@ -19,7 +23,7 @@ interface Props {
  * 3/4-col grid so the row reads as a curated lineup, not a thumbnail
  * filmstrip.
  */
-export function HotNowRail({ items }: Props) {
+export function HotNowRail({ items, trustedSellerIds }: Props) {
   // Don't render the rail at all if nothing has any traction in the last
   // hour — it'd just look like a duplicate of the other rails.
   const interesting = items.filter((a) => a.recentBids > 0);
@@ -62,7 +66,10 @@ export function HotNowRail({ items }: Props) {
         <ScrollableRow trackClassName="flex gap-3 px-4 pb-1">
           {interesting.map((auction) => (
             <div key={auction.id} className="relative w-[230px] shrink-0">
-              <AuctionCard auction={auction} />
+              <AuctionCard
+              auction={auction}
+              isTrustedSeller={trustedSellerIds?.has(auction.seller.id) ?? false}
+            />
               <span className="pointer-events-none absolute top-2.5 end-2.5 z-10 inline-flex items-center gap-1 px-2 h-6 rounded-full bg-[#ff4d2a] text-white text-[10px] font-extrabold uppercase tracking-wider shadow-[0_0_18px_rgba(255,77,42,0.55)]">
                 <Flame className="h-3 w-3" />
                 {auction.recentBids} {auction.recentBids === 1 ? "offre" : "offres"} / 1 h
@@ -83,7 +90,10 @@ export function HotNowRail({ items }: Props) {
       <div className="hidden lg:grid px-8 grid-cols-3 xl:grid-cols-4 gap-6">
         {interesting.slice(0, 4).map((auction) => (
           <div key={auction.id} className="relative">
-            <AuctionCard auction={auction} />
+            <AuctionCard
+              auction={auction}
+              isTrustedSeller={trustedSellerIds?.has(auction.seller.id) ?? false}
+            />
             <span className="pointer-events-none absolute top-3 end-3 z-10 inline-flex items-center gap-1 px-2.5 h-7 rounded-full bg-[#ff4d2a] text-white text-[11px] font-extrabold uppercase tracking-wider shadow-[0_0_22px_rgba(255,77,42,0.55)]">
               <Flame className="h-3.5 w-3.5" />
               {auction.recentBids} {auction.recentBids === 1 ? "offre" : "offres"} / 1 h

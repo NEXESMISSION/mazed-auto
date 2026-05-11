@@ -1,8 +1,8 @@
-import { Link } from "@/i18n/navigation";
+import { getTranslations } from "next-intl/server";
+import { Link, redirect } from "@/i18n/navigation";
 import { Gavel } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { ScreenHeader } from "@/components/layout/ScreenHeader";
-import { Button } from "@/components/ui/Button";
 import { createClient } from "@/lib/supabase/server";
 import { mapAuction, type AuctionRow, type BidRow } from "@/lib/db";
 import type { Auction } from "@/lib/types";
@@ -23,31 +23,25 @@ export interface MyBid {
   deposit: number;
 }
 
-export default async function BuyerBidsPage() {
+export default async function BuyerBidsPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // The /buyer layout already redirects anonymous visitors to /login.
+  // This is a defence-in-depth guard so the page can't render without a
+  // user even if the layout is ever bypassed (e.g. during a route refactor).
   if (!user) {
-    return (
-      <AppShell noTopBar>
-        <ScreenHeader title="Mes enchères" backHref="/" />
-        <div className="px-4 text-center py-16 space-y-3">
-          <div className="mx-auto h-14 w-14 rounded-full bg-[var(--gold-faint)] text-[var(--gold)] flex items-center justify-center">
-            <Gavel className="h-6 w-6" />
-          </div>
-          <div className="font-bold text-base">Connectez-vous</div>
-          <p className="text-sm text-[var(--foreground-muted)]">
-            pour voir vos enchères
-          </p>
-          <Link href="/login">
-            <Button size="md">Connexion</Button>
-          </Link>
-        </div>
-      </AppShell>
-    );
+    return redirect({ href: "/login?redirect=/buyer/bids", locale });
   }
+
+  const t = await getTranslations({ locale, namespace: "buyer.bids" });
 
   // Sweep expired auctions before reading so the buyer never sees a
   // bid sitting in "Actives" with a long-passed end_time.
@@ -148,7 +142,7 @@ export default async function BuyerBidsPage() {
     <AppShell noTopBar>
       {/* Mobile header */}
       <div className="lg:hidden">
-        <ScreenHeader title="Mes enchères" backHref="/" />
+        <ScreenHeader title={t("title")} backHref="/" />
       </div>
 
       {/* Desktop magazine header */}
@@ -157,14 +151,19 @@ export default async function BuyerBidsPage() {
           <div>
             <div className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] font-bold text-[var(--gold)]">
               <Gavel className="h-3.5 w-3.5" />
-              Acheteur
+              {t("eyebrow")}
             </div>
             <h1 className="mt-2 text-4xl xl:text-5xl font-black tracking-tight leading-[1.05]">
-              Mes <span className="gradient-gold-text">enchères</span>
+              {t("headlinePart1")}
+              {t("headlinePart2") && (
+                <>
+                  {" "}
+                  <span className="gradient-gold-text">{t("headlinePart2")}</span>
+                </>
+              )}
             </h1>
             <p className="mt-3 text-base text-[var(--foreground-muted)] max-w-2xl">
-              Toutes vos offres, victoires, et favoris en un seul endroit.
-              Filtrez par état pour suivre ce qui compte.
+              {t("desktopSubtitle")}
             </p>
           </div>
           <Link
@@ -172,7 +171,7 @@ export default async function BuyerBidsPage() {
             className="shrink-0 inline-flex items-center gap-2 h-11 px-5 rounded-full ring-1 ring-[var(--border)] hover:ring-[var(--gold)] hover:text-[var(--gold)] text-sm font-bold transition-colors"
           >
             <Gavel className="h-4 w-4" />
-            Parcourir le catalogue
+            {t("browseCta")}
           </Link>
         </div>
         <div className="mt-6 h-px w-full bg-gradient-to-r from-[var(--border)] via-[var(--border)] to-transparent" />

@@ -51,16 +51,30 @@ export default async function BidPage({ params, searchParams }: Props) {
   // Deposit seed for this user — also drives whether the user is "in" the
   // auction (i.e. has cleared every gate to actually bid).
   let initialDepositPaid: boolean | undefined = undefined;
+  // Authoritative KYC status — read from the `sellers` row (set by
+  // `review_kyc` RPC), NOT from user_metadata.kycStatus. The metadata
+  // can lag behind the DB until the next JWT refresh, and a malicious
+  // user can self-set kycStatus="verified" in their JWT. This source
+  // can only be flipped to true by the admin-only `review_kyc` RPC.
+  let kycVerified = false;
   if (user) {
-    const { data } = await supabase
-      .from("transactions")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("auction_id", id)
-      .eq("type", "deposit")
-      .eq("status", "completed")
-      .limit(1);
-    initialDepositPaid = (data ?? []).length > 0;
+    const [depositRes, kycRes] = await Promise.all([
+      supabase
+        .from("transactions")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("auction_id", id)
+        .eq("type", "deposit")
+        .eq("status", "completed")
+        .limit(1),
+      supabase
+        .from("sellers")
+        .select("verified_kyc")
+        .eq("id", user.id)
+        .maybeSingle(),
+    ]);
+    initialDepositPaid = (depositRes.data ?? []).length > 0;
+    kycVerified = Boolean(kycRes.data?.verified_kyc);
   }
 
   // Non-live auctions can't accept bids — bounce to the detail page where the
@@ -76,15 +90,14 @@ export default async function BidPage({ params, searchParams }: Props) {
   // The user is "in" the auction (cleared every gate) iff:
   //  - signed in
   //  - not the seller
-  //  - KYC verified
+  //  - KYC verified (sellers.verified_kyc — authoritative, not JWT cache)
   //  - deposit paid
   // Bid history is only rendered for users who are in — for everyone else
   // it would just be a tease distracting from the "complete this step" CTA.
-  const meta = (user?.user_metadata ?? {}) as { kycStatus?: string };
   const userIsBidder =
     !!user &&
     user.id !== auction.seller.id &&
-    meta.kycStatus === "verified" &&
+    kycVerified &&
     initialDepositPaid === true;
 
   return (

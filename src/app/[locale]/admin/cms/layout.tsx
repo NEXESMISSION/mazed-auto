@@ -6,6 +6,8 @@ const TABS: { href: string; label: string }[] = [
   { href: "/admin/cms/faqs", label: "FAQ" },
   { href: "/admin/cms/promos", label: "Promos" },
   { href: "/admin/cms/brands", label: "Marques" },
+  { href: "/admin/cms/categories", label: "Catégories" },
+  { href: "/admin/cms/plans", label: "Plans" },
   { href: "/admin/cms/features", label: "Équipements" },
   { href: "/admin/cms/cities", label: "Villes" },
   { href: "/admin/cms/notifications", label: "Notifications" },

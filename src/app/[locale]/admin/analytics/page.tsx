@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { AdminShell } from "@/components/layout/AdminShell";
 import { createClient } from "@/lib/supabase/server";
 import { formatPrice } from "@/lib/format";
@@ -5,19 +6,31 @@ import { formatPrice } from "@/lib/format";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const CATEGORY_LABELS: Record<string, string> = {
-  sedan: "Sedan",
-  hatchback: "Hatchback",
-  suv: "SUV",
-  pickup: "Pickup",
-  van: "Van",
-  coupe: "Coupé",
-  convertible: "Convertible",
-  wagon: "Wagon",
-};
+const CATEGORY_KEYS = [
+  "sedan",
+  "hatchback",
+  "suv",
+  "pickup",
+  "van",
+  "coupe",
+  "convertible",
+  "wagon",
+] as const;
 
-export default async function AnalyticsPage() {
+export default async function AnalyticsPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "admin.analytics" });
+  const tCat = await getTranslations({ locale, namespace: "auctions.category" });
   const supabase = await createClient();
+
+  // 365-day cutoff for the transactions feed — pulled into a const so the
+  // React 19 lint rule doesn't flag Date.now() during render.
+  // eslint-disable-next-line react-hooks/purity
+  const yearAgo = new Date(Date.now() - 365 * 24 * 3600 * 1000).toISOString();
 
   // Pull what we need with simple parallel queries.
   const [auctionsAgg, txsAgg, allAuctions] = await Promise.all([
@@ -27,10 +40,7 @@ export default async function AnalyticsPage() {
     supabase
       .from("transactions")
       .select("amount, type, direction, created_at")
-      .gte(
-        "created_at",
-        new Date(Date.now() - 365 * 24 * 3600 * 1000).toISOString(),
-      ),
+      .gte("created_at", yearAgo),
     supabase.from("auctions").select("category, city"),
   ]);
 
@@ -99,7 +109,12 @@ export default async function AnalyticsPage() {
     catCounts.set(a.category, (catCounts.get(a.category) ?? 0) + 1);
   }
   const categories = Array.from(catCounts.entries())
-    .map(([k, v]) => ({ label: CATEGORY_LABELS[k] ?? k, value: v }))
+    .map(([k, v]) => ({
+      label: (CATEGORY_KEYS as readonly string[]).includes(k)
+        ? tCat(k as (typeof CATEGORY_KEYS)[number])
+        : k,
+      value: v,
+    }))
     .sort((a, b) => b.value - a.value)
     .slice(0, 6);
 
@@ -121,39 +136,42 @@ export default async function AnalyticsPage() {
   return (
     <AdminShell>
       <div className="p-4 md:p-6 space-y-6 max-w-6xl">
-        <h1 className="text-2xl md:text-3xl font-extrabold">Analyses</h1>
+        <h1 className="text-2xl md:text-3xl font-extrabold">{t("title")}</h1>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Card label="Taux de conversion" value={`${conversion}%`} />
-          <Card label="Vente moyenne" value={formatPrice(Math.round(avgSale))} />
-          <Card label="Durée moyenne d'enchère" value={`${avgDurationDays.toFixed(1)} jours`} />
-          <Card label="Taux d'annulation" value={`${withdrawalRate}%`} />
+          <Card label={t("kpiConversion")} value={`${conversion}%`} />
+          <Card label={t("kpiAvgSale")} value={formatPrice(Math.round(avgSale))} />
+          <Card
+            label={t("kpiAvgDuration")}
+            value={t("avgDurationValue", { days: avgDurationDays.toFixed(1) })}
+          />
+          <Card label={t("kpiWithdrawal")} value={`${withdrawalRate}%`} />
         </div>
 
-        <Section title="Commissions Mazed (6 derniers mois)">
+        <Section title={t("revenueSection")}>
           {monthly.every((m) => m.value === 0) ? (
             <p className="text-sm text-[var(--foreground-muted)] py-6 text-center">
-              Aucune commission pour le moment
+              {t("revenueEmpty")}
             </p>
           ) : (
             <RevenueChart data={monthly} />
           )}
         </Section>
 
-        <Section title="Répartition des enchères par catégorie">
+        <Section title={t("categoriesSection")}>
           {categories.length === 0 ? (
             <p className="text-sm text-[var(--foreground-muted)] py-6 text-center">
-              Aucune donnée pour le moment
+              {t("categoriesEmpty")}
             </p>
           ) : (
             <CategoryBars data={categories} />
           )}
         </Section>
 
-        <Section title="Villes les plus actives">
+        <Section title={t("citiesSection")}>
           {cities.length === 0 ? (
             <p className="text-sm text-[var(--foreground-muted)] py-6 text-center">
-              Aucune donnée pour le moment
+              {t("citiesEmpty")}
             </p>
           ) : (
             <ul className="space-y-2 text-sm">
@@ -272,7 +290,7 @@ function Row({
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className="text-xs tabular-nums w-10 text-left">{count}</span>
+      <span className="text-xs tabular-nums w-10 text-start">{count}</span>
     </li>
   );
 }

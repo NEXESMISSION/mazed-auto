@@ -45,7 +45,7 @@ export default function PaymentFailedPage() {
           </p>
         </div>
 
-        <div className="rounded-[var(--radius)] bg-red-500/10 border border-red-500/30 p-4 text-right text-sm text-[var(--foreground-muted)] leading-relaxed">
+        <div className="rounded-[var(--radius)] bg-red-500/10 border border-red-500/30 p-4 text-end text-sm text-[var(--foreground-muted)] leading-relaxed">
           <strong className="text-red-400">Cause probable :</strong> solde insuffisant ou
           informations de carte incorrectes. Vérifiez vos données et réessayez, ou choisissez un autre
           moyen de paiement.

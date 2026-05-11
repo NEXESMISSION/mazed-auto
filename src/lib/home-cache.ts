@@ -24,7 +24,12 @@ import {
   seedActivityItems,
   type HotAuction,
 } from "./db";
-import { listCmsBanners, type CmsBanner } from "./cms";
+import {
+  listCmsBanners,
+  listCmsCategories,
+  type CmsBanner,
+  type CmsCategory,
+} from "./cms";
 import type { Auction } from "./types";
 
 // Mirror of LiveActivityTicker's ActivityItem — duplicated here so the
@@ -44,6 +49,7 @@ export interface HomeRails {
   recentlyEnded: Auction[];
   activitySeed: ActivityItem[];
   cmsBanners: CmsBanner[];
+  cmsCategories: CmsCategory[];
 }
 
 let cached: { at: number; data: HomeRails } | null = null;
@@ -78,6 +84,7 @@ async function fetchAll(): Promise<HomeRails> {
     recentlyEnded,
     activitySeed,
     cmsBanners,
+    cmsCategories,
   ] = await Promise.all([
     listHotNow(supa, RAIL_COUNT),
     listEndingSoon(supa, 24, RAIL_COUNT),
@@ -86,8 +93,18 @@ async function fetchAll(): Promise<HomeRails> {
     listRecentlyEnded(supa, 72, RAIL_COUNT),
     seedActivityItems(supa, 8),
     listCmsBanners(supa),
+    listCmsCategories(supa),
   ]);
-  return { hot, endingSoon, newest, vip, recentlyEnded, activitySeed, cmsBanners };
+  return {
+    hot,
+    endingSoon,
+    newest,
+    vip,
+    recentlyEnded,
+    activitySeed,
+    cmsBanners,
+    cmsCategories,
+  };
 }
 
 /**
@@ -128,7 +145,11 @@ export async function getLiveAuctionsCached(): Promise<Auction[]> {
 
   auctionsInflight = (async () => {
     try {
-      const data = await listAuctions(anonClient(), {});
+      // Only show auctions that have already passed admin moderation.
+      // pending_review / scheduled / cancelled rows are NEVER public.
+      const data = await listAuctions(anonClient(), {
+        status: ["active", "ending"],
+      });
       auctionsCached = { at: Date.now(), data };
       return data;
     } finally {

@@ -46,7 +46,39 @@ export function AuthProvider({ initialUser, children }: ProviderProps) {
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(mapUser(session?.user ?? null));
     });
-    return () => sub.subscription.unsubscribe();
+
+    // Refresh the session whenever the tab regains focus or becomes
+    // visible. Supabase embeds user_metadata in the JWT, so server-side
+    // changes (admin KYC approval, role promotion, trust-score bump,
+    // etc.) only propagate to the client on the next token refresh —
+    // which is otherwise hourly. Without this, a freshly-approved user
+    // keeps seeing "KYC en cours" on their profile chip until they
+    // sign out and back in. The /kyc/status page used to be the only
+    // surface that polled refreshSession(); now every page benefits.
+    //
+    // refreshSession() is a no-op when there's no active session, and
+    // Supabase debounces concurrent refresh calls — safe to call
+    // freely on every focus event.
+    let lastRefresh = 0;
+    const REFRESH_THROTTLE_MS = 5_000;
+    function maybeRefresh() {
+      if (typeof document !== "undefined" && document.hidden) return;
+      const now = Date.now();
+      if (now - lastRefresh < REFRESH_THROTTLE_MS) return;
+      lastRefresh = now;
+      supabase.auth.refreshSession().catch(() => {
+        // Network blip — the listener above will pick up on the next
+        // successful refresh; nothing to surface to the user.
+      });
+    }
+    window.addEventListener("focus", maybeRefresh);
+    document.addEventListener("visibilitychange", maybeRefresh);
+
+    return () => {
+      sub.subscription.unsubscribe();
+      window.removeEventListener("focus", maybeRefresh);
+      document.removeEventListener("visibilitychange", maybeRefresh);
+    };
   }, []);
 
   return (

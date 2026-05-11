@@ -33,6 +33,7 @@ export function DesktopHeader() {
     { href: "/auctions", label: t("browseShort") },
     { href: "/seller/new/step-1", label: t("sellCar") },
     { href: "/buyer/bids", label: t("myBids") },
+    { href: "/pricing", label: t("pricing") },
   ];
 
   return (

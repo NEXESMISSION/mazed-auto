@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -12,28 +13,29 @@ import { ADMIN_ROLES, type AdminRole } from "@/lib/admin";
 export function AddAdminForm() {
   const router = useRouter();
   const { toast } = useToast();
+  const t = useTranslations("admin.addAdminForm");
   const [pending, start] = useTransition();
   const [userId, setUserId] = useState("");
   const [role, setRole] = useState<AdminRole>("moderator");
 
   function submit() {
     if (!userId.trim()) {
-      toast("ID utilisateur requis", "warning");
+      toast(t("toastIdRequired"), "warning");
       return;
     }
     if (
       !window.confirm(
-        `Promouvoir ${userId.slice(0, 8)} en "${role}" ?\nL'utilisateur recevra accès à /admin lors de sa prochaine connexion.`,
+        t("confirmPromote", { userId: userId.slice(0, 8), role }),
       )
     )
       return;
     start(async () => {
       const r = await adminSetRoleAction({ userId: userId.trim(), role });
       if (!r.ok) {
-        toast("Échec : " + r.error, "error");
+        toast(t("toastFailed", { error: r.error }), "error");
         return;
       }
-      toast("Admin ajouté", "success");
+      toast(t("toastAdded"), "success");
       setUserId("");
       router.refresh();
     });
@@ -41,20 +43,23 @@ export function AddAdminForm() {
 
   return (
     <div className="rounded-[var(--radius-md)] bg-[var(--surface)] border border-[var(--border)] p-4 space-y-3">
-      <h2 className="text-sm font-bold">Promouvoir un utilisateur en admin</h2>
+      <h2 className="text-sm font-bold">{t("heading")}</h2>
       <p className="text-[11px] text-[var(--foreground-muted)]">
-        Trouvez l&apos;ID utilisateur depuis{" "}
-        <code className="font-mono">/admin/users</code>, puis collez-le ici.
+        {t("hintBefore")}
+        <code className="font-mono">/admin/users</code>
+        {t("hintAfter")}
       </p>
       <div className="grid md:grid-cols-[2fr_1fr_auto] gap-2">
         <Input
-          placeholder="UUID utilisateur"
+          placeholder={t("userIdPlaceholder")}
           value={userId}
           onChange={(e) => setUserId(e.target.value)}
+          aria-label={t("userIdPlaceholder")}
         />
         <select
           value={role}
           onChange={(e) => setRole(e.target.value as AdminRole)}
+          aria-label={t("rolePickerLabel")}
           className="bg-[var(--surface-2)] border border-[var(--border)] rounded-[var(--radius)] px-3 h-11 text-sm"
         >
           {ADMIN_ROLES.map((r) => (
@@ -65,7 +70,7 @@ export function AddAdminForm() {
         </select>
         <Button onClick={submit} disabled={pending}>
           <Plus className="h-4 w-4" />
-          {pending ? "..." : "Ajouter"}
+          {pending ? "..." : t("add")}
         </Button>
       </div>
     </div>

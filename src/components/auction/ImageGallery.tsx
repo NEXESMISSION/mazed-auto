@@ -27,13 +27,13 @@ export function ImageGallery({ images, alt = "" }: Props) {
         />
 
         {/* Counter */}
-        <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-black/70 backdrop-blur text-xs font-semibold tabular-nums">
+        <div className="absolute top-3 start-3 px-2.5 py-1 rounded-full bg-black/70 backdrop-blur text-xs font-semibold tabular-nums">
           {active + 1} / {images.length}
         </div>
 
         {/* Fullscreen button */}
         <button
-          className="absolute top-3 right-3 h-9 w-9 rounded-full bg-black/70 backdrop-blur flex items-center justify-center hover:bg-black/90 transition-colors"
+          className="absolute top-3 end-3 h-9 w-9 rounded-full bg-black/70 backdrop-blur flex items-center justify-center hover:bg-black/90 transition-colors"
           aria-label="Plein écran"
         >
           <Maximize2 className="h-4 w-4" />

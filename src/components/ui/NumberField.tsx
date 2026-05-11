@@ -33,6 +33,24 @@ export const NumberField = React.forwardRef<HTMLInputElement, Props>(
 
     function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
       let v = e.target.value;
+      // Locale normalisation — Arabic-Indic / Persian digits and the
+      // arabic decimal/thousand separators come from the IME on AR
+      // keyboards. Earlier these were stripped silently, turning
+      // "1٬234٫50" into "123450" (bid value off by 100×). Map them
+      // to ASCII first, then run the normal allow-list. Audit #10.
+      v = v
+        // Arabic-Indic digits (U+0660–U+0669)
+        .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+        // Persian / Eastern Arabic digits (U+06F0–U+06F9)
+        .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06F0))
+        // Arabic decimal separator → "."
+        .replace(/[٫]/g, ".")
+        // Arabic thousands separator → drop
+        .replace(/[٬]/g, "")
+        // French-style comma decimal → "."
+        .replace(/,/g, ".")
+        // NBSPs that some keyboards emit as thousand separators → drop
+        .replace(/[  \s]/g, "");
       v = decimal ? v.replace(/[^\d.]/g, "") : v.replace(/\D/g, "");
       if (decimal) {
         const firstDot = v.indexOf(".");

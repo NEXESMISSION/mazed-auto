@@ -75,7 +75,7 @@ export function ModerationReader({
             <div className="text-[10px] text-[var(--foreground-subtle)] tabular-nums">
               {new Date(m.created_at).toLocaleString("fr-FR")}
               {m.read_at && (
-                <span className="ml-2 text-emerald-300">lu</span>
+                <span className="ms-2 text-emerald-300">lu</span>
               )}
             </div>
           </div>

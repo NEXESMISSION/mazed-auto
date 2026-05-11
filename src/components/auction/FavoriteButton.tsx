@@ -86,9 +86,16 @@ export function FavoriteButton({
         toast("Retiré des favoris", "info");
       }
     } else {
+      // Upsert with onConflict so a race (two rapid taps before our
+      // local `active` flag flips) doesn't surface as a duplicate-key
+      // error. The composite PK (user_id, auction_id) makes the second
+      // call a no-op rather than an "Échec" toast.
       const { error } = await supabase
         .from("watchlist")
-        .insert({ user_id: user.id, auction_id: auctionId });
+        .upsert(
+          { user_id: user.id, auction_id: auctionId },
+          { onConflict: "user_id,auction_id", ignoreDuplicates: true },
+        );
       if (error) {
         toast("Échec de l'enregistrement", "error");
       } else {

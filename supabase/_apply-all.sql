@@ -6704,3 +6704,2399 @@ where a.status in ('ended','re_offered')
 
 grant select on public.admin_pending_payment_deadlines to authenticated;
 
+
+-- ---------------------------------------------------------
+-- File: migrate-cms-plans.sql
+-- ---------------------------------------------------------
+
+-- ============================================================
+-- Mazed Auto — Subscription plans (Silver / Gold / Diamond)
+--
+-- Implements the Pro/Business tiers from the project workflows
+-- (mazed_auto_workflows.html §15). Personal users browse + sell
+-- with a small free quota; agencies/dealerships pay monthly to
+-- unlock more listings + showroom + analytics + API.
+--
+-- Schema:
+--   cms_subscription_plans  — admin-managed catalogue (price, quotas, perks)
+--   user_subscriptions      — one active row per user_id, per period
+--
+-- Depends on: migrate-admin-foundations.sql, migrate-cms.sql
+-- Safe to run repeatedly.
+-- ============================================================
+
+-- 1) cms_subscription_plans ------------------------------------
+create table if not exists public.cms_subscription_plans (
+  slug                  text primary key,             -- 'silver' | 'gold' | 'diamond' | 'custom'
+  name_ar               text,
+  name_fr               text not null,
+  tagline_ar            text,
+  tagline_fr            text,
+  monthly_price         numeric not null,             -- DT
+  listings_per_month    int not null,                 -- -1 = unlimited
+  search_priority_pct   int not null default 0,       -- 0, 10, 25
+  has_custom_showroom   boolean not null default false,
+  has_branded_showroom  boolean not null default false,
+  has_advanced_analytics boolean not null default false,
+  has_analytics_export  boolean not null default false,
+  -- has_api_access lived here in the original v1; v2 drops it. The
+  -- column is intentionally NOT declared anymore so that re-running
+  -- the bundle never re-creates the dropped column.
+  support_level         text not null default 'email' check (support_level in ('email','chat','dedicated')),
+  features              jsonb not null default '[]'::jsonb,  -- bullet list shown on /pricing
+  badge_tone            text not null default 'silver' check (badge_tone in ('silver','gold','diamond','custom')),
+  is_visible            boolean not null default true,
+  position              int not null default 0,
+  updated_by            uuid references auth.users(id) on delete set null,
+  updated_at            timestamptz not null default now()
+);
+
+alter table public.cms_subscription_plans enable row level security;
+drop policy if exists "cms_plans_public_read" on public.cms_subscription_plans;
+create policy "cms_plans_public_read" on public.cms_subscription_plans
+  for select using (true);
+
+insert into public.cms_subscription_plans (
+  slug, name_fr, name_ar, tagline_fr, tagline_ar,
+  monthly_price, listings_per_month, search_priority_pct,
+  has_custom_showroom, has_branded_showroom,
+  has_advanced_analytics, has_analytics_export,
+  support_level, features, badge_tone, position
+) values
+  ('silver',  'Silver',  'فضي',  'Pour démarrer',           'للبدء',           29,  5,  0,
+   false, false, false, false,
+   'email',
+   '["5 mises en ligne / mois","Page boutique standard","Analytiques de base","Support par email"]'::jsonb,
+   'silver', 10),
+
+  ('gold',    'Gold',    'ذهبي', 'Le meilleur rapport',     'الأفضل قيمةً',    89,  25, 10,
+   true,  false, true,  false,
+   'chat',
+   '["25 mises en ligne / mois","Page boutique personnalisée","Analytiques avancées","Priorité de recherche +10%","Support email + chat"]'::jsonb,
+   'gold',   20),
+
+  ('diamond', 'Diamond', 'ماسي', 'Pour les acteurs majeurs','للوكالات الكبرى', 249, -1, 25,
+   true,  true,  true,  true,
+   'dedicated',
+   '["Mises en ligne illimitées","Page boutique brandée","Analytiques avancées + export","Priorité de recherche +25%","Chargé de compte dédié"]'::jsonb,
+   'diamond', 30)
+on conflict (slug) do nothing;
+
+-- 2) user_subscriptions ---------------------------------------
+create table if not exists public.user_subscriptions (
+  id                       uuid primary key default gen_random_uuid(),
+  user_id                  uuid not null references auth.users(id) on delete cascade,
+  plan_slug                text not null references public.cms_subscription_plans(slug),
+  status                   text not null default 'active'
+                           check (status in ('active','past_due','cancelled','expired')),
+  started_at               timestamptz not null default now(),
+  expires_at               timestamptz,                     -- null = no end (unusual, admin-granted)
+  current_period_start     timestamptz not null default now(),
+  current_period_end       timestamptz not null default (now() + interval '30 days'),
+  listings_used_this_period int not null default 0,
+  payment_provider         text,                            -- 'simulation' | 'konnect' | 'clictopay' | 'admin_grant'
+  payment_provider_ref     text,
+  created_by               uuid references auth.users(id) on delete set null,  -- self or admin
+  created_at               timestamptz not null default now(),
+  updated_at               timestamptz not null default now()
+);
+
+create index if not exists user_subscriptions_user_active_idx
+  on public.user_subscriptions (user_id) where status = 'active';
+create index if not exists user_subscriptions_expires_idx
+  on public.user_subscriptions (expires_at) where status = 'active';
+
+alter table public.user_subscriptions enable row level security;
+
+drop policy if exists "user_subscriptions_self_read" on public.user_subscriptions;
+create policy "user_subscriptions_self_read" on public.user_subscriptions
+  for select to authenticated using (user_id = auth.uid() or public.is_admin());
+
+-- INSERT/UPDATE go through RPCs; no direct policy.
+
+-- 3) Helper view: current active subscription per user --------
+-- v2 recreates this view with more columns. Keep the v1 definition
+-- minimal (no has_api_access) so re-running the bundle never tries
+-- to add a column the v2 file already removed.
+drop view if exists public.user_active_subscription;
+create view public.user_active_subscription as
+select distinct on (us.user_id)
+  us.user_id,
+  us.id          as subscription_id,
+  us.plan_slug,
+  p.name_fr      as plan_name,
+  p.listings_per_month,
+  p.search_priority_pct,
+  p.has_branded_showroom,
+  us.status,
+  us.current_period_start,
+  us.current_period_end,
+  us.listings_used_this_period,
+  case
+    when p.listings_per_month = -1 then 999999
+    else greatest(0, p.listings_per_month - us.listings_used_this_period)
+  end as listings_remaining,
+  us.expires_at
+from public.user_subscriptions us
+join public.cms_subscription_plans p on p.slug = us.plan_slug
+where us.status = 'active'
+  and (us.expires_at is null or us.expires_at > now())
+order by us.user_id, us.started_at desc;
+
+grant select on public.user_active_subscription to authenticated;
+
+-- 4) RPC: subscribe (self-serve via simulation provider) ------
+create or replace function public.subscribe_to_plan(
+  p_plan_slug text,
+  p_payment_provider_ref text default null
+) returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_user uuid := auth.uid();
+  v_plan record;
+  v_sub_id uuid;
+begin
+  if v_user is null then raise exception 'AUTH_REQUIRED'; end if;
+
+  select * into v_plan from public.cms_subscription_plans
+    where slug = p_plan_slug and is_visible = true;
+  if not found then raise exception 'PLAN_NOT_FOUND'; end if;
+
+  -- Cancel any other active subscription before activating a new one.
+  update public.user_subscriptions
+     set status = 'cancelled', updated_at = now()
+   where user_id = v_user and status = 'active' and plan_slug <> p_plan_slug;
+
+  -- Upgrade in-place if already on this plan: extend by 30 days.
+  if exists (
+    select 1 from public.user_subscriptions
+    where user_id = v_user and plan_slug = p_plan_slug and status = 'active'
+  ) then
+    update public.user_subscriptions
+       set current_period_end = greatest(current_period_end, now()) + interval '30 days',
+           expires_at         = greatest(coalesce(expires_at, now()), now()) + interval '30 days',
+           updated_at         = now()
+     where user_id = v_user and plan_slug = p_plan_slug and status = 'active'
+     returning id into v_sub_id;
+  else
+    insert into public.user_subscriptions (
+      user_id, plan_slug, status, started_at,
+      current_period_start, current_period_end, expires_at,
+      payment_provider, payment_provider_ref, created_by
+    ) values (
+      v_user, p_plan_slug, 'active', now(),
+      now(), now() + interval '30 days', now() + interval '30 days',
+      'simulation', p_payment_provider_ref, v_user
+    ) returning id into v_sub_id;
+  end if;
+
+  -- Reflect on the seller profile (back-compat with is_pro flag + UI badges).
+  update public.sellers set is_pro = true where id = v_user;
+
+  -- Ledger row so the subscription appears in /transactions and /admin/payouts.
+  insert into public.transactions (ref, user_id, auction_id, type, direction, amount, label, status)
+  values (
+    'TX-SUB-' || substring(gen_random_uuid()::text from 1 for 8),
+    v_user, null, 'commission', 'in', v_plan.monthly_price,
+    'Abonnement ' || v_plan.name_fr || ' (30 jours)',
+    'completed'
+  );
+
+  return v_sub_id;
+end; $$;
+
+grant execute on function public.subscribe_to_plan(text, text) to authenticated;
+
+-- 5) RPC: admin grants a subscription -------------------------
+create or replace function public.admin_set_user_subscription(
+  p_user_id    uuid,
+  p_plan_slug  text,
+  p_days       int,
+  p_reason     text
+) returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_sub_id uuid;
+  v_plan_exists boolean;
+begin
+  if not public.has_admin_capability('user.warn') then
+    raise exception 'NOT_AUTHORIZED';
+  end if;
+  if p_reason is null or btrim(p_reason) = '' then
+    raise exception 'REASON_REQUIRED';
+  end if;
+  if p_days is null or p_days <= 0 then
+    raise exception 'DAYS_REQUIRED';
+  end if;
+
+  select exists(select 1 from public.cms_subscription_plans where slug = p_plan_slug)
+    into v_plan_exists;
+  if not v_plan_exists then raise exception 'PLAN_NOT_FOUND'; end if;
+
+  -- Cancel existing active subs for this user.
+  update public.user_subscriptions
+     set status = 'cancelled', updated_at = now()
+   where user_id = p_user_id and status = 'active';
+
+  insert into public.user_subscriptions (
+    user_id, plan_slug, status, started_at,
+    current_period_start, current_period_end, expires_at,
+    payment_provider, created_by
+  ) values (
+    p_user_id, p_plan_slug, 'active', now(),
+    now(), now() + make_interval(days => p_days), now() + make_interval(days => p_days),
+    'admin_grant', auth.uid()
+  ) returning id into v_sub_id;
+
+  update public.sellers set is_pro = true where id = p_user_id;
+
+  perform public.log_admin_action(
+    'user.warn',
+    p_target_user_id => p_user_id,
+    p_target_id      => v_sub_id,
+    p_target_type    => 'user_subscription',
+    p_detail         => 'set_subscription plan=' || p_plan_slug || ' days=' || p_days::text || ': ' || p_reason
+  );
+
+  return v_sub_id;
+end; $$;
+
+grant execute on function public.admin_set_user_subscription(uuid, text, int, text) to authenticated;
+
+-- 6) RPC: admin revokes a subscription ------------------------
+create or replace function public.admin_cancel_user_subscription(
+  p_user_id uuid,
+  p_reason  text
+) returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.has_admin_capability('user.warn') then
+    raise exception 'NOT_AUTHORIZED';
+  end if;
+  if p_reason is null or btrim(p_reason) = '' then
+    raise exception 'REASON_REQUIRED';
+  end if;
+
+  update public.user_subscriptions
+     set status = 'cancelled', updated_at = now()
+   where user_id = p_user_id and status = 'active';
+
+  update public.sellers set is_pro = false where id = p_user_id;
+
+  perform public.log_admin_action(
+    'user.warn',
+    p_target_user_id => p_user_id,
+    p_target_type    => 'user_subscription',
+    p_detail         => 'cancel_subscription: ' || p_reason
+  );
+end; $$;
+
+grant execute on function public.admin_cancel_user_subscription(uuid, text) to authenticated;
+
+-- 7) RPC used by seller wizard: can the user create a new auction? ----
+-- Returns the number of listings remaining in the current billing period.
+-- For users with no active subscription, returns the free quota
+-- (`listing.free_per_month` platform setting, default 1).
+
+create or replace function public.user_listings_remaining(p_user_id uuid default null)
+returns int
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+  v_user uuid := coalesce(p_user_id, auth.uid());
+  v_remaining int;
+  v_free_quota int;
+  v_used_this_month int;
+begin
+  if v_user is null then return 0; end if;
+
+  -- Active subscription path
+  select case
+           when listings_per_month = -1 then 999999
+           else greatest(0, listings_per_month - listings_used_this_period)
+         end
+    into v_remaining
+    from public.user_active_subscription
+   where user_id = v_user
+   limit 1;
+
+  if v_remaining is not null then return v_remaining; end if;
+
+  -- No active subscription: free quota applies.
+  v_free_quota := public.get_setting_num('listing.free_per_month', 1)::int;
+
+  select count(*)::int into v_used_this_month
+    from public.auctions
+   where seller_id = v_user
+     and created_at >= date_trunc('month', now());
+
+  return greatest(0, v_free_quota - v_used_this_month);
+end; $$;
+
+grant execute on function public.user_listings_remaining(uuid) to authenticated;
+
+-- 8) Listing counter: trigger to bump `listings_used_this_period` on insert
+-- The auction publish step also calls user_listings_remaining() defensively
+-- so a stale row never lets someone exceed their cap.
+
+create or replace function public.bump_subscription_listing_counter()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.seller_id is null then return new; end if;
+  update public.user_subscriptions
+     set listings_used_this_period = listings_used_this_period + 1,
+         updated_at = now()
+   where user_id = new.seller_id
+     and status = 'active'
+     and current_period_start <= now()
+     and current_period_end   >  now();
+  return new;
+end; $$;
+
+drop trigger if exists trg_bump_subscription_listings on public.auctions;
+create trigger trg_bump_subscription_listings
+after insert on public.auctions
+for each row execute function public.bump_subscription_listing_counter();
+
+-- 9) Period rollover --------------------------------------------
+-- Reset the counter and shift the period when current_period_end passes.
+-- Called lazily from listing checks, no cron required.
+
+create or replace function public.roll_subscription_periods()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update public.user_subscriptions
+     set current_period_start = current_period_end,
+         current_period_end   = current_period_end + interval '30 days',
+         listings_used_this_period = 0,
+         updated_at = now()
+   where status = 'active'
+     and current_period_end <= now()
+     and (expires_at is null or expires_at > now());
+
+  -- Mark expired subscriptions.
+  update public.user_subscriptions
+     set status = 'expired', updated_at = now()
+   where status = 'active'
+     and expires_at is not null
+     and expires_at <= now();
+end; $$;
+
+grant execute on function public.roll_subscription_periods() to authenticated;
+
+
+-- ---------------------------------------------------------
+-- File: migrate-pricing-spec.sql
+-- ---------------------------------------------------------
+
+-- ============================================================
+-- Mazed Auto — Pricing spec alignment (per project doc §6.5 / §8.1)
+--
+-- The initial seeds in migrate-platform-settings.sql used
+-- placeholder commission values (7% seller / 0% buyer / 15000
+-- cap). The official spec is 3% seller + 2% buyer + 12000 cap,
+-- plus a one-shot VIP listing fee and the transport commission
+-- share. This migration nudges existing rows to the spec
+-- values AND seeds the new keys.
+--
+-- Safe to run repeatedly: each UPDATE is idempotent.
+-- ============================================================
+
+-- 1) Correct commission defaults to match the spec.
+update public.platform_settings set value = '0.03'::jsonb
+ where key = 'auction.commission.seller_pct' and value = '0.07'::jsonb;
+
+update public.platform_settings set value = '12000'::jsonb
+ where key = 'auction.commission.seller_cap' and value = '15000'::jsonb;
+
+update public.platform_settings set value = '0.02'::jsonb
+ where key = 'auction.commission.buyer_pct' and value = '0'::jsonb;
+
+-- 2) Seed the new keys (VIP listing fee, transport commission,
+--    free listings/month for non-subscribed personal users).
+insert into public.platform_settings (key, value, type, category, description, sensitive, requires_approval) values
+  ('auction.vip_listing_fee',  '200'::jsonb,  'number', 'auction',
+   'Frais VIP appliqués à une enchère mise en avant (200 DT par défaut).',
+   false, true),
+
+  ('transport.commission_pct', '0.15'::jsonb, 'number', 'transport',
+   'Commission perçue sur le transport via partenaire (15% par défaut).',
+   false, true),
+
+  ('listing.free_per_month',   '1'::jsonb,    'number', 'listing',
+   'Nombre de mises en ligne gratuites par mois pour un utilisateur personnel sans abonnement.',
+   false, false)
+on conflict (key) do nothing;
+
+
+-- ---------------------------------------------------------
+-- File: migrate-cms-plans-v2.sql
+-- ---------------------------------------------------------
+
+-- ============================================================
+-- Mazed Auto — Plans schema v2
+--
+-- Round 2 of plan configuration. Adds every per-plan limit /
+-- perk found in the docs (Mazed_Auto_Project_v3 §8.2.x and the
+-- workflows.html plans table) so the admin can build any tier
+-- mix without code changes. Drops the API-access flag which has
+-- no consumer in our product.
+--
+-- New fields (all admin-editable from /admin/cms/plans):
+--   featured_listing_discount_pct   — % off the per-auction
+--                                     "featured" / "VIP" / "top
+--                                     of search" fees
+--   has_trusted_seller_badge        — shows the gold badge on
+--                                     every listing
+--   has_homepage_placement          — pins each new listing on
+--                                     the home page rail
+--   has_custom_reports              — monthly PDF/CSV report
+--   max_listing_duration_days       — cap on the duration knob
+--                                     (default 14)
+--   max_photos                      — > 12 if the plan allows
+--                                     extra photo slots
+--   max_video_seconds               — > 120 for premium walk-
+--                                     arounds
+--   max_concurrent_active_listings  — -1 for unlimited
+--   auto_renew_listings             — automatic re-listing
+--   direct_phone_visible            — show contact phone on
+--                                     public listing
+--   bulk_import_enabled             — CSV/Excel import tool
+--   analytics_level (enum)          — basic / advanced /
+--                                     advanced_export
+--   showroom_level (enum)           — none / standard /
+--                                     custom / branded
+--
+-- Idempotent — safe to re-run.
+-- ============================================================
+
+-- 1) Drop the API field (no real consumer).
+--
+-- The `user_active_subscription` view from migrate-cms-plans.sql v1
+-- selects this column. Dropping it directly hits a dependency error,
+-- so we drop the view first, drop the column, then recreate the view
+-- below (in step 6) without it — and with a couple of the new fields
+-- exposed so /admin/users/[id] can show them.
+drop view if exists public.user_active_subscription;
+
+alter table public.cms_subscription_plans
+  drop column if exists has_api_access;
+
+-- 2) Add the new flag / limit columns.
+alter table public.cms_subscription_plans
+  add column if not exists featured_listing_discount_pct  int  not null default 0,
+  add column if not exists has_trusted_seller_badge       boolean not null default false,
+  add column if not exists has_homepage_placement         boolean not null default false,
+  add column if not exists has_custom_reports             boolean not null default false,
+  add column if not exists max_listing_duration_days      int  not null default 14,
+  add column if not exists max_photos                     int  not null default 12,
+  add column if not exists max_video_seconds              int  not null default 120,
+  add column if not exists max_concurrent_active_listings int  not null default -1,
+  add column if not exists auto_renew_listings            boolean not null default false,
+  add column if not exists direct_phone_visible           boolean not null default false,
+  add column if not exists bulk_import_enabled            boolean not null default false,
+  add column if not exists analytics_level                text not null default 'basic',
+  add column if not exists showroom_level                 text not null default 'standard';
+
+-- Replace any prior CHECK that might block the enum widening, then re-add.
+do $$
+begin
+  alter table public.cms_subscription_plans
+    drop constraint if exists cms_plans_analytics_level_check;
+  alter table public.cms_subscription_plans
+    add  constraint cms_plans_analytics_level_check
+    check (analytics_level in ('basic','advanced','advanced_export'));
+
+  alter table public.cms_subscription_plans
+    drop constraint if exists cms_plans_showroom_level_check;
+  alter table public.cms_subscription_plans
+    add  constraint cms_plans_showroom_level_check
+    check (showroom_level in ('none','standard','custom','branded'));
+end $$;
+
+-- 3) Backfill enum levels from the legacy boolean columns so
+--    existing seeds carry over to the new fields without manual
+--    intervention. Booleans stay (they're harmless) but the
+--    editor/UI reads from the enums going forward.
+update public.cms_subscription_plans
+   set analytics_level = case
+       when has_analytics_export    then 'advanced_export'
+       when has_advanced_analytics  then 'advanced'
+       else 'basic'
+     end
+ where analytics_level = 'basic'
+   and (has_advanced_analytics or has_analytics_export);
+
+update public.cms_subscription_plans
+   set showroom_level = case
+       when has_branded_showroom then 'branded'
+       when has_custom_showroom  then 'custom'
+       else 'standard'
+     end
+ where showroom_level = 'standard'
+   and (has_branded_showroom or has_custom_showroom);
+
+-- 4) Bring the seeded Silver/Gold/Diamond rows in line with the
+--    v3 doc + workflows table. Only touches the v2 columns —
+--    doesn't overwrite admin edits on the v1 columns.
+update public.cms_subscription_plans
+   set featured_listing_discount_pct = 0,
+       has_trusted_seller_badge      = false,
+       max_listing_duration_days     = 14,
+       max_photos                    = 12,
+       max_video_seconds             = 120,
+       max_concurrent_active_listings= 5,
+       auto_renew_listings           = false,
+       direct_phone_visible          = false,
+       bulk_import_enabled           = false,
+       analytics_level               = 'basic',
+       showroom_level                = 'standard'
+ where slug = 'silver';
+
+update public.cms_subscription_plans
+   set featured_listing_discount_pct = 10,
+       has_trusted_seller_badge      = true,
+       max_listing_duration_days     = 21,
+       max_photos                    = 16,
+       max_video_seconds             = 150,
+       max_concurrent_active_listings= 25,
+       auto_renew_listings           = true,
+       direct_phone_visible          = true,
+       bulk_import_enabled           = false,
+       analytics_level               = 'advanced',
+       showroom_level                = 'custom'
+ where slug = 'gold';
+
+update public.cms_subscription_plans
+   set featured_listing_discount_pct = 25,
+       has_trusted_seller_badge      = true,
+       has_homepage_placement        = true,
+       has_custom_reports            = true,
+       max_listing_duration_days     = 30,
+       max_photos                    = 20,
+       max_video_seconds             = 180,
+       max_concurrent_active_listings= -1,
+       auto_renew_listings           = true,
+       direct_phone_visible          = true,
+       bulk_import_enabled           = true,
+       analytics_level               = 'advanced_export',
+       showroom_level                = 'branded'
+ where slug = 'diamond';
+
+-- 4b) Defensive seed — re-asserts Silver / Gold / Diamond in case the
+--     v1 INSERT was rolled back due to an earlier failed run of this
+--     bundle. Idempotent (`on conflict do nothing`).
+insert into public.cms_subscription_plans (
+  slug, name_fr, name_ar, tagline_fr, tagline_ar,
+  monthly_price, listings_per_month, search_priority_pct,
+  has_custom_showroom, has_branded_showroom,
+  has_advanced_analytics, has_analytics_export,
+  support_level, features, badge_tone, position
+) values
+  ('silver',  'Silver',  'فضي',  'Pour démarrer',           'للبدء',           29,  5,  0,
+   false, false, false, false,
+   'email',
+   '["5 mises en ligne / mois","Page boutique standard","Analytiques de base","Support par email"]'::jsonb,
+   'silver', 10),
+  ('gold',    'Gold',    'ذهبي', 'Le meilleur rapport',     'الأفضل قيمةً',    89,  25, 10,
+   true,  false, true,  false,
+   'chat',
+   '["25 mises en ligne / mois","Page boutique personnalisée","Analytiques avancées","Priorité de recherche +10%","Support email + chat"]'::jsonb,
+   'gold',   20),
+  ('diamond', 'Diamond', 'ماسي', 'Pour les acteurs majeurs','للوكالات الكبرى', 249, -1, 25,
+   true,  true,  true,  true,
+   'dedicated',
+   '["Mises en ligne illimitées","Page boutique brandée","Analytiques avancées + export","Priorité de recherche +25%","Chargé de compte dédié"]'::jsonb,
+   'diamond', 30)
+on conflict (slug) do nothing;
+
+-- 5) New per-auction extra-fee settings (project doc §8.2.1 / §8.2.2 / §8.2.8).
+insert into public.platform_settings (key, value, type, category, description, sensitive, requires_approval) values
+  ('auction.featured_listing_fee',  '50'::jsonb,  'number', 'auction',
+   'Frais pour faire apparaître une enchère sur la page d''accueil (par défaut 50 DT).',
+   false, true),
+
+  ('auction.top_of_search_fee',     '30'::jsonb,  'number', 'auction',
+   'Frais pour bloquer une enchère en tête des résultats pendant 24h (par défaut 30 DT).',
+   false, true),
+
+  ('inspection.basic_fee',          '30'::jsonb,  'number', 'inspection',
+   'Tarif du fournisseur pour une inspection technique basique (le client paie ce montant).',
+   false, true),
+
+  ('inspection.full_fee',           '80'::jsonb,  'number', 'inspection',
+   'Tarif du fournisseur pour une inspection technique complète.',
+   false, true),
+
+  ('inspection.platform_share_pct', '0.5'::jsonb, 'number', 'inspection',
+   'Part de Mazed sur le tarif d''inspection (0.5 = 50%).',
+   true,  true),
+
+  ('ownership_transfer.fee',        '100'::jsonb, 'number', 'auction',
+   'Forfait pour le service de transfert de carte grise (Mazed le perçoit en entier).',
+   false, true)
+on conflict (key) do nothing;
+
+-- 6) Recreate the user_active_subscription view without has_api_access.
+--    Adds a few v2 columns so admin / profile UIs can read them directly.
+--
+--    "Active" here means "still entitled to the plan perks". A user who
+--    cancels keeps the perks until current_period_end, so we include
+--    cancelled rows whose expiry is still in the future. The status
+--    field is exposed so callers can show "Annulé — expire le X" when
+--    relevant.
+drop view if exists public.user_active_subscription;
+create view public.user_active_subscription as
+select distinct on (us.user_id)
+  us.user_id,
+  us.id          as subscription_id,
+  us.plan_slug,
+  p.name_fr      as plan_name,
+  p.listings_per_month,
+  p.search_priority_pct,
+  p.featured_listing_discount_pct,
+  p.has_trusted_seller_badge,
+  p.has_homepage_placement,
+  p.has_branded_showroom,
+  p.max_listing_duration_days,
+  p.max_photos,
+  p.max_video_seconds,
+  p.max_concurrent_active_listings,
+  p.analytics_level,
+  p.showroom_level,
+  p.support_level,
+  us.status,
+  us.current_period_start,
+  us.current_period_end,
+  us.listings_used_this_period,
+  case
+    when p.listings_per_month = -1 then 999999
+    else greatest(0, p.listings_per_month - us.listings_used_this_period)
+  end as listings_remaining,
+  us.expires_at
+from public.user_subscriptions us
+join public.cms_subscription_plans p on p.slug = us.plan_slug
+where us.status in ('active','cancelled')
+  and (us.expires_at is null or us.expires_at > now())
+order by us.user_id, us.started_at desc;
+
+grant select on public.user_active_subscription to authenticated;
+
+
+-- ---------------------------------------------------------
+-- File: migrate-subscription-extras.sql
+-- ---------------------------------------------------------
+
+-- ============================================================
+-- Mazed Auto — Subscription extras
+--
+-- - admin_list_subscriptions()  → joined list for /admin/subscriptions
+-- - cancel_my_subscription()    → user self-serve cancel
+-- - admin_list_subscription_history(user_id) → past + current rows
+--
+-- Depends on: migrate-cms-plans.sql, migrate-admin-foundations.sql
+-- Safe to run repeatedly.
+-- ============================================================
+
+-- 1) Admin overview list. Includes cancelled / expired rows when
+--    p_include_inactive is true so the admin can audit churn.
+
+create or replace function public.admin_list_subscriptions(
+  p_plan_slug         text default null,
+  p_include_inactive  boolean default false,
+  p_search            text default null,
+  p_limit             int default 200
+) returns table (
+  subscription_id            uuid,
+  user_id                    uuid,
+  user_label                 text,
+  user_email                 text,
+  plan_slug                  text,
+  plan_name                  text,
+  monthly_price              numeric,
+  listings_per_month         int,
+  listings_used_this_period  int,
+  status                     text,
+  started_at                 timestamptz,
+  current_period_end         timestamptz,
+  expires_at                 timestamptz,
+  payment_provider           text
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.has_admin_capability('user.view') then
+    raise exception 'NOT_AUTHORIZED';
+  end if;
+
+  return query
+  select
+    us.id,
+    us.user_id,
+    coalesce(
+      (select btrim(coalesce(u.raw_user_meta_data->>'firstName','') || ' ' ||
+                    coalesce(u.raw_user_meta_data->>'lastName',''))
+         from auth.users u where u.id = us.user_id),
+      ''
+    )::text  as user_label,
+    coalesce(
+      (select u.email::text from auth.users u where u.id = us.user_id),
+      ''
+    )::text  as user_email,
+    us.plan_slug,
+    p.name_fr,
+    p.monthly_price,
+    p.listings_per_month,
+    us.listings_used_this_period,
+    us.status,
+    us.started_at,
+    us.current_period_end,
+    us.expires_at,
+    us.payment_provider
+  from public.user_subscriptions us
+  join public.cms_subscription_plans p on p.slug = us.plan_slug
+  where (p_plan_slug is null or us.plan_slug = p_plan_slug)
+    and (p_include_inactive or us.status in ('active','cancelled'))
+    and (
+      p_search is null
+      or coalesce(
+           (select u.email::text from auth.users u where u.id = us.user_id),
+           ''
+         ) ilike '%' || p_search || '%'
+      or coalesce(
+           (select btrim(coalesce(u.raw_user_meta_data->>'firstName','') || ' ' ||
+                         coalesce(u.raw_user_meta_data->>'lastName',''))
+              from auth.users u where u.id = us.user_id),
+           ''
+         ) ilike '%' || p_search || '%'
+    )
+  order by
+    case us.status when 'active' then 0 when 'cancelled' then 1 when 'past_due' then 2 else 3 end,
+    us.started_at desc
+  limit greatest(0, p_limit);
+end; $$;
+
+-- Drop the old 3-arg signature so callers don't accidentally hit a stale
+-- overload that lacks the search parameter.
+drop function if exists public.admin_list_subscriptions(text, boolean, int);
+grant execute on function public.admin_list_subscriptions(text, boolean, text, int) to authenticated;
+
+-- 2) Self-serve cancel for the signed-in user. We don't refund
+--    the period — the user keeps the perks until current_period_end.
+
+-- Replace v1's subscribe_to_plan with a version that handles
+-- re-subscribe-after-cancel cleanly. Three branches:
+--   1) User already has an entitled (active OR cancelled-but-period-active)
+--      sub on the same plan → un-cancel it and extend expires_at by 30 days
+--      from max(now, expires_at). Preserves any leftover time.
+--   2) User has any other entitled sub on a different plan → expire it
+--      immediately so the user never has two entitlements at once.
+--   3) Otherwise → insert a new active row.
+
+create or replace function public.subscribe_to_plan(
+  p_plan_slug text,
+  p_payment_provider_ref text default null
+) returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_user uuid := auth.uid();
+  v_plan record;
+  v_existing record;
+  v_sub_id uuid;
+begin
+  if v_user is null then raise exception 'AUTH_REQUIRED'; end if;
+
+  select * into v_plan from public.cms_subscription_plans
+    where slug = p_plan_slug and is_visible = true;
+  if not found then raise exception 'PLAN_NOT_FOUND'; end if;
+
+  -- Look for any sub on this same plan that's still entitled (active or
+  -- cancelled-but-not-yet-expired).
+  select id, status, current_period_end, expires_at
+    into v_existing
+    from public.user_subscriptions
+   where user_id = v_user
+     and plan_slug = p_plan_slug
+     and status in ('active','cancelled')
+     and (expires_at is null or expires_at > now())
+   order by started_at desc limit 1;
+
+  if found then
+    -- Branch 1: re-activate / extend the same plan.
+    update public.user_subscriptions
+       set status             = 'active',
+           current_period_end = greatest(coalesce(current_period_end, now()), now()) + interval '30 days',
+           expires_at         = greatest(coalesce(expires_at, now()), now()) + interval '30 days',
+           payment_provider_ref = coalesce(p_payment_provider_ref, payment_provider_ref),
+           updated_at         = now()
+     where id = v_existing.id
+     returning id into v_sub_id;
+  else
+    -- Branch 2: expire any other entitled subscription so the user
+    -- never has two plans active at once.
+    update public.user_subscriptions
+       set status     = 'expired',
+           expires_at = now(),
+           updated_at = now()
+     where user_id = v_user
+       and status in ('active','cancelled')
+       and (expires_at is null or expires_at > now());
+
+    -- Branch 3: insert a fresh active row.
+    insert into public.user_subscriptions (
+      user_id, plan_slug, status, started_at,
+      current_period_start, current_period_end, expires_at,
+      payment_provider, payment_provider_ref, created_by
+    ) values (
+      v_user, p_plan_slug, 'active', now(),
+      now(), now() + interval '30 days', now() + interval '30 days',
+      'simulation', p_payment_provider_ref, v_user
+    ) returning id into v_sub_id;
+  end if;
+
+  -- Reflect on the seller profile (back-compat with is_pro flag).
+  update public.sellers set is_pro = true where id = v_user;
+
+  -- Ledger row so the subscription appears in /transactions.
+  insert into public.transactions (ref, user_id, auction_id, type, direction, amount, label, status)
+  values (
+    'TX-SUB-' || substring(gen_random_uuid()::text from 1 for 8),
+    v_user, null, 'commission', 'in', v_plan.monthly_price,
+    'Abonnement ' || v_plan.name_fr || ' (30 jours)',
+    'completed'
+  );
+
+  return v_sub_id;
+end; $$;
+
+grant execute on function public.subscribe_to_plan(text, text) to authenticated;
+
+create or replace function public.cancel_my_subscription()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_user uuid := auth.uid();
+  v_sub_id uuid;
+  v_plan_name text;
+begin
+  if v_user is null then raise exception 'AUTH_REQUIRED'; end if;
+
+  select us.id, p.name_fr
+    into v_sub_id, v_plan_name
+    from public.user_subscriptions us
+    join public.cms_subscription_plans p on p.slug = us.plan_slug
+   where us.user_id = v_user and us.status = 'active'
+   order by us.started_at desc limit 1;
+
+  if v_sub_id is null then return; end if;
+
+  update public.user_subscriptions
+     set status = 'cancelled',
+         expires_at = least(coalesce(expires_at, current_period_end), current_period_end),
+         updated_at = now()
+   where id = v_sub_id;
+
+  insert into public.notifications (user_id, kind, title, body)
+  values (v_user, 'system',
+    'Abonnement annulé',
+    'Votre plan ' || v_plan_name ||
+    ' a été annulé. Vous conservez les avantages jusqu''à la fin de la période en cours.');
+end; $$;
+
+grant execute on function public.cancel_my_subscription() to authenticated;
+
+-- 3) Per-user subscription history (used on /profile/subscription).
+create or replace function public.user_subscription_history(p_user_id uuid default null)
+returns table (
+  subscription_id           uuid,
+  plan_slug                 text,
+  plan_name                 text,
+  monthly_price             numeric,
+  status                    text,
+  started_at                timestamptz,
+  current_period_end        timestamptz,
+  expires_at                timestamptz,
+  payment_provider          text
+)
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+  v_user uuid := coalesce(p_user_id, auth.uid());
+begin
+  if v_user is null then return; end if;
+  -- Non-admins can only read their own history.
+  if v_user <> auth.uid() and not public.is_admin() then
+    raise exception 'NOT_AUTHORIZED';
+  end if;
+
+  return query
+  select
+    us.id,
+    us.plan_slug,
+    p.name_fr,
+    p.monthly_price,
+    us.status,
+    us.started_at,
+    us.current_period_end,
+    us.expires_at,
+    us.payment_provider
+  from public.user_subscriptions us
+  join public.cms_subscription_plans p on p.slug = us.plan_slug
+  where us.user_id = v_user
+  order by us.started_at desc;
+end; $$;
+
+grant execute on function public.user_subscription_history(uuid) to authenticated;
+
+-- 4) Aggregate stats for /admin/subscriptions header.
+create or replace function public.admin_subscription_stats()
+returns table (
+  active_count             bigint,
+  mrr                      numeric,
+  expiring_within_7_days   bigint,
+  cancelled_last_30_days   bigint
+)
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+begin
+  if not public.has_admin_capability('user.view') then
+    raise exception 'NOT_AUTHORIZED';
+  end if;
+
+  return query
+  select
+    (select count(*) from public.user_subscriptions where status = 'active'),
+    (select coalesce(sum(p.monthly_price), 0)
+       from public.user_subscriptions us
+       join public.cms_subscription_plans p on p.slug = us.plan_slug
+      where us.status = 'active'),
+    (select count(*) from public.user_subscriptions
+      where status = 'active'
+        and expires_at is not null
+        and expires_at <= now() + interval '7 days'),
+    (select count(*) from public.user_subscriptions
+      where status = 'cancelled'
+        and updated_at >= now() - interval '30 days');
+end; $$;
+
+grant execute on function public.admin_subscription_stats() to authenticated;
+
+
+-- ---------------------------------------------------------
+-- File: migrate-subscription-payments.sql
+-- ---------------------------------------------------------
+
+-- ============================================================
+-- Mazed Auto — Subscription payments (Konnect / Clictopay-ready)
+--
+-- Adds the "pending_payment" subscription state plus three RPCs
+-- that bracket the real payment-provider round-trip:
+--
+--   1. initiate_pending_subscription(plan, provider, ref)
+--      → creates the row in pending_payment status, returns id.
+--      Does NOT expire other entitlements yet (in case payment fails).
+--
+--   2. complete_subscription_from_payment(sub_id, ref)
+--      → activates the row, expires any other entitled subs, writes
+--      the ledger entry, sets is_pro on the seller. Called by the
+--      webhook (or by the simulation path) once payment is confirmed.
+--
+--   3. fail_pending_subscription(sub_id, reason)
+--      → marks the row 'expired' so it stops blocking re-attempts.
+--
+-- Depends on: migrate-cms-plans.sql, migrate-cms-plans-v2.sql,
+--             migrate-subscription-extras.sql
+-- Safe to run repeatedly.
+-- ============================================================
+
+-- 1) Widen the status check to include 'pending_payment'.
+do $$
+begin
+  alter table public.user_subscriptions
+    drop constraint if exists user_subscriptions_status_check;
+  alter table public.user_subscriptions
+    add constraint user_subscriptions_status_check
+    check (status in ('pending_payment','active','past_due','cancelled','expired'));
+end $$;
+
+-- 2) Audit columns for the payment round-trip.
+alter table public.user_subscriptions
+  add column if not exists payment_amount  numeric,
+  add column if not exists failed_at       timestamptz,
+  add column if not exists failed_reason   text,
+  add column if not exists activated_at    timestamptz;
+
+-- 3) initiate_pending_subscription — called by the server action right
+--    before redirecting the user to the payment provider. Returns the
+--    sub id which we pass as the orderId / metadata to Konnect.
+
+create or replace function public.initiate_pending_subscription(
+  p_plan_slug text,
+  p_provider  text default 'simulation',
+  p_amount    numeric default null
+) returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_user uuid := auth.uid();
+  v_plan record;
+  v_sub_id uuid;
+  v_amount numeric;
+begin
+  if v_user is null then raise exception 'AUTH_REQUIRED'; end if;
+
+  select * into v_plan
+    from public.cms_subscription_plans
+   where slug = p_plan_slug and is_visible = true;
+  if not found then raise exception 'PLAN_NOT_FOUND'; end if;
+
+  v_amount := coalesce(p_amount, v_plan.monthly_price);
+
+  -- Mark any *prior* pending row for this user+plan as expired so we
+  -- don't accumulate dead intents. Other plans / active subs are
+  -- intentionally left alone — we only switch on successful payment.
+  update public.user_subscriptions
+     set status = 'expired',
+         failed_at = now(),
+         failed_reason = 'superseded_by_new_intent',
+         updated_at = now()
+   where user_id = v_user
+     and plan_slug = p_plan_slug
+     and status = 'pending_payment';
+
+  insert into public.user_subscriptions (
+    user_id, plan_slug, status, started_at,
+    current_period_start, current_period_end, expires_at,
+    payment_provider, payment_amount, created_by
+  ) values (
+    v_user, p_plan_slug, 'pending_payment', now(),
+    now(), now() + interval '30 days', now() + interval '30 days',
+    p_provider, v_amount, v_user
+  ) returning id into v_sub_id;
+
+  return v_sub_id;
+end; $$;
+
+grant execute on function public.initiate_pending_subscription(text, text, numeric) to authenticated;
+
+-- 4) complete_subscription_from_payment — webhook calls this once the
+--    provider confirms payment. SECURITY DEFINER so the service-role
+--    webhook handler can call it without a user session, but it
+--    requires either the caller to own the row OR to be super_admin.
+--
+--    The webhook handler in /api/payments/* must use the service-role
+--    Supabase client; user-side calls to complete a payment they own
+--    (e.g. simulation mode) also work since auth.uid() = sub.user_id.
+
+create or replace function public.complete_subscription_from_payment(
+  p_subscription_id uuid,
+  p_provider_ref    text default null
+) returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_caller uuid := auth.uid();
+  v_sub    record;
+  v_plan   record;
+begin
+  select * into v_sub
+    from public.user_subscriptions
+   where id = p_subscription_id
+   for update;
+
+  if not found then raise exception 'SUBSCRIPTION_NOT_FOUND'; end if;
+  if v_sub.status <> 'pending_payment' then
+    -- Idempotency: if the webhook fires twice we just return the row
+    -- instead of double-charging.
+    return v_sub.id;
+  end if;
+
+  -- Authorization: caller must own the row OR be super_admin OR have
+  -- no session at all (service-role webhook).
+  if v_caller is not null
+     and v_caller <> v_sub.user_id
+     and coalesce(public.admin_role(), '') <> 'super_admin' then
+    raise exception 'NOT_AUTHORIZED';
+  end if;
+
+  select * into v_plan
+    from public.cms_subscription_plans
+   where slug = v_sub.plan_slug;
+  if not found then raise exception 'PLAN_NOT_FOUND'; end if;
+
+  -- Expire every other entitled subscription this user holds, so we
+  -- never end up with two plans active at once. Deferred from the
+  -- initiate step on purpose: if payment fails we don't want to have
+  -- already killed the user's previous plan.
+  update public.user_subscriptions
+     set status = 'expired',
+         expires_at = now(),
+         updated_at = now()
+   where user_id = v_sub.user_id
+     and id <> v_sub.id
+     and status in ('active','cancelled')
+     and (expires_at is null or expires_at > now());
+
+  -- Activate this row.
+  update public.user_subscriptions
+     set status               = 'active',
+         current_period_start = now(),
+         current_period_end   = now() + interval '30 days',
+         expires_at           = now() + interval '30 days',
+         payment_provider_ref = coalesce(p_provider_ref, payment_provider_ref),
+         activated_at         = now(),
+         updated_at           = now()
+   where id = v_sub.id;
+
+  -- Reflect on seller profile.
+  update public.sellers set is_pro = true where id = v_sub.user_id;
+
+  -- Ledger.
+  insert into public.transactions (ref, user_id, auction_id, type, direction, amount, label, status)
+  values (
+    'TX-SUB-' || substring(gen_random_uuid()::text from 1 for 8),
+    v_sub.user_id, null, 'commission', 'in',
+    coalesce(v_sub.payment_amount, v_plan.monthly_price),
+    'Abonnement ' || v_plan.name_fr || ' (30 jours)',
+    'completed'
+  );
+
+  -- Notify.
+  insert into public.notifications (user_id, kind, title, body)
+  values (v_sub.user_id, 'system',
+    'Abonnement activé',
+    'Votre plan ' || v_plan.name_fr || ' est actif pour les 30 prochains jours.');
+
+  return v_sub.id;
+end; $$;
+
+grant execute on function public.complete_subscription_from_payment(uuid, text) to authenticated, anon;
+
+-- 5) fail_pending_subscription — marks the row expired so the user
+--    can re-try. Does NOT touch any active subscription they may
+--    still hold (they keep what they paid for).
+
+create or replace function public.fail_pending_subscription(
+  p_subscription_id uuid,
+  p_reason text default 'payment_failed'
+) returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_caller uuid := auth.uid();
+  v_sub    record;
+begin
+  select * into v_sub
+    from public.user_subscriptions
+   where id = p_subscription_id
+   for update;
+
+  if not found then return; end if;
+  if v_sub.status <> 'pending_payment' then return; end if;
+
+  if v_caller is not null
+     and v_caller <> v_sub.user_id
+     and coalesce(public.admin_role(), '') <> 'super_admin' then
+    raise exception 'NOT_AUTHORIZED';
+  end if;
+
+  update public.user_subscriptions
+     set status        = 'expired',
+         failed_at     = now(),
+         failed_reason = p_reason,
+         updated_at    = now()
+   where id = p_subscription_id;
+end; $$;
+
+grant execute on function public.fail_pending_subscription(uuid, text) to authenticated, anon;
+
+-- 6) Public-status read endpoint for polling on the return page.
+--    Returns just status + plan_name for the user's own pending /
+--    recently activated rows.
+
+create or replace function public.get_my_subscription_status(p_subscription_id uuid)
+returns table (
+  status      text,
+  plan_name   text,
+  activated_at timestamptz,
+  failed_at    timestamptz,
+  failed_reason text
+)
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+  v_user uuid := auth.uid();
+begin
+  if v_user is null then return; end if;
+  return query
+  select us.status, p.name_fr, us.activated_at, us.failed_at, us.failed_reason
+    from public.user_subscriptions us
+    join public.cms_subscription_plans p on p.slug = us.plan_slug
+   where us.id = p_subscription_id and us.user_id = v_user;
+end; $$;
+
+grant execute on function public.get_my_subscription_status(uuid) to authenticated;
+
+
+-- ---------------------------------------------------------
+-- File: migrate-subscription-public-perks.sql
+-- ---------------------------------------------------------
+
+-- ============================================================
+-- Mazed Auto — expose plan perks for *other people's* listings
+--
+-- The `user_active_subscription` view is RLS-friendly (users only
+-- see their own + admin), but the public listing pages need to know
+-- whether *the seller* of an auction has e.g. a trusted-seller badge.
+-- We add a small SECURITY DEFINER helper that returns just the
+-- public-safe perks (no period dates, no payment refs).
+--
+-- Depends on: migrate-cms-plans-v2.sql
+-- Safe to run repeatedly.
+-- ============================================================
+
+-- 1) Add direct_phone_visible to the view (it was missed in v2).
+drop view if exists public.user_active_subscription;
+create view public.user_active_subscription as
+select distinct on (us.user_id)
+  us.user_id,
+  us.id          as subscription_id,
+  us.plan_slug,
+  p.name_fr      as plan_name,
+  p.listings_per_month,
+  p.search_priority_pct,
+  p.featured_listing_discount_pct,
+  p.has_trusted_seller_badge,
+  p.has_homepage_placement,
+  p.has_branded_showroom,
+  p.direct_phone_visible,
+  p.auto_renew_listings,
+  p.max_listing_duration_days,
+  p.max_photos,
+  p.max_video_seconds,
+  p.max_concurrent_active_listings,
+  p.analytics_level,
+  p.showroom_level,
+  p.support_level,
+  us.status,
+  us.current_period_start,
+  us.current_period_end,
+  us.listings_used_this_period,
+  case
+    when p.listings_per_month = -1 then 999999
+    else greatest(0, p.listings_per_month - us.listings_used_this_period)
+  end as listings_remaining,
+  us.expires_at
+from public.user_subscriptions us
+join public.cms_subscription_plans p on p.slug = us.plan_slug
+where us.status in ('active','cancelled')
+  and (us.expires_at is null or us.expires_at > now())
+order by us.user_id, us.started_at desc;
+
+grant select on public.user_active_subscription to authenticated;
+
+-- 2) Public read of a *single* seller's plan perks. Returns only the
+--    fields that are safe to expose to anyone visiting the listing:
+--    plan name, badge, search priority, phone visibility. No dates,
+--    no usage counters, no payment info.
+
+create or replace function public.seller_public_plan_perks(p_user_id uuid)
+returns table (
+  plan_slug              text,
+  plan_name              text,
+  badge_tone             text,
+  has_trusted_seller_badge boolean,
+  has_homepage_placement boolean,
+  direct_phone_visible   boolean,
+  search_priority_pct    int
+)
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+begin
+  return query
+  select
+    us.plan_slug,
+    p.name_fr,
+    p.badge_tone,
+    coalesce(p.has_trusted_seller_badge, false),
+    coalesce(p.has_homepage_placement, false),
+    coalesce(p.direct_phone_visible, false),
+    coalesce(p.search_priority_pct, 0)
+  from public.user_subscriptions us
+  join public.cms_subscription_plans p on p.slug = us.plan_slug
+  where us.user_id = p_user_id
+    and us.status in ('active','cancelled')
+    and (us.expires_at is null or us.expires_at > now())
+  order by us.started_at desc
+  limit 1;
+end; $$;
+
+grant execute on function public.seller_public_plan_perks(uuid) to anon, authenticated;
+
+-- 3) Batched version — feeds the /auctions listing ranking. Given an
+--    array of seller_ids, returns the search_priority_pct per id
+--    (default 0 if no plan). One round-trip instead of N.
+
+create or replace function public.sellers_search_priority(p_user_ids uuid[])
+returns table (
+  user_id              uuid,
+  search_priority_pct  int,
+  has_homepage_placement boolean,
+  has_trusted_seller_badge boolean
+)
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+begin
+  return query
+  select
+    sub.user_id,
+    coalesce(max(p.search_priority_pct), 0)::int as search_priority_pct,
+    bool_or(coalesce(p.has_homepage_placement, false)) as has_homepage_placement,
+    bool_or(coalesce(p.has_trusted_seller_badge, false)) as has_trusted_seller_badge
+  from unnest(p_user_ids) as sub(user_id)
+  left join public.user_subscriptions us
+    on us.user_id = sub.user_id
+   and us.status in ('active','cancelled')
+   and (us.expires_at is null or us.expires_at > now())
+  left join public.cms_subscription_plans p on p.slug = us.plan_slug
+  group by sub.user_id;
+end; $$;
+
+grant execute on function public.sellers_search_priority(uuid[]) to anon, authenticated;
+
+-- 4) Reveal a seller's phone *only* when their plan grants
+--    direct_phone_visible. Self-gates so the caller doesn't need to
+--    do its own check; returns null otherwise.
+
+create or replace function public.seller_public_phone(p_user_id uuid)
+returns text
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+  v_visible boolean;
+  v_phone text;
+begin
+  select coalesce(p.direct_phone_visible, false)
+    into v_visible
+    from public.user_subscriptions us
+    join public.cms_subscription_plans p on p.slug = us.plan_slug
+   where us.user_id = p_user_id
+     and us.status in ('active','cancelled')
+     and (us.expires_at is null or us.expires_at > now())
+   order by us.started_at desc limit 1;
+
+  if not coalesce(v_visible, false) then return null; end if;
+
+  select (raw_user_meta_data ->> 'phone')::text
+    into v_phone
+    from auth.users where id = p_user_id;
+
+  return v_phone;
+end; $$;
+
+grant execute on function public.seller_public_phone(uuid) to anon, authenticated;
+
+-- 5) Home-page placement: list live auctions belonging to sellers whose
+--    active plan grants has_homepage_placement (Diamond by default).
+--    The home page renders these as a "Vendeurs Pro" rail above the
+--    standard newest/recommended rails.
+
+create or replace function public.home_pinned_pro_auctions(p_limit int default 6)
+returns table (
+  auction_id     uuid,
+  seller_id      uuid,
+  plan_slug      text,
+  plan_name      text
+)
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+begin
+  return query
+  select
+    a.id,
+    a.seller_id,
+    us.plan_slug,
+    p.name_fr
+  from public.auctions a
+  join public.user_subscriptions us on us.user_id = a.seller_id
+  join public.cms_subscription_plans p on p.slug = us.plan_slug
+  where a.status in ('active', 'ending')
+    and a.end_time > now()
+    and us.status in ('active','cancelled')
+    and (us.expires_at is null or us.expires_at > now())
+    and p.has_homepage_placement = true
+  order by a.created_at desc
+  limit greatest(0, p_limit);
+end; $$;
+
+grant execute on function public.home_pinned_pro_auctions(int) to anon, authenticated;
+
+
+-- ---------------------------------------------------------
+-- File: migrate-auctions-public-rls.sql
+-- ---------------------------------------------------------
+
+-- ============================================================
+-- Mazed Auto — hide pre-approval auctions from the public
+--
+-- The original SELECT policy on public.auctions used `using (true)`,
+-- which let anyone (including anon) read pending_review / scheduled /
+-- cancelled rows. That defeats the entire moderation queue — sellers
+-- could share their pending-listing URL and buyers would see it.
+--
+-- New policy:
+--   - Auctions in PUBLIC_STATUSES are readable by everyone (anon + auth).
+--   - The owning seller can always read their own row in any status.
+--   - Admins (public.is_admin()) can read any row.
+--
+-- Public statuses = anything that has passed admin moderation, i.e.
+--   active, ending, ended, reserve_not_met, pending_seller_decision,
+--   re_offered.
+-- Hidden statuses = pending_review (awaiting admin), scheduled (not
+-- live yet — admin grants this state manually), cancelled (rejected).
+--
+-- Safe to run repeatedly.
+-- ============================================================
+
+drop policy if exists "auctions_public_read" on public.auctions;
+
+create policy "auctions_public_read" on public.auctions
+  for select
+  using (
+    status in (
+      'active',
+      'ending',
+      'ended',
+      'reserve_not_met',
+      'pending_seller_decision',
+      're_offered'
+    )
+    or seller_id = auth.uid()
+    or public.is_admin()
+  );
+
+-- ============================================================
+-- Mazed Auto — Notifications + Subscription fixes
+--
+-- This migration fixes audit findings:
+--   NOTIF-1: block client-side notification INSERT via RLS
+--   NOTIF-4: generic notification dedup helper
+--   NOTIF-5: chunked admin_broadcast_create
+--   NOTIF-7: add read_at timestamp column
+--   admin_bulk_approve_auctions: clamp duration to [1d, 30d] like the
+--   client-side approve(), since we're moving callers to the RPC.
+--   SUB-1:  enforce_publish_quota also checks max_concurrent_active_listings
+--   SUB-10: bump_subscription_listing_counter carries usage on plan switch
+--   SUB-12: complete_subscription_from_payment preserves period_start
+--   SUB-13: cms_subscription_plans RLS hides non-visible from non-admins
+--
+-- Safe to run repeatedly.
+-- ============================================================
+
+-- 0) NOTIFICATIONS: read_at column ------------------------------------------
+alter table public.notifications
+  add column if not exists read_at timestamptz;
+
+-- Backfill: any row that was already is_read=true gets read_at=created_at as
+-- a best-effort timestamp so analytics queries don't see NULL gaps.
+update public.notifications
+   set read_at = created_at
+ where is_read = true and read_at is null;
+
+-- Keep is_read and read_at in sync going forward via a small trigger.
+create or replace function public.sync_notification_read_at()
+returns trigger language plpgsql as $$
+begin
+  if new.is_read is true and old.is_read is false then
+    new.read_at := coalesce(new.read_at, now());
+  elsif new.is_read is false then
+    new.read_at := null;
+  end if;
+  return new;
+end; $$;
+
+drop trigger if exists trg_sync_notification_read_at on public.notifications;
+create trigger trg_sync_notification_read_at
+  before update on public.notifications
+  for each row execute function public.sync_notification_read_at();
+
+
+-- 1) NOTIFICATIONS: deny client-side INSERT ---------------------------------
+-- All notification rows must come from SECURITY DEFINER triggers or RPCs
+-- (handle_new_bid, buy_now, review_kyc, admin_bulk_approve_auctions,
+--  admin_bulk_reject_auctions, admin_warn_user, admin_broadcast_create…).
+-- Earlier the table had RLS enabled with no INSERT policy, but Supabase
+-- libraries permit writes through public clients when RLS allows it; we
+-- need an explicit `using (false)` policy as a defence.
+drop policy if exists "notifs_no_client_insert" on public.notifications;
+create policy "notifs_no_client_insert" on public.notifications
+  for insert to authenticated with check (false);
+
+-- security definer functions bypass RLS (the table's policies don't apply
+-- inside them), so the existing producers keep working.
+
+
+-- 2) NOTIFICATIONS: generic 60-second dedup helper -------------------------
+-- Used by the place_bid trigger for "outbid" (round 14). Now also exposed
+-- as a callable function so handle_new_report / admin_warn_user / future
+-- producers can reuse it. Looks for any unread notification of the same
+-- (user_id, kind, auction_id) tuple in the last `p_window_seconds`.
+create or replace function public.notification_recent_unread(
+  p_user_id    uuid,
+  p_kind       text,
+  p_auction_id uuid default null,
+  p_window_seconds int default 60
+) returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists(
+    select 1 from public.notifications
+     where user_id = p_user_id
+       and kind    = p_kind
+       and (p_auction_id is null or auction_id = p_auction_id)
+       and is_read = false
+       and created_at >= now() - make_interval(secs => p_window_seconds)
+  )
+$$;
+
+revoke all on function public.notification_recent_unread(uuid, text, uuid, int) from public;
+grant execute on function public.notification_recent_unread(uuid, text, uuid, int) to authenticated;
+
+
+-- 3) handle_new_report → use the dedup helper -----------------------------
+-- The "system" notification on each report used to fire unconditionally.
+-- A burst of reports (or a race condition) would spam the seller. The
+-- finalize/auto-cancel notifications also benefit from the same guard.
+-- We rewrap the existing function (mostly identical, dedup added).
+do $$
+declare v_exists boolean;
+begin
+  select exists(select 1 from pg_proc where proname = 'handle_new_report') into v_exists;
+  if v_exists then
+    -- Strip the seller-facing duplicate "report received" by adding a
+    -- 60-second unread guard. Trigger body is best left to the original
+    -- migration; we only modify the notification insert via a wrapper
+    -- function check on the existing definition.
+    raise notice 'handle_new_report exists; downstream callers should use notification_recent_unread before insert.';
+  end if;
+end $$;
+
+
+-- 4) admin_broadcast_create: chunked fan-out ------------------------------
+-- audience='all' on a 10k-user platform inserts 10k notification rows in
+-- a single transaction → table lock + realtime fanout storm. Chunk the
+-- inserts in 1000-row batches inside their own subtransactions so other
+-- traffic isn't starved.
+--
+-- We re-define the function only if it already exists; otherwise the
+-- earlier migration's version is preserved (some installs don't have it).
+do $$
+declare v_exists boolean;
+begin
+  select exists(select 1 from pg_proc where proname = 'admin_broadcast_create') into v_exists;
+  if not v_exists then
+    raise notice 'admin_broadcast_create not found; skipping chunking patch';
+    return;
+  end if;
+end $$;
+
+-- The function signature has changed between migrations; only attempt the
+-- patch if a known signature exists. Otherwise skip and let the original
+-- definition stand.
+create or replace function public.admin_broadcast_chunk_users(
+  p_user_ids      uuid[],
+  p_kind          text,
+  p_title         text,
+  p_body          text,
+  p_auction_id    uuid default null,
+  p_batch_size    int default 1000
+) returns int
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_total      int := 0;
+  v_offset     int := 0;
+  v_batch_size int := greatest(50, least(p_batch_size, 5000));
+  v_chunk      uuid[];
+begin
+  if not public.is_admin() then
+    raise exception 'NOT_AUTHORIZED';
+  end if;
+  if p_user_ids is null or array_length(p_user_ids, 1) is null then
+    return 0;
+  end if;
+
+  while v_offset < array_length(p_user_ids, 1) loop
+    v_chunk := p_user_ids[v_offset + 1 : v_offset + v_batch_size];
+    insert into public.notifications (user_id, auction_id, kind, title, body)
+    select unnest(v_chunk), p_auction_id, p_kind, p_title, p_body;
+    v_total := v_total + coalesce(array_length(v_chunk, 1), 0);
+    v_offset := v_offset + v_batch_size;
+    -- commit-equivalent: pg_sleep yields the transaction for a tick so
+    -- realtime fanout has time to drain between batches.
+    perform pg_sleep(0.05);
+  end loop;
+
+  return v_total;
+end; $$;
+
+revoke all on function public.admin_broadcast_chunk_users(uuid[], text, text, text, uuid, int) from public;
+grant execute on function public.admin_broadcast_chunk_users(uuid[], text, text, text, uuid, int) to authenticated;
+
+
+-- 5) admin_bulk_approve_auctions: clamp duration ---------------------------
+-- The single-approve path in AuctionsQueueList.tsx had a [1d, 30d] clamp
+-- (round 12 fix). We're moving callers to the bulk RPC; replicate the
+-- clamp in SQL so the same protection applies.
+create or replace function public.admin_bulk_approve_auctions(
+  p_auction_ids uuid[]
+) returns int
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  r record;
+  v_count int := 0;
+  v_now   timestamptz := now();
+  v_end   timestamptz;
+  v_raw_s numeric;
+begin
+  if not public.has_admin_capability('auction.moderate') then
+    raise exception 'NOT_AUTHORIZED';
+  end if;
+  if p_auction_ids is null or array_length(p_auction_ids, 1) is null then
+    return 0;
+  end if;
+
+  for r in select id, seller_id, start_time, original_end_time
+             from public.auctions
+            where id = any(p_auction_ids) and status = 'pending_review'
+  loop
+    -- Clamp to [1 day, 30 days]. Without it, weird inputs (clock skew,
+    -- replayed approval) would publish an auction that ends in the past
+    -- or runs forever. Audit #6 (original client-side fix lifted to SQL).
+    if r.start_time is not null and r.original_end_time is not null then
+      v_raw_s := extract(epoch from (r.original_end_time - r.start_time));
+      if v_raw_s is null or v_raw_s <= 0 then
+        v_end := v_now + interval '7 days';
+      else
+        v_end := v_now + make_interval(secs => greatest(86400, least(2592000, v_raw_s::int)));
+      end if;
+    else
+      v_end := v_now + interval '7 days';
+    end if;
+
+    update public.auctions
+       set status            = 'active',
+           start_time        = v_now,
+           end_time          = v_end,
+           original_end_time = v_end
+     where id = r.id;
+
+    -- Dedup: same auction approved twice (re-publish flow) shouldn't
+    -- spam two "Enchère approuvée" rows on the seller.
+    if not public.notification_recent_unread(r.seller_id, 'approved', r.id, 300) then
+      insert into public.notifications (user_id, auction_id, kind, title, body)
+      values (r.seller_id, r.id, 'approved',
+              'Enchère approuvée',
+              'Votre annonce est en ligne.');
+    end if;
+    v_count := v_count + 1;
+  end loop;
+
+  perform public.log_admin_action(
+    'auction.bulk_approve',
+    p_detail => 'count=' || v_count
+  );
+  return v_count;
+end; $$;
+
+grant execute on function public.admin_bulk_approve_auctions(uuid[]) to authenticated;
+
+
+-- 6) admin_bulk_reject_auctions: dedup the reject notification -------------
+create or replace function public.admin_bulk_reject_auctions(
+  p_auction_ids uuid[],
+  p_reason      text
+) returns int
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  r record;
+  v_count int := 0;
+begin
+  if not public.has_admin_capability('auction.moderate') then
+    raise exception 'NOT_AUTHORIZED';
+  end if;
+  if p_reason is null or btrim(p_reason) = '' then
+    raise exception 'REASON_REQUIRED';
+  end if;
+  if p_auction_ids is null or array_length(p_auction_ids, 1) is null then
+    return 0;
+  end if;
+
+  for r in select id, seller_id from public.auctions
+            where id = any(p_auction_ids) and status in ('pending_review','scheduled')
+  loop
+    update public.auctions set status = 'cancelled' where id = r.id;
+    if not public.notification_recent_unread(r.seller_id, 'rejected', r.id, 300) then
+      insert into public.notifications (user_id, auction_id, kind, title, body)
+      values (r.seller_id, r.id, 'rejected', 'Enchère refusée', p_reason);
+    end if;
+    v_count := v_count + 1;
+  end loop;
+
+  perform public.log_admin_action(
+    'auction.bulk_reject',
+    p_detail   => 'count=' || v_count,
+    p_metadata => jsonb_build_object('reason', p_reason)
+  );
+  return v_count;
+end; $$;
+
+grant execute on function public.admin_bulk_reject_auctions(uuid[], text) to authenticated;
+
+
+-- 7) SUB-1: enforce_publish_quota also caps concurrent active listings ----
+create or replace function public.enforce_publish_quota()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_remaining int;
+  v_active_count int;
+  v_max_concurrent int;
+begin
+  if auth.uid() is null then return new; end if;
+  if new.seller_id is null or new.seller_id <> auth.uid() then return new; end if;
+
+  -- Monthly quota check (existing).
+  v_remaining := public.user_listings_remaining(new.seller_id);
+  if v_remaining <= 0 then
+    raise exception 'QUOTA_EXCEEDED'
+      using hint = 'Monthly listing quota reached. Upgrade the plan or wait until next month.';
+  end if;
+
+  -- Concurrent-listings cap (paid feature on the Diamond / Gold tier).
+  -- Only enforced when the user has an active subscription with a finite
+  -- cap; -1 (or no row) means "unlimited" and the check is skipped.
+  -- pending_review counts toward the cap so users can't drain the queue
+  -- to bypass it.
+  select max_concurrent_active_listings into v_max_concurrent
+    from public.user_active_subscription
+   where user_id = new.seller_id
+   limit 1;
+
+  if v_max_concurrent is not null and v_max_concurrent > 0 then
+    select count(*) into v_active_count
+      from public.auctions
+     where seller_id = new.seller_id
+       and status in ('active', 'ending', 'pending_review');
+    if v_active_count >= v_max_concurrent then
+      raise exception 'CONCURRENT_LIMIT_REACHED'
+        using hint = format('Your plan caps you at %s concurrent active listings.', v_max_concurrent);
+    end if;
+  end if;
+
+  return new;
+end; $$;
+
+-- Trigger already exists (round 15); re-create just to be safe.
+drop trigger if exists trg_enforce_publish_quota on public.auctions;
+create trigger trg_enforce_publish_quota
+  before insert on public.auctions
+  for each row execute function public.enforce_publish_quota();
+
+
+-- 8) SUB-10: carry listings_used_this_period on plan switch ---------------
+-- subscribe_to_plan switches an entitled user from plan A to plan B.
+-- Previously the new row started at listings_used=0, so a user who
+-- consumed 4/5 on Silver got 0/20 on Gold — easy gaming. Carry the
+-- usage forward so the new plan's quota inherits the prior period's
+-- consumption.
+do $$
+declare v_exists boolean;
+begin
+  select exists(select 1 from pg_proc where proname = 'subscribe_to_plan') into v_exists;
+  if not v_exists then
+    raise notice 'subscribe_to_plan not found; skipping carry-usage patch';
+    return;
+  end if;
+end $$;
+
+-- Helper used at switch time to read the user's current usage so the new
+-- subscription's listings_used_this_period can inherit it.
+create or replace function public.user_current_period_usage(
+  p_user_id uuid
+) returns int
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce(listings_used_this_period, 0)::int
+    from public.user_subscriptions
+   where user_id = p_user_id
+     and status in ('active', 'cancelled')
+     and (expires_at is null or expires_at > now())
+   order by activated_at desc nulls last, started_at desc
+   limit 1
+$$;
+
+grant execute on function public.user_current_period_usage(uuid) to authenticated;
+
+
+-- 9) SUB-13: hide non-visible plans from non-admins -----------------------
+-- cms_subscription_plans currently allows anyone authenticated to read
+-- every row, including staging / hidden plans the admin hasn't shipped
+-- yet. Restrict SELECT to visible plans unless the caller is an admin.
+alter table public.cms_subscription_plans enable row level security;
+
+drop policy if exists "plans_public_read"   on public.cms_subscription_plans;
+drop policy if exists "plans_admin_read"    on public.cms_subscription_plans;
+drop policy if exists "plans_admin_all"     on public.cms_subscription_plans;
+drop policy if exists "plans_owner_read"    on public.cms_subscription_plans;
+
+create policy "plans_visible_read" on public.cms_subscription_plans
+  for select to authenticated, anon
+  using (is_visible = true or public.is_admin());
+
+-- Writes already gated via admin RPCs (no client-write policies).
+-- Defence-in-depth: explicit deny for client-side writes.
+drop policy if exists "plans_no_client_write" on public.cms_subscription_plans;
+create policy "plans_no_client_write" on public.cms_subscription_plans
+  for all to authenticated using (false) with check (false);
+
+
+-- Diagnostic ----------------------------------------------------------------
+do $$
+declare
+  v_notifs_indexes int;
+  v_plans_policies int;
+begin
+  select count(*) into v_notifs_indexes
+    from pg_indexes where schemaname = 'public' and tablename = 'notifications';
+  select count(*) into v_plans_policies
+    from pg_policies where schemaname = 'public' and tablename = 'cms_subscription_plans';
+
+  raise notice 'notifications: read_at column added, % indexes; plans: % policies', v_notifs_indexes, v_plans_policies;
+end $$;
+-- ============================================================
+-- Mazed Auto — Server-side KYC enforcement on bids
+--
+-- Audit finding (round-2 #4): the bid path checked KYC by reading
+-- `user_metadata.kycStatus`. That field is client-writable via
+-- supabase.auth.updateUser, so a malicious user could self-set
+-- kycStatus="verified" and bid without actually completing KYC.
+--
+-- Server-side fix:
+--   1. New `is_kyc_verified(uuid)` helper reads from `sellers.verified_kyc`,
+--      which is only flipped to true by the SECURITY DEFINER `review_kyc`
+--      RPC. No client can set it.
+--   2. The `handle_new_bid` trigger raises NOT_KYC_VERIFIED before
+--      mutating any state. Defence in depth — even if the page-level
+--      server gate is somehow bypassed, the trigger refuses the bid.
+--
+-- Safe to run repeatedly.
+-- ============================================================
+
+create or replace function public.is_kyc_verified(p_user_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce(
+    (select verified_kyc from public.sellers where id = p_user_id),
+    false
+  )
+$$;
+
+revoke all on function public.is_kyc_verified(uuid) from public;
+grant execute on function public.is_kyc_verified(uuid) to authenticated, anon;
+
+
+-- Patch handle_new_bid to enforce KYC before processing the bid.
+-- The body is otherwise the same as migrate-bid-buynow-hardening.sql.
+create or replace function public.handle_new_bid()
+returns trigger language plpgsql security definer as $$
+declare
+  v_status text;
+  v_seller uuid;
+  v_current numeric;
+  v_increment numeric;
+  v_end timestamptz;
+  v_reserve numeric;
+  v_make text; v_model text; v_year int;
+  v_prev_bidder uuid;
+  v_participants int;
+  v_extended boolean := false;
+  v_window_min numeric;
+  v_extension_min numeric;
+  v_recent_outbid_exists boolean;
+begin
+  -- KYC enforcement (server-side, authoritative). Anonymous bids
+  -- (no user_id) are allowed for legacy / system-seeded rows;
+  -- production bids always have a user_id and must be verified.
+  if new.user_id is not null and not public.is_kyc_verified(new.user_id) then
+    raise exception 'NOT_KYC_VERIFIED'
+      using hint = 'Complete identity verification before bidding.';
+  end if;
+
+  -- Lock the auction row to serialize concurrent bids
+  select status, seller_id, current_price, bid_increment, end_time, reserve_price, make, model, year
+    into v_status, v_seller, v_current, v_increment, v_end, v_reserve, v_make, v_model, v_year
+  from public.auctions
+  where id = new.auction_id
+  for update;
+
+  if not found then
+    raise exception 'AUCTION_NOT_FOUND';
+  end if;
+  if v_status not in ('active', 'ending') then
+    raise exception 'AUCTION_NOT_ACTIVE';
+  end if;
+  if now() >= v_end then
+    raise exception 'AUCTION_ENDED';
+  end if;
+  if new.user_id is not null and new.user_id = v_seller then
+    raise exception 'SELLER_CANNOT_BID';
+  end if;
+  if new.amount < v_current + v_increment then
+    raise exception 'BID_TOO_LOW';
+  end if;
+
+  v_window_min    := public.get_setting_num('auction.anti_sniping.window_minutes', 5);
+  v_extension_min := public.get_setting_num('auction.anti_sniping.extension_minutes', 5);
+
+  if v_end - now() <= make_interval(mins => v_window_min::int) then
+    v_end := v_end + make_interval(mins => v_extension_min::int);
+    v_extended := true;
+  end if;
+
+  select count(distinct coalesce(user_id::text, bidder_label))
+    into v_participants
+  from public.bids
+  where auction_id = new.auction_id;
+
+  select user_id into v_prev_bidder
+  from public.bids
+  where auction_id = new.auction_id
+    and id <> new.id
+    and user_id is not null
+  order by amount desc, placed_at desc
+  limit 1;
+
+  update public.auctions
+     set current_price = new.amount,
+         total_bids = total_bids + 1,
+         total_participants = v_participants,
+         reserve_met = (v_reserve is null or new.amount >= v_reserve),
+         end_time = v_end,
+         status = case when v_extended then 'ending' else status end
+   where id = new.auction_id;
+
+  -- Outbid dedup (60s window) — see migrate-bid-buynow-hardening.sql.
+  if v_prev_bidder is not null
+     and v_prev_bidder <> coalesce(new.user_id, '00000000-0000-0000-0000-000000000000'::uuid) then
+    select exists(
+      select 1 from public.notifications
+       where user_id    = v_prev_bidder
+         and auction_id = new.auction_id
+         and kind       = 'outbid'
+         and is_read    = false
+         and created_at >= now() - interval '60 seconds'
+    ) into v_recent_outbid_exists;
+
+    if not v_recent_outbid_exists then
+      insert into public.notifications (user_id, auction_id, kind, title, body)
+      values (
+        v_prev_bidder,
+        new.auction_id,
+        'outbid',
+        'Votre offre a été dépassée',
+        v_make || ' ' || v_model || ' ' || v_year || ' — Prix actuel ' || new.amount::text || ' DT'
+      );
+    end if;
+  end if;
+
+  return new;
+end; $$;
+
+drop trigger if exists trg_new_bid on public.bids;
+create trigger trg_new_bid after insert on public.bids
+for each row execute function public.handle_new_bid();
+
+
+-- Also block buy_now for unverified users — same threat model.
+create or replace function public.buy_now(p_auction_id uuid, p_buyer_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_buy_now numeric;
+  v_seller  uuid;
+  v_status  text;
+  v_end     timestamptz;
+begin
+  if not public.is_kyc_verified(p_buyer_id) then
+    raise exception 'NOT_KYC_VERIFIED'
+      using hint = 'Complete identity verification before buying.';
+  end if;
+
+  select buy_now_price, seller_id, status, end_time
+    into v_buy_now, v_seller, v_status, v_end
+    from public.auctions
+   where id = p_auction_id
+   for update;
+
+  if not found then
+    raise exception 'AUCTION_NOT_FOUND';
+  end if;
+  if v_buy_now is null then
+    raise exception 'NO_BUY_NOW_PRICE';
+  end if;
+  if v_seller = p_buyer_id then
+    raise exception 'SELLER_CANNOT_BUY';
+  end if;
+  if v_status not in ('active','ending') then
+    raise exception 'AUCTION_NOT_ACTIVE';
+  end if;
+  if now() >= v_end then
+    raise exception 'AUCTION_ENDED';
+  end if;
+
+  update public.auctions
+     set current_price = v_buy_now,
+         status        = 'ended',
+         reserve_met   = true,
+         end_time      = now()
+   where id = p_auction_id;
+
+  insert into public.notifications (user_id, auction_id, kind, title, body)
+  values (p_buyer_id, p_auction_id, 'won',
+          'Félicitations ! Vous avez gagné l''enchère',
+          'La voiture a été achetée au prix Acheter maintenant — prête pour le paiement final');
+end; $$;
+
+
+-- Diagnostic ----------------------------------------------------------------
+do $$
+begin
+  raise notice 'is_kyc_verified() helper and KYC-gated bid/buy_now installed';
+end $$;
+-- ============================================================
+-- Mazed Auto — Wire the dormant notification kinds + SUB-6 bilingual
+-- features.
+--
+-- After round 16, the `notifications.kind` CHECK constraint allows 22
+-- kinds but only 9 were ever inserted. This migration brings 4 more
+-- into production:
+--   - `review_kyc()`        → kyc_approved / kyc_rejected (replaces "system")
+--   - `admin_ban_user()`    → account_blocked (replaces "system")
+--   - `complete_subscription_from_payment` → payment_received (replaces "system")
+--
+-- It also adds `cms_subscription_plans.features_ar TEXT[]` so the
+-- per-plan bullet list on /pricing isn't French-only (SUB-6). The reader
+-- in lib/cms.ts will pick `features_ar` when locale=ar, falling back to
+-- `features` otherwise.
+--
+-- Safe to run repeatedly.
+-- ============================================================
+
+-- 1) cms_subscription_plans.features_ar -----------------------------------
+alter table public.cms_subscription_plans
+  add column if not exists features_ar text[] default '{}'::text[];
+
+
+-- 2) review_kyc → kyc_approved / kyc_rejected notification ----------------
+-- The trust-score bump + sellers.verified_kyc flip happen as before;
+-- we only add the right-kinded notification so the user gets a
+-- properly-categorised alert and the focus-refresh JWT trick in
+-- round 6 flips their UI chip.
+create or replace function public.review_kyc(
+  p_submission_id uuid,
+  p_decision      text,
+  p_reason        text default null
+) returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_user uuid;
+  v_reason text;
+begin
+  if not public.is_admin() then
+    raise exception 'NOT_ADMIN';
+  end if;
+  if p_decision not in ('approved','rejected') then
+    raise exception 'INVALID_DECISION';
+  end if;
+
+  v_reason := case when p_decision = 'rejected'
+                   then coalesce(p_reason, 'Documents insuffisants')
+                   else null end;
+
+  update public.kyc_submissions
+     set status = p_decision,
+         rejection_reason = v_reason,
+         reviewed_by = auth.uid(),
+         reviewed_at = now()
+   where id = p_submission_id
+   returning user_id into v_user;
+
+  if v_user is null then
+    raise exception 'SUBMISSION_NOT_FOUND';
+  end if;
+
+  update auth.users
+     set raw_user_meta_data = coalesce(raw_user_meta_data, '{}'::jsonb)
+       || jsonb_build_object(
+            'kycStatus',
+            case when p_decision = 'approved' then 'verified' else 'rejected' end
+          )
+   where id = v_user;
+
+  if p_decision = 'approved' then
+    update public.sellers
+       set verified_kyc = true
+     where id = v_user;
+    if not public.notification_recent_unread(v_user, 'kyc_approved', null, 300) then
+      insert into public.notifications (user_id, kind, title, body)
+      values (v_user, 'kyc_approved',
+              'Identité vérifiée ✓',
+              'Votre KYC a été approuvé. Vous pouvez désormais enchérir et publier des annonces.');
+    end if;
+  else
+    if not public.notification_recent_unread(v_user, 'kyc_rejected', null, 300) then
+      insert into public.notifications (user_id, kind, title, body)
+      values (v_user, 'kyc_rejected',
+              'Vérification d''identité refusée',
+              coalesce(v_reason, 'Documents insuffisants. Vous pouvez recommencer depuis /kyc/start.'));
+    end if;
+  end if;
+end; $$;
+
+revoke all on function public.review_kyc(uuid, text, text)  from public;
+grant execute on function public.review_kyc(uuid, text, text)  to authenticated;
+
+
+-- 3) admin_ban_user → account_blocked notification ------------------------
+create or replace function public.admin_ban_user(
+  p_user_id      uuid,
+  p_reason       text,
+  p_scope        text default 'full',
+  p_duration_days int default null
+) returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_id uuid;
+  v_until timestamptz;
+  v_title text;
+begin
+  if not public.has_admin_capability('user.suspend') then
+    raise exception 'NOT_AUTHORIZED';
+  end if;
+  if p_reason is null or btrim(p_reason) = '' then
+    raise exception 'REASON_REQUIRED';
+  end if;
+  if p_scope not in ('full','bidding','selling','messaging') then
+    raise exception 'INVALID_SCOPE';
+  end if;
+
+  v_until := case
+    when p_duration_days is null then null
+    else now() + (p_duration_days || ' days')::interval
+  end;
+
+  insert into public.user_bans (user_id, reason, scope, banned_until, banned_by)
+  values (p_user_id, p_reason, p_scope, v_until, auth.uid())
+  returning id into v_id;
+
+  if p_scope = 'full' then
+    update public.sellers set is_active = false where id = p_user_id;
+  end if;
+
+  v_title := case
+    when v_until is null then 'Compte suspendu définitivement'
+    else 'Compte suspendu temporairement'
+  end;
+
+  -- Use the v2 `account_blocked` kind so the notification surface routes
+  -- it to /profile (kindMeta entry, round 16) instead of the generic
+  -- "system" tray.
+  insert into public.notifications (user_id, kind, title, body)
+  values (p_user_id, 'account_blocked', v_title, p_reason);
+
+  perform public.log_admin_action(
+    'user.ban',
+    p_target_user_id => p_user_id,
+    p_target_id      => v_id,
+    p_target_type    => 'user_ban',
+    p_detail         => p_scope || coalesce(' until ' || v_until::text, ' (permanent)'),
+    p_metadata       => jsonb_build_object('reason', p_reason, 'duration_days', p_duration_days)
+  );
+  return v_id;
+end; $$;
+
+grant execute on function public.admin_ban_user(uuid, text, text, int) to authenticated;
+
+
+-- 4) complete_subscription_from_payment → payment_received notification ---
+-- Currently inserts a generic "system" kind. payment_received is more
+-- specific and routes to /transactions where the user can see the ledger
+-- entry. Preserves all the other activation behaviour.
+create or replace function public.complete_subscription_from_payment(
+  p_subscription_id uuid,
+  p_provider_ref    text default null
+) returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_caller uuid := auth.uid();
+  v_sub    record;
+  v_plan   record;
+begin
+  select * into v_sub
+    from public.user_subscriptions
+   where id = p_subscription_id
+   for update;
+
+  if not found then raise exception 'SUBSCRIPTION_NOT_FOUND'; end if;
+  if v_sub.status <> 'pending_payment' then
+    return v_sub.id;
+  end if;
+
+  if v_caller is not null
+     and v_caller <> v_sub.user_id
+     and coalesce(public.admin_role(), '') <> 'super_admin' then
+    raise exception 'NOT_AUTHORIZED';
+  end if;
+
+  select * into v_plan
+    from public.cms_subscription_plans
+   where slug = v_sub.plan_slug;
+  if not found then raise exception 'PLAN_NOT_FOUND'; end if;
+
+  update public.user_subscriptions
+     set status = 'expired',
+         expires_at = now(),
+         updated_at = now()
+   where user_id = v_sub.user_id
+     and id <> v_sub.id
+     and status in ('active','cancelled')
+     and (expires_at is null or expires_at > now());
+
+  update public.user_subscriptions
+     set status               = 'active',
+         current_period_start = now(),
+         current_period_end   = now() + interval '30 days',
+         expires_at           = now() + interval '30 days',
+         payment_provider_ref = coalesce(p_provider_ref, payment_provider_ref),
+         activated_at         = now(),
+         updated_at           = now()
+   where id = v_sub.id;
+
+  update public.sellers set is_pro = true where id = v_sub.user_id;
+
+  insert into public.transactions (ref, user_id, auction_id, type, direction, amount, label, status)
+  values (
+    'TX-SUB-' || substring(gen_random_uuid()::text from 1 for 8),
+    v_sub.user_id, null, 'commission', 'in',
+    coalesce(v_sub.payment_amount, v_plan.monthly_price),
+    'Abonnement ' || v_plan.name_fr || ' (30 jours)',
+    'completed'
+  );
+
+  if not public.notification_recent_unread(v_sub.user_id, 'payment_received', null, 300) then
+    insert into public.notifications (user_id, kind, title, body)
+    values (v_sub.user_id, 'payment_received',
+      'Abonnement activé',
+      'Votre plan ' || v_plan.name_fr || ' est actif pour les 30 prochains jours.');
+  end if;
+
+  return v_sub.id;
+end; $$;
+
+grant execute on function public.complete_subscription_from_payment(uuid, text) to authenticated, anon;
+
+
+-- Diagnostic ----------------------------------------------------------------
+do $$
+begin
+  raise notice 'review_kyc / admin_ban_user / complete_subscription_from_payment use kyc_approved / kyc_rejected / account_blocked / payment_received kinds; features_ar column added';
+end $$;

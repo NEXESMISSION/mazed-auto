@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { createPortal } from "react-dom";
+import { useTranslations } from "next-intl";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -31,6 +32,7 @@ export function Modal({
   size = "md",
   mobileSheet = true,
 }: ModalProps) {
+  const tCommon = useTranslations("common");
   // Track when we're mounted on the client so the SSR pass can return
   // null (createPortal needs a real DOM target).
   const [mounted, setMounted] = React.useState(false);
@@ -38,16 +40,74 @@ export function Modal({
     setMounted(true);
   }, []);
 
+  // Refs for focus management — the element that had focus before we
+  // opened, and the modal's surface so we can scope focus into it.
+  const dialogRef = React.useRef<HTMLDivElement>(null);
+  const previouslyFocusedRef = React.useRef<HTMLElement | null>(null);
+
   React.useEffect(() => {
     if (!open) return;
+
+    // Snapshot the element that had focus when the modal opened so we
+    // can restore it on close — keyboard / screen-reader users expect
+    // to land back on the button that triggered the modal.
+    previouslyFocusedRef.current = document.activeElement as HTMLElement | null;
+
+    // Move focus into the modal on the next tick (after createPortal
+    // has mounted children). Falls back to the dialog container itself
+    // when there are no focusable descendants.
+    const moveFocus = () => {
+      const node = dialogRef.current;
+      if (!node) return;
+      const focusable = node.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      );
+      const first = focusable[0] ?? node;
+      first.focus();
+    };
+    const t = window.setTimeout(moveFocus, 0);
+
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      // Focus trap. When Tab would escape the modal, wrap to the
+      // opposite end. Shift+Tab on the first element wraps to last;
+      // Tab on the last wraps to first.
+      if (e.key !== "Tab") return;
+      const node = dialogRef.current;
+      if (!node) return;
+      const focusable = Array.from(
+        node.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((el) => !el.hasAttribute("aria-hidden"));
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+      if (e.shiftKey && active === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
     window.addEventListener("keydown", handler);
     document.body.style.overflow = "hidden";
     return () => {
+      window.clearTimeout(t);
       window.removeEventListener("keydown", handler);
       document.body.style.overflow = "";
+      // Restore focus to the opener. Skip if that node is no longer
+      // in the document (e.g. the page navigated while the modal was
+      // open — restoring would throw).
+      const prev = previouslyFocusedRef.current;
+      if (prev && document.body.contains(prev)) {
+        prev.focus();
+      }
     };
   }, [open, onClose]);
 
@@ -73,8 +133,10 @@ export function Modal({
 
       {/* Content */}
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         className={cn(
-          "relative w-full bg-[var(--surface)] border border-[var(--border)] shadow-[var(--shadow-lg)] overflow-hidden",
+          "relative w-full bg-[var(--surface)] border border-[var(--border)] shadow-[var(--shadow-lg)] overflow-hidden focus:outline-none",
           mobileSheet
             ? "rounded-t-[var(--radius-xl)] md:rounded-[var(--radius-md)]"
             : "rounded-[var(--radius-md)] mx-4",
@@ -104,7 +166,7 @@ export function Modal({
               <button
                 onClick={onClose}
                 className="shrink-0 h-8 w-8 -mt-1 rounded-full hover:bg-[var(--surface-2)] transition-colors flex items-center justify-center"
-                aria-label="Fermer"
+                aria-label={tCommon("close")}
               >
                 <X className="h-4 w-4" />
               </button>

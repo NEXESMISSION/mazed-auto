@@ -91,7 +91,7 @@ declare
     'condition','category','description','features','city','region',
     'image_urls','video_url',
     'starting_price','reserve_price','buy_now_price',
-    'bid_increment','end_time','original_end_time',
+    'bid_increment','start_time','end_time','original_end_time',
     'is_featured','is_vip',
     'carte_grise_owner_name','ownership_exception'
   ];
@@ -157,6 +157,7 @@ begin
                                   then nullif(p_patch ->> 'buy_now_price','')::numeric
                                 else a.buy_now_price end,
          bid_increment   = coalesce((p_patch ->> 'bid_increment')::numeric, a.bid_increment),
+         start_time      = coalesce((p_patch ->> 'start_time')::timestamptz, a.start_time),
          end_time        = coalesce((p_patch ->> 'end_time')::timestamptz, a.end_time),
          original_end_time = coalesce((p_patch ->> 'original_end_time')::timestamptz, a.original_end_time),
          is_featured     = coalesce((p_patch ->> 'is_featured')::boolean, a.is_featured),

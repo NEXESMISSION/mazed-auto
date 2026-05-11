@@ -36,7 +36,14 @@ function CheckoutContent() {
   const [block, setBlock] = useState<{ title: string; body: string } | null>(
     null,
   );
-  const [validating, setValidating] = useState(true);
+  // Initial value is computed lazily so we don't have to flip the
+  // flag in an effect for cases where there's nothing to validate.
+  const [validating, setValidating] = useState(() => {
+    if (amount <= 0) return false;
+    if (type === "subscription") return false;
+    if (!auctionId) return false;
+    return true;
+  });
 
   // Hard-gate on the amount being a real positive number BEFORE we
   // even hit Supabase. Without this a malformed link like
@@ -56,12 +63,13 @@ function CheckoutContent() {
   // Spec: deposits only on live auctions, final payments only on ended /
   // pending_seller_decision (or live if it's a buy-now). Refuse anything else
   // up-front so we never charge a card against a dead auction.
+  //
+  // Subscription payments and amount-less / auction-less cases short-circuit
+  // here — their `validating` state is already `false` from the lazy init.
   useEffect(() => {
-    if (amount <= 0) return; // already blocked above
-    if (!auctionId) {
-      setValidating(false);
-      return;
-    }
+    if (amount <= 0) return;
+    if (type === "subscription") return;
+    if (!auctionId) return;
     const supabase = createClient();
     supabase
       .from("auctions")
@@ -174,8 +182,15 @@ Voir l'enchère
                 ? "Caution de participation (5%)"
                 : type === "final"
                   ? "Prix final de la voiture"
-                  : "Montant"}
+                  : type === "subscription"
+                    ? params.get("plan_label") || "Abonnement Mazed Auto"
+                    : "Montant"}
             </div>
+            {type === "subscription" && (
+              <div className="text-xs text-[var(--foreground-muted)] mt-1.5 lg:mt-2">
+                Renouvelable tous les 30 jours · annulable à tout moment
+              </div>
+            )}
             <div className="mt-1.5 lg:mt-3 text-3xl lg:text-[48px] xl:text-[56px] font-extrabold lg:font-black gradient-gold-text tabular-nums leading-none">
               {formatPrice(amount)}
             </div>

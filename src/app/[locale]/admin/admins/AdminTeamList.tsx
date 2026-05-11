@@ -92,9 +92,15 @@ export function AdminTeamList({
               </Badge>
             </div>
             <div className="text-xs text-[var(--foreground-muted)] tabular-nums">
+              <span className="md:hidden font-semibold text-[var(--foreground-subtle)]">
+                Membre depuis :{" "}
+              </span>
               {new Date(r.created_at).toLocaleDateString("fr-TN")}
             </div>
             <div className="text-xs text-[var(--foreground-muted)] tabular-nums">
+              <span className="md:hidden font-semibold text-[var(--foreground-subtle)]">
+                Dernière activité :{" "}
+              </span>
               {r.last_seen
                 ? new Date(r.last_seen).toLocaleString("fr-TN")
                 : "—"}

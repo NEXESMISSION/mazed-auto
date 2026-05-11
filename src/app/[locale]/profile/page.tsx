@@ -12,6 +12,7 @@ import {
   Wallet,
   HelpCircle,
   ArrowUpRight,
+  Sparkles,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
@@ -19,6 +20,10 @@ import { ScreenHeader } from "@/components/layout/ScreenHeader";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { createClient } from "@/lib/supabase/server";
+import {
+  getActiveSubscription,
+  getListingsRemaining,
+} from "@/lib/subscription";
 import { SignOutButton } from "./SignOutButton";
 
 export const dynamic = "force-dynamic";
@@ -56,7 +61,7 @@ export default async function ProfilePage() {
   };
 
   // Counts feed the badges next to each menu row.
-  const [b, w, n, won] = await Promise.all([
+  const [b, w, n, won, activeSub, freeListingsRemaining] = await Promise.all([
     supabase
       .from("bids")
       .select("auction_id", { count: "exact", head: true })
@@ -76,6 +81,10 @@ export default async function ProfilePage() {
       .eq("user_id", user.id)
       .eq("type", "final_payment")
       .eq("status", "completed"),
+    getActiveSubscription(user.id).catch(() => null),
+    // Free-tier counter — only meaningful when there's no active sub,
+    // but always cheap to fetch (it's a single RPC).
+    getListingsRemaining(user.id).catch(() => 0),
   ]);
 
   const counts = {
@@ -176,6 +185,44 @@ export default async function ProfilePage() {
             </div>
           </Link>
         )}
+
+        <Link
+          href={activeSub ? "/profile/subscription" : "/pricing"}
+          className={`block rounded-2xl p-3.5 transition-colors group ${
+            activeSub
+              ? "bg-[var(--gold-faint)] border border-[var(--gold)]/30 hover:bg-[var(--gold)] hover:text-black"
+              : "bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--gold-soft)]"
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <span
+              className={`h-9 w-9 rounded-full flex items-center justify-center shrink-0 ${
+                activeSub
+                  ? "bg-[var(--gold)] text-black"
+                  : "bg-[var(--surface-2)] text-[var(--gold)]"
+              }`}
+            >
+              <Trophy className="h-4 w-4" strokeWidth={2.5} />
+            </span>
+            <div className="flex-1 min-w-0">
+              <div className="font-bold text-[13px]">
+                {activeSub
+                  ? `Plan ${activeSub.planName}`
+                  : "Passer au compte professionnel"}
+              </div>
+              <div className="text-[11px] text-[var(--foreground-muted)] group-hover:text-black/70 mt-0.5">
+                {activeSub
+                  ? activeSub.listingsPerMonth === -1
+                    ? "Mises en ligne illimitées"
+                    : `${activeSub.listingsRemaining} / ${activeSub.listingsPerMonth} mises en ligne restantes`
+                  : freeListingsRemaining > 0
+                    ? `${freeListingsRemaining} gratuite${freeListingsRemaining > 1 ? "s" : ""} ce mois · upgrade pour plus`
+                    : "Quota gratuit épuisé — passer Pro"}
+              </div>
+            </div>
+            <ChevronRight className="h-4 w-4 shrink-0" />
+          </div>
+        </Link>
 
         <MenuCard label="Mon activité">
           <MenuRow
@@ -385,6 +432,59 @@ export default async function ProfilePage() {
             </div>
           </Link>
         )}
+
+        {/* Subscription banner — visible on every desktop profile so the
+            user can find their plan / upgrade path in one glance. Tone
+            adapts to whether they're already subscribed. */}
+        <Link
+          href={activeSub ? "/profile/subscription" : "/pricing"}
+          className={`group relative block overflow-hidden rounded-[24px] ring-1 transition-all p-6 ${
+            activeSub
+              ? "bg-gradient-to-r from-[var(--gold-faint)] via-[var(--gold-faint)] to-transparent ring-[var(--gold)]/40 hover:ring-[var(--gold)]"
+              : "bg-gradient-to-r from-[var(--surface)] via-[var(--surface)] to-[var(--surface-2)]/30 ring-[var(--border)] hover:ring-[var(--gold-soft)]"
+          }`}
+        >
+          <div className="flex items-center gap-5">
+            <span
+              className={`h-14 w-14 rounded-2xl flex items-center justify-center shrink-0 ${
+                activeSub
+                  ? "bg-[var(--gold)] text-black shadow-[var(--shadow-gold)]"
+                  : "bg-[var(--surface-2)] text-[var(--gold)]"
+              }`}
+            >
+              <Sparkles className="h-6 w-6" strokeWidth={2.5} />
+            </span>
+            <div className="flex-1 min-w-0">
+              <div className="text-[10px] uppercase tracking-[0.22em] font-bold text-[var(--gold)]">
+                {activeSub ? "Abonnement actif" : "Compte professionnel"}
+              </div>
+              <div className="mt-1 text-xl font-black tracking-tight">
+                {activeSub
+                  ? `Plan ${activeSub.planName}`
+                  : "Passer au compte professionnel"}
+              </div>
+              <div className="text-sm text-[var(--foreground-muted)] mt-1">
+                {activeSub
+                  ? activeSub.listingsPerMonth === -1
+                    ? "Mises en ligne illimitées · gérez votre abonnement"
+                    : `${activeSub.listingsRemaining} / ${activeSub.listingsPerMonth} mises en ligne restantes ce mois`
+                  : freeListingsRemaining > 0
+                    ? `${freeListingsRemaining} mise${freeListingsRemaining > 1 ? "s" : ""} en ligne gratuite${freeListingsRemaining > 1 ? "s" : ""} ce mois · upgrade pour plus`
+                    : "Quota gratuit épuisé ce mois — passez Pro pour plus de mises en ligne, boutique, badge vendeur de confiance"}
+              </div>
+            </div>
+            <span
+              className={`shrink-0 inline-flex items-center gap-2 h-12 px-6 rounded-full font-extrabold text-sm group-hover:scale-[1.03] active:scale-[0.99] transition-transform ${
+                activeSub
+                  ? "bg-[var(--gold)] text-black shadow-[var(--shadow-gold)]"
+                  : "ring-1 ring-[var(--gold)] text-[var(--gold)] hover:bg-[var(--gold-faint)]"
+              }`}
+            >
+              {activeSub ? "Voir mon abonnement" : "Voir les plans"}
+              <ArrowUpRight className="h-4 w-4" />
+            </span>
+          </div>
+        </Link>
 
         {/* Menu grid — 2 columns by default, 3 when the user is a seller */}
         <div

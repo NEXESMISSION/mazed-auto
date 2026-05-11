@@ -24,6 +24,17 @@ import {
   requestAuctionEditAction,
   editAuctionAction,
 } from "@/app/[locale]/admin/actions";
+import {
+  isInBlackout,
+  formatBlackoutWindows,
+  type BlackoutWindow,
+} from "@/lib/blackout";
+
+interface BlackoutCfg {
+  enabled: boolean;
+  windows: BlackoutWindow[];
+  timezone: string;
+}
 
 interface Props {
   auctionId: string;
@@ -31,6 +42,7 @@ interface Props {
   isFeatured: boolean;
   isVip: boolean;
   totalBids: number;
+  blackout: BlackoutCfg;
   initialEditable: {
     make: string;
     model: string;
@@ -43,6 +55,12 @@ interface Props {
     starting_price: number;
     reserve_price: number | null;
     buy_now_price: number | null;
+    bid_increment: number;
+    category: string;
+    fuel_type: string;
+    transmission: string;
+    condition: string;
+    start_time: string;
     end_time: string;
   };
 }
@@ -53,6 +71,7 @@ export function AdminAuctionControls({
   isFeatured,
   isVip,
   totalBids,
+  blackout,
   initialEditable,
 }: Props) {
   const router = useRouter();
@@ -96,10 +115,41 @@ export function AdminAuctionControls({
       ? String(initialEditable.buy_now_price)
       : "",
   );
+  const [feBidIncrement, setFeBidIncrement] = useState(
+    String(initialEditable.bid_increment),
+  );
+  const [feCategory, setFeCategory] = useState(initialEditable.category);
+  const [feFuelType, setFeFuelType] = useState(initialEditable.fuel_type);
+  const [feTransmission, setFeTransmission] = useState(
+    initialEditable.transmission,
+  );
+  const [feCondition, setFeCondition] = useState(initialEditable.condition);
+  const [feStart, setFeStart] = useState(
+    toLocalDatetimeInput(initialEditable.start_time),
+  );
   const [feEnd, setFeEnd] = useState(
-    new Date(initialEditable.end_time).toISOString().slice(0, 16),
+    toLocalDatetimeInput(initialEditable.end_time),
   );
   const [feReason, setFeReason] = useState("");
+
+  // Live blackout warning for the rescheduled end time.
+  const feEndDate = feEnd ? new Date(feEnd) : null;
+  const feEndInBlackout =
+    blackout.enabled &&
+    feEndDate !== null &&
+    !Number.isNaN(feEndDate.getTime()) &&
+    isInBlackout(feEndDate, blackout.windows, blackout.timezone);
+  const extendMinutesNum = Number(extendMinutes);
+  const extendEndDate = Number.isFinite(extendMinutesNum)
+    ? new Date(
+        new Date(initialEditable.end_time).getTime() +
+          extendMinutesNum * 60_000,
+      )
+    : null;
+  const extendInBlackout =
+    blackout.enabled &&
+    extendEndDate !== null &&
+    isInBlackout(extendEndDate, blackout.windows, blackout.timezone);
 
   async function toggleFeatured() {
     setBusy(true);
@@ -245,6 +295,17 @@ export function AdminAuctionControls({
       feBuyNow.trim() === "" ? null : Number(feBuyNow);
     if (newBuyNow !== initialEditable.buy_now_price)
       patch.buy_now_price = newBuyNow;
+    if (num(feBidIncrement) !== initialEditable.bid_increment)
+      patch.bid_increment = num(feBidIncrement);
+    if (feCategory !== initialEditable.category) patch.category = feCategory;
+    if (feFuelType !== initialEditable.fuel_type) patch.fuel_type = feFuelType;
+    if (feTransmission !== initialEditable.transmission)
+      patch.transmission = feTransmission;
+    if (feCondition !== initialEditable.condition)
+      patch.condition = feCondition;
+    const newStart = new Date(feStart).toISOString();
+    if (newStart !== new Date(initialEditable.start_time).toISOString())
+      patch.start_time = newStart;
     const newEnd = new Date(feEnd).toISOString();
     if (newEnd !== new Date(initialEditable.end_time).toISOString())
       patch.end_time = newEnd;
@@ -369,6 +430,12 @@ export function AdminAuctionControls({
             placeholder="Raison (audit)"
             className="w-full bg-[var(--surface-2)] border border-[var(--border)] rounded-[var(--radius)] px-3 py-2 text-sm focus:outline-none focus:border-[var(--gold)]"
           />
+          {extendInBlackout && (
+            <div className="rounded-[var(--radius)] border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+              ⚠ La nouvelle heure de fin tombe dans une plage interdite
+              ({formatBlackoutWindows(blackout.windows)}, {blackout.timezone}).
+            </div>
+          )}
         </div>
         <ModalFooter>
           <Button variant="ghost" size="md" onClick={() => setExtendOpen(false)}>
@@ -495,6 +562,64 @@ export function AdminAuctionControls({
                 onChange={(e) => setFeBuyNow(e.target.value)}
               />
             </FieldLabel>
+            <FieldLabel label="Pas d'enchère">
+              <Input
+                type="number"
+                value={feBidIncrement}
+                onChange={(e) => setFeBidIncrement(e.target.value)}
+              />
+            </FieldLabel>
+            <FieldLabel label="Carrosserie">
+              <select
+                value={feCategory}
+                onChange={(e) => setFeCategory(e.target.value)}
+                className="w-full h-10 bg-[var(--surface-2)] border border-[var(--border)] rounded-[var(--radius)] px-2 text-sm focus:outline-none focus:border-[var(--gold)]"
+              >
+                <option value="sedan">Berline</option>
+                <option value="suv">SUV</option>
+                <option value="hatchback">Citadine</option>
+                <option value="pickup">Pickup</option>
+                <option value="coupe">Coupé</option>
+                <option value="convertible">Cabriolet</option>
+                <option value="wagon">Break</option>
+                <option value="van">Utilitaire</option>
+              </select>
+            </FieldLabel>
+            <FieldLabel label="Carburant">
+              <select
+                value={feFuelType}
+                onChange={(e) => setFeFuelType(e.target.value)}
+                className="w-full h-10 bg-[var(--surface-2)] border border-[var(--border)] rounded-[var(--radius)] px-2 text-sm focus:outline-none focus:border-[var(--gold)]"
+              >
+                <option value="gasoline">Essence</option>
+                <option value="diesel">Diesel</option>
+                <option value="hybrid">Hybride</option>
+                <option value="electric">Électrique</option>
+              </select>
+            </FieldLabel>
+            <FieldLabel label="Boîte">
+              <select
+                value={feTransmission}
+                onChange={(e) => setFeTransmission(e.target.value)}
+                className="w-full h-10 bg-[var(--surface-2)] border border-[var(--border)] rounded-[var(--radius)] px-2 text-sm focus:outline-none focus:border-[var(--gold)]"
+              >
+                <option value="manual">Manuelle</option>
+                <option value="automatic">Automatique</option>
+              </select>
+            </FieldLabel>
+            <FieldLabel label="État">
+              <select
+                value={feCondition}
+                onChange={(e) => setFeCondition(e.target.value)}
+                className="w-full h-10 bg-[var(--surface-2)] border border-[var(--border)] rounded-[var(--radius)] px-2 text-sm focus:outline-none focus:border-[var(--gold)]"
+              >
+                <option value="new">Neuf</option>
+                <option value="excellent">Excellent</option>
+                <option value="good">Bon</option>
+                <option value="fair">Acceptable</option>
+                <option value="damaged">Endommagé</option>
+              </select>
+            </FieldLabel>
           </div>
           <FieldLabel label="Description">
             <textarea
@@ -504,13 +629,29 @@ export function AdminAuctionControls({
               className="mt-1 w-full bg-[var(--surface-2)] border border-[var(--border)] rounded-[var(--radius)] px-3 py-2 text-sm focus:outline-none focus:border-[var(--gold)]"
             />
           </FieldLabel>
-          <FieldLabel label="Fin (datetime-local)">
-            <Input
-              type="datetime-local"
-              value={feEnd}
-              onChange={(e) => setFeEnd(e.target.value)}
-            />
-          </FieldLabel>
+          <div className="grid grid-cols-2 gap-2">
+            <FieldLabel label="Début (datetime-local)">
+              <Input
+                type="datetime-local"
+                value={feStart}
+                onChange={(e) => setFeStart(e.target.value)}
+              />
+            </FieldLabel>
+            <FieldLabel label="Fin (datetime-local)">
+              <Input
+                type="datetime-local"
+                value={feEnd}
+                onChange={(e) => setFeEnd(e.target.value)}
+              />
+            </FieldLabel>
+          </div>
+          {feEndInBlackout && (
+            <div className="rounded-[var(--radius)] border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+              ⚠ La nouvelle heure de fin tombe dans une plage interdite
+              ({formatBlackoutWindows(blackout.windows)}, {blackout.timezone}).
+              L&apos;action sera consignée mais autorisée.
+            </div>
+          )}
           <FieldLabel label="Raison (audit)">
             <textarea
               value={feReason}
@@ -553,4 +694,15 @@ function FieldLabel({
       <div className="mt-1">{children}</div>
     </div>
   );
+}
+
+/** Convert an ISO timestamp into `YYYY-MM-DDTHH:MM` in the user's local tz
+ *  for use as a `datetime-local` input value. */
+function toLocalDatetimeInput(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
+    d.getHours(),
+  )}:${pad(d.getMinutes())}`;
 }

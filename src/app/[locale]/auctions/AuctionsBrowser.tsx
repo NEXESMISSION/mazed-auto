@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useDeferredValue } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import {
@@ -45,13 +46,25 @@ type SortKey =
   | "price_desc"
   | "most_bids";
 
-const SORTS: Array<{ value: SortKey; label: string }> = [
-  { value: "newest", label: "Plus récentes" },
-  { value: "ending_soon", label: "Bientôt terminées" },
-  { value: "price_asc", label: "Prix croissant" },
-  { value: "price_desc", label: "Prix décroissant" },
-  { value: "most_bids", label: "Plus enchéries" },
+// Value list is stable; label is resolved per-render via
+// useTranslations("auctions.sort") so AR/FR both render in-language.
+const SORT_VALUES: SortKey[] = [
+  "newest",
+  "ending_soon",
+  "price_asc",
+  "price_desc",
+  "most_bids",
 ];
+
+// Map from SortKey to the matching key in `messages.json`. Kept in one
+// place so the translation lookup at the call site stays one-liner.
+const SORT_I18N_KEY: Record<SortKey, string> = {
+  newest: "newest",
+  ending_soon: "endingSoon",
+  price_asc: "priceAsc",
+  price_desc: "priceDesc",
+  most_bids: "mostBids",
+};
 
 interface Props {
   initial: Auction[];
@@ -59,26 +72,28 @@ interface Props {
    *  page instead of the modern filter-bar list. Tapping a tile pushes
    *  ?brand= / ?body= and drops back to modern so the user sees results. */
   classicMode?: boolean;
+  /** Seller IDs whose plan grants `has_trusted_seller_badge`. Resolved
+   *  once on the server and passed as a plain string[] (Set isn't
+   *  JSON-serializable across the server→client boundary). */
+  trustedSellerIds?: string[];
 }
 
+// Body type values are stable enum keys; labels resolve via
+// useTranslations("auctions.category") so /fr and /ar both render
+// in-language. Icons stay co-located here since they're presentational.
 const BODY_TYPES: Array<{
   value: VehicleCategory;
-  label: string;
   icon: LucideIcon;
 }> = [
-  { value: "sedan",       label: "Berline",      icon: Car },
-  { value: "suv",         label: "SUV",          icon: Truck },
-  { value: "hatchback",   label: "Citadine",     icon: Car },
-  { value: "pickup",      label: "Pickup",       icon: Truck },
-  { value: "coupe",       label: "Coupé",        icon: Car },
-  { value: "convertible", label: "Cabriolet",    icon: Car },
-  { value: "wagon",       label: "Break",        icon: Car },
-  { value: "van",         label: "Utilitaire",   icon: Caravan },
+  { value: "sedan",       icon: Car },
+  { value: "suv",         icon: Truck },
+  { value: "hatchback",   icon: Car },
+  { value: "pickup",      icon: Truck },
+  { value: "coupe",       icon: Car },
+  { value: "convertible", icon: Car },
+  { value: "wagon",       icon: Car },
+  { value: "van",         icon: Caravan },
 ];
-
-const BODY_LABEL: Record<VehicleCategory, string> = Object.fromEntries(
-  BODY_TYPES.map((b) => [b.value, b.label]),
-) as Record<VehicleCategory, string>;
 
 /**
  * Single-page browse:
@@ -97,17 +112,32 @@ const BODY_LABEL: Record<VehicleCategory, string> = Object.fromEntries(
  * inside a single component caused "Rendered fewer hooks than expected"
  * the moment the user toggled views.
  */
-export function AuctionsBrowser({ initial, classicMode = false }: Props) {
+export function AuctionsBrowser({
+  initial,
+  classicMode = false,
+  trustedSellerIds = [],
+}: Props) {
+  // Rebuild the Set once per render — passing it down keeps each card's
+  // `.has()` lookup O(1) without rebuilding for every card.
+  const trustedSet = new Set(trustedSellerIds);
   return classicMode ? (
     <ClassicHub initial={initial} />
   ) : (
-    <ModernBrowser initial={initial} />
+    <ModernBrowser initial={initial} trustedSellers={trustedSet} />
   );
 }
 
-function ModernBrowser({ initial }: { initial: Auction[] }) {
+function ModernBrowser({
+  initial,
+  trustedSellers,
+}: {
+  initial: Auction[];
+  trustedSellers: Set<string>;
+}) {
   const router = useRouter();
   const params = useSearchParams();
+  const tSort = useTranslations("auctions.sort");
+  const tCat = useTranslations("auctions.category");
   const brand = params.get("brand");
   const body = params.get("body") as VehicleCategory | null;
 
@@ -216,7 +246,7 @@ function ModernBrowser({ initial }: { initial: Auction[] }) {
     if (body)
       chips.push({
         key: "body",
-        label: BODY_LABEL[body],
+        label: tCat(body),
         clear: () => updateScope({ body: null }),
       });
     if (filters.status !== "live")
@@ -291,7 +321,7 @@ function ModernBrowser({ initial }: { initial: Auction[] }) {
       <div className="sticky top-0 z-30 bg-[var(--background)]/85 backdrop-blur-xl border-b border-[var(--border)]">
         <div className="px-4 pt-3 pb-2 space-y-2">
           {/* Search */}
-          <div className="flex items-center gap-3 rounded-full bg-[var(--surface)] border border-[var(--border)] focus-within:border-[var(--gold-soft)] transition-colors pl-4 pr-1.5 h-11">
+          <div className="flex items-center gap-3 rounded-full bg-[var(--surface)] border border-[var(--border)] focus-within:border-[var(--gold-soft)] transition-colors ps-4 pe-1.5 h-11">
             <Search className="h-4 w-4 text-[var(--foreground-muted)] shrink-0" />
             <input
               type="search"
@@ -324,7 +354,7 @@ function ModernBrowser({ initial }: { initial: Auction[] }) {
                 aria-expanded={sortOpen}
               >
                 <ArrowUpDown className="h-3.5 w-3.5" />
-                {SORTS.find((s) => s.value === sort)?.label}
+                {tSort(SORT_I18N_KEY[sort])}
               </button>
               {sortOpen && (
                 <>
@@ -338,28 +368,28 @@ function ModernBrowser({ initial }: { initial: Auction[] }) {
                     role="listbox"
                     className="absolute z-20 top-full mt-1.5 start-0 min-w-[12rem] rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-lg)] overflow-hidden"
                   >
-                    {SORTS.map((s) => (
+                    {SORT_VALUES.map((value) => (
                       <button
-                        key={s.value}
+                        key={value}
                         type="button"
                         role="option"
-                        aria-selected={s.value === sort}
+                        aria-selected={value === sort}
                         onClick={() => {
-                          setSort(s.value);
+                          setSort(value);
                           setSortOpen(false);
                         }}
                         className={`w-full flex items-center gap-2 px-3.5 h-10 text-[13px] font-semibold text-start ${
-                          s.value === sort
+                          value === sort
                             ? "bg-[var(--gold-faint)] text-[var(--gold)]"
                             : "hover:bg-[var(--surface-2)]"
                         }`}
                       >
-                        {s.value === sort ? (
+                        {value === sort ? (
                           <Check className="h-3.5 w-3.5" />
                         ) : (
                           <span className="h-3.5 w-3.5" />
                         )}
-                        {s.label}
+                        {tSort(SORT_I18N_KEY[value])}
                       </button>
                     ))}
                   </div>
@@ -464,7 +494,11 @@ function ModernBrowser({ initial }: { initial: Auction[] }) {
       ) : viewMode === "grid" ? (
         <div className="mt-3 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 px-4">
           {filteredAuctions.map((auction) => (
-            <AuctionCard key={auction.id} auction={auction} />
+            <AuctionCard
+              key={auction.id}
+              auction={auction}
+              isTrustedSeller={trustedSellers.has(auction.seller.id)}
+            />
           ))}
         </div>
       ) : viewMode === "list" ? (
@@ -567,6 +601,7 @@ function ViewToggle({
  */
 function ClassicHub({ initial }: { initial: Auction[] }) {
   const router = useRouter();
+  const tCat = useTranslations("auctions.category");
   const list = useRealtimeAuctionList(initial);
   const [search, setSearch] = useState("");
   // Same trick as ModernBrowser — keep typing snappy on the brand
@@ -601,10 +636,11 @@ function ClassicHub({ initial }: { initial: Auction[] }) {
     }
     return BODY_TYPES.map((b) => ({
       ...b,
+      label: tCat(b.value),
       count: counts.get(b.value) ?? 0,
       image: firstByCategory.get(b.value),
     }));
-  }, [list]);
+  }, [list, tCat]);
 
   const filteredBrands = useMemo(() => {
     const q = deferredSearch.trim().toLowerCase();
@@ -617,7 +653,7 @@ function ClassicHub({ initial }: { initial: Auction[] }) {
       {/* Search bar — narrows the brand grid, lets users find a marque
           in an alphabet of 60+ without scrolling. */}
       <div className="px-4">
-        <div className="flex items-center gap-3 rounded-full bg-[var(--surface)] border border-[var(--border)] focus-within:border-[var(--gold-soft)] transition-colors pl-4 pr-1.5 h-12">
+        <div className="flex items-center gap-3 rounded-full bg-[var(--surface)] border border-[var(--border)] focus-within:border-[var(--gold-soft)] transition-colors ps-4 pe-1.5 h-12">
           <Search className="h-4 w-4 text-[var(--foreground-muted)] shrink-0" />
           <input
             type="search"

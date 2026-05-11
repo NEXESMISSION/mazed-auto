@@ -151,7 +151,7 @@ function Row({
       <button
         type="button"
         onClick={onToggle}
-        className="w-full flex items-center justify-between p-3 text-left hover:bg-[var(--surface-2)]"
+        className="w-full flex items-center justify-between p-3 text-start hover:bg-[var(--surface-2)]"
       >
         <div className="flex-1 min-w-0">
           <div className="font-bold text-sm truncate">

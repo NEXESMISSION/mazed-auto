@@ -596,23 +596,45 @@ export async function listTransactions(
   return (data ?? []) as TransactionRow[];
 }
 
+// All kinds the `notifications.kind` CHECK constraint allows. Keep this
+// union in sync with `migrate-notifications-expansion.sql`. The first
+// nine are legacy / actively triggered; the remaining thirteen come from
+// the v2 expansion. A few are still dead-code on the producer side, but
+// the UI lists them so future wiring doesn't break.
+export type NotificationKind =
+  | "outbid"
+  | "won"
+  | "lost"
+  | "new_bid"
+  | "approved"
+  | "rejected"
+  | "payment_due"
+  | "reminder"
+  | "system"
+  // v2 expansion ↓
+  | "kyc_approved"
+  | "kyc_rejected"
+  | "kyc_expires_soon"
+  | "auction_starting_soon"
+  | "reserve_not_met"
+  | "auction_extended"
+  | "deposit_refunded"
+  | "deposit_forfeited"
+  | "payment_received"
+  | "rating_request"
+  | "new_report"
+  | "account_blocked";
+
 export interface NotificationRow {
   id: string;
   user_id: string;
   auction_id: string | null;
-  kind:
-    | "outbid"
-    | "won"
-    | "lost"
-    | "new_bid"
-    | "approved"
-    | "rejected"
-    | "payment_due"
-    | "reminder"
-    | "system";
+  kind: NotificationKind;
   title: string;
   body: string | null;
   is_read: boolean;
+  /** Populated by `sync_notification_read_at` trigger when is_read flips. */
+  read_at: string | null;
   created_at: string;
 }
 

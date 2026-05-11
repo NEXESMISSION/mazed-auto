@@ -1,4 +1,5 @@
 import { Fragment } from "react";
+import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { TrendingUp, Users, Trophy } from "lucide-react";
 import { AdminShell } from "@/components/layout/AdminShell";
@@ -36,9 +37,24 @@ interface HeatmapRow {
   bids: number;
 }
 
-const DOW_LABELS = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
+const DOW_KEYS = [
+  "dowSun",
+  "dowMon",
+  "dowTue",
+  "dowWed",
+  "dowThu",
+  "dowFri",
+  "dowSat",
+] as const;
 
-export default async function InsightsPage() {
+export default async function InsightsPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "admin.insights" });
+  const DOW_LABELS = DOW_KEYS.map((k) => t(k));
   const supabase = await createClient();
   const [funnelRes, sellersRes, biddersRes, heatRes] = await Promise.all([
     supabase.rpc("analytics_funnel", { p_days: 90 }).maybeSingle<FunnelRow>(),
@@ -69,11 +85,11 @@ export default async function InsightsPage() {
   }
 
   const stages: Array<{ label: string; value: number }> = [
-    { label: "Inscriptions (90 j)", value: Number(f.signups) },
-    { label: "Email vérifié", value: Number(f.email_verified) },
-    { label: "KYC vérifié", value: Number(f.kyc_verified) },
-    { label: "Première offre", value: Number(f.first_bid) },
-    { label: "Première victoire", value: Number(f.first_win) },
+    { label: t("stageSignups"), value: Number(f.signups) },
+    { label: t("stageEmailVerified"), value: Number(f.email_verified) },
+    { label: t("stageKycVerified"), value: Number(f.kyc_verified) },
+    { label: t("stageFirstBid"), value: Number(f.first_bid) },
+    { label: t("stageFirstWin"), value: Number(f.first_win) },
   ];
   const top = stages[0].value || 1;
 
@@ -82,12 +98,10 @@ export default async function InsightsPage() {
       <div className="p-4 md:p-6 space-y-5 max-w-5xl">
         <div className="flex items-center gap-2">
           <TrendingUp className="h-6 w-6 text-[var(--gold)]" />
-          <h1 className="text-2xl md:text-3xl font-extrabold">
-            Tableau d&apos;analyse avancé
-          </h1>
+          <h1 className="text-2xl md:text-3xl font-extrabold">{t("title")}</h1>
         </div>
 
-        <Section title="Entonnoir d'acquisition (90 jours)">
+        <Section title={t("funnelSection")}>
           <div className="space-y-2">
             {stages.map((s, i) => {
               const pct = Math.round((s.value / top) * 100);
@@ -104,7 +118,7 @@ export default async function InsightsPage() {
                     <span className="font-bold tabular-nums">
                       {s.value}{" "}
                       {dropPct !== null && (
-                        <span className="text-[10px] text-red-300 ml-1">
+                        <span className="text-[10px] text-red-300 ms-1">
                           (-{dropPct}%)
                         </span>
                       )}
@@ -123,7 +137,7 @@ export default async function InsightsPage() {
         </Section>
 
         <Section
-          title="Heatmap des offres (30 j)"
+          title={t("heatmapSection")}
           tone="default"
         >
           <div className="grid grid-cols-[40px_repeat(24,minmax(14px,1fr))] gap-[2px] text-[10px]">
@@ -146,7 +160,11 @@ export default async function InsightsPage() {
                   return (
                     <div
                       key={`${dow}-${h}`}
-                      title={`${DOW_LABELS[dow]} ${h}h : ${v} offres`}
+                      title={t("heatmapCellTitle", {
+                        day: DOW_LABELS[dow],
+                        hour: h,
+                        bids: v,
+                      })}
                       className="h-4 rounded-sm"
                       style={{
                         backgroundColor:
@@ -163,11 +181,11 @@ export default async function InsightsPage() {
         </Section>
 
         <Section
-          title="Top vendeurs (30 j)"
+          title={t("topSellersSection")}
           icon={<Trophy className="h-5 w-5 text-[var(--gold)]" />}
         >
           {sellers.length === 0 ? (
-            <Empty />
+            <Empty label={t("empty")} />
           ) : (
             <div className="divide-y divide-[var(--border)]">
               {sellers.map((s, i) => (
@@ -181,14 +199,16 @@ export default async function InsightsPage() {
                   </span>
                   <div className="min-w-0">
                     <div className="font-bold text-sm truncate">
-                      {s.display_name ?? "(sans nom)"}
+                      {s.display_name ?? t("noName")}
                     </div>
                     <div className="text-xs text-[var(--foreground-muted)] truncate">
-                      @{s.username ?? s.seller_id.slice(0, 8)} · trust{" "}
-                      {s.trust_score}
+                      @{s.username ?? s.seller_id.slice(0, 8)} ·{" "}
+                      {t("trustLabel", { score: s.trust_score })}
                     </div>
                   </div>
-                  <Badge size="sm">{s.sales_count} ventes</Badge>
+                  <Badge size="sm">
+                    {t("salesBadge", { count: s.sales_count })}
+                  </Badge>
                   <span className="font-bold text-[var(--gold)] tabular-nums">
                     {formatPrice(Number(s.total_amount))}
                   </span>
@@ -199,11 +219,11 @@ export default async function InsightsPage() {
         </Section>
 
         <Section
-          title="Top enchérisseurs (30 j)"
+          title={t("topBiddersSection")}
           icon={<Users className="h-5 w-5 text-[var(--gold)]" />}
         >
           {bidders.length === 0 ? (
-            <Empty />
+            <Empty label={t("empty")} />
           ) : (
             <div className="divide-y divide-[var(--border)]">
               {bidders.map((b, i) => (
@@ -218,7 +238,9 @@ export default async function InsightsPage() {
                   <div className="font-mono text-xs">
                     {b.user_id.slice(0, 8)}
                   </div>
-                  <Badge size="sm">{b.bid_count} offres</Badge>
+                  <Badge size="sm">
+                    {t("bidsBadge", { count: b.bid_count })}
+                  </Badge>
                   <span className="text-xs text-emerald-400">
                     {b.win_count} ✓
                   </span>
@@ -256,10 +278,10 @@ function Section({
   );
 }
 
-function Empty() {
+function Empty({ label }: { label: string }) {
   return (
     <div className="text-center text-sm text-[var(--foreground-muted)] py-2">
-      Aucune donnée.
+      {label}
     </div>
   );
 }

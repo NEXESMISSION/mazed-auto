@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { Check, Edit2, Send, AlertTriangle } from "lucide-react";
 import { CreateAuctionShell } from "@/components/layout/CreateAuctionShell";
@@ -16,21 +17,6 @@ import { formatPrice, formatNumber } from "@/lib/format";
 import { isInBlackout, type BlackoutWindow } from "@/lib/blackout";
 import { pickDepositFromTiers, type DepositTier } from "@/lib/deposit";
 
-const fuelLabels: Record<string, string> = {
-  gasoline: "Essence",
-  diesel: "Diesel",
-  hybrid: "Hybride",
-  electric: "Électrique",
-};
-
-const conditionLabels: Record<string, string> = {
-  new: "Neuf",
-  excellent: "Excellent",
-  good: "Bon",
-  fair: "Acceptable",
-  damaged: "Endommagé",
-};
-
 // (Dev placeholder photos removed — every auction must use real photos
 // captured live in step-2 / step-3.)
 
@@ -39,6 +25,9 @@ export default function ReviewPage() {
   const { toast } = useToast();
   const { user } = useAuth();
   const { draft, hydrated } = useDraft();
+  const t = useTranslations("wizard.review");
+  const tWiz = useTranslations("wizard");
+  const tCommon = useTranslations("common");
   const [agreed, setAgreed] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -48,12 +37,12 @@ export default function ReviewPage() {
 
   async function publish() {
     if (!user) {
-      toast("Connectez-vous d'abord", "warning");
+      toast(t("toastNeedLogin"), "warning");
       router.push("/login");
       return;
     }
     if (user.kycStatus !== "verified") {
-      toast("Vous devez vérifier votre identité (KYC) avant de publier une enchère", "warning");
+      toast(t("toastNeedKyc"), "warning");
       router.push("/kyc/start");
       return;
     }
@@ -87,7 +76,7 @@ export default function ReviewPage() {
 
     if (sellerErr) {
       setPublishing(false);
-      toast("Échec d'enregistrement du profil vendeur : " + sellerErr.message, "error");
+      toast(t("toastSellerFailed", { error: sellerErr.message }), "error");
       return;
     }
 
@@ -99,16 +88,13 @@ export default function ReviewPage() {
     );
     if (finalImages.length < 12) {
       setPublishing(false);
-      toast(
-        "Vous devez fournir 12 photos avant de publier l'enchère",
-        "warning",
-      );
+      toast(t("toastNeed12Photos"), "warning");
       router.push("/seller/new/step-2");
       return;
     }
     if (!draft.videoUrl) {
       setPublishing(false);
-      toast("Vous devez filmer la voiture avant de publier", "warning");
+      toast(t("toastNeedVideo"), "warning");
       router.push("/seller/new/step-3");
       return;
     }
@@ -150,16 +136,63 @@ export default function ReviewPage() {
           : [];
         if (isInBlackout(endTime, safeWindows, timezone)) {
           setPublishing(false);
-          toast(
-            "L'heure de fin tombe dans une plage interdite. Choisissez une autre durée.",
-            "warning",
-          );
+          toast(t("toastBlackout"), "warning");
           return;
         }
       }
     } catch {
       // If the settings table is missing on a fresh checkout, fall
       // through to insert without blackout enforcement.
+    }
+
+    // Plan-quota enforcement — block publish if the user has run out of
+    // listings for the current billing period. Personal users with no
+    // active subscription fall back to the `listing.free_per_month`
+    // setting (see migrate-pricing-spec.sql / RPC user_listings_remaining).
+    try {
+      const { data: remaining } = await supabase.rpc(
+        "user_listings_remaining",
+        { p_user_id: user.id },
+      );
+      if (typeof remaining === "number" && remaining <= 0) {
+        setPublishing(false);
+        toast(t("toastQuotaExceeded"), "warning");
+        router.push("/pricing");
+        return;
+      }
+    } catch {
+      // Fresh checkout / missing RPC — let the publish through.
+    }
+
+    // Plan-bound max duration. If the user has an active plan, refuse
+    // to publish an auction longer than the plan allows. Without an
+    // active sub, no plan cap applies (the duration_options setting
+    // already limits the chooser to admin-allowed values).
+    try {
+      const { data: subRow } = await supabase
+        .from("user_active_subscription")
+        .select("plan_slug")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (subRow?.plan_slug) {
+        const { data: planRow } = await supabase
+          .from("cms_subscription_plans")
+          .select("max_listing_duration_days")
+          .eq("slug", subRow.plan_slug)
+          .maybeSingle();
+        const maxDays = Number(planRow?.max_listing_duration_days ?? 30);
+        if (
+          Number.isFinite(maxDays) &&
+          maxDays > 0 &&
+          (draft.durationDays ?? 7) > maxDays
+        ) {
+          setPublishing(false);
+          toast(t("toastPlanDuration", { maxDays }), "warning");
+          return;
+        }
+      }
+    } catch {
+      // ignore on fresh checkout
     }
 
     // Bid-increment tiers live in platform_settings so the admin can
@@ -217,6 +250,12 @@ export default function ReviewPage() {
       // participationDeposit stays at the default from pickDepositFromTiers above.
     }
 
+    // Boost fees are NOT charged here — the auction is still in
+    // pending_review and may get rejected. The is_featured / is_vip
+    // flags are persisted on the row; the admin's "Approuver et publier"
+    // step in /admin/auctions-queue charges the corresponding ledger
+    // rows when the auction actually goes live.
+
     const { data: auction, error: auctionErr } = await supabase
       .from("auctions")
       .insert({
@@ -249,6 +288,13 @@ export default function ReviewPage() {
         // An admin flips it to `active` from /admin/auctions-queue.
         status: "pending_review",
         reserve_met: false,
+        // Paid visibility add-ons. is_featured is the canonical "appears on
+        // home page" flag (the AdminAuctionControls toggle reads/writes
+        // this), is_vip is the VIP-rail flag. top_of_search is consumed by
+        // the search ranking — falls back gracefully if the column doesn't
+        // exist yet.
+        is_featured: Boolean(draft.boostFeatured),
+        is_vip: Boolean(draft.boostVip),
         // Golden-Lock metadata — captured here so /admin/ownership-review
         // can surface exceptional cases instead of letting them mix into
         // the regular queue with no signal.
@@ -258,18 +304,25 @@ export default function ReviewPage() {
       .select("id")
       .single();
 
-    setPublishing(false);
-
     if (auctionErr) {
-      toast("Échec de la publication de l'enchère : " + auctionErr.message, "error");
+      setPublishing(false);
+      // The atomic publish-quota trigger raises QUOTA_EXCEEDED if the
+      // user blew through their plan limit between the optimistic
+      // pre-check above and the insert (e.g. double-tap, two tabs).
+      // Surface the dedicated copy so they know to upgrade instead of
+      // staring at a raw SQL error.
+      if (auctionErr.message?.includes("QUOTA_EXCEEDED")) {
+        toast(t("toastQuotaExceeded"), "warning");
+        router.push("/pricing");
+        return;
+      }
+      toast(t("toastPublishFailed", { error: auctionErr.message }), "error");
       return;
     }
 
+    setPublishing(false);
     clearDraft();
-    toast(
-      "Votre enchère a été soumise à l'examen — vous serez notifié dès son acceptation",
-      "success",
-    );
+    toast(t("toastPublishSuccess"), "success");
     router.push(`/seller/auctions/${auction.id}`);
     router.refresh();
   }
@@ -278,7 +331,7 @@ export default function ReviewPage() {
     return (
       <CreateAuctionShell current={4}>
         <div className="text-center py-12 text-[var(--foreground-muted)]">
-          Chargement...
+          {t("loading")}
         </div>
       </CreateAuctionShell>
     );
@@ -286,18 +339,21 @@ export default function ReviewPage() {
 
   // Validation
   const missing: string[] = [];
-  if (!draft.make || !draft.model || !draft.year) missing.push("Données du véhicule");
-  if (photoCount < 12) missing.push(`Photos (${photoCount}/12)`);
-  if (!draft.videoUrl) missing.push("Vidéo");
-  if (!draft.startingPrice) missing.push("Prix");
+  if (!draft.make || !draft.model || !draft.year) missing.push(t("missingVehicle"));
+  if (photoCount < 12) missing.push(t("missingPhotos", { count: photoCount }));
+  if (!draft.videoUrl) missing.push(t("missingVideo"));
+  if (!draft.startingPrice) missing.push(t("missingPrice"));
+
+  const fuelLabel = draft.fuelType ? tWiz(`fuel.${draft.fuelType}`) : "—";
+  const conditionLabel = draft.condition ? tWiz(`condition.${draft.condition}`) : "—";
 
   return (
     <CreateAuctionShell current={4}>
       <div className="space-y-5">
         <div>
-          <h1 className="text-2xl font-extrabold">Vérification finale</h1>
+          <h1 className="text-2xl font-extrabold">{t("title")}</h1>
           <p className="text-sm text-[var(--foreground-muted)] mt-1">
-            Vérifiez chaque détail avant la publication
+            {t("subtitle")}
           </p>
         </div>
 
@@ -305,7 +361,7 @@ export default function ReviewPage() {
           <div className="rounded-[var(--radius)] p-3 flex gap-2 items-start bg-red-500/10 border border-red-500/30">
             <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-red-400" />
             <div className="text-xs leading-relaxed text-red-200">
-              <div className="font-bold">Étapes manquantes :</div>
+              <div className="font-bold">{t("missingTitle")}</div>
               <div className="mt-0.5">{missing.join(" — ")}</div>
             </div>
           </div>
@@ -316,21 +372,25 @@ export default function ReviewPage() {
             <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
             <div className="text-xs leading-relaxed flex-1">
               <div className="font-bold text-amber-300">
-                Vous devez vérifier votre identité (KYC) avant la publication
+                {t("kycWarningTitle")}
               </div>
               <div className="text-[var(--foreground-muted)] mt-0.5">
-                Nous vérifions votre carte d'identité pour garantir la fiabilité de chaque enchère.
+                {t("kycWarningBody")}
               </div>
             </div>
             <Link href="/kyc/start">
-              <Button size="sm">Commencer la vérification</Button>
+              <Button size="sm">{t("kycWarningCta")}</Button>
             </Link>
           </div>
         )}
 
-        <Section title="Données du véhicule" editHref="/seller/new/step-1">
+        <Section
+          title={t("sectionVehicle")}
+          editLabel={t("edit")}
+          editHref="/seller/new/step-1"
+        >
           <Row
-            k="Marque + modèle"
+            k={t("rowMakeModel")}
             v={
               draft.make && draft.model && draft.year
                 ? `${draft.make} ${draft.model} ${draft.year}`
@@ -338,74 +398,95 @@ export default function ReviewPage() {
             }
           />
           <Row
-            k="Kilométrage"
+            k={t("rowMileage")}
             v={
               draft.mileage !== undefined
                 ? `${formatNumber(draft.mileage)} km`
                 : "—"
             }
           />
-          <Row k="Carburant" v={fuelLabels[draft.fuelType ?? ""] ?? "—"} />
-          <Row k="Statut" v={conditionLabels[draft.condition ?? ""] ?? "—"} />
-          <Row k="Site" v={draft.city ?? "—"} />
+          <Row k={t("rowFuel")} v={fuelLabel} />
+          <Row k={t("rowCondition")} v={conditionLabel} />
+          <Row k={t("rowSite")} v={draft.city ?? "—"} />
         </Section>
 
-        <Section title="Photos" editHref="/seller/new/step-2">
+        <Section
+          title={t("sectionPhotos")}
+          editLabel={t("edit")}
+          editHref="/seller/new/step-2"
+        >
           {photoCount === 12 ? (
             <div className="text-sm text-[var(--success)] flex items-center gap-2">
               <Check className="h-4 w-4" />
-              12 photos téléversées
+              {t("photosDone")}
             </div>
           ) : (
             <div className="text-sm text-[var(--warning)]">
-              {photoCount}/12 — Vous devez téléverser les 12 photos
+              {t("photosMissing", { count: photoCount })}
             </div>
           )}
         </Section>
 
-        <Section title="Vidéo" editHref="/seller/new/step-3">
+        <Section
+          title={t("sectionVideo")}
+          editLabel={t("edit")}
+          editHref="/seller/new/step-3"
+        >
           {draft.videoUrl ? (
             <div className="text-sm text-[var(--success)] flex items-center gap-2">
               <Check className="h-4 w-4" />
-              Vidéo enregistrée
+              {t("videoDone")}
             </div>
           ) : (
-            <div className="text-sm text-[var(--warning)]">Enregistrement vidéo requis</div>
-          )}
-        </Section>
-
-        <Section title="Propriété" editHref="/seller/new/step-4">
-          <Row k="Nom sur la carte" v={draft.ownerName ?? "—"} />
-          <Row k="Numéro de plaque" v={draft.registration ?? "—"} />
-          {draft.ownerName && (
-            <div className="text-xs text-[var(--success)] mt-1">
-              ✓ Verrou doré franchi
+            <div className="text-sm text-[var(--warning)]">
+              {t("videoMissing")}
             </div>
           )}
         </Section>
 
-        <Section title="Prix et durée" editHref="/seller/new/step-5">
+        <Section
+          title={t("sectionOwnership")}
+          editLabel={t("edit")}
+          editHref="/seller/new/step-4"
+        >
+          <Row k={t("rowOwnerName")} v={draft.ownerName ?? "—"} />
+          <Row k={t("rowPlate")} v={draft.registration ?? "—"} />
+          {draft.ownerName && (
+            <div className="text-xs text-[var(--success)] mt-1">
+              {t("goldenLockPassed")}
+            </div>
+          )}
+        </Section>
+
+        <Section
+          title={t("sectionPriceDuration")}
+          editLabel={t("edit")}
+          editHref="/seller/new/step-5"
+        >
           <Row
-            k="Prix de départ"
+            k={t("rowStartingPrice")}
             v={draft.startingPrice ? formatPrice(draft.startingPrice) : "—"}
           />
           {draft.reservePrice && (
-            <Row k="Prix de réserve" v={formatPrice(draft.reservePrice)} />
+            <Row k={t("rowReservePrice")} v={formatPrice(draft.reservePrice)} />
           )}
           {draft.buyNowPrice && (
-            <Row k="Achat immédiat" v={formatPrice(draft.buyNowPrice)} />
+            <Row k={t("rowBuyNow")} v={formatPrice(draft.buyNowPrice)} />
           )}
           <Row
-            k="Durée"
-            v={draft.durationDays ? `${draft.durationDays} jours` : "—"}
+            k={t("rowDuration")}
+            v={
+              draft.durationDays
+                ? t("durationDays", { count: draft.durationDays })
+                : "—"
+            }
           />
         </Section>
 
         <div className="rounded-[var(--radius)] bg-amber-500/10 border border-amber-500/30 p-3 flex gap-2 items-start">
           <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
           <div className="text-xs text-[var(--foreground-muted)] leading-relaxed">
-            Après la publication, les données ne peuvent plus être modifiées. Vous pouvez seulement annuler
-            l'enchère (ce qui peut affecter votre réputation).
+            {t("warnImmutable")}
           </div>
         </div>
 
@@ -416,10 +497,9 @@ export default function ReviewPage() {
             onChange={(e) => setAgreed(e.target.checked)}
           />
           <span className="text-xs text-[var(--foreground-muted)] leading-relaxed">
-            J&apos;accepte les{" "}
-            <LegalLink kind="terms">conditions de publication</LegalLink>{" "}
-            et je confirme que toutes les informations sont exactes. Toute information erronée peut entraîner
-            la désactivation de mon compte.
+            {t("agreementPrefix")}
+            <LegalLink kind="terms">{t("agreementLinkText")}</LegalLink>
+            {t("agreementSuffix")}
           </span>
         </label>
 
@@ -437,35 +517,35 @@ export default function ReviewPage() {
         >
           <Send className="h-5 w-5" />
           {publishing
-            ? "Envoi en cours..."
+            ? t("submitting")
             : !user
-              ? "Connectez-vous pour publier"
+              ? t("loginToSubmit")
               : user.kycStatus !== "verified"
-                ? "Terminez d'abord la vérification d'identité"
-                : "Soumettre pour examen"}
+                ? t("finishKycFirst")
+                : t("submitCta")}
         </Button>
       </div>
 
       <Modal
         open={confirmOpen}
         onClose={() => setConfirmOpen(false)}
-        title="Confirmer la soumission pour examen"
-        description="Notre équipe examinera votre enchère sous 24 heures avant de la publier aux acheteurs"
+        title={t("confirmTitle")}
+        description={t("confirmBody")}
       >
         <div className="space-y-4">
           <ul className="space-y-2 text-sm text-[var(--foreground-muted)]">
-            <Bullet text="La voiture apparaîtra immédiatement sur toutes les pages d'enchères" />
-            <Bullet text="Vous recevrez des notifications en temps réel pour chaque nouvelle offre" />
-            <Bullet text="Commission Mazed de 3% uniquement à la vente finale" />
+            <Bullet text={t("confirmBullet1")} />
+            <Bullet text={t("confirmBullet2")} />
+            <Bullet text={t("confirmBullet3")} />
           </ul>
         </div>
         <ModalFooter>
           <Button variant="ghost" size="md" onClick={() => setConfirmOpen(false)}>
-            Annuler
+            {tCommon("cancel")}
           </Button>
           <Button size="md" onClick={publish} disabled={publishing}>
             <Send className="h-4 w-4" />
-            {publishing ? "Publication en cours..." : "Confirmer et publier"}
+            {publishing ? t("confirmPublishing") : t("confirmCta")}
           </Button>
         </ModalFooter>
       </Modal>
@@ -475,10 +555,12 @@ export default function ReviewPage() {
 
 function Section({
   title,
+  editLabel,
   editHref,
   children,
 }: {
   title: string;
+  editLabel: string;
   editHref: string;
   children: React.ReactNode;
 }) {
@@ -491,7 +573,7 @@ function Section({
           className="text-xs text-[var(--gold)] hover:underline flex items-center gap-1"
         >
           <Edit2 className="h-3 w-3" />
-          Modifier
+          {editLabel}
         </Link>
       </div>
       <div className="p-4 space-y-1.5 text-sm">{children}</div>

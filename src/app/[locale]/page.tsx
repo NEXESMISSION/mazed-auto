@@ -7,15 +7,18 @@ import { NewestRibbon } from "@/components/home/NewestRibbon";
 import { RecommendedRail } from "@/components/home/RecommendedRail";
 import { EndingSoonRail } from "@/components/home/EndingSoonRail";
 import { VipRail } from "@/components/home/VipRail";
+import { ProSellersRail } from "@/components/home/ProSellersRail";
 import { HotNowRail } from "@/components/home/HotNowRail";
 import { RecentlyEndedRail } from "@/components/home/RecentlyEndedRail";
 import { LiveActivityTicker } from "@/components/home/LiveActivityTicker";
 import { BrandSlider } from "@/components/home/BrandSlider";
+import { CategoryStrip } from "@/components/home/CategoryStrip";
 import { DesktopHero } from "@/components/home/DesktopHero";
 import { DesktopFinalCta } from "@/components/home/DesktopFinalCta";
 import { HomeSectionDivider } from "@/components/home/HomeSectionDivider";
 import { createClient } from "@/lib/supabase/server";
-import { getHomeRailsCached } from "@/lib/home-cache";
+import { getHomeRailsCached, getLiveAuctionsCached } from "@/lib/home-cache";
+import { getSellerSearchPriorities } from "@/lib/subscription";
 import type { Auction } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -36,8 +39,16 @@ export default async function HomePage() {
     getLocale(),
   ]);
   const user = userResp?.user ?? null;
-  const { hot, endingSoon, newest, vip, recentlyEnded, activitySeed, cmsBanners } =
-    rails;
+  const {
+    hot,
+    endingSoon,
+    newest,
+    vip,
+    recentlyEnded,
+    activitySeed,
+    cmsBanners,
+    cmsCategories,
+  } = rails;
 
   const rawBids = user
     ? await supabase.from("bids").select("auction_id").eq("user_id", user.id)
@@ -67,6 +78,25 @@ export default async function HomePage() {
 
   // BrandSlider needs a wide-ish pool — feed it everything we already have.
   const brandPool: Auction[] = dedupe([...livePool, ...recentlyEnded]);
+
+  // Diamond plan perk: pinned-pro auctions on the home page. Cheap
+  // single-RPC lookup that returns just the auction IDs; we resolve
+  // them against the cached live-pool so we never hit the DB twice
+  // for the same vehicle. Falls back to an empty array if the RPC
+  // hasn't been migrated yet.
+  const pinnedPro = await loadPinnedProAuctions(supabase, brandPool).catch(
+    () => [],
+  );
+
+  // Build a set of seller IDs whose plan grants the trusted-seller
+  // badge. Threaded through every rail so the badge shows on cards
+  // across the entire home page, not just on /admin/auctions/[id].
+  // Pool of seller IDs is the union of the live rails (no extra DB).
+  const trustedSellerIds = await loadTrustedSellerIds([
+    ...livePool,
+    ...recentlyEnded,
+    ...pinnedPro,
+  ]).catch(() => new Set<string>());
 
   // Pick the highest-priority active CMS banner. Render above the
   // existing PromoBanner so admin-managed seasonal promos lead.
@@ -109,16 +139,29 @@ export default async function HomePage() {
         />
 
         {/* 🔥 Hottest signal — bidding right now */}
-        <HotNowRail items={hot} />
+        <HotNowRail items={hot} trustedSellerIds={trustedSellerIds} />
 
         {/* Urgency — countdown (24h window, regular cards) */}
-        <EndingSoonRail items={filteredEndingSoon} />
+        <EndingSoonRail
+          items={filteredEndingSoon}
+          trustedSellerIds={trustedSellerIds}
+        />
+
+        {/* Pinned Pro — Diamond-plan sellers get a permanent rail.
+            Hidden when empty so this is a no-op until someone subscribes. */}
+        <ProSellersRail items={pinnedPro} />
 
         {/* Editorial — premium VIP picks */}
-        <VipRail items={filteredVip} />
+        <VipRail
+          items={filteredVip}
+          trustedSellerIds={trustedSellerIds}
+        />
 
         {/* Personalised */}
-        <RecommendedRail items={recommended} />
+        <RecommendedRail
+          items={recommended}
+          trustedSellerIds={trustedSellerIds}
+        />
 
         {/* Real-time activity ticker */}
         <LiveActivityTicker initial={activitySeed} />
@@ -140,6 +183,7 @@ export default async function HomePage() {
 
         {/* Discovery footer */}
         <BrandSlider pool={brandPool} />
+        <CategoryStrip categories={cmsCategories} locale={locale} />
 
         {/* Desktop closing CTA — buyer + seller pillars. Hidden on mobile. */}
         <DesktopFinalCta />
@@ -151,6 +195,61 @@ export default async function HomePage() {
 }
 
 /** Dedupe by auction id while preserving the first occurrence. */
+/**
+ * Build a Set of seller IDs whose active plan grants the
+ * trusted-seller badge. One batched RPC call regardless of how many
+ * sellers appear across the rails. Falls back to an empty Set if the
+ * RPC is missing (fresh checkout pre-migration).
+ */
+async function loadTrustedSellerIds(
+  pool: Auction[],
+): Promise<Set<string>> {
+  const ids = Array.from(
+    new Set(pool.map((a) => a.seller.id).filter(Boolean)),
+  );
+  if (ids.length === 0) return new Set();
+  const priorities = await getSellerSearchPriorities(ids);
+  const out = new Set<string>();
+  for (const [sellerId, p] of priorities) {
+    if (p.hasTrustedSellerBadge) out.add(sellerId);
+  }
+  return out;
+}
+
+/**
+ * Pinned-pro home rail. Looks up the auction IDs from a Diamond-plan
+ * RPC and resolves them via the live auctions pool (cached). Anything
+ * not in the pool (e.g. just-listed and not yet picked up by the rail
+ * queries) is fetched lazily via getLiveAuctionsCached so the rail
+ * stays fresh.
+ */
+async function loadPinnedProAuctions(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  alreadyKnown: Auction[],
+): Promise<Auction[]> {
+  const { data, error } = await supabase.rpc("home_pinned_pro_auctions", {
+    p_limit: 6,
+  });
+  if (error || !Array.isArray(data) || data.length === 0) return [];
+  const ids = new Set<string>(
+    (data as Array<{ auction_id: string }>)
+      .map((r) => r.auction_id)
+      .filter(Boolean),
+  );
+  const byId = new Map<string, Auction>(alreadyKnown.map((a) => [a.id, a]));
+  const matched = Array.from(ids)
+    .map((id) => byId.get(id))
+    .filter((a): a is Auction => Boolean(a));
+  // If we found all from the live pool, return. Otherwise fall through
+  // to the full live cache.
+  if (matched.length === ids.size) return matched;
+  const live = await getLiveAuctionsCached();
+  const liveById = new Map<string, Auction>(live.map((a) => [a.id, a]));
+  return Array.from(ids)
+    .map((id) => liveById.get(id))
+    .filter((a): a is Auction => Boolean(a));
+}
+
 function dedupe(arr: Auction[]): Auction[] {
   const seen = new Set<string>();
   const out: Auction[] = [];

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { ArrowRight } from "lucide-react";
 import { CreateAuctionShell } from "@/components/layout/CreateAuctionShell";
@@ -30,29 +31,21 @@ const FALLBACK_MAKES = [
   "Ford",
 ];
 
-const fuels = [
-  { v: "gasoline", l: "Essence" },
-  { v: "diesel", l: "Diesel" },
-  { v: "hybrid", l: "Hybride" },
-  { v: "electric", l: "Électrique" },
-];
-const conditions = [
-  { v: "new", l: "Neuf" },
-  { v: "excellent", l: "Excellent" },
-  { v: "good", l: "Bon" },
-  { v: "fair", l: "Acceptable" },
-  { v: "damaged", l: "Endommagé" },
-];
-const categories = [
-  { v: "sedan", l: "Berline" },
-  { v: "suv", l: "SUV" },
-  { v: "hatchback", l: "Hatchback" },
-  { v: "pickup", l: "Pick-up" },
-  { v: "van", l: "Van" },
-  { v: "coupe", l: "Coupé" },
-  { v: "convertible", l: "Cabriolet" },
-  { v: "wagon", l: "Break" },
-];
+// Value lists are stable enum keys; the visible label is resolved via
+// useTranslations("wizard") at render time so /fr and /ar both render
+// in-language without each call site duplicating the list.
+const FUEL_VALUES = ["gasoline", "diesel", "hybrid", "electric"] as const;
+const CONDITION_VALUES = ["new", "excellent", "good", "fair", "damaged"] as const;
+const CATEGORY_VALUES = [
+  "sedan",
+  "suv",
+  "hatchback",
+  "pickup",
+  "van",
+  "coupe",
+  "convertible",
+  "wagon",
+] as const;
 const FALLBACK_FEATURES = [
   "Climatisation",
   "ABS",
@@ -73,6 +66,9 @@ export default function Step1Page() {
   const router = useRouter();
   const { toast } = useToast();
   const { draft, update } = useDraft();
+  const tWiz = useTranslations("wizard");
+  const tCommon = useTranslations("common");
+  const locale = useLocale();
   const features = draft.features ?? [];
 
   // Hydrate brands / features / cities from the CMS tables. We start
@@ -90,14 +86,19 @@ export default function Step1Page() {
         .select("display_name, position")
         .eq("is_active", true)
         .order("position", { ascending: true }),
+      // Fetch BOTH locales' columns. Picking which one to show at render
+      // time keeps the SQL static (no Bobby-Tables risk from injecting
+      // the locale string) and means the same fetch result works for
+      // both /fr and /ar without re-querying. Fixes audit finding #8 —
+      // Arabic users were getting French CMS labels.
       supabase
         .from("cms_features")
-        .select("label_fr, position")
+        .select("label_fr, label_ar, position")
         .eq("is_active", true)
         .order("position", { ascending: true }),
       supabase
         .from("cms_cities")
-        .select("slug, name_fr, position")
+        .select("slug, name_fr, name_ar, position")
         .eq("is_active", true)
         .order("position", { ascending: true }),
     ])
@@ -109,15 +110,27 @@ export default function Step1Page() {
         }
         if (featRes.data && featRes.data.length > 0) {
           // eslint-disable-next-line react-hooks/set-state-in-effect
-          setFeatureOpts(featRes.data.map((f) => f.label_fr as string));
+          setFeatureOpts(
+            featRes.data.map((f) => {
+              const ar = (f.label_ar as string | null) ?? "";
+              const fr = (f.label_fr as string | null) ?? "";
+              // Fall back to fr if ar is empty — keeps the dropdown
+              // populated even when admins haven't translated yet.
+              return locale === "ar" && ar ? ar : fr;
+            }),
+          );
         }
         if (citiesRes.data && citiesRes.data.length > 0) {
           // eslint-disable-next-line react-hooks/set-state-in-effect
           setCityOpts(
-            citiesRes.data.map((c) => ({
-              slug: c.slug as string,
-              name: c.name_fr as string,
-            })),
+            citiesRes.data.map((c) => {
+              const ar = (c.name_ar as string | null) ?? "";
+              const fr = (c.name_fr as string | null) ?? "";
+              return {
+                slug: c.slug as string,
+                name: locale === "ar" && ar ? ar : fr,
+              };
+            }),
           );
         }
       })
@@ -128,7 +141,7 @@ export default function Step1Page() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [locale]);
 
   function toggleFeature(f: string) {
     const next = features.includes(f)
@@ -154,7 +167,7 @@ export default function Step1Page() {
     const missing = required.filter((k) => !draft[k]);
     if (missing.length) {
       scrollToFirstInvalid(missing as string[]);
-      toast("Veuillez compléter les champs en rouge", "warning");
+      toast(tWiz("step1.toastMissing"), "warning");
       return;
     }
     // VIN is optional, but if provided it must be a real 17-char VIN.
@@ -165,10 +178,7 @@ export default function Step1Page() {
     const vin = (draft.vin ?? "").trim().toUpperCase();
     if (vin.length > 0 && !/^[A-HJ-NPR-Z0-9]{17}$/.test(vin)) {
       scrollToFirstInvalid(["vin"]);
-      toast(
-        "Le numéro de châssis (VIN) doit faire 17 caractères, sans I, O, ou Q",
-        "warning",
-      );
+      toast(tWiz("step1.toastBadVin"), "warning");
       return;
     }
     router.push("/seller/new/step-2");
@@ -179,25 +189,24 @@ export default function Step1Page() {
       <div className="space-y-5 lg:space-y-8">
         <div>
           <div className="hidden lg:block text-[11px] uppercase tracking-[0.22em] font-bold text-[var(--gold)]">
-            Étape 1 · Identifiez le véhicule
+            {tWiz("step1.eyebrow")}
           </div>
           <h1 className="text-2xl lg:text-4xl font-extrabold lg:font-black lg:tracking-tight lg:mt-2">
-            Données du véhicule
+            {tWiz("step1.title")}
           </h1>
           <p className="text-sm lg:text-base text-[var(--foreground-muted)] mt-1 lg:mt-3 lg:max-w-2xl">
-            Informations essentielles que les acheteurs doivent connaître. Tous
-            les champs sont vérifiés par notre équipe avant publication.
+            {tWiz("step1.subtitle")}
           </p>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-5">
-          <Field label="Marque" name="make">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-5">
+          <Field label={tWiz("field.make")} name="make">
             <select
               className="select-field"
               value={draft.make ?? ""}
               onChange={(e) => update({ make: e.target.value })}
             >
-              <option value="">Choisir</option>
+              <option value="">{tWiz("placeholder.choose")}</option>
               {makes.map((m) => (
                 <option key={m} value={m}>
                   {m}
@@ -205,28 +214,28 @@ export default function Step1Page() {
               ))}
             </select>
           </Field>
-          <Field label="Modèle" name="model">
+          <Field label={tWiz("field.model")} name="model">
             <Input
-              placeholder="Clio"
+              placeholder={tWiz("step1.modelPlaceholder")}
               value={draft.model ?? ""}
               onChange={(e) => update({ model: e.target.value })}
             />
           </Field>
-          <Field label="Année" name="year">
+          <Field label={tWiz("field.year")} name="year">
             <NumberField
-              placeholder="2022"
+              placeholder={tWiz("step1.yearPlaceholder")}
               value={draft.year}
               onChange={(n) => update({ year: n })}
             />
           </Field>
-          <Field label="Kilométrage" name="mileage">
+          <Field label={tWiz("field.mileage")} name="mileage">
             <NumberField
-              placeholder="50000"
+              placeholder={tWiz("step1.mileagePlaceholder")}
               value={draft.mileage}
               onChange={(n) => update({ mileage: n })}
             />
           </Field>
-          <Field label="Carburant" name="fuelType">
+          <Field label={tWiz("field.fuelType")} name="fuelType">
             <select
               className="select-field"
               value={draft.fuelType ?? ""}
@@ -237,15 +246,15 @@ export default function Step1Page() {
                 })
               }
             >
-              <option value="">Choisir</option>
-              {fuels.map((f) => (
-                <option key={f.v} value={f.v}>
-                  {f.l}
+              <option value="">{tWiz("placeholder.choose")}</option>
+              {FUEL_VALUES.map((v) => (
+                <option key={v} value={v}>
+                  {tWiz(`fuel.${v}`)}
                 </option>
               ))}
             </select>
           </Field>
-          <Field label="Boîte de vitesses" name="transmission">
+          <Field label={tWiz("field.transmission")} name="transmission">
             <select
               className="select-field"
               value={draft.transmission ?? ""}
@@ -256,19 +265,19 @@ export default function Step1Page() {
                 })
               }
             >
-              <option value="">Choisir</option>
-              <option value="manual">Manuel</option>
-              <option value="automatic">Automatique</option>
+              <option value="">{tWiz("placeholder.choose")}</option>
+              <option value="manual">{tWiz("transmission.manual")}</option>
+              <option value="automatic">{tWiz("transmission.automatic")}</option>
             </select>
           </Field>
-          <Field label="Couleur" name="color">
+          <Field label={tWiz("field.color")} name="color">
             <Input
-              placeholder="Blanc"
+              placeholder={tWiz("step1.colorPlaceholder")}
               value={draft.color ?? ""}
               onChange={(e) => update({ color: e.target.value })}
             />
           </Field>
-          <Field label="Catégorie" name="category">
+          <Field label={tWiz("field.category")} name="category">
             <select
               className="select-field"
               value={draft.category ?? ""}
@@ -279,18 +288,18 @@ export default function Step1Page() {
                 })
               }
             >
-              <option value="">Choisir</option>
-              {categories.map((c) => (
-                <option key={c.v} value={c.v}>
-                  {c.l}
+              <option value="">{tWiz("placeholder.choose")}</option>
+              {CATEGORY_VALUES.map((v) => (
+                <option key={v} value={v}>
+                  {tWiz(`category.${v}`)}
                 </option>
               ))}
             </select>
           </Field>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 lg:gap-5">
-          <Field label="Statut" name="condition">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-5">
+          <Field label={tWiz("field.condition")} name="condition">
             <select
               className="select-field"
               value={draft.condition ?? ""}
@@ -301,18 +310,18 @@ export default function Step1Page() {
                 })
               }
             >
-              <option value="">Choisir</option>
-              {conditions.map((c) => (
-                <option key={c.v} value={c.v}>
-                  {c.l}
+              <option value="">{tWiz("placeholder.choose")}</option>
+              {CONDITION_VALUES.map((v) => (
+                <option key={v} value={v}>
+                  {tWiz(`condition.${v}`)}
                 </option>
               ))}
             </select>
           </Field>
 
-          <Field label="Numéro de châssis (VIN)" name="vin">
+          <Field label={tWiz("field.vin")} name="vin">
             <Input
-              placeholder="VF1XXXXXXXXXXXX (optionnel)"
+              placeholder={tWiz("step1.vinPlaceholder")}
               value={draft.vin ?? ""}
               maxLength={17}
               onChange={(e) =>
@@ -325,25 +334,25 @@ export default function Step1Page() {
             />
           </Field>
 
-          <Field label="Numéro de plaque">
+          <Field label={tWiz("field.registration")}>
             <Input
-              placeholder="123 Tunis 4567"
+              placeholder={tWiz("step1.registrationPlaceholder")}
               value={draft.registration ?? ""}
               onChange={(e) => update({ registration: e.target.value })}
             />
           </Field>
         </div>
 
-        <Field label="Site" name="city">
+        <Field label={tWiz("field.site")} name="city">
           <div className="grid grid-cols-2 gap-2 lg:gap-3" data-field="region">
             <Input
-              placeholder="Ville"
+              placeholder={tWiz("field.city")}
               value={draft.city ?? ""}
               onChange={(e) => update({ city: e.target.value })}
               list="cms-cities"
             />
             <Input
-              placeholder="Région"
+              placeholder={tWiz("field.region")}
               value={draft.region ?? ""}
               onChange={(e) => update({ region: e.target.value })}
             />
@@ -357,9 +366,9 @@ export default function Step1Page() {
           )}
         </Field>
 
-        <Field label="Description">
+        <Field label={tWiz("field.description")}>
           <textarea
-            placeholder="Rédigez une description détaillée de la voiture..."
+            placeholder={tWiz("step1.descriptionPlaceholder")}
             rows={4}
             value={draft.description ?? ""}
             onChange={(e) => update({ description: e.target.value })}
@@ -367,7 +376,7 @@ export default function Step1Page() {
           />
         </Field>
 
-        <Field label="Caractéristiques">
+        <Field label={tWiz("field.features")}>
           <div className="flex flex-wrap gap-2 lg:gap-2.5">
             {featureOpts.map((f) => {
               const checked = features.includes(f);
@@ -397,7 +406,7 @@ export default function Step1Page() {
             onClick={() => router.push("/seller/dashboard")}
             className="lg:!w-auto lg:px-6"
           >
-            Enregistrer et quitter
+            {tWiz("action.saveExit")}
           </Button>
           <Button
             size="lg"
@@ -405,7 +414,7 @@ export default function Step1Page() {
             onClick={next}
             className="lg:!w-auto lg:px-8"
           >
-            Continuer
+            {tCommon("continue")}
             <ArrowRight className="h-5 w-5" />
           </Button>
         </div>

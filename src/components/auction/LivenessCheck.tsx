@@ -693,7 +693,7 @@ export function LivenessCheck({ onComplete, onCancel }: Props) {
 
         {phase === "boot" && (
           <div className="absolute inset-0 bg-black/70 flex items-center justify-center text-white text-sm">
-            <Loader2 className="h-5 w-5 mr-2 animate-spin text-[var(--gold)]" />
+            <Loader2 className="h-5 w-5 me-2 animate-spin text-[var(--gold)]" />
             {livePoseHint}
           </div>
         )}
@@ -713,7 +713,7 @@ export function LivenessCheck({ onComplete, onCancel }: Props) {
 
         {phase === "uploading" && (
           <div className="absolute inset-0 bg-black/75 flex items-center justify-center text-white text-sm">
-            <Loader2 className="h-5 w-5 mr-2 animate-spin text-[var(--gold)]" />
+            <Loader2 className="h-5 w-5 me-2 animate-spin text-[var(--gold)]" />
             Envoi en cours...
           </div>
         )}

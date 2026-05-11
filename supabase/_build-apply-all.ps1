@@ -44,7 +44,16 @@ $order = @(
   "migrate-fraud-signals.sql",
   "migrate-analytics-rpcs.sql",
   "migrate-additional-settings.sql",
-  "migrate-admin-sprint-a.sql"
+  "migrate-admin-sprint-a.sql",
+  "migrate-cms-categories.sql",
+  "migrate-admin-forfeits.sql",
+  "migrate-cms-plans.sql",
+  "migrate-pricing-spec.sql",
+  "migrate-cms-plans-v2.sql",
+  "migrate-subscription-extras.sql",
+  "migrate-subscription-payments.sql",
+  "migrate-subscription-public-perks.sql",
+  "migrate-auctions-public-rls.sql"
 )
 
 $out = Join-Path $base "_apply-all.sql"

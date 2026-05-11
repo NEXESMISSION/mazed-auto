@@ -61,7 +61,7 @@ export function AdminBidsList({ bids, auctionId: _auctionId }: Props) {
           <div className="text-sm">
             {anonBidder(b.user_id, idx)}
             {b.is_auto_bid && (
-              <Badge size="sm" variant="default" className="ml-2">
+              <Badge size="sm" variant="default" className="ms-2">
                 AUTO
               </Badge>
             )}

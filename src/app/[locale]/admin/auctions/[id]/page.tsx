@@ -9,6 +9,7 @@ import { auctionCode, formatPrice } from "@/lib/format";
 import { thumb } from "@/lib/imageUrl";
 import { AdminAuctionControls } from "./AdminAuctionControls";
 import { AdminBidsList } from "./AdminBidsList";
+import { getAuctionBlackoutConfig } from "@/lib/config";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -23,32 +24,36 @@ export default async function AdminAuctionDetailPage({ params }: Props) {
   const auction = await getAuctionById(supabase, id);
   if (!auction) notFound();
 
-  const [bids, editRequests, reports, statusLog, fullRow] = await Promise.all([
-    listRecentBids(supabase, id, 100),
-    supabase
-      .from("auction_edit_requests")
-      .select("id, fields, message, status, requested_at, resolved_at")
-      .eq("auction_id", id)
-      .order("requested_at", { ascending: false }),
-    supabase
-      .from("reports")
-      .select("id, reason, severity, status, detail, created_at, reporter_label")
-      .eq("auction_id", id)
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("auction_status_log")
-      .select("id, from_status, to_status, actor_id, detail, created_at")
-      .eq("auction_id", id)
-      .order("created_at", { ascending: true })
-      .limit(50),
-    supabase
-      .from("auctions")
-      .select(
-        "make, model, year, mileage, color, description, city, region, starting_price, reserve_price, buy_now_price, end_time",
-      )
-      .eq("id", id)
-      .maybeSingle(),
-  ]);
+  const [bids, editRequests, reports, statusLog, fullRow, blackout] =
+    await Promise.all([
+      listRecentBids(supabase, id, 100),
+      supabase
+        .from("auction_edit_requests")
+        .select("id, fields, message, status, requested_at, resolved_at")
+        .eq("auction_id", id)
+        .order("requested_at", { ascending: false }),
+      supabase
+        .from("reports")
+        .select(
+          "id, reason, severity, status, detail, created_at, reporter_label",
+        )
+        .eq("auction_id", id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("auction_status_log")
+        .select("id, from_status, to_status, actor_id, detail, created_at")
+        .eq("auction_id", id)
+        .order("created_at", { ascending: true })
+        .limit(50),
+      supabase
+        .from("auctions")
+        .select(
+          "make, model, year, mileage, color, description, city, region, starting_price, reserve_price, buy_now_price, bid_increment, category, fuel_type, transmission, condition, start_time, end_time",
+        )
+        .eq("id", id)
+        .maybeSingle(),
+      getAuctionBlackoutConfig(),
+    ]);
 
   return (
     <AdminShell>
@@ -138,6 +143,7 @@ export default async function AdminAuctionDetailPage({ params }: Props) {
           isFeatured={auction.isFeatured}
           isVip={auction.isVip}
           totalBids={auction.totalBids}
+          blackout={blackout}
           initialEditable={{
             make: fullRow.data?.make ?? auction.vehicle.make,
             model: fullRow.data?.model ?? auction.vehicle.model,
@@ -147,8 +153,9 @@ export default async function AdminAuctionDetailPage({ params }: Props) {
             description: fullRow.data?.description ?? null,
             city: fullRow.data?.city ?? auction.vehicle.city,
             region: fullRow.data?.region ?? auction.vehicle.region,
-            starting_price:
-              Number(fullRow.data?.starting_price ?? auction.startingPrice),
+            starting_price: Number(
+              fullRow.data?.starting_price ?? auction.startingPrice,
+            ),
             reserve_price:
               fullRow.data?.reserve_price !== null &&
               fullRow.data?.reserve_price !== undefined
@@ -159,6 +166,16 @@ export default async function AdminAuctionDetailPage({ params }: Props) {
               fullRow.data?.buy_now_price !== undefined
                 ? Number(fullRow.data.buy_now_price)
                 : null,
+            bid_increment: Number(
+              fullRow.data?.bid_increment ?? auction.bidIncrement,
+            ),
+            category: fullRow.data?.category ?? auction.vehicle.category,
+            fuel_type: fullRow.data?.fuel_type ?? auction.vehicle.fuelType,
+            transmission:
+              fullRow.data?.transmission ?? auction.vehicle.transmission,
+            condition: fullRow.data?.condition ?? auction.vehicle.condition,
+            start_time:
+              fullRow.data?.start_time ?? auction.startTime.toISOString(),
             end_time: fullRow.data?.end_time ?? auction.endTime.toISOString(),
           }}
         />

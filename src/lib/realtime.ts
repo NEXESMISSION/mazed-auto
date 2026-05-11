@@ -252,7 +252,20 @@ export function useRealtimeMessages(
   return messages;
 }
 
-/** Subscribe to the whole list of active auctions on the catalog page. */
+/** Subscribe to the whole list of active auctions on the catalog page.
+ *
+ *  Audit finding #7 — earlier this hook subscribed to EVERY auction
+ *  UPDATE in the table with no filter. At scale every bid on every
+ *  auction would broadcast to every connected client. Filter to the
+ *  IDs the caller is currently rendering so we only receive updates
+ *  for auctions the user can actually see.
+ *
+ *  Supabase Realtime supports a single `in.(…)` filter per channel,
+ *  so we re-build the channel whenever the initial list's id set
+ *  changes (the user scrolled to a new page, applied a filter, etc.).
+ *  The id list is sorted and joined into a stable string so the
+ *  effect's dependency comparison is cheap.
+ */
 export function useRealtimeAuctionList(initial: Auction[]) {
   const [list, setList] = useState<Auction[]>(initial);
   const instanceId = useId();
@@ -261,13 +274,26 @@ export function useRealtimeAuctionList(initial: Auction[]) {
     setList(initial);
   }, [initial]);
 
+  // Stable join of the visible ids so the subscription channel is
+  // recreated only when the set actually changes.
+  const idsKey = initial
+    .map((a) => a.id)
+    .sort()
+    .join(",");
+
   useEffect(() => {
+    if (!idsKey) return; // nothing to subscribe to
     const supabase = createClient();
     const channel = supabase
       .channel(`auctions-feed:${instanceId}`)
       .on(
         "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "auctions" },
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "auctions",
+          filter: `id=in.(${idsKey})`,
+        },
         (payload) => {
           const fresh = payload.new as AuctionRow;
           setList((prev) =>
@@ -283,7 +309,7 @@ export function useRealtimeAuctionList(initial: Auction[]) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [instanceId]);
+  }, [instanceId, idsKey]);
 
   return list;
 }

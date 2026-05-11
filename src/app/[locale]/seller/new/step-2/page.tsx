@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import {
   Camera,
@@ -26,38 +27,69 @@ import { useDraft } from "@/lib/draft";
 import { NativeCapture } from "@/components/auction/NativeCapture";
 import { cn } from "@/lib/utils";
 
-const photoSlots: {
-  label: string;
+// Slot key is the stable identifier; the visible label is resolved via
+// useTranslations("wizard.photoSlot") at render time so AR/FR both work.
+type PhotoSlotKey =
+  | "front"
+  | "rear"
+  | "rightSide"
+  | "leftSide"
+  | "dashboard"
+  | "odometer"
+  | "frontSeats"
+  | "rearSeats"
+  | "engine"
+  | "trunk"
+  | "tires"
+  | "vin";
+
+const PHOTO_SLOTS: {
+  key: PhotoSlotKey;
   Icon: React.ComponentType<{ className?: string }>;
 }[] = [
-  { label: "Face avant", Icon: Car },
-  { label: "Face arrière", Icon: Undo2 },
-  { label: "Côté droit", Icon: ArrowRightFromLine },
-  { label: "Côté gauche", Icon: ArrowLeftFromLine },
-  { label: "Tableau de bord", Icon: LayoutGrid },
-  { label: "Compteur", Icon: Gauge },
-  { label: "Sièges avant", Icon: Armchair },
-  { label: "Sièges arrière", Icon: Armchair },
-  { label: "Moteur", Icon: Wrench },
-  { label: "Coffre", Icon: Package },
-  { label: "Pneus", Icon: Disc3 },
-  { label: "VIN (Numéro de châssis)", Icon: Hash },
+  { key: "front", Icon: Car },
+  { key: "rear", Icon: Undo2 },
+  { key: "rightSide", Icon: ArrowRightFromLine },
+  { key: "leftSide", Icon: ArrowLeftFromLine },
+  { key: "dashboard", Icon: LayoutGrid },
+  { key: "odometer", Icon: Gauge },
+  { key: "frontSeats", Icon: Armchair },
+  { key: "rearSeats", Icon: Armchair },
+  { key: "engine", Icon: Wrench },
+  { key: "trunk", Icon: Package },
+  { key: "tires", Icon: Disc3 },
+  { key: "vin", Icon: Hash },
 ];
 
 export default function Step2Page() {
   const router = useRouter();
   const { toast } = useToast();
-  const { draft, update } = useDraft();
+  const { draft, hydrated, update } = useDraft();
+  const tWiz = useTranslations("wizard");
+  const tCommon = useTranslations("common");
   const [photos, setPhotos] = useState<(string | null)[]>(Array(12).fill(null));
 
+  // Re-hydrate from the saved draft once. The earlier pattern depended
+  // on `[draft.imageUrls?.length]` which doesn't fire when the draft
+  // transitions from `{}` (initial sessionStorage miss) to an empty
+  // array — leaving photos stuck at [null]*12 even when the user had
+  // already captured some. Tying to `hydrated` is the same idiom we
+  // already use in step-5. Audit finding #12.
+  const seededRef = useRef(false);
   useEffect(() => {
+    if (!hydrated || seededRef.current) return;
+    seededRef.current = true;
     const saved = draft.imageUrls;
-    if (saved && saved.length === 12) {
+    if (saved && saved.length > 0) {
+      // Tolerate < 12 entries (legacy drafts) by padding with nulls.
+      const next: (string | null)[] = Array(12).fill(null);
+      for (let i = 0; i < Math.min(12, saved.length); i++) {
+        next[i] = saved[i] && saved[i].length > 0 ? saved[i] : null;
+      }
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setPhotos(saved.map((u) => (u ? u : null)));
+      setPhotos(next);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draft.imageUrls?.length]);
+  }, [hydrated, draft.imageUrls]);
 
   const filled = photos.filter(Boolean).length;
   const allDone = filled === 12;
@@ -77,11 +109,10 @@ export default function Step2Page() {
             Étape 2 · Photos
           </div>
           <h1 className="text-2xl lg:text-4xl font-extrabold lg:font-black lg:tracking-tight lg:mt-2">
-            12 photos obligatoires
+            {tWiz("step2.title")}
           </h1>
           <p className="text-sm lg:text-base text-[var(--foreground-muted)] mt-1 lg:mt-3 lg:max-w-2xl">
-            Touchez une vignette : la caméra de votre appareil s&apos;ouvre,
-            vous prenez la photo puis vous validez dans l&apos;écran natif.
+            {tWiz("step2.subtitle")}
           </p>
         </div>
 
@@ -100,7 +131,9 @@ export default function Step2Page() {
               <span className="text-[var(--foreground-muted)]">/ 12</span>
             </span>
             <span className="text-xs lg:text-sm text-[var(--foreground-muted)] font-semibold">
-              {allDone ? "Terminé ✓" : `${12 - filled} restantes`}
+              {allDone
+                ? tWiz("step2.done")
+                : tWiz("step2.remaining", { count: 12 - filled })}
             </span>
           </div>
           <div className="h-1.5 lg:h-2 rounded-full bg-[var(--surface-2)] lg:bg-[var(--surface)] overflow-hidden">
@@ -115,28 +148,32 @@ export default function Step2Page() {
         </div>
 
         <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-2.5 lg:gap-4">
-          {photoSlots.map((slot, i) => (
-            <NativeCapture
-              key={i}
-              kind="photo"
-              facing="environment"
-              folder="auctions"
-              onCaptured={(url) => {
-                setSlot(i, url);
-                toast(`Photo ${i + 1}/12 ✓`, "success");
-              }}
-            >
-              {({ open, uploading }) => (
-                <SlotTile
-                  index={i}
-                  slot={slot}
-                  photo={photos[i]}
-                  uploading={uploading}
-                  onTap={open}
-                />
-              )}
-            </NativeCapture>
-          ))}
+          {PHOTO_SLOTS.map((slot, i) => {
+            const label = tWiz(`photoSlot.${slot.key}`);
+            return (
+              <NativeCapture
+                key={i}
+                kind="photo"
+                facing="environment"
+                folder="auctions"
+                onCaptured={(url) => {
+                  setSlot(i, url);
+                  toast(tWiz("step2.toastCaptured", { n: i + 1 }), "success");
+                }}
+              >
+                {({ open, uploading }) => (
+                  <SlotTile
+                    index={i}
+                    label={label}
+                    Icon={slot.Icon}
+                    photo={photos[i]}
+                    uploading={uploading}
+                    onTap={open}
+                  />
+                )}
+              </NativeCapture>
+            );
+          })}
         </div>
 
         <div className="pt-4 lg:pt-6 lg:border-t lg:border-[var(--border)] flex flex-col-reverse sm:flex-row gap-2 lg:gap-3 lg:justify-end">
@@ -147,7 +184,7 @@ export default function Step2Page() {
             onClick={() => router.back()}
             className="lg:!w-auto lg:px-6"
           >
-            Retour
+            {tCommon("back")}
           </Button>
           <Button
             size="lg"
@@ -156,7 +193,7 @@ export default function Step2Page() {
             onClick={() => router.push("/seller/new/step-3")}
             className="lg:!w-auto lg:px-8"
           >
-            Continuer
+            {tCommon("continue")}
             <ArrowRight className="h-5 w-5" />
           </Button>
         </div>
@@ -167,13 +204,15 @@ export default function Step2Page() {
 
 function SlotTile({
   index,
-  slot,
+  label,
+  Icon,
   photo,
   uploading,
   onTap,
 }: {
   index: number;
-  slot: { label: string; Icon: React.ComponentType<{ className?: string }> };
+  label: string;
+  Icon: React.ComponentType<{ className?: string }>;
   photo: string | null;
   uploading: boolean;
   onTap: () => void;
@@ -182,7 +221,7 @@ function SlotTile({
     <button
       onClick={onTap}
       disabled={uploading}
-      aria-label={`Photo ${index + 1} sur 12 — ${slot.label}${photo ? " (prise)" : " (à prendre)"}`}
+      aria-label={`${index + 1}/12 — ${label}${photo ? " ✓" : ""}`}
       className={cn(
         "relative aspect-square rounded-[var(--radius)] border-2 border-dashed overflow-hidden transition-colors",
         uploading
@@ -197,7 +236,7 @@ function SlotTile({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={photo}
-            alt={slot.label}
+            alt={label}
             className="h-full w-full object-cover"
           />
           <div className="absolute top-1 right-1 lg:top-2 lg:right-2 h-5 w-5 lg:h-7 lg:w-7 rounded-full bg-[var(--success)] flex items-center justify-center">
@@ -205,15 +244,15 @@ function SlotTile({
           </div>
           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black to-transparent p-1.5 lg:p-3">
             <div className="text-[9px] lg:text-[12px] font-semibold lg:font-bold text-white text-center">
-              {index + 1}. {slot.label}
+              {index + 1}. {label}
             </div>
           </div>
         </>
       ) : (
         <div className="absolute inset-0 flex flex-col items-center justify-center p-1.5 lg:p-3 text-center">
-          <slot.Icon className="h-6 w-6 lg:h-9 lg:w-9 text-[var(--gold)] mb-1 lg:mb-2" />
+          <Icon className="h-6 w-6 lg:h-9 lg:w-9 text-[var(--gold)] mb-1 lg:mb-2" />
           <div className="text-[9px] lg:text-[13px] font-semibold lg:font-bold leading-tight">
-            {index + 1}. {slot.label}
+            {index + 1}. {label}
           </div>
           <Camera className="h-3.5 w-3.5 lg:h-4 lg:w-4 text-[var(--foreground-muted)] mt-1 lg:mt-2" />
         </div>

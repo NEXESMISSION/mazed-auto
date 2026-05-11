@@ -605,3 +605,104 @@ export async function rejectPendingSettingAction(input: {
   revalidatePath(`/[locale]/admin/settings`, "page");
   return { ok: true };
 }
+
+// ----- FORFEITS (caution retention) -----
+
+export async function adminForceForfeitAction(input: {
+  auctionId: string;
+  reason: string;
+}): Promise<Result<{ id: string }>> {
+  const gate = await ensureAdmin();
+  if (!gate.ok) return gate;
+  const { data, error } = await gate.supabase.rpc("admin_force_forfeit", {
+    p_auction_id: input.auctionId,
+    p_reason: input.reason,
+  });
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/[locale]/admin/forfeits`, "page");
+  revalidatePath(`/[locale]/admin/auctions/[id]`, "page");
+  return { ok: true, data: { id: data as string } };
+}
+
+export async function adminReverseForfeitAction(input: {
+  forfeitId: string;
+  reason: string;
+}): Promise<Result> {
+  const gate = await ensureAdmin();
+  if (!gate.ok) return gate;
+  const { error } = await gate.supabase.rpc("admin_reverse_forfeit", {
+    p_forfeit_id: input.forfeitId,
+    p_reason: input.reason,
+  });
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/[locale]/admin/forfeits`, "page");
+  return { ok: true };
+}
+
+export async function adminExtendPaymentDeadlineAction(input: {
+  auctionId: string;
+  days: number;
+  reason: string;
+}): Promise<Result<{ newDeadline: string }>> {
+  const gate = await ensureAdmin();
+  if (!gate.ok) return gate;
+  const { data, error } = await gate.supabase.rpc(
+    "admin_extend_payment_deadline",
+    {
+      p_auction_id: input.auctionId,
+      p_days: input.days,
+      p_reason: input.reason,
+    },
+  );
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/[locale]/admin/forfeits`, "page");
+  revalidatePath(`/[locale]/admin/auctions/[id]`, "page");
+  return { ok: true, data: { newDeadline: data as string } };
+}
+
+// ----- SUBSCRIPTIONS -----
+
+export async function adminSetUserSubscriptionAction(input: {
+  userId: string;
+  planSlug: string;
+  days: number;
+  reason: string;
+}): Promise<Result<{ id: string }>> {
+  const gate = await ensureAdmin();
+  if (!gate.ok) return gate;
+  const { data, error } = await gate.supabase.rpc(
+    "admin_set_user_subscription",
+    {
+      p_user_id: input.userId,
+      p_plan_slug: input.planSlug,
+      p_days: input.days,
+      p_reason: input.reason,
+    },
+  );
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/[locale]/admin/users/[id]`, "page");
+  return { ok: true, data: { id: data as string } };
+}
+
+export async function adminCancelUserSubscriptionAction(input: {
+  userId: string;
+  reason: string;
+}): Promise<Result> {
+  const gate = await ensureAdmin();
+  if (!gate.ok) return gate;
+  const { error } = await gate.supabase.rpc(
+    "admin_cancel_user_subscription",
+    {
+      p_user_id: input.userId,
+      p_reason: input.reason,
+    },
+  );
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/[locale]/admin/users/[id]`, "page");
+  return { ok: true };
+}
+
+// Self-serve subscribe / cancel actions live in
+// `src/app/[locale]/subscription-actions.ts` to keep this admin module
+// focused on admin-only mutations. /pricing and /profile/subscription
+// import from there.

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import {
   Check,
@@ -18,17 +19,17 @@ import { useAuth } from "@/lib/auth";
 import { NativeCapture } from "@/components/auction/NativeCapture";
 import { cn } from "@/lib/utils";
 
-// Exceptions per PLAN §11.3. The first five cover legitimate name
+// Exception values per PLAN §11.3. The first five cover legitimate name
 // mismatches; "other" is the catch-all and forces an admin review before
-// the auction can be published.
-const exceptions = [
-  { v: "company", l: "Voiture au nom d'une société" },
-  { v: "agent", l: "Mandataire du propriétaire" },
-  { v: "inheritance", l: "Héritage" },
-  { v: "spouse", l: "Conjoint(e)" },
-  { v: "recent_purchase", l: "Achat récent (carte non encore mise à jour)" },
-  { v: "other", l: "Autre cas (révision admin requise)" },
-];
+// the auction can be published. Labels resolve via wizard.exception.*.
+const EXCEPTION_VALUES = [
+  "company",
+  "agent",
+  "inheritance",
+  "spouse",
+  "recent_purchase",
+  "other",
+] as const;
 
 function normalizeName(name: string): string {
   return name.toLowerCase().trim().replace(/\s+/g, " ");
@@ -43,6 +44,8 @@ export default function Step4Page() {
   const router = useRouter();
   const { draft, update } = useDraft();
   const { user } = useAuth();
+  const tWiz = useTranslations("wizard");
+  const tCommon = useTranslations("common");
 
   const [front, setFront] = useState<string | null>(null);
   const [back, setBack] = useState<string | null>(null);
@@ -80,10 +83,9 @@ export default function Step4Page() {
     <CreateAuctionShell current={3}>
       <div className="space-y-5">
         <div>
-          <h1 className="text-2xl font-extrabold">Carte grise</h1>
+          <h1 className="text-2xl font-extrabold">{tWiz("step4.title")}</h1>
           <p className="text-sm text-[var(--foreground-muted)] mt-1">
-            Touchez chaque vignette : la caméra de votre appareil s&apos;ouvre,
-            vous prenez la photo puis vous validez dans l&apos;écran natif.
+            {tWiz("step4.subtitle")}
           </p>
         </div>
 
@@ -96,7 +98,9 @@ export default function Step4Page() {
           >
             {({ open, uploading }) => (
               <ScanSlot
-                label="Recto"
+                label={tWiz("step4.recto")}
+                hint={tWiz("step4.tapToCapture")}
+                retakeLabel={tWiz("step4.retakePhoto")}
                 url={front}
                 uploading={uploading}
                 onTap={open}
@@ -113,7 +117,9 @@ export default function Step4Page() {
           >
             {({ open, uploading }) => (
               <ScanSlot
-                label="Verso"
+                label={tWiz("step4.verso")}
+                hint={tWiz("step4.tapToCapture")}
+                retakeLabel={tWiz("step4.retakePhoto")}
                 url={back}
                 uploading={uploading}
                 onTap={open}
@@ -127,36 +133,36 @@ export default function Step4Page() {
         {bothCaptured && (
           <div className="rounded-[var(--radius-md)] bg-[var(--surface)] border border-[var(--border)] p-4 space-y-3">
             <div className="text-xs font-bold text-[var(--gold)]">
-              Renseignez les informations de la carte grise
+              {tWiz("step4.fillInfo")}
             </div>
-            <Field label="Nom du propriétaire">
+            <Field label={tWiz("step4.ownerName")}>
               <Input
                 value={ownerName}
                 onChange={(e) => setOwnerName(e.target.value)}
-                placeholder="Tel qu'inscrit sur la carte grise"
+                placeholder={tWiz("step4.ownerNamePlaceholder")}
               />
             </Field>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Numéro de plaque">
+              <Field label={tWiz("field.registration")}>
                 <Input
                   value={plate}
                   onChange={(e) => setPlate(e.target.value)}
-                  placeholder="123 Tunis 4567"
+                  placeholder={tWiz("step1.registrationPlaceholder")}
                 />
               </Field>
-              <Field label="VIN (optionnel)">
+              <Field label={tWiz("step4.vinOptional")}>
                 <Input
                   value={vin}
                   onChange={(e) => setVin(e.target.value)}
-                  placeholder="VF1XXXXXXX12345"
+                  placeholder={tWiz("step4.vinPlaceholder")}
                 />
               </Field>
             </div>
-            <Field label="Année (optionnel)">
+            <Field label={tWiz("step4.yearOptional")}>
               <Input
                 value={year}
                 onChange={(e) => setYear(e.target.value.replace(/\D/g, ""))}
-                placeholder="2022"
+                placeholder={tWiz("step1.yearPlaceholder")}
                 inputMode="numeric"
               />
             </Field>
@@ -167,9 +173,9 @@ export default function Step4Page() {
           <div className="rounded-[var(--radius)] bg-green-500/10 border border-green-500/30 p-4 flex gap-3 items-start">
             <Check className="h-5 w-5 text-green-400 shrink-0 mt-0.5" />
             <div className="flex-1 text-sm">
-              <div className="font-bold text-green-400">Verrou doré ✓</div>
+              <div className="font-bold text-green-400">{tWiz("step4.locked")}</div>
               <div className="text-[var(--foreground-muted)] text-xs mt-0.5">
-                Le nom du propriétaire correspond à votre identité vérifiée
+                {tWiz("step4.lockedDescription")}
               </div>
             </div>
           </div>
@@ -179,12 +185,13 @@ export default function Step4Page() {
             <AlertTriangle className="h-5 w-5 text-red-400 shrink-0 mt-0.5" />
             <div className="flex-1 text-sm">
               <div className="font-bold text-red-400">
-                Verrou doré ✗ — noms différents
+                {tWiz("step4.unlocked")}
               </div>
               <div className="text-[var(--foreground-muted)] text-xs mt-0.5 leading-relaxed">
-                La carte grise est au nom de <b>{ownerName}</b>, votre KYC est
-                au nom de <b>{kycName}</b>. Choisissez le motif ci-dessous
-                pour continuer.
+                {tWiz.rich("step4.unlockedDescription", {
+                  ownerName: () => <b>{ownerName}</b>,
+                  kycName: () => <b>{kycName}</b>,
+                })}
               </div>
             </div>
           </div>
@@ -193,7 +200,8 @@ export default function Step4Page() {
         {bothCaptured && ownerName && !matched && (
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-[var(--foreground-muted)]">
-              Motif de la différence <span className="text-red-400">*</span>
+              {tWiz("step4.reasonLabel")}{" "}
+              <span className="text-red-400">*</span>
             </label>
             <select
               value={exception}
@@ -201,11 +209,11 @@ export default function Step4Page() {
               className="h-11 w-full px-4 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--surface)] focus:border-[var(--gold)] focus:outline-none cursor-pointer"
             >
               <option value="" disabled>
-                Choisir un motif…
+                {tWiz("step4.chooseReason")}
               </option>
-              {exceptions.map((e) => (
-                <option key={e.v} value={e.v}>
-                  {e.l}
+              {EXCEPTION_VALUES.map((v) => (
+                <option key={v} value={v}>
+                  {tWiz(`exception.${v}`)}
                 </option>
               ))}
             </select>
@@ -213,8 +221,7 @@ export default function Step4Page() {
               <div className="rounded-[var(--radius-sm)] bg-amber-500/10 border border-amber-500/30 p-3 flex gap-2">
                 <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
                 <div className="text-xs text-[var(--foreground-muted)]">
-                  Vous devrez téléverser un document juridique supplémentaire
-                  prouvant votre autorisation de vendre.
+                  {tWiz("step4.additionalDocsHint")}
                 </div>
               </div>
             )}
@@ -222,8 +229,7 @@ export default function Step4Page() {
               <div className="rounded-[var(--radius-sm)] bg-amber-500/10 border border-amber-500/30 p-3 flex gap-2">
                 <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
                 <div className="text-xs text-[var(--foreground-muted)]">
-                  Cas non standard — votre annonce sera publiée après
-                  vérification manuelle par un administrateur.
+                  {tWiz("step4.adminReviewHint")}
                 </div>
               </div>
             )}
@@ -237,10 +243,10 @@ export default function Step4Page() {
             fullWidth
             onClick={() => router.back()}
           >
-            Retour
+            {tCommon("back")}
           </Button>
           <Button size="lg" fullWidth disabled={!canContinue} onClick={commit}>
-            Continuer
+            {tCommon("continue")}
             <ArrowRight className="h-5 w-5" />
           </Button>
         </div>
@@ -251,12 +257,16 @@ export default function Step4Page() {
 
 function ScanSlot({
   label,
+  hint,
+  retakeLabel,
   url,
   uploading,
   onTap,
   onClear,
 }: {
   label: string;
+  hint: string;
+  retakeLabel: string;
   url: string | null;
   uploading: boolean;
   onTap: () => void;
@@ -267,15 +277,15 @@ function ScanSlot({
       <div className="relative aspect-[4/3] rounded-[var(--radius)] border-2 border-[var(--success)] overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={url} alt={label} className="h-full w-full object-cover" />
-        <div className="absolute top-1.5 right-1.5 h-6 w-6 rounded-full bg-[var(--success)] flex items-center justify-center">
+        <div className="absolute top-1.5 end-1.5 h-6 w-6 rounded-full bg-[var(--success)] flex items-center justify-center">
           <Check className="h-3.5 w-3.5 text-white" strokeWidth={3} />
         </div>
         <button
           onClick={onClear}
-          className="absolute bottom-1.5 right-1.5 h-7 px-2 rounded-full bg-black/70 backdrop-blur text-white text-[10px] font-semibold flex items-center gap-1 hover:bg-black/90"
+          className="absolute bottom-1.5 end-1.5 h-7 px-2 rounded-full bg-black/70 backdrop-blur text-white text-[10px] font-semibold flex items-center gap-1 hover:bg-black/90"
         >
           <RotateCcw className="h-3 w-3" />
-          Reprendre
+          {retakeLabel}
         </button>
       </div>
     );
@@ -294,9 +304,7 @@ function ScanSlot({
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
         <Camera className="h-6 w-6 text-[var(--gold)]" />
         <div className="text-xs font-semibold">{label}</div>
-        <div className="text-[10px] text-[var(--foreground-muted)]">
-          Toucher pour ouvrir la caméra
-        </div>
+        <div className="text-[10px] text-[var(--foreground-muted)]">{hint}</div>
       </div>
       {uploading && (
         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">

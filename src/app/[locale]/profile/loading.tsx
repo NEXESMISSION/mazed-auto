@@ -43,7 +43,7 @@ export default function Loading() {
         {/* Three menu cards: section label + 3-4 rows each */}
         {Array.from({ length: 3 }).map((_, ci) => (
           <div key={ci}>
-            <div className="h-2 w-20 rounded skeleton mb-2 ml-1" />
+            <div className="h-2 w-20 rounded skeleton mb-2 ms-1" />
             <div className="rounded-2xl bg-[var(--surface)] border border-[var(--border)] divide-y divide-[var(--border)] overflow-hidden">
               {Array.from({ length: ci === 1 ? 3 : 4 }).map((_, ri) => (
                 <div key={ri} className="flex items-center gap-3 px-4 py-3.5">

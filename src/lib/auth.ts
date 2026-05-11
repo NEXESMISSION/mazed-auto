@@ -152,12 +152,30 @@ export function useAuth() {
   const update = useCallback(
     async (patch: Partial<AppUser>) => {
       const supabase = createClient();
+      // ROLE / TRUST-SCORE are intentionally NOT writable here.
+      //
+      // Audit finding #1: earlier this function let the client write
+      // `role` and `trustScore` into user_metadata, and `is_admin()`
+      // used to source from `auth.jwt() -> 'user_metadata' ->> 'role'`.
+      // A user could open the browser console and call
+      // useAuth().update({ role: "admin" }) to self-promote.
+      //
+      // `migrate-admin-rbac-hardening.sql` moved admin role into a
+      // dedicated `admin_users` table that's only writable via the
+      // super-admin-only RPCs (`admin_grant_role` / `admin_set_role`).
+      // user_metadata.role is now a UI hint, not security-load-bearing.
+      // We still strip role/trustScore here so the app itself never
+      // sends them — direct SDK abuse (`supabase.auth.updateUser`) is
+      // out of our control but no longer dangerous server-side.
+      //
+      // `kycStatus` is still writable because /kyc/processing legitimately
+      // calls update({ kycStatus: "pending" }) after submitting docs,
+      // and the actual gate is the admin queue + sellers.verified_kyc
+      // (which can only be set by the review_kyc RPC).
       const meta: Record<string, unknown> = {};
       if (patch.firstName !== undefined) meta.firstName = patch.firstName;
       if (patch.lastName !== undefined) meta.lastName = patch.lastName;
       if (patch.phone !== undefined) meta.phone = patch.phone;
-      if (patch.role !== undefined) meta.role = patch.role;
-      if (patch.trustScore !== undefined) meta.trustScore = patch.trustScore;
       if (patch.kycStatus !== undefined) meta.kycStatus = patch.kycStatus;
       const { data, error } = await supabase.auth.updateUser({ data: meta });
       if (data.user) setUser(mapUser(data.user));

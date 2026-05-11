@@ -1,9 +1,25 @@
-import { ShieldCheck, Star, MapPin } from "lucide-react";
+import { ShieldCheck, Star, MapPin, Crown, Phone } from "lucide-react";
 import type { Seller } from "@/lib/types";
 import { anonSeller } from "@/lib/anon";
 
+export interface SellerPlanPerks {
+  planSlug: string;
+  planName: string;
+  badgeTone: "silver" | "gold" | "diamond" | "custom";
+  hasTrustedSellerBadge: boolean;
+  hasHomepagePlacement: boolean;
+  directPhoneVisible: boolean;
+}
+
 interface Props {
   seller: Seller;
+  /** Public-safe plan info for this seller, fetched server-side via
+   *  the `seller_public_plan_perks(uuid)` RPC. `null` if the seller
+   *  isn't on a Pro plan. */
+  planPerks?: SellerPlanPerks | null;
+  /** Seller's verified phone number, shown only when the plan grants
+   *  `direct_phone_visible`. Caller must gate this themselves. */
+  sellerPhone?: string | null;
 }
 
 /**
@@ -11,9 +27,24 @@ interface Props {
  * city) but never the seller's name, username, or profile link — buyers
  * cannot identify the seller. Anonymous handle is derived from the seller
  * id so the same vendor reads as the same tag across their auctions.
+ *
+ * Pro plan perks: trusted-seller badge appears next to the handle if
+ * the plan grants it, and the verified phone is revealed under the
+ * stats row if `directPhoneVisible` is true.
  */
-export function AnonSellerCard({ seller }: Props) {
+export function AnonSellerCard({ seller, planPerks, sellerPhone }: Props) {
   const handle = anonSeller(seller.id);
+  const showBadge = Boolean(planPerks?.hasTrustedSellerBadge);
+  const showPhone =
+    Boolean(planPerks?.directPhoneVisible) && Boolean(sellerPhone);
+
+  const badgeClass =
+    planPerks?.badgeTone === "diamond"
+      ? "bg-cyan-500/15 text-cyan-300 border-cyan-500/30"
+      : planPerks?.badgeTone === "gold"
+        ? "bg-[var(--gold-faint)] text-[var(--gold-bright)] border-[var(--gold)]/30"
+        : "bg-slate-500/15 text-slate-300 border-slate-500/30";
+
   return (
     <div className="flex items-center gap-3 p-4 rounded-[var(--radius-md)] bg-[var(--surface)] border border-[var(--border)]">
       <div className="h-11 w-11 shrink-0 rounded-full bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center">
@@ -26,11 +57,20 @@ export function AnonSellerCard({ seller }: Props) {
         />
       </div>
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2 min-w-0 flex-wrap">
           <span className="font-bold text-sm truncate">{handle}</span>
           {seller.verifiedKyc && (
             <span className="text-[10px] uppercase tracking-wider font-bold text-[var(--gold)]">
               Vérifié
+            </span>
+          )}
+          {showBadge && (
+            <span
+              className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border text-[9px] font-extrabold uppercase tracking-[0.12em] ${badgeClass}`}
+              title={`Vendeur de confiance — Plan ${planPerks?.planName ?? ""}`}
+            >
+              <Crown className="h-2.5 w-2.5" strokeWidth={2.5} />
+              Vendeur de confiance
             </span>
           )}
         </div>
@@ -57,6 +97,15 @@ export function AnonSellerCard({ seller }: Props) {
             </span>
           )}
         </div>
+        {showPhone && (
+          <a
+            href={`tel:${sellerPhone}`}
+            className="inline-flex items-center gap-1.5 mt-1.5 text-[12px] font-semibold text-[var(--gold-bright)] hover:underline"
+          >
+            <Phone className="h-3.5 w-3.5" />
+            {sellerPhone}
+          </a>
+        )}
       </div>
     </div>
   );

@@ -43,7 +43,7 @@ Comment ça marche ?
                 className="relative p-6 rounded-[var(--radius-md)] bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--gold)] transition-colors group"
               >
                 {/* Number */}
-                <div className="absolute top-4 left-4 text-5xl font-black text-[var(--gold)]/10 group-hover:text-[var(--gold)]/20 transition-colors">
+                <div className="absolute top-4 start-4 text-5xl font-black text-[var(--gold)]/10 group-hover:text-[var(--gold)]/20 transition-colors">
                   0{i + 1}
                 </div>
 

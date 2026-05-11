@@ -77,5 +77,19 @@ insert into public.platform_settings (key, value, type, category, description, s
   -- Payment provider / simulation
   ('payment.simulation.failure_rate',  '0'::jsonb,    'number', 'payment',
    'Probability (0–1) that the simulated payment processor fails. Useful for QA.',
+   false, false),
+
+  -- Auction time blackout windows (PLAN §21.X)
+  -- Hours are local time in `auction.blackout.timezone`. Each entry is a
+  -- pair [startHour, endHour); endHour < startHour means the window wraps
+  -- past midnight (e.g. [23, 7) = nightly 23:00 → 07:00).
+  ('auction.blackout.enabled',       'false'::jsonb, 'boolean', 'auction',
+   'When true, sellers cannot schedule auctions to end inside a blackout window and admin extend warns before crossing one.',
+   false, false),
+  ('auction.blackout.windows',       '[[23, 7]]'::jsonb, 'json', 'auction',
+   'Array of [startHour, endHour) pairs (0–23). End hour < start hour wraps past midnight.',
+   false, false),
+  ('auction.blackout.timezone',      '"Africa/Tunis"'::jsonb, 'string', 'auction',
+   'IANA timezone used to interpret blackout hours.',
    false, false)
 on conflict (key) do nothing;

@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { ChevronLeft, Check, Gauge } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
@@ -14,17 +15,22 @@ import { LiveAuctionPanel } from "@/components/auction/LiveAuctionPanel";
 import { LiveHeroBadge } from "@/components/auction/LiveHeroBadge";
 import { createClient } from "@/lib/supabase/server";
 import { getAuctionById } from "@/lib/db";
+import {
+  getSellerPublicPlanPerks,
+  getSellerPublicPhone,
+} from "@/lib/subscription";
 import { auctionCode, formatPrice } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 interface Props {
-  params: Promise<{ id: string }>;
+  params: Promise<{ id: string; locale: string }>;
 }
 
 export default async function AuctionDetailPage({ params }: Props) {
-  const { id } = await params;
+  const { id, locale } = await params;
+  const t = await getTranslations({ locale, namespace: "auctions.detail" });
   const supabase = await createClient();
 
   // Sweep expired rows before reading so the CTA never lies.
@@ -40,6 +46,23 @@ export default async function AuctionDetailPage({ params }: Props) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  // Hide auctions that haven't been approved by the admin yet — or that
+  // were rejected — from the public. Only the owning seller and admins
+  // can preview these. Everyone else gets a 404 so the URL doesn't
+  // confirm the listing's existence.
+  const NON_PUBLIC_STATUSES = new Set([
+    "pending_review",
+    "scheduled",
+    "cancelled",
+  ]);
+  if (NON_PUBLIC_STATUSES.has(auction.status)) {
+    const role = (user?.user_metadata as { role?: string } | null)?.role;
+    const isOwner = Boolean(user && auction.seller.id === user.id);
+    const isAdmin = role === "admin";
+    if (!isOwner && !isAdmin) notFound();
+  }
+
   let hasBid = false;
   if (user) {
     const { count } = await supabase
@@ -51,6 +74,15 @@ export default async function AuctionDetailPage({ params }: Props) {
   }
 
   const { vehicle, seller } = auction;
+
+  // Pro plan perks for this seller — drives the trusted-seller badge
+  // and (with directPhoneVisible) reveals the verified phone. Both
+  // RPCs are public-safe + self-gating: they return null when the
+  // seller has no active plan or the plan doesn't grant the perk.
+  const [sellerPlanPerks, sellerPhone] = await Promise.all([
+    getSellerPublicPlanPerks(seller.id).catch(() => null),
+    getSellerPublicPhone(seller.id).catch(() => null),
+  ]);
 
   return (
     <AppShell noTopBar>
@@ -72,7 +104,7 @@ export default async function AuctionDetailPage({ params }: Props) {
           <div className="absolute top-4 inset-x-0 px-4 flex items-center justify-between z-20">
             <Link
               href="/auctions"
-              aria-label="Retour"
+              aria-label={t("back")}
               className="h-10 w-10 rounded-full bg-black/45 backdrop-blur-md border border-white/15 text-white flex items-center justify-center hover:bg-black/65 transition-colors"
             >
               <ChevronLeft className="h-5 w-5" />
@@ -84,8 +116,12 @@ export default async function AuctionDetailPage({ params }: Props) {
                 className="bg-black/45 backdrop-blur-md border-white/15 text-white hover:bg-black/65"
               />
               <ShareButton
-                title={`${vehicle.make} ${vehicle.model} ${vehicle.year} — Mazed Auto`}
-                text={`Prix actuel : ${formatPrice(auction.currentPrice)}`}
+                title={t("shareTitle", {
+                  make: vehicle.make,
+                  model: vehicle.model,
+                  year: vehicle.year,
+                })}
+                text={t("shareText", { price: formatPrice(auction.currentPrice) })}
                 className="bg-black/45 backdrop-blur-md border-white/15 text-white hover:bg-black/65 hover:border-white/25 hover:text-white"
               />
               <ReportButton auctionId={auction.id} />
@@ -119,12 +155,12 @@ export default async function AuctionDetailPage({ params }: Props) {
           </p>
         )}
 
-        <Section title="Spécifications">
+        <Section title={t("specs")}>
           <SpecsGrid vehicle={vehicle} />
         </Section>
 
         {vehicle.features.length > 0 && (
-          <Section title="Caractéristiques">
+          <Section title={t("features")}>
             <div className="flex flex-wrap gap-1.5">
               {vehicle.features.map((f, i) => (
                 <span
@@ -139,8 +175,12 @@ export default async function AuctionDetailPage({ params }: Props) {
           </Section>
         )}
 
-        <Section title="Vendeur">
-          <AnonSellerCard seller={seller} />
+        <Section title={t("seller")}>
+          <AnonSellerCard
+            seller={seller}
+            planPerks={sellerPlanPerks}
+            sellerPhone={sellerPhone}
+          />
         </Section>
       </div>
 
@@ -178,10 +218,10 @@ export default async function AuctionDetailPage({ params }: Props) {
               className="inline-flex items-center gap-2 h-10 px-4 rounded-full ring-1 ring-[var(--border)] hover:ring-[var(--gold)] hover:text-[var(--gold)] text-sm font-bold transition-colors shrink-0"
             >
               <ChevronLeft className="h-4 w-4" />
-              Catalogue
+              {t("catalog")}
             </Link>
             <div className="hidden xl:flex items-center gap-2 text-[11px] text-[var(--foreground-muted)] uppercase tracking-[0.18em] font-bold">
-              <span>Enchère</span>
+              <span>{t("auctionLabel")}</span>
               <span className="text-[var(--border-strong)]">·</span>
               <span className="font-mono tabular-nums text-[var(--foreground-subtle)]">
                 {auctionCode(auction.id)}
@@ -195,8 +235,12 @@ export default async function AuctionDetailPage({ params }: Props) {
               className="bg-[var(--surface)] border-[var(--border)] text-foreground hover:border-[var(--gold-soft)]"
             />
             <ShareButton
-              title={`${vehicle.make} ${vehicle.model} ${vehicle.year} — Mazed Auto`}
-              text={`Prix actuel : ${formatPrice(auction.currentPrice)}`}
+              title={t("shareTitle", {
+                make: vehicle.make,
+                model: vehicle.model,
+                year: vehicle.year,
+              })}
+              text={t("shareText", { price: formatPrice(auction.currentPrice) })}
               className="bg-[var(--surface)] border-[var(--border)] text-foreground hover:border-[var(--gold-soft)]"
             />
             <ReportButton auctionId={auction.id} />
@@ -251,7 +295,7 @@ export default async function AuctionDetailPage({ params }: Props) {
 
             {vehicle.description && (
               <section>
-                <SectionEyebrow>À propos de cette voiture</SectionEyebrow>
+                <SectionEyebrow>{t("about")}</SectionEyebrow>
                 <p className="mt-5 text-[17px] leading-[1.75] text-foreground/90 whitespace-pre-line">
                   {vehicle.description}
                 </p>
@@ -259,7 +303,7 @@ export default async function AuctionDetailPage({ params }: Props) {
             )}
 
             <section>
-              <SectionEyebrow>Spécifications</SectionEyebrow>
+              <SectionEyebrow>{t("specs")}</SectionEyebrow>
               <div className="mt-5">
                 <SpecsGrid vehicle={vehicle} />
               </div>
@@ -267,7 +311,7 @@ export default async function AuctionDetailPage({ params }: Props) {
 
             {vehicle.features.length > 0 && (
               <section>
-                <SectionEyebrow>Caractéristiques</SectionEyebrow>
+                <SectionEyebrow>{t("features")}</SectionEyebrow>
                 <div className="mt-5 flex flex-wrap gap-2.5">
                   {vehicle.features.map((f, i) => (
                     <span
@@ -283,9 +327,13 @@ export default async function AuctionDetailPage({ params }: Props) {
             )}
 
             <section>
-              <SectionEyebrow>Vendeur</SectionEyebrow>
+              <SectionEyebrow>{t("seller")}</SectionEyebrow>
               <div className="mt-5">
-                <AnonSellerCard seller={seller} />
+                <AnonSellerCard
+            seller={seller}
+            planPerks={sellerPlanPerks}
+            sellerPhone={sellerPhone}
+          />
               </div>
             </section>
           </main>

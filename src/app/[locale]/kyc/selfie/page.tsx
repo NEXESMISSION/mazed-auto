@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Camera, Eye, Volume2, ArrowRight, ArrowLeft } from "lucide-react";
 import { KYCShell } from "@/components/layout/KYCShell";
@@ -12,6 +13,7 @@ import { updateKycDraft } from "@/lib/kycDraft";
 export default function KYCSelfiePage() {
   const router = useRouter();
   const { toast } = useToast();
+  const t = useTranslations("kyc.selfie");
   // Bumped on retry so LivenessCheck remounts cleanly (camera + models
   // re-init from scratch instead of trying to resume from torn-down refs).
   const [attemptKey, setAttemptKey] = useState(0);
@@ -26,12 +28,9 @@ export default function KYCSelfiePage() {
     <KYCShell current={2} backHref="/kyc/id-back">
       <div className="space-y-4">
         <div className="text-center">
-          <h2 className="text-xl font-bold">Selfie en direct</h2>
+          <h2 className="text-xl font-bold">{t("heading")}</h2>
           <p className="text-sm text-[var(--foreground-muted)] mt-1">
-            Suivez les instructions à l&apos;écran. Le système vérifie en
-            temps réel que vous regardez devant vous, puis tournez la tête
-            à droite et à gauche — chaque étape se valide automatiquement
-            quand la position est tenue.
+            {t("subtitle")}
           </p>
         </div>
 
@@ -43,7 +42,7 @@ export default function KYCSelfiePage() {
                 selfieVideoUrl: videoUrl,
                 selfieImageUrl: imageUrl,
               });
-              toast("✓ Selfie validé — étape suivante", "success");
+              toast(t("toastDone"), "success");
               router.push("/kyc/processing");
             }}
             onCancel={() => {
@@ -59,28 +58,28 @@ export default function KYCSelfiePage() {
                   <Camera className="h-4 w-4" />
                 </span>
                 <div>
-                  <div className="font-bold text-sm">Préparez-vous</div>
+                  <div className="font-bold text-sm">{t("prepareTitle")}</div>
                   <div className="text-[11px] text-[var(--foreground-muted)] mt-0.5">
-                    Tenez l&apos;appareil bien droit, dans un endroit éclairé
+                    {t("prepareHint")}
                   </div>
                 </div>
               </div>
               <ul className="space-y-1.5 text-xs text-[var(--foreground-muted)] ms-1">
                 <li className="flex items-center gap-2">
                   <Eye className="h-3.5 w-3.5 text-[var(--gold)] shrink-0" />
-                  Regardez devant vous (~1 seconde)
+                  {t("instruction1")}
                 </li>
                 <li className="flex items-center gap-2">
                   <ArrowRight className="h-3.5 w-3.5 text-[var(--gold)] shrink-0" />
-                  Tournez la tête à droite (~1 seconde)
+                  {t("instruction2")}
                 </li>
                 <li className="flex items-center gap-2">
                   <ArrowLeft className="h-3.5 w-3.5 text-[var(--gold)] shrink-0" />
-                  Tournez la tête à gauche (~1 seconde)
+                  {t("instruction3")}
                 </li>
                 <li className="flex items-center gap-2">
                   <Volume2 className="h-3.5 w-3.5 text-[var(--gold)] shrink-0" />
-                  Un &laquo;bip&raquo; et une vibration vous confirment chaque étape
+                  {t("instruction4")}
                 </li>
               </ul>
             </div>
@@ -91,7 +90,7 @@ export default function KYCSelfiePage() {
               onClick={() => setStarted(true)}
             >
               <Camera className="h-5 w-5" />
-              Commencer la vérification
+              {t("cta")}
             </Button>
           </div>
         )}
