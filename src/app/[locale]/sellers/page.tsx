@@ -24,20 +24,30 @@ export default async function SellersPage() {
 
   const sellers = await listSellers(supabase);
 
-  // Active-auction count per seller — fetched in parallel so the rows can
-  // surface a "live now" hint alongside the all-time deals number.
-  const liveCounts = await Promise.all(
-    sellers.map((s) =>
-      supabase
-        .from("auctions")
-        .select("id", { count: "exact", head: true })
-        .eq("seller_id", s.id)
-        .in("status", ["active", "ending"])
-        .then((r) => r.count ?? 0),
-    ),
-  );
+  // Active-auction count per seller — ONE batched query instead of N+1.
+  // Previously we fired a separate COUNT-head request per row; on a
+  // 100-seller list that was 100 round-trips serialized through Supabase.
+  // Now we pull seller_id for every live row in a single SELECT and
+  // bucket client-side. Trades a tiny amount of in-memory work for ~99
+  // fewer network calls.
+  const sellerIds = sellers.map((s) => s.id);
+  const liveByseller = new Map<string, number>();
+  if (sellerIds.length > 0) {
+    const { data: liveRows } = await supabase
+      .from("auctions")
+      .select("seller_id")
+      .in("seller_id", sellerIds)
+      .in("status", ["active", "ending"]);
+    for (const r of liveRows ?? []) {
+      const id = (r as { seller_id: string }).seller_id;
+      liveByseller.set(id, (liveByseller.get(id) ?? 0) + 1);
+    }
+  }
 
-  const enriched = sellers.map((s, i) => ({ ...s, liveCount: liveCounts[i] }));
+  const enriched = sellers.map((s) => ({
+    ...s,
+    liveCount: liveByseller.get(s.id) ?? 0,
+  }));
 
   return (
     <AppShell noTopBar>
