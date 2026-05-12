@@ -105,11 +105,11 @@ export default function Step1Page() {
       .then(([brandsRes, featRes, citiesRes]) => {
         if (cancelled) return;
         if (brandsRes.data && brandsRes.data.length > 0) {
-          // eslint-disable-next-line react-hooks/set-state-in-effect
+           
           setMakes(brandsRes.data.map((b) => b.display_name as string));
         }
         if (featRes.data && featRes.data.length > 0) {
-          // eslint-disable-next-line react-hooks/set-state-in-effect
+           
           setFeatureOpts(
             featRes.data.map((f) => {
               const ar = (f.label_ar as string | null) ?? "";
@@ -121,7 +121,7 @@ export default function Step1Page() {
           );
         }
         if (citiesRes.data && citiesRes.data.length > 0) {
-          // eslint-disable-next-line react-hooks/set-state-in-effect
+           
           setCityOpts(
             citiesRes.data.map((c) => {
               const ar = (c.name_ar as string | null) ?? "";
@@ -403,7 +403,7 @@ export default function Step1Page() {
             variant="ghost"
             size="lg"
             fullWidth
-            onClick={() => router.push("/seller/dashboard")}
+            onClick={() => router.push("/profile")}
             className="lg:!w-auto lg:px-6"
           >
             {tWiz("action.saveExit")}

@@ -13,6 +13,7 @@ import {
   HelpCircle,
   ArrowUpRight,
   Sparkles,
+  LayoutDashboard,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
@@ -225,6 +226,11 @@ export default async function ProfilePage() {
         </Link>
 
         <MenuCard label="Mon activité">
+          <MenuRow
+            href="/buyer/dashboard"
+            icon={<LayoutDashboard className="h-4 w-4" />}
+            label="Tableau de l'acheteur"
+          />
           <MenuRow
             href="/buyer/bids"
             icon={<Gavel className="h-4 w-4" />}
@@ -495,6 +501,12 @@ export default async function ProfilePage() {
           }
         >
           <DesktopMenuCard label="Mon activité" Icon={Gavel}>
+            <DesktopMenuRow
+              href="/buyer/dashboard"
+              Icon={LayoutDashboard}
+              label="Tableau de l'acheteur"
+              sub="Vue d'ensemble + recommandations"
+            />
             <DesktopMenuRow
               href="/buyer/bids"
               Icon={Gavel}

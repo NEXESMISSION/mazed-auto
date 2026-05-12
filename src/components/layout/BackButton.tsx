@@ -65,8 +65,10 @@ function parentPath(pathname: string): string {
     { test: /^\/messages\/[^/]+$/, to: "/messages" },
     // /profile/[username] → home (no list page for public profiles)
     { test: /^\/profile\/[^/]+$/, to: "/" },
-    // /seller/new/* → seller dashboard
-    { test: /^\/seller\/new(\/.*)?$/, to: "/seller/dashboard" },
+    // /seller/new/* → profile (canonical hub; the dashboard is reachable
+    // from there via "Tableau du vendeur"). Was /seller/dashboard but
+    // surprised users who landed in the wizard via the FAB.
+    { test: /^\/seller\/new(\/.*)?$/, to: "/profile" },
     // /payment/* → home (each step is mid-flow, parent is wherever they came from)
     { test: /^\/payment\/[^/]+$/, to: "/" },
     // /kyc/* → kyc start
@@ -76,8 +78,9 @@ function parentPath(pathname: string): string {
     { test: /^\/(login|register|forgot-password|reset-password|verify-email|verify-phone)$/, to: "/" },
     // Settings → profile
     { test: /^\/settings$/, to: "/profile" },
-    // /buyer/* leaves under buyer dashboard
-    { test: /^\/buyer\/[^/]+$/, to: "/buyer/dashboard" },
+    // /buyer/* → profile (canonical account hub). The buyer dashboard is
+    // still reachable from there via "Tableau de l'acheteur".
+    { test: /^\/buyer\/[^/]+$/, to: "/profile" },
   ];
 
   for (const o of overrides) {

@@ -52,7 +52,7 @@ export function CreateAuctionShell({ current, children }: Props) {
         )}
         <div className="font-bold text-sm">Créer une nouvelle enchère</div>
         <button
-          onClick={() => router.push("/seller/dashboard")}
+          onClick={() => router.push("/profile")}
           aria-label={tCommon("cancel")}
           className="h-10 w-10 rounded-full bg-[var(--surface)] border border-[var(--border)] flex items-center justify-center hover:border-[var(--danger)]/40 hover:text-[var(--danger)] transition-colors"
         >
@@ -116,7 +116,7 @@ export function CreateAuctionShell({ current, children }: Props) {
               </div>
             </div>
             <button
-              onClick={() => router.push("/seller/dashboard")}
+              onClick={() => router.push("/profile")}
               className="inline-flex items-center gap-2 h-10 px-4 rounded-full ring-1 ring-[var(--border)] hover:ring-[var(--danger)]/50 hover:text-[var(--danger)] text-sm font-bold transition-colors"
             >
               <X className="h-4 w-4" />
