@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
+import { compressImage } from "@/lib/imageCompress";
 import { upsertBrand, deleteBrand, uploadBrandLogo } from "../actions";
 
 interface Brand {
@@ -470,8 +471,17 @@ function UploadField({
   async function handleFile(file: File) {
     setUploading(true);
     try {
+      // Compress before upload — admins may drag a 3 MB hero photo for
+      // a brand tile that ends up rendered at ~480 px. The server-side
+      // bucket policy already caps at 2 MB; compressing client-side
+      // means a typical upload is 50-150 KB and never hits the cap.
+      // SVGs pass through unchanged (not a raster format).
+      const payload =
+        file.type === "image/svg+xml"
+          ? file
+          : await compressImage(file, { maxEdge: 800, quality: 0.85 });
       const fd = new FormData();
-      fd.append("file", file);
+      fd.append("file", payload);
       fd.append("slug", slug);
       const r = await uploadBrandLogo(fd);
       if (!r.ok) {
