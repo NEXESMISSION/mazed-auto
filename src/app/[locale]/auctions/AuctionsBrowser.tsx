@@ -513,17 +513,23 @@ function ModernBrowser({
           <div className="mx-auto h-14 w-14 rounded-full bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center text-[var(--foreground-muted)]">
             <SearchX className="h-7 w-7" />
           </div>
-          <div className="font-bold text-base">Aucune enchère</div>
+          <div className="font-bold text-base">
+            {buildEmptyTitle({ search, brand, body })}
+          </div>
           <p className="text-xs text-[var(--foreground-muted)]">
-            Aucune annonce ne correspond à votre recherche pour le moment.
+            {hasAnyFilter
+              ? "Essayez d'élargir vos critères ou de revenir plus tard."
+              : "Aucune annonce n'est en ligne pour le moment."}
           </p>
-          <button
-            type="button"
-            onClick={clearAll}
-            className="inline-flex items-center h-9 px-4 rounded-full bg-[var(--gold)] text-black text-[12px] font-bold shadow-[var(--shadow-gold)]"
-          >
-            Effacer les filtres
-          </button>
+          {hasAnyFilter && (
+            <button
+              type="button"
+              onClick={clearAll}
+              className="inline-flex items-center h-9 px-4 rounded-full bg-[var(--gold)] text-black text-[12px] font-bold shadow-[var(--shadow-gold)]"
+            >
+              Effacer les filtres
+            </button>
+          )}
         </div>
       ) : viewMode === "grid" ? (
         <div className="mt-3 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 px-4">
@@ -881,4 +887,25 @@ function ChipStrip({
       </div>
     </div>
   );
+}
+
+/** Build a filter-aware empty-state title so the user knows WHY nothing
+ *  is showing instead of a generic "no auctions". Prefers the most
+ *  specific signal: search > brand > body > fallback. */
+function buildEmptyTitle({
+  search,
+  brand,
+  body,
+}: {
+  search: string;
+  brand: string | null;
+  body: string | null;
+}): string {
+  const q = search.trim();
+  if (q && brand) return `Aucune ${brand} ne correspond à « ${q} »`;
+  if (q) return `Aucun résultat pour « ${q} »`;
+  if (brand && body) return `Aucune ${brand} ${body}`;
+  if (brand) return `Aucune ${brand} en vente`;
+  if (body) return `Aucune ${body}`;
+  return "Aucune enchère";
 }
