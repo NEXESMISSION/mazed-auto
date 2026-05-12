@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { useDraft } from "@/lib/draft";
 import { NativeCapture } from "@/components/auction/NativeCapture";
+import { thumb } from "@/lib/imageUrl";
 import { cn } from "@/lib/utils";
 
 // Slot key is the stable identifier; the visible label is resolved via
@@ -235,8 +236,12 @@ function SlotTile({
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={photo}
+            src={thumb(photo, { width: 320, quality: 60 })}
             alt={label}
+            width={160}
+            height={120}
+            loading="lazy"
+            decoding="async"
             className="h-full w-full object-cover"
           />
           <div className="absolute top-1 right-1 lg:top-2 lg:right-2 h-5 w-5 lg:h-7 lg:w-7 rounded-full bg-[var(--success)] flex items-center justify-center">

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, Maximize2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { thumb } from "@/lib/imageUrl";
 
 interface Props {
   images: string[];
@@ -21,9 +22,11 @@ export function ImageGallery({ images, alt = "" }: Props) {
       <div className="relative aspect-[4/3] md:aspect-[16/10] overflow-hidden rounded-[var(--radius-md)] bg-[var(--surface-2)] border border-[var(--border)]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={images[active]}
+          src={thumb(images[active], { width: 1200, quality: 75 })}
           alt={`${alt} ${active + 1}`}
           className="h-full w-full object-cover"
+          loading="eager"
+          decoding="async"
         />
 
         {/* Counter */}
@@ -76,8 +79,12 @@ export function ImageGallery({ images, alt = "" }: Props) {
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={src}
+              src={thumb(src, { width: 160, quality: 60 })}
               alt={`thumb-${i}`}
+              width={80}
+              height={64}
+              loading="lazy"
+              decoding="async"
               className="h-full w-full object-cover"
             />
           </button>

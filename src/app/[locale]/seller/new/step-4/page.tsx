@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/Input";
 import { useDraft } from "@/lib/draft";
 import { useAuth } from "@/lib/auth";
 import { NativeCapture } from "@/components/auction/NativeCapture";
+import { thumb } from "@/lib/imageUrl";
 import { cn } from "@/lib/utils";
 
 // Exception values per PLAN §11.3. The first five cover legitimate name
@@ -276,7 +277,13 @@ function ScanSlot({
     return (
       <div className="relative aspect-[4/3] rounded-[var(--radius)] border-2 border-[var(--success)] overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={url} alt={label} className="h-full w-full object-cover" />
+        <img
+          src={thumb(url, { width: 800, quality: 70 })}
+          alt={label}
+          loading="lazy"
+          decoding="async"
+          className="h-full w-full object-cover"
+        />
         <div className="absolute top-1.5 end-1.5 h-6 w-6 rounded-full bg-[var(--success)] flex items-center justify-center">
           <Check className="h-3.5 w-3.5 text-white" strokeWidth={3} />
         </div>
