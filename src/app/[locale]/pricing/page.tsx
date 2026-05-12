@@ -7,6 +7,7 @@ import { listCmsPlans, type CmsPlan } from "@/lib/cms";
 import { getActiveSubscription } from "@/lib/subscription";
 import { formatDateTime, formatPrice } from "@/lib/format";
 import { SubscribeButton } from "./SubscribeButton";
+import { MobilePlanCard } from "./MobilePlanCard";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -23,22 +24,52 @@ export default async function PricingPage() {
 
   return (
     <AppShell>
-      <div className="py-5 lg:py-12 max-w-6xl mx-auto space-y-6 lg:space-y-10">
-        <header className="text-center space-y-2.5 lg:space-y-3 px-4 lg:px-8">
-          <div className="inline-flex items-center gap-1.5 text-[10px] lg:text-[11px] uppercase tracking-[0.2em] lg:tracking-[0.22em] font-bold text-[var(--gold)]">
+      <div className="py-4 lg:py-12 max-w-6xl mx-auto space-y-5 lg:space-y-10">
+        {/* MOBILE header — compact, no big H1 hogging the fold */}
+        <header className="lg:hidden px-4 space-y-2">
+          <div className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] font-bold text-[var(--gold)]">
+            <Sparkles className="h-3 w-3" />
+            Comptes professionnels
+          </div>
+          <h1 className="text-2xl font-extrabold tracking-tight leading-tight">
+            Choisissez votre plan
+          </h1>
+          <p className="text-[13px] text-[var(--foreground-muted)] leading-relaxed">
+            Vendez plus de voitures. Mensuel, sans engagement.
+          </p>
+          {active && (
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-[var(--gold-faint)] border border-[var(--gold-soft)]/40 px-2.5 py-1 text-[11px]">
+              <Check className="h-3 w-3 text-[var(--gold)]" />
+              <span className="font-bold text-[var(--gold-bright)]">
+                {active.planName}
+              </span>
+              <span className="text-[var(--foreground-subtle)]">·</span>
+              <span>
+                jusqu&apos;au{" "}
+                {formatDateTime(active.currentPeriodEnd, locale, {
+                  dateStyle: "short",
+                })}
+              </span>
+            </div>
+          )}
+        </header>
+
+        {/* DESKTOP header — big editorial */}
+        <header className="hidden lg:block text-center space-y-3 px-8">
+          <div className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.22em] font-bold text-[var(--gold)]">
             <Sparkles className="h-3.5 w-3.5" />
             Comptes professionnels
           </div>
-          <h1 className="text-[28px] leading-[1.1] lg:text-5xl font-extrabold lg:font-black tracking-tight">
+          <h1 className="text-5xl font-black tracking-tight">
             Choisissez votre plan
           </h1>
-          <p className="text-[13px] lg:text-base text-[var(--foreground-muted)] max-w-2xl mx-auto leading-relaxed">
-            Vendez plus de voitures avec une boutique dédiée, des analytiques et
-            un placement prioritaire dans les résultats. Mensuel sans
+          <p className="text-base text-[var(--foreground-muted)] max-w-2xl mx-auto leading-relaxed">
+            Vendez plus de voitures avec une boutique dédiée, des analytiques
+            et un placement prioritaire dans les résultats. Mensuel sans
             engagement.
           </p>
           {active && (
-            <div className="inline-flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 rounded-full bg-[var(--gold-faint)] border border-[var(--gold-soft)]/40 px-3 py-1.5 text-[11px] lg:text-xs max-w-[calc(100vw-2rem)]">
+            <div className="inline-flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 rounded-full bg-[var(--gold-faint)] border border-[var(--gold-soft)]/40 px-3 py-1.5 text-xs">
               <span>Plan actuel :</span>
               <span className="font-bold text-[var(--gold-bright)]">
                 {active.planName}
@@ -60,32 +91,22 @@ export default async function PricingPage() {
           </div>
         ) : (
           <>
-            {/* MOBILE — horizontal snap-scroll carousel.
-                Each card takes ~88% of the viewport so the next one
-                peeks in from the edge as a strong "swipe me" affordance.
-                snap-mandatory keeps cards locked once a swipe lands. */}
-            <div className="md:hidden">
-              <div className="flex overflow-x-auto snap-x snap-mandatory gap-3 px-4 pb-3 -mb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {plans.map((p) => (
-                  <div
-                    key={p.slug}
-                    className="snap-center shrink-0 w-[88%] max-w-sm first:ms-0 last:me-0"
-                  >
-                    <PlanCard
-                      plan={p}
-                      locale={locale}
-                      signedIn={Boolean(user)}
-                      isCurrent={active?.planSlug === p.slug}
-                      hasOtherPlan={Boolean(active && active.planSlug !== p.slug)}
-                    />
-                  </div>
-                ))}
-              </div>
-              {plans.length > 1 && (
-                <div className="text-center mt-3 text-[10px] uppercase tracking-[0.18em] font-bold text-[var(--foreground-subtle)]">
-                  ← Glissez pour comparer →
-                </div>
-              )}
+            {/* MOBILE — vertical stack of full-width cards.
+                Each card is collapsed by default to a price + 4 key
+                bullets + CTA. Tap "Voir tous les avantages" to expand
+                the full feature list. Comparison table is hidden on
+                mobile (it duplicates what each card already shows). */}
+            <div className="md:hidden px-4 space-y-3">
+              {plans.map((p) => (
+                <MobilePlanCard
+                  key={p.slug}
+                  plan={p}
+                  locale={locale}
+                  signedIn={Boolean(user)}
+                  isCurrent={active?.planSlug === p.slug}
+                  hasOtherPlan={Boolean(active && active.planSlug !== p.slug)}
+                />
+              ))}
             </div>
 
             {/* DESKTOP — 3-up grid */}
@@ -104,11 +125,12 @@ export default async function PricingPage() {
           </>
         )}
 
-        <div className="px-4 lg:px-8">
+        {/* Comparison table — desktop only, hidden on phones */}
+        <div className="hidden md:block px-8">
           <ComparisonTable plans={plans} />
         </div>
 
-        <section className="text-[11px] lg:text-xs text-[var(--foreground-muted)] text-center max-w-3xl mx-auto pt-2 lg:pt-4 space-y-1 px-4 lg:px-8">
+        <section className="text-[11px] lg:text-xs text-[var(--foreground-muted)] text-center max-w-3xl mx-auto pt-1 lg:pt-4 space-y-1 px-4 lg:px-8">
           <p>
             ⚠ Paiement en mode <span className="font-semibold">simulé</span>{" "}
             (tests). Aucun montant n&apos;est réellement débité — la
