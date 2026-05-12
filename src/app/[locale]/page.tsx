@@ -16,9 +16,13 @@ import { CategoryStrip } from "@/components/home/CategoryStrip";
 import { DesktopHero } from "@/components/home/DesktopHero";
 import { DesktopFinalCta } from "@/components/home/DesktopFinalCta";
 import { HomeSectionDivider } from "@/components/home/HomeSectionDivider";
+import { ProUpgradeNudge } from "@/components/home/ProUpgradeNudge";
 import { createClient } from "@/lib/supabase/server";
 import { getHomeRailsCached, getLiveAuctionsCached } from "@/lib/home-cache";
-import { getSellerSearchPriorities } from "@/lib/subscription";
+import {
+  getActiveSubscription,
+  getSellerSearchPriorities,
+} from "@/lib/subscription";
 import type { Auction } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -47,6 +51,7 @@ export default async function HomePage() {
     recentlyEnded,
     activitySeed,
     cmsBanners,
+    cmsBrands,
     cmsCategories,
   } = rails;
 
@@ -101,6 +106,14 @@ export default async function HomePage() {
   // Pick the highest-priority active CMS banner. Render above the
   // existing PromoBanner so admin-managed seasonal promos lead.
   const topBanner = cmsBanners[0] ?? null;
+
+  // Show the Pro upgrade nudge to signed-in users who don't already have
+  // an active subscription. Check is server-side so the client component
+  // never gets handed a "show this" flag for paying customers. The nudge
+  // itself enforces the show-once / cooldown logic via localStorage.
+  const proNudgeEnabled = user
+    ? !(await getActiveSubscription(user.id).catch(() => null))
+    : false;
 
   return (
     <AppShell noTopBar>
@@ -182,7 +195,7 @@ export default async function HomePage() {
         <RecentlyEndedRail items={recentlyEnded} />
 
         {/* Discovery footer */}
-        <BrandSlider pool={brandPool} />
+        <BrandSlider pool={brandPool} brands={cmsBrands} />
         <CategoryStrip categories={cmsCategories} locale={locale} />
 
         {/* Desktop closing CTA — buyer + seller pillars. Hidden on mobile. */}
@@ -190,6 +203,10 @@ export default async function HomePage() {
 
         <span className="block h-2" aria-hidden />
       </div>
+
+      {/* Pro upgrade nudge — appears after a delay for non-Pro users,
+          suppressed for 7 days after dismissal (forever after click). */}
+      <ProUpgradeNudge enabled={proNudgeEnabled} />
     </AppShell>
   );
 }
