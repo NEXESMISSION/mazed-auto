@@ -548,7 +548,10 @@ begin
   return query
   select
     public.admin_role()::text,
-    (select email::text from auth.users where id = v_id),
+    -- Alias auth.users in the subquery so `email` is unambiguous with
+    -- the outer return column also named `email`. Same trick for the
+    -- last_seen max() further down.
+    (select u.email::text from auth.users u where u.id = v_id),
     coalesce(
       (select s.display_name from public.sellers s where s.id = v_id),
       (select btrim(coalesce(u.raw_user_meta_data ->> 'firstName','') || ' ' ||
@@ -557,6 +560,6 @@ begin
     )::text,
     (select count(*) from public.admin_audit_log
        where actor_id = v_id and created_at > now() - interval '30 days')::bigint,
-    (select max(last_seen) from public.admin_sessions where user_id = v_id);
+    (select max(sess.last_seen) from public.admin_sessions sess where sess.user_id = v_id);
 end; $$;
 grant execute on function public.admin_self_summary() to authenticated;

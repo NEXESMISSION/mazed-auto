@@ -9,13 +9,14 @@
 -- New policy:
 --   - Auctions in PUBLIC_STATUSES are readable by everyone (anon + auth).
 --   - The owning seller can always read their own row in any status.
+--   - Bidders can read any auction they've placed a bid on (so a
+--     cancelled-after-bids auction still appears in /buyer/bids).
 --   - Admins (public.is_admin()) can read any row.
 --
--- Public statuses = anything that has passed admin moderation, i.e.
---   active, ending, ended, reserve_not_met, pending_seller_decision,
---   re_offered.
--- Hidden statuses = pending_review (awaiting admin), scheduled (not
--- live yet — admin grants this state manually), cancelled (rejected).
+-- Public statuses = anything that has passed admin moderation + the
+-- "cancelled" status (so a buyer who bid on a now-cancelled auction
+-- can still see it). Hidden statuses = pending_review (awaiting first
+-- admin review), scheduled (admin-only pre-launch).
 --
 -- Safe to run repeatedly.
 -- ============================================================
@@ -31,8 +32,14 @@ create policy "auctions_public_read" on public.auctions
       'ended',
       'reserve_not_met',
       'pending_seller_decision',
-      're_offered'
+      're_offered',
+      'cancelled'
     )
     or seller_id = auth.uid()
     or public.is_admin()
+    or exists (
+      select 1 from public.bids b
+      where b.auction_id = id
+        and b.user_id = auth.uid()
+    )
   );
