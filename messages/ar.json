@@ -20,7 +20,8 @@
     "help": "المساعدة",
     "terms": "الشروط والخصوصية",
     "info": "معلومات",
-    "auctions": "المزادات"
+    "auctions": "المزادات",
+    "signOut": "تسجيل الخروج"
   },
   "auth": {
     "signIn": "تسجيل الدخول",
@@ -691,6 +692,13 @@
       "toastFailed": "فشل: {error}",
       "toastAdded": "تمّت إضافة المسؤول",
       "add": "إضافة"
+    },
+    "prompts": {
+      "payoutMarkPaid": "تأكيد دفع {amount}.\nمرجع التحويل (RIB / BIC / البنك):",
+      "payoutCancelReason": "سبب الإلغاء:",
+      "txRefund": "هل ترغب في إرجاع هذا التأمين ({amount})؟\nالسبب (للتدقيق):",
+      "auctionForceClose": "سبب الإغلاق الإجباري:",
+      "txVoid": "هل ترغب في إلغاء المعاملة {ref}؟\nالسبب (للتدقيق):"
     }
   }
 }

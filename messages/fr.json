@@ -20,7 +20,8 @@
     "help": "Aide",
     "terms": "Conditions et confidentialité",
     "info": "Informations",
-    "auctions": "Enchères"
+    "auctions": "Enchères",
+    "signOut": "Se déconnecter"
   },
   "auth": {
     "signIn": "Connexion",
@@ -691,6 +692,13 @@
       "toastFailed": "Échec : {error}",
       "toastAdded": "Admin ajouté",
       "add": "Ajouter"
+    },
+    "prompts": {
+      "payoutMarkPaid": "Marquer {amount} comme payé.\nRéférence du virement (RIB / BIC / banque) :",
+      "payoutCancelReason": "Raison de l'annulation :",
+      "txRefund": "Rembourser cette caution ({amount}) ?\nRaison (audit) :",
+      "auctionForceClose": "Raison de la clôture forcée :",
+      "txVoid": "Annuler la transaction {ref} ?\nRaison (audit) :"
     }
   }
 }

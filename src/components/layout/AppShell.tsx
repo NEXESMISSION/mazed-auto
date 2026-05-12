@@ -6,6 +6,8 @@ import { PhoneCompletionGate } from "./PhoneCompletionGate";
 import { MaintenanceBanner } from "./MaintenanceBanner";
 import { DesktopHeader } from "./DesktopHeader";
 import { KycReminderPopup } from "./KycReminderPopup";
+import { SupportFab } from "./SupportFab";
+import { getSupportEmail, getSupportPhone } from "@/lib/config";
 
 interface Props {
   children: React.ReactNode;
@@ -16,7 +18,16 @@ interface Props {
   noTopBar?: boolean;
 }
 
-export function AppShell({ children, noTopBar }: Props) {
+export async function AppShell({ children, noTopBar }: Props) {
+  // Pulled server-side from platform_settings so admins can change the
+  // public phone/email/WhatsApp number without redeploying the app.
+  // Fetched in parallel; falls back to compiled defaults if the table
+  // is unreachable (e.g. fresh checkout).
+  const [supportPhone, supportEmail] = await Promise.all([
+    getSupportPhone(),
+    getSupportEmail(),
+  ]);
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <MaintenanceBanner />
@@ -50,6 +61,9 @@ export function AppShell({ children, noTopBar }: Props) {
           hasn't verified yet, and snoozes 24h after every dismissal so
           it doesn't nag on every page navigation. */}
       <KycReminderPopup />
+      {/* Floating support widget — WhatsApp / phone / email. Hides on
+          KYC/payment/wizard routes so it doesn't overlap critical CTAs. */}
+      <SupportFab phone={supportPhone} email={supportEmail} />
     </div>
   );
 }

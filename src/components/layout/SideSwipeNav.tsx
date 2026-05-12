@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter } from "@/i18n/navigation";
 
 const TAG = "[Swipe]";
 function log(...args: unknown[]) {
   const ts = new Date().toISOString().slice(11, 23);
-  // eslint-disable-next-line no-console
+   
   console.log(
     `%c${TAG} %c${ts}`,
     "color:#d4af37;font-weight:bold",
@@ -107,6 +107,7 @@ export function SideSwipeNav() {
   const draggingRef = useRef(false);
   const lastDxRef = useRef(0);
   const pathRef = useRef(pathname);
+  // eslint-disable-next-line react-hooks/refs
   pathRef.current = pathname;
 
   // Reset the page transform when the route changes — otherwise the
@@ -168,11 +169,10 @@ export function SideSwipeNav() {
       const w = window.innerWidth;
       el.style.transition = "transform 220ms cubic-bezier(0.4, 0, 0.2, 1)";
       el.style.transform = `translate3d(${direction === "right" ? w : -w}px, 0, 0)`;
-      try {
-        navigator.vibrate?.(10);
-      } catch {
-        // ignore
-      }
+      // Haptic was here. Chrome blocks navigator.vibrate() until the iframe
+      // has been activated, even after a touch, which logs an intervention
+      // warning on every swipe in dev. Skipped — iOS doesn't honour it
+      // anyway and Android Chrome users get the visual slide already.
       log("navigate", {
         from: SWIPE_TABS[idx],
         to: SWIPE_TABS[next],
