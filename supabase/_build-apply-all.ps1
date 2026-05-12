@@ -53,7 +53,32 @@ $order = @(
   "migrate-subscription-extras.sql",
   "migrate-subscription-payments.sql",
   "migrate-subscription-public-perks.sql",
-  "migrate-auctions-public-rls.sql"
+  "migrate-auctions-public-rls.sql",
+  # ---------- Hot-fixes / config tweaks (post-subscription) ----------
+  "migrate-settings-admin-write.sql",
+  "migrate-commission-3pct.sql",
+  "migrate-deposit-tiers.sql",
+  "migrate-remove-toyota-yaris.sql",
+  # ---------- Rounds 12-20 hardening passes (chronological) ----------
+  # Each addresses a finding from the running deep-audit cycle.
+  # Order matters where later migrations reference helpers from earlier
+  # ones (e.g. kyc-bid-gate uses is_kyc_verified, notif-kinds-wiring
+  # rewires review_kyc which the lifecycle migration then extends).
+  "migrate-admin-rbac-hardening.sql",     # round 12 — admin_users table
+  "migrate-perf-indexes.sql",             # round 13 — bid/watchlist/auction idx
+  "migrate-bid-buynow-hardening.sql",     # round 14 — buy_now race fix + outbid dedup
+  "migrate-publish-quota-atomic.sql",     # round 15 — BEFORE INSERT trigger
+  "migrate-notif-sub-fixes.sql",          # round 16 — notif RLS + dedup helper
+  "migrate-kyc-bid-gate.sql",             # round 17 — is_kyc_verified() pre-check
+  "migrate-notif-kinds-wiring.sql",       # round 18 — kyc_approved / rejected / blocked / payment_received
+  "migrate-notif-lifecycle-kinds.sql",    # round 19 — reserve_not_met / deposit_refunded / forfeited
+  "migrate-notif-final-kinds.sql",        # round 20 — auction_extended / new_report / rating_request
+  "migrate-rpc-auth-hardening.sql",       # round 21 — buy_now/forfeit IDOR + bids privacy
+  "migrate-admin-role-app-metadata.sql",  # round 22 — admin role into app_metadata + tx privacy
+  "migrate-search-path-hardening.sql",    # round 25 — SECURITY DEFINER search_path + auto-bid log
+  "migrate-perf-indexes-2.sql",           # round 25 — notifications/tx/messages/kyc FK idx
+  "migrate-rls-recursion-fix.sql",        # round 26 — break auctions↔bids RLS cycle
+  "migrate-cms-brand-logos.sql"           # round 27 — brand logo upload bucket
 )
 
 $out = Join-Path $base "_apply-all.sql"
