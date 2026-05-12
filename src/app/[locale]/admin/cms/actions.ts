@@ -189,6 +189,55 @@ export async function deleteBrand(slug: string): Promise<Result> {
   return { ok: true };
 }
 
+const ALLOWED_LOGO_MIME = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/svg+xml",
+]);
+const LOGO_MIME_EXT: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/svg+xml": "svg",
+};
+const MAX_LOGO_BYTES = 2 * 1024 * 1024;
+
+export async function uploadBrandLogo(
+  formData: FormData,
+): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
+  const g = await ensureAdmin();
+  if (!g.ok) return g;
+
+  const file = formData.get("file");
+  const rawSlug = String(formData.get("slug") ?? "");
+  if (!(file instanceof File)) {
+    return { ok: false, error: "FILE_MISSING" };
+  }
+  if (!file.size) return { ok: false, error: "EMPTY_FILE" };
+  if (file.size > MAX_LOGO_BYTES) {
+    return { ok: false, error: "FILE_TOO_LARGE" };
+  }
+  const mime = (file.type || "").toLowerCase();
+  if (!ALLOWED_LOGO_MIME.has(mime)) {
+    return { ok: false, error: "MIME_NOT_ALLOWED" };
+  }
+  const safeSlug = rawSlug.replace(/[^a-z0-9-]/gi, "").slice(0, 40) || "brand";
+  const ext = LOGO_MIME_EXT[mime];
+  const rand = Math.random().toString(36).slice(2, 8);
+  const path = `${safeSlug}-${Date.now()}-${rand}.${ext}`;
+
+  const { error } = await g.supabase.storage
+    .from("cms-brand-logos")
+    .upload(path, file, { contentType: mime, upsert: false });
+  if (error) return { ok: false, error: error.message };
+
+  const { data: pub } = g.supabase.storage
+    .from("cms-brand-logos")
+    .getPublicUrl(path);
+  return { ok: true, url: pub.publicUrl };
+}
+
 export async function upsertCity(input: {
   slug: string;
   nameAr?: string | null;

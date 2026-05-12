@@ -26,8 +26,10 @@ import {
 } from "./db";
 import {
   listCmsBanners,
+  listCmsBrands,
   listCmsCategories,
   type CmsBanner,
+  type CmsBrand,
   type CmsCategory,
 } from "./cms";
 import type { Auction } from "./types";
@@ -49,6 +51,7 @@ export interface HomeRails {
   recentlyEnded: Auction[];
   activitySeed: ActivityItem[];
   cmsBanners: CmsBanner[];
+  cmsBrands: CmsBrand[];
   cmsCategories: CmsCategory[];
 }
 
@@ -84,6 +87,7 @@ async function fetchAll(): Promise<HomeRails> {
     recentlyEnded,
     activitySeed,
     cmsBanners,
+    cmsBrands,
     cmsCategories,
   ] = await Promise.all([
     listHotNow(supa, RAIL_COUNT),
@@ -93,6 +97,7 @@ async function fetchAll(): Promise<HomeRails> {
     listRecentlyEnded(supa, 72, RAIL_COUNT),
     seedActivityItems(supa, 8),
     listCmsBanners(supa),
+    listCmsBrands(supa),
     listCmsCategories(supa),
   ]);
   return {
@@ -103,6 +108,7 @@ async function fetchAll(): Promise<HomeRails> {
     recentlyEnded,
     activitySeed,
     cmsBanners,
+    cmsBrands,
     cmsCategories,
   };
 }
