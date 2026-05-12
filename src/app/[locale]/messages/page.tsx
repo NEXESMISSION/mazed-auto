@@ -48,16 +48,6 @@ export default async function MessagesIndexPage() {
         | null;
     })[];
 
-  // Resolve "other party" display names + last-message previews in one pass.
-  // Keep IO bounded: one query for sellers, one for last messages.
-  const otherIds = Array.from(
-    new Set(
-      conversations.map((c) =>
-        c.buyer_id === user.id ? c.seller_id : c.buyer_id,
-      ),
-    ),
-  );
-
   // We deliberately don't look up the other participant's seller row.
   // Participants must stay anonymous in the inbox — buyers can't see who
   // the seller is, sellers can't see who the buyer is. Only the platform

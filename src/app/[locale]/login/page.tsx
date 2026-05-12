@@ -163,7 +163,7 @@ export default function LoginPage() {
       subtitle="Connectez-vous pour continuer"
       footer={
         <>
-          Vous n'avez pas de compte ?{" "}
+          Vous n&apos;avez pas de compte ?{" "}
           <Link
             href="/register"
             className="text-[var(--gold)] font-semibold hover:underline"

@@ -333,9 +333,13 @@ export function AdminUserActions({
             active ? "bg-emerald-500" : "bg-red-500/70"
           }`}
         >
+          {/* Toggle thumb. Use logical `start`/`end` so RTL mirrors the
+              motion: off = thumb at the start of the rail, on = thumb at
+              the end. With physical `left-*`, the thumb stayed pinned to
+              the visual left edge in Arabic regardless of state. */}
           <span
             className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all ${
-              active ? "left-[18px]" : "left-0.5"
+              active ? "end-0.5" : "start-0.5"
             }`}
           />
         </span>

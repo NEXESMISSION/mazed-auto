@@ -39,17 +39,22 @@ export function ImageGallery({ images, alt = "" }: Props) {
           <Maximize2 className="h-4 w-4" />
         </button>
 
-        {/* Prev / Next */}
+        {/* Prev / Next. Position with logical `start`/`end` so the
+            buttons flip side under RTL — Arabic reads right-to-left so
+            "next" naturally lives on the left edge. The chevron icons
+            already reflect the reading direction (prev = ChevronRight
+            in this LTR-only layout); the absolute position needs to
+            track too. */}
         <button
           onClick={prev}
-          className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-black/70 backdrop-blur flex items-center justify-center hover:bg-black/90 transition-colors"
+          className="absolute end-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-black/70 backdrop-blur flex items-center justify-center hover:bg-black/90 transition-colors"
           aria-label="Précédent"
         >
           <ChevronRight className="h-5 w-5" />
         </button>
         <button
           onClick={next}
-          className="absolute left-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-black/70 backdrop-blur flex items-center justify-center hover:bg-black/90 transition-colors"
+          className="absolute start-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-black/70 backdrop-blur flex items-center justify-center hover:bg-black/90 transition-colors"
           aria-label="Suivant"
         >
           <ChevronLeft className="h-5 w-5" />

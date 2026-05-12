@@ -37,6 +37,44 @@ async function ensureAdmin(): Promise<
   return { ok: true, supabase };
 }
 
+// ─── Input validation helpers ──────────────────────────────────────────
+//
+// These guard against the form-data flowing into the RPC layer being
+// garbage. The DB has its own constraints, but a clean 400 from us is
+// nicer than a Postgres "value too long for type character varying" or
+// a silent overflow. The numeric cap is well above any legitimate
+// platform amount (10M DT covers the entire site's daily volume).
+
+const MAX_AMOUNT_DT = 10_000_000;
+const MAX_TEXT_LEN = 2000; // reason / body / label / notes / reply
+const MAX_TITLE_LEN = 200; // title / question
+
+function badAmount(n: unknown, allowNegative = false): string | null {
+  if (typeof n !== "number" || !Number.isFinite(n)) return "INVALID_AMOUNT";
+  if (!allowNegative && n < 0) return "NEGATIVE_AMOUNT";
+  if (Math.abs(n) > MAX_AMOUNT_DT) return "AMOUNT_TOO_LARGE";
+  return null;
+}
+
+/**
+ * Defensive string clamp — caller passes raw user input, we hard-cap
+ * the length before it hits the RPC. Overloaded so that required-string
+ * inputs preserve the non-null type (no `| null` leaks into RPCs that
+ * declare `p_reason text NOT NULL`); only optional inputs widen to
+ * `string | null`. Without these overloads, every required-string RPC
+ * call would erupt in "string | null is not assignable to string".
+ */
+function clamp(s: string, max: number): string;
+function clamp(s: string | null | undefined, max: number): string | null;
+function clamp(
+  s: string | null | undefined,
+  max: number,
+): string | null {
+  if (s == null) return null;
+  if (typeof s !== "string") return null;
+  return s.length > max ? s.slice(0, max) : s;
+}
+
 // ----- USER ACTIONS -----
 
 export async function warnUserAction(input: {
@@ -51,7 +89,7 @@ export async function warnUserAction(input: {
   const { data, error } = await gate.supabase.rpc("admin_warn_user", {
     p_user_id: input.userId,
     p_severity: input.severity,
-    p_body: input.body,
+    p_body: clamp(input.body, MAX_TEXT_LEN),
     p_related_auction_id: input.relatedAuctionId ?? null,
     p_related_report_id: input.relatedReportId ?? null,
   });
@@ -70,7 +108,7 @@ export async function banUserAction(input: {
   if (!gate.ok) return gate;
   const { data, error } = await gate.supabase.rpc("admin_ban_user", {
     p_user_id: input.userId,
-    p_reason: input.reason,
+    p_reason: clamp(input.reason, MAX_TEXT_LEN),
     p_scope: input.scope ?? "full",
     p_duration_days: input.durationDays ?? null,
   });
@@ -88,7 +126,7 @@ export async function unbanUserAction(input: {
   if (!gate.ok) return gate;
   const { error } = await gate.supabase.rpc("admin_unban_user", {
     p_user_id: input.userId,
-    p_reason: input.reason,
+    p_reason: clamp(input.reason, MAX_TEXT_LEN),
   });
   if (error) return { ok: false, error: error.message };
   revalidatePath(`/[locale]/admin/users/[id]`, "page");
@@ -104,7 +142,7 @@ export async function resetKycAction(input: {
   if (!gate.ok) return gate;
   const { error } = await gate.supabase.rpc("admin_reset_kyc", {
     p_user_id: input.userId,
-    p_reason: input.reason,
+    p_reason: clamp(input.reason, MAX_TEXT_LEN),
   });
   if (error) return { ok: false, error: error.message };
   revalidatePath(`/[locale]/admin/users/[id]`, "page");
@@ -122,7 +160,7 @@ export async function setOwnershipVerifiedAction(input: {
   const { error } = await gate.supabase.rpc("admin_set_ownership_verified", {
     p_user_id: input.userId,
     p_value: input.value,
-    p_reason: input.reason,
+    p_reason: clamp(input.reason, MAX_TEXT_LEN),
   });
   if (error) return { ok: false, error: error.message };
   revalidatePath(`/[locale]/admin/users/[id]`, "page");
@@ -139,7 +177,7 @@ export async function setProAction(input: {
   const { error } = await gate.supabase.rpc("admin_set_pro", {
     p_user_id: input.userId,
     p_value: input.value,
-    p_reason: input.reason,
+    p_reason: clamp(input.reason, MAX_TEXT_LEN),
   });
   if (error) return { ok: false, error: error.message };
   revalidatePath(`/[locale]/admin/users/[id]`, "page");
@@ -181,7 +219,7 @@ export async function requestAuctionEditAction(input: {
     {
       p_auction_id: input.auctionId,
       p_fields: input.fields,
-      p_message: input.message,
+      p_message: clamp(input.message, MAX_TEXT_LEN),
     },
   );
   if (error) return { ok: false, error: error.message };
@@ -210,7 +248,7 @@ export async function forceCancelAuctionAction(input: {
   if (!gate.ok) return gate;
   const { error } = await gate.supabase.rpc("admin_force_cancel_auction", {
     p_auction_id: input.auctionId,
-    p_reason: input.reason,
+    p_reason: clamp(input.reason, MAX_TEXT_LEN),
   });
   if (error) return { ok: false, error: error.message };
   revalidatePath(`/[locale]/admin/auctions-queue`, "page");
@@ -228,7 +266,7 @@ export async function forceSellerDecisionAction(input: {
   const { error } = await gate.supabase.rpc("admin_force_seller_decision", {
     p_auction_id: input.auctionId,
     p_choice: input.choice,
-    p_reason: input.reason,
+    p_reason: clamp(input.reason, MAX_TEXT_LEN),
   });
   if (error) return { ok: false, error: error.message };
   revalidatePath(`/[locale]/admin/auctions-queue`, "page");
@@ -243,7 +281,7 @@ export async function forceEndAuctionAction(input: {
   if (!gate.ok) return gate;
   const { error } = await gate.supabase.rpc("admin_force_end_auction", {
     p_auction_id: input.auctionId,
-    p_reason: input.reason,
+    p_reason: clamp(input.reason, MAX_TEXT_LEN),
   });
   if (error) return { ok: false, error: error.message };
   revalidatePath(`/[locale]/admin/auctions-queue`, "page");
@@ -260,7 +298,7 @@ export async function extendAuctionEndAction(input: {
   const { error } = await gate.supabase.rpc("admin_extend_auction_end", {
     p_auction_id: input.auctionId,
     p_minutes: input.minutes,
-    p_reason: input.reason,
+    p_reason: clamp(input.reason, MAX_TEXT_LEN),
   });
   if (error) return { ok: false, error: error.message };
   revalidatePath(`/[locale]/admin/auctions-queue`, "page");
@@ -305,7 +343,7 @@ export async function invalidateBidAction(input: {
   if (!gate.ok) return gate;
   const { error } = await gate.supabase.rpc("admin_invalidate_bid", {
     p_bid_id: input.bidId,
-    p_reason: input.reason,
+    p_reason: clamp(input.reason, MAX_TEXT_LEN),
   });
   if (error) return { ok: false, error: error.message };
   revalidatePath(`/[locale]/admin/auctions-queue`, "page");
@@ -322,7 +360,7 @@ export async function voidTransactionAction(input: {
   if (!gate.ok) return gate;
   const { error } = await gate.supabase.rpc("admin_void_transaction", {
     p_tx_id: input.txId,
-    p_reason: input.reason,
+    p_reason: clamp(input.reason, MAX_TEXT_LEN),
   });
   if (error) return { ok: false, error: error.message };
   revalidatePath(`/[locale]/admin/transactions`, "page");
@@ -340,14 +378,19 @@ export async function createTransactionAction(input: {
 }): Promise<Result<{ id: string }>> {
   const gate = await ensureAdmin();
   if (!gate.ok) return gate;
+  // Refunds are written as positive-direction "in" amounts in our schema,
+  // but the form could conceivably pass -X for "give back X"; allow neg
+  // only for the refund type explicitly.
+  const amtErr = badAmount(input.amount, input.type === "refund");
+  if (amtErr) return { ok: false, error: amtErr };
   const { data, error } = await gate.supabase.rpc("admin_create_transaction", {
     p_user_id: input.userId,
     p_type: input.type,
     p_direction: input.direction,
     p_amount: input.amount,
-    p_label: input.label,
+    p_label: clamp(input.label, MAX_TITLE_LEN) ?? "",
     p_auction_id: input.auctionId ?? null,
-    p_reason: input.reason ?? null,
+    p_reason: clamp(input.reason, MAX_TEXT_LEN),
   });
   if (error) return { ok: false, error: error.message };
   revalidatePath(`/[locale]/admin/transactions`, "page");
@@ -365,14 +408,27 @@ export async function createPayoutAction(input: {
 }): Promise<Result<{ id: string }>> {
   const gate = await ensureAdmin();
   if (!gate.ok) return gate;
+  // All three monetary fields must be finite, non-negative, and within
+  // the global cap. Commission and TVA could theoretically be 0
+  // (waived) but never negative — that would mean we owe the seller
+  // more than gross, which is incoherent.
+  const errors = [
+    badAmount(input.gross),
+    badAmount(input.commission),
+    badAmount(input.tva),
+  ].filter(Boolean) as string[];
+  if (errors.length) return { ok: false, error: errors[0] };
+  if (input.commission + input.tva > input.gross) {
+    return { ok: false, error: "DEDUCTIONS_EXCEED_GROSS" };
+  }
   const { data, error } = await gate.supabase.rpc("admin_create_payout", {
     p_seller_id: input.sellerId,
     p_auction_id: input.auctionId,
     p_gross: input.gross,
     p_commission: input.commission,
     p_tva: input.tva,
-    p_rib: input.rib ?? null,
-    p_notes: input.notes ?? null,
+    p_rib: clamp(input.rib, 64), // IBAN max length is ~34, leave headroom
+    p_notes: clamp(input.notes, MAX_TEXT_LEN),
   });
   if (error) return { ok: false, error: error.message };
   revalidatePath(`/[locale]/admin/payouts`, "page");
@@ -402,7 +458,7 @@ export async function cancelPayoutAction(input: {
   if (!gate.ok) return gate;
   const { error } = await gate.supabase.rpc("admin_cancel_payout", {
     p_id: input.payoutId,
-    p_reason: input.reason,
+    p_reason: clamp(input.reason, MAX_TEXT_LEN),
   });
   if (error) return { ok: false, error: error.message };
   revalidatePath(`/[locale]/admin/payouts`, "page");
@@ -421,8 +477,8 @@ export async function createBroadcastAction(input: {
   const gate = await ensureAdmin();
   if (!gate.ok) return gate;
   const { data, error } = await gate.supabase.rpc("admin_broadcast_create", {
-    p_title: input.title,
-    p_body: input.body,
+    p_title: clamp(input.title, MAX_TITLE_LEN),
+    p_body: clamp(input.body, MAX_TEXT_LEN),
     p_kind: input.kind ?? "system",
     p_audience: input.audience,
     p_audience_filter: input.audienceFilter ?? null,
@@ -444,7 +500,7 @@ export async function editAuctionAction(input: {
   const { error } = await gate.supabase.rpc("admin_edit_auction", {
     p_auction_id: input.auctionId,
     p_patch: input.patch as never,
-    p_reason: input.reason,
+    p_reason: clamp(input.reason, MAX_TEXT_LEN),
   });
   if (error) return { ok: false, error: error.message };
   revalidatePath(`/[locale]/admin/auctions/[id]`, "page");
@@ -491,7 +547,7 @@ export async function bulkReviewKycAction(input: {
   const { data, error } = await gate.supabase.rpc("admin_bulk_review_kyc", {
     p_submission_ids: input.submissionIds,
     p_decision: input.decision,
-    p_reason: input.reason ?? null,
+    p_reason: clamp(input.reason, MAX_TEXT_LEN),
   });
   if (error) return { ok: false, error: error.message };
   revalidatePath(`/[locale]/admin/kyc-queue`, "page");
@@ -536,8 +592,8 @@ export async function dmUserAction(input: {
   if (!gate.ok) return gate;
   const { error } = await gate.supabase.rpc("admin_dm_user", {
     p_user_id: input.userId,
-    p_title: input.title,
-    p_body: input.body,
+    p_title: clamp(input.title, MAX_TITLE_LEN),
+    p_body: clamp(input.body, MAX_TEXT_LEN),
   });
   if (error) return { ok: false, error: error.message };
   revalidatePath(`/[locale]/admin/users/[id]`, "page");
@@ -552,7 +608,7 @@ export async function refundDepositAction(input: {
   if (!gate.ok) return gate;
   const { error } = await gate.supabase.rpc("admin_refund_deposit", {
     p_tx_id: input.txId,
-    p_reason: input.reason,
+    p_reason: clamp(input.reason, MAX_TEXT_LEN),
   });
   if (error) return { ok: false, error: error.message };
   revalidatePath(`/[locale]/admin/transactions`, "page");
@@ -571,7 +627,7 @@ export async function proposeSettingAction(input: {
   const { error } = await gate.supabase.rpc("propose_setting_value", {
     p_key: input.key,
     p_new_value: input.newValue as never,
-    p_reason: input.reason ?? null,
+    p_reason: clamp(input.reason, MAX_TEXT_LEN),
   });
   if (error) return { ok: false, error: error.message };
   revalidatePath(`/[locale]/admin/settings`, "page");
@@ -599,7 +655,7 @@ export async function rejectPendingSettingAction(input: {
   if (!gate.ok) return gate;
   const { error } = await gate.supabase.rpc("reject_pending_setting", {
     p_key: input.key,
-    p_reason: input.reason,
+    p_reason: clamp(input.reason, MAX_TEXT_LEN),
   });
   if (error) return { ok: false, error: error.message };
   revalidatePath(`/[locale]/admin/settings`, "page");
@@ -616,7 +672,7 @@ export async function adminForceForfeitAction(input: {
   if (!gate.ok) return gate;
   const { data, error } = await gate.supabase.rpc("admin_force_forfeit", {
     p_auction_id: input.auctionId,
-    p_reason: input.reason,
+    p_reason: clamp(input.reason, MAX_TEXT_LEN),
   });
   if (error) return { ok: false, error: error.message };
   revalidatePath(`/[locale]/admin/forfeits`, "page");
@@ -632,7 +688,7 @@ export async function adminReverseForfeitAction(input: {
   if (!gate.ok) return gate;
   const { error } = await gate.supabase.rpc("admin_reverse_forfeit", {
     p_forfeit_id: input.forfeitId,
-    p_reason: input.reason,
+    p_reason: clamp(input.reason, MAX_TEXT_LEN),
   });
   if (error) return { ok: false, error: error.message };
   revalidatePath(`/[locale]/admin/forfeits`, "page");
@@ -651,7 +707,7 @@ export async function adminExtendPaymentDeadlineAction(input: {
     {
       p_auction_id: input.auctionId,
       p_days: input.days,
-      p_reason: input.reason,
+      p_reason: clamp(input.reason, MAX_TEXT_LEN),
     },
   );
   if (error) return { ok: false, error: error.message };
@@ -676,7 +732,7 @@ export async function adminSetUserSubscriptionAction(input: {
       p_user_id: input.userId,
       p_plan_slug: input.planSlug,
       p_days: input.days,
-      p_reason: input.reason,
+      p_reason: clamp(input.reason, MAX_TEXT_LEN),
     },
   );
   if (error) return { ok: false, error: error.message };
@@ -694,7 +750,7 @@ export async function adminCancelUserSubscriptionAction(input: {
     "admin_cancel_user_subscription",
     {
       p_user_id: input.userId,
-      p_reason: input.reason,
+      p_reason: clamp(input.reason, MAX_TEXT_LEN),
     },
   );
   if (error) return { ok: false, error: error.message };

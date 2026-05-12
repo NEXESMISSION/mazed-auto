@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   Search,
   Download,
@@ -53,6 +54,7 @@ const statusLabels: Record<string, string> = {
 export function AdminTxList({ initial }: { initial: TransactionRow[] }) {
   const router = useRouter();
   const { toast } = useToast();
+  const tPrompt = useTranslations("admin.prompts");
   const [filter, setFilter] = useState<string>("all");
   const [q, setQ] = useState("");
   const txs = initial;
@@ -72,7 +74,7 @@ export function AdminTxList({ initial }: { initial: TransactionRow[] }) {
 
   async function refundDeposit(t: TransactionRow) {
     const reason = window.prompt(
-      `Rembourser cette caution (${formatPrice(Number(t.amount))}) ?\nRaison (audit) :`,
+      tPrompt("txRefund", { amount: formatPrice(Number(t.amount)) }),
       "",
     );
     if (!reason || !reason.trim()) return;
@@ -90,7 +92,7 @@ export function AdminTxList({ initial }: { initial: TransactionRow[] }) {
 
   async function voidTx(t: TransactionRow) {
     const reason = window.prompt(
-      `Annuler la transaction ${t.ref} ?\nRaison (audit) :`,
+      tPrompt("txVoid", { ref: t.ref }),
       "",
     );
     if (!reason || !reason.trim()) return;
@@ -324,13 +326,14 @@ Aucune transaction. Exécutez seed.sql dans Supabase.
                   <Badge variant={statusColors[t.status]} size="sm">
                     {statusLabels[t.status]}
                   </Badge>
-                  <div className="ml-auto flex items-center gap-1">
+                  <div className="ms-auto flex items-center gap-1">
                     {t.type === "deposit" && t.status === "completed" && (
                       <button
                         type="button"
                         onClick={() => refundDeposit(t)}
                         title="Rembourser cette caution"
-                        className="h-7 w-7 rounded-full bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center hover:border-emerald-500/40 hover:text-emerald-300 transition-colors"
+                        aria-label="Rembourser cette caution"
+                        className="h-10 w-10 md:h-7 md:w-7 rounded-full bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center hover:border-emerald-500/40 hover:text-emerald-300 transition-colors"
                       >
                         <Undo2 className="h-3.5 w-3.5" />
                       </button>
@@ -340,7 +343,8 @@ Aucune transaction. Exécutez seed.sql dans Supabase.
                         type="button"
                         onClick={() => voidTx(t)}
                         title="Annuler la transaction"
-                        className="h-7 w-7 rounded-full bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center hover:border-red-500/40 hover:text-red-300 transition-colors"
+                        aria-label="Annuler la transaction"
+                        className="h-10 w-10 md:h-7 md:w-7 rounded-full bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center hover:border-red-500/40 hover:text-red-300 transition-colors"
                       >
                         <Ban className="h-3.5 w-3.5" />
                       </button>

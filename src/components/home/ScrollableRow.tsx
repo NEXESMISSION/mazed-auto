@@ -38,9 +38,9 @@ export function ScrollableRow({
     const update = () => {
       // Math.ceil to swallow sub-pixel rounding; otherwise canRight stays
       // true on a fully-scrolled track.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       setCanLeft(el.scrollLeft > 4);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       setCanRight(
         Math.ceil(el.scrollLeft + el.clientWidth) < el.scrollWidth - 4,
       );

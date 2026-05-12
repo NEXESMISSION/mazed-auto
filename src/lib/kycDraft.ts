@@ -8,7 +8,7 @@ const KEY = "mazed_kyc_draft";
 const TAG = "[KYC/draft]";
 function log(...args: unknown[]) {
   const ts = new Date().toISOString().slice(11, 23);
-  // eslint-disable-next-line no-console
+   
   console.log(
     `%c${TAG} %c${ts}`,
     "color:#d4af37;font-weight:bold",

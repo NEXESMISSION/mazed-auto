@@ -120,7 +120,9 @@ export function HeroCarousel({
   // never need to read DOM dimensions for the rest case.
   const basePercent = -active * 100;
   const dragPercent =
+    // eslint-disable-next-line react-hooks/refs
     isDragging && trackWidthRef.current
+      // eslint-disable-next-line react-hooks/refs
       ? (dragOffset / trackWidthRef.current) * 100
       : 0;
   const translateX = `${basePercent + dragPercent}%`;

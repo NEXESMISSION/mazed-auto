@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useDeferredValue } from "react";
+import { useState, useMemo, useDeferredValue, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
@@ -142,12 +142,46 @@ function ModernBrowser({
   const body = params.get("body") as VehicleCategory | null;
 
   const list = useRealtimeAuctionList(initial);
-  const [search, setSearch] = useState("");
+  // Seed the search box from `?q=` so deep-linked / Google-indexed
+  // /auctions?q=clio URLs land on the matching results immediately
+  // (and so the user can copy-paste their current search to share).
+  const initialQ = params.get("q") ?? "";
+  const [search, setSearch] = useState(initialQ);
   // Defer the heavy filter+sort recompute one frame behind keystrokes
   // so typing stays smooth. The input still uses `search`; the
   // memoised result reads `deferredSearch`. React picks up the latest
   // value when the user pauses typing.
   const deferredSearch = useDeferredValue(search);
+
+  // Mirror `search` back into the URL after a short debounce, so:
+  //   1. The current filtered view is shareable (copy the URL → other
+  //      user lands on the same results).
+  //   2. Google's bot, when crawling the sitemap and following the
+  //      ?brand= variants, can also see ?q=… variants if we ever link
+  //      to them — and the canonical (set in page metadata) still
+  //      points at the bare /auctions, so PageRank isn't fragmented.
+  //
+  // Debounced 350ms — fast enough to feel responsive on share, slow
+  // enough not to push 60 URL updates per second of typing into the
+  // history stack. Read window.location fresh inside the timer so a
+  // mid-debounce `router.push` from a filter-chip click (which updates
+  // ?brand= or ?body=) isn't clobbered by a stale `params` snapshot.
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      const fresh = new URLSearchParams(window.location.search);
+      if (search.trim()) fresh.set("q", search.trim());
+      else fresh.delete("q");
+      const qs = fresh.toString();
+      // router.replace not push so we don't pollute the back-stack with
+      // every keystroke — back-arrow should land on the page the user
+      // came from, not on each typed letter.
+      router.replace(qs ? `/auctions?${qs}` : "/auctions");
+    }, 350);
+    return () => window.clearTimeout(t);
+    // We deliberately omit `router` and `params` — router is stable,
+    // and we read params fresh from window.location above.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search]);
   const [filters, setFilters] = useState<BrowseFilterState>(EMPTY_FILTERS);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [sort, setSort] = useState<SortKey>("newest");

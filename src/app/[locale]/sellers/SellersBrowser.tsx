@@ -44,7 +44,7 @@ export function SellersBrowser({ sellers }: Props) {
     <div className="pt-2">
       {/* Pill search — same shape as /auctions */}
       <div className="px-4">
-        <div className="flex items-center gap-3 rounded-full bg-[var(--surface)] border border-[var(--border)] focus-within:border-[var(--gold-soft)] transition-colors pl-4 pr-1.5 h-12">
+        <div className="flex items-center gap-3 rounded-full bg-[var(--surface)] border border-[var(--border)] focus-within:border-[var(--gold-soft)] transition-colors ps-4 pe-1.5 h-12">
           <Search className="h-4 w-4 text-[var(--foreground-muted)] shrink-0" />
           <input
             type="search"

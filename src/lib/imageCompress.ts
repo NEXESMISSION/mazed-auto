@@ -3,7 +3,7 @@
 const TAG = "[compress]";
 function log(...args: unknown[]) {
   const ts = new Date().toISOString().slice(11, 23);
-  // eslint-disable-next-line no-console
+   
   console.log(
     `%c${TAG} %c${ts}`,
     "color:#d4af37;font-weight:bold",
@@ -13,7 +13,7 @@ function log(...args: unknown[]) {
 }
 function warn(...args: unknown[]) {
   const ts = new Date().toISOString().slice(11, 23);
-  // eslint-disable-next-line no-console
+   
   console.warn(
     `%c${TAG} %c${ts}`,
     "color:#f59e0b;font-weight:bold",

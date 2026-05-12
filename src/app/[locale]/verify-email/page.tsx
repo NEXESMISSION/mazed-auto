@@ -55,7 +55,7 @@ export default function VerifyEmailPage() {
 
         <div className="rounded-[var(--radius)] bg-[var(--surface-2)] border border-[var(--border)] p-4">
           <p className="text-sm text-[var(--foreground-muted)] leading-relaxed text-center">
-            Ouvrez votre e-mail et cliquez sur le lien pour confirmer votre compte. L'e-mail peut arriver
+            Ouvrez votre e-mail et cliquez sur le lien pour confirmer votre compte. L&apos;e-mail peut arriver
             dans les spams. Vous serez redirigé automatiquement après la confirmation.
           </p>
         </div>

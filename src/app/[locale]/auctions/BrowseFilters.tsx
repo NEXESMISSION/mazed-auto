@@ -92,6 +92,7 @@ export function BrowseFilters({ value, onChange }: Props) {
   // Re-sync the draft whenever the modal opens or the upstream value
   // changes (e.g. URL navigation flipped a brand).
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (open) setDraft(value);
   }, [open, value]);
 

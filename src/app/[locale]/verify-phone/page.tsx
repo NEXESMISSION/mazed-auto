@@ -30,6 +30,7 @@ export default function VerifyPhonePage() {
   useEffect(() => {
     if (!sentOnce && user) {
       send();
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSentOnce(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

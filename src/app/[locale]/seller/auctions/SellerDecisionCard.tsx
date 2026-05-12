@@ -61,6 +61,7 @@ export function SellerDecisionCard({ auction }: Props) {
   const hoursLeft = deadline
     ? Math.max(
         0,
+        // eslint-disable-next-line react-hooks/purity
         Math.floor((deadline.getTime() - Date.now()) / (1000 * 60 * 60)),
       )
     : null;
@@ -142,7 +143,7 @@ export function SellerDecisionCard({ auction }: Props) {
             className="py-3 text-center text-xs font-bold text-emerald-400 hover:bg-emerald-500/10 disabled:opacity-50 inline-flex items-center justify-center gap-1.5"
           >
             <Check className="h-3.5 w-3.5" />
-            Accepter l'offre
+            Accepter l&apos;offre
           </button>
         </div>
       </div>
@@ -181,7 +182,7 @@ export function SellerDecisionCard({ auction }: Props) {
 
             {confirm === "accept" ? (
               <ul className="text-[12px] text-[var(--foreground-muted)] leading-relaxed space-y-1.5">
-                <li>• L'enchérisseur le plus haut devient l'acheteur officiel.</li>
+                <li>• L&apos;enchérisseur le plus haut devient l&apos;acheteur officiel.</li>
                 <li>• Il a 7 jours pour finaliser le paiement (la caution déjà versée est déduite).</li>
                 <li>• Vous percevez le prix final moins la commission de la plateforme.</li>
                 <li className="text-[var(--warning)] font-semibold">
@@ -190,7 +191,7 @@ export function SellerDecisionCard({ auction }: Props) {
               </ul>
             ) : (
               <ul className="text-[12px] text-[var(--foreground-muted)] leading-relaxed space-y-1.5">
-                <li>• L'enchère se termine sans vente.</li>
+                <li>• L&apos;enchère se termine sans vente.</li>
                 <li>• Toutes les cautions des participants sont remboursées intégralement.</li>
                 <li>• Vous pouvez republier le véhicule plus tard à un prix différent.</li>
                 <li className="text-[var(--warning)] font-semibold">

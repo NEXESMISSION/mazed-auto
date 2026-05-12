@@ -41,6 +41,7 @@ export function DesktopAuctionGallery({
   }, [images.length, intervalMs]);
 
   function pauseAuto() {
+    // eslint-disable-next-line react-hooks/purity
     pauseUntilRef.current = Date.now() + intervalMs * 1.6;
   }
 

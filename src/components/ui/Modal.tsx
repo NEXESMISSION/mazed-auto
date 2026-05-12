@@ -37,6 +37,7 @@ export function Modal({
   // null (createPortal needs a real DOM target).
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
@@ -187,10 +188,16 @@ interface ModalFooterProps {
   className?: string;
 }
 export function ModalFooter({ children, className }: ModalFooterProps) {
+  // When the parent Modal renders as a mobile bottom-sheet, the footer
+  // sits flush with the bottom of the viewport on iOS — the system home
+  // indicator overlaps the buttons unless we add the safe-area inset.
+  // `env(safe-area-inset-bottom)` is 0 on non-notched devices and on
+  // desktop, so it costs nothing where it isn't needed.
   return (
     <div
       className={cn(
         "px-5 py-4 border-t border-[var(--border)] bg-[var(--surface-2)] flex flex-col-reverse sm:flex-row gap-2 sm:justify-end",
+        "pb-[calc(1rem+env(safe-area-inset-bottom))] md:pb-4",
         className,
       )}
     >

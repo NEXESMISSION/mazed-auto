@@ -20,6 +20,13 @@ export interface ActiveSubscription {
   maxPhotos: number;
   maxVideoSeconds: number;
   maxConcurrentActiveListings: number;
+  /** "basic" / "advanced" / "advanced_export" — drives the seller
+   *  analytics page (Silver = basic, Gold = advanced, Diamond =
+   *  advanced_export). */
+  analyticsLevel: "basic" | "advanced" | "advanced_export";
+  /** "none" / "standard" / "custom" / "branded" — drives the
+   *  showroom layout / branding allowed for this seller. */
+  showroomLevel: "none" | "standard" | "custom" | "branded";
   currentPeriodEnd: string;
   expiresAt: string | null;
   /** "active" = will auto-renew; "cancelled" = user cancelled,
@@ -34,7 +41,7 @@ export async function getActiveSubscription(
   const { data } = await supabase
     .from("user_active_subscription")
     .select(
-      "subscription_id, plan_slug, plan_name, listings_per_month, listings_remaining, search_priority_pct, featured_listing_discount_pct, has_trusted_seller_badge, has_homepage_placement, has_branded_showroom, max_listing_duration_days, max_photos, max_video_seconds, max_concurrent_active_listings, status, current_period_end, expires_at",
+      "subscription_id, plan_slug, plan_name, listings_per_month, listings_remaining, search_priority_pct, featured_listing_discount_pct, has_trusted_seller_badge, has_homepage_placement, has_branded_showroom, max_listing_duration_days, max_photos, max_video_seconds, max_concurrent_active_listings, analytics_level, showroom_level, status, current_period_end, expires_at",
     )
     .eq("user_id", userId)
     .maybeSingle();
@@ -58,6 +65,20 @@ export async function getActiveSubscription(
     maxConcurrentActiveListings: Number(
       data.max_concurrent_active_listings ?? -1,
     ),
+    analyticsLevel:
+      data.analytics_level === "advanced"
+        ? "advanced"
+        : data.analytics_level === "advanced_export"
+          ? "advanced_export"
+          : "basic",
+    showroomLevel:
+      data.showroom_level === "branded"
+        ? "branded"
+        : data.showroom_level === "custom"
+          ? "custom"
+          : data.showroom_level === "none"
+            ? "none"
+            : "standard",
     currentPeriodEnd: data.current_period_end,
     expiresAt: data.expires_at,
     status:

@@ -51,11 +51,18 @@ export default async function BuyerBidsPage({
     // ignore — the BidsTabs client also has a time-aware guard
   }
 
+  // Cap at 500 bids — a power bidder might place 100+ bids on a hot
+  // auction, but anyone with more than 500 lifetime bids has older
+  // ones that aren't worth surfacing on the "my bids" tab. The map
+  // below dedupes by auction_id anyway, so what we care about is "the
+  // most recent bid per auction the user participated in." 500 newest
+  // bids on average covers ~150-300 unique auctions per active buyer.
   const { data: rawBids } = await supabase
     .from("bids")
-    .select("*")
+    .select("id, auction_id, user_id, amount, placed_at, is_auto_bid")
     .eq("user_id", user.id)
-    .order("placed_at", { ascending: false });
+    .order("placed_at", { ascending: false })
+    .limit(500);
 
   const myBidByAuction = new Map<string, BidRow>();
   (rawBids ?? []).forEach((b) => {

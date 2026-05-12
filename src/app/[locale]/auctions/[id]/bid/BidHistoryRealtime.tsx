@@ -39,6 +39,7 @@ export function BidHistoryRealtime({
   useEffect(() => {
     if (bids.length === 0) return;
     const newest = bids[0].id;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRecentId(newest);
     const t = setTimeout(() => setRecentId((v) => (v === newest ? null : v)), 3000);
     return () => clearTimeout(t);

@@ -27,6 +27,50 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "missing fields" }, { status: 400 });
   }
 
+  // Validate `amount` aggressively. JSON.parse will happily accept
+  // negative numbers, NaN (as the literal `null` after sanitization), or
+  // a JavaScript-formatted `Infinity` (some clients stringify it). All
+  // three pass `!amount` above because JS coerces Number.isFinite-false
+  // values to truthy except 0 and NaN. The previous bug let a crafted
+  // client POST `{"amount": -100000}` and credit themselves a refund.
+  // Upper cap (10M DT) is well above the largest real-world car price
+  // on the platform — anything above is either a typo or an attack.
+  const MAX_AMOUNT_DT = 10_000_000;
+  if (
+    typeof amount !== "number" ||
+    !Number.isFinite(amount) ||
+    amount <= 0 ||
+    amount > MAX_AMOUNT_DT
+  ) {
+    return NextResponse.json(
+      { error: "invalid amount" },
+      { status: 400 },
+    );
+  }
+  // Restrict `type` to the documented enum — otherwise a request with
+  // `{"type": "anything"}` falls through to the dbType ternary's else
+  // branch and writes a row with `type: "deposit"` regardless of intent.
+  if (type !== "deposit" && type !== "final" && type !== "subscription") {
+    return NextResponse.json({ error: "invalid type" }, { status: 400 });
+  }
+  // Bound `ref` length so a malicious client can't push a 1MB string
+  // into the table's unique index (we can't easily put a length cap on
+  // the column without a migration, but the API layer can).
+  if (typeof ref !== "string" || ref.length > 128) {
+    return NextResponse.json({ error: "invalid ref" }, { status: 400 });
+  }
+  // auctionId, when present, must look like a UUID. Passing arbitrary
+  // strings to Postgres in a uuid column raises an opaque 500 from the
+  // service-role client; we'd rather return a clean 400.
+  if (
+    auctionId != null &&
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      auctionId,
+    )
+  ) {
+    return NextResponse.json({ error: "invalid auctionId" }, { status: 400 });
+  }
+
   const meta = (user.user_metadata ?? {}) as {
     firstName?: string;
     lastName?: string;
@@ -55,6 +99,58 @@ export async function POST(request: NextRequest) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { persistSession: false } },
   );
+
+  // Round-22 audit fix L-3: cross-check the client-supplied `amount`
+  // against the canonical price for this auction so a malicious caller
+  // can't record a 1-DT deposit/final-payment for a 50,000-DT car.
+  // The fake-card flow lets the user "pay" any amount client-side, but
+  // the ledger entry must reflect what the platform actually charges.
+  //
+  //   - deposit: must equal `auctions.participation_deposit`.
+  //   - final + buyNow: must equal `auctions.buy_now_price`.
+  //   - final without buyNow: must equal `auctions.current_price`
+  //     (the winning-bid amount).
+  //
+  // Subscription type has no auction reference; its amount is bounded
+  // by the validator above and idempotency prevents re-billing.
+  if (auctionId && (type === "deposit" || type === "final")) {
+    const { data: auctionRow, error: auctionErr } = await admin
+      .from("auctions")
+      .select("participation_deposit, current_price, buy_now_price, status")
+      .eq("id", auctionId)
+      .maybeSingle();
+    if (auctionErr || !auctionRow) {
+      return NextResponse.json(
+        { error: "auction not found" },
+        { status: 404 },
+      );
+    }
+    let expected: number | null = null;
+    if (type === "deposit") {
+      expected = Number(auctionRow.participation_deposit);
+    } else if (buyNow) {
+      expected =
+        auctionRow.buy_now_price !== null
+          ? Number(auctionRow.buy_now_price)
+          : null;
+    } else {
+      expected = Number(auctionRow.current_price);
+    }
+    if (expected === null || !Number.isFinite(expected) || expected <= 0) {
+      return NextResponse.json(
+        { error: "invalid auction price" },
+        { status: 400 },
+      );
+    }
+    // Allow a 1-DT rounding tolerance to account for the legacy
+    // checkout UIs that used round() on the displayed deposit.
+    if (Math.abs(amount - expected) > 1) {
+      return NextResponse.json(
+        { error: "amount does not match auction price" },
+        { status: 400 },
+      );
+    }
+  }
 
   // Idempotency: the client uses a stable `ref` per payment, but React strict
   // mode (and refreshes / back-navigation) can fire the effect more than once.

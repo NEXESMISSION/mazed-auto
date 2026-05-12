@@ -16,7 +16,7 @@ import type { Auction, AIAlert } from "@/lib/types";
  * land via that path. Until the admin UI ships, manually inserted
  * rows in that column also work.
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 export function computeAlerts(_auction: Auction): AIAlert[] {
   return [];
 }

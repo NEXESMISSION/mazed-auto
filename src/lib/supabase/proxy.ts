@@ -96,19 +96,30 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Admin gate — accept either the legacy role flag or the new 5-role
-  // adminRole field (super_admin / admin / moderator / support / finance).
+  // Admin gate (round-22 audit fix M-1).
+  //
+  // Source-of-truth precedence:
+  //   1. app_metadata.adminRole — service-role-only writes, trustworthy.
+  //   2. user_metadata.adminRole — kept for backwards compat with
+  //      sessions issued before migrate-admin-role-app-metadata. A
+  //      malicious signed-in user can forge this via updateUser, so we
+  //      tolerate it here only as a fallback; every destructive RPC
+  //      re-checks via SQL `is_admin()` which reads from admin_users.
+  //   3. legacy user_metadata.role === 'admin' boolean.
+  //
+  // The proxy gate's only responsibility is to redirect non-admins
+  // away from the /admin/* shell. Even with a forged user_metadata,
+  // a non-admin can't *do* anything inside the shell because RLS
+  // blocks every write.
   if (path.startsWith("/admin") && user) {
-    const meta = user.user_metadata as
+    const VALID = ["super_admin", "admin", "moderator", "support", "finance"];
+    const appMeta = user.app_metadata as { adminRole?: string } | null;
+    const userMeta = user.user_metadata as
       | { role?: string; adminRole?: string }
       | null;
-    const adminRole = meta?.adminRole;
+    const adminRole = appMeta?.adminRole ?? userMeta?.adminRole;
     const isAdmin =
-      meta?.role === "admin" ||
-      (adminRole &&
-        ["super_admin", "admin", "moderator", "support", "finance"].includes(
-          adminRole,
-        ));
+      (adminRole && VALID.includes(adminRole)) || userMeta?.role === "admin";
     if (!isAdmin) {
       const url = request.nextUrl.clone();
       url.pathname = localePrefix || "/";

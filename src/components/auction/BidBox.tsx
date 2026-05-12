@@ -169,7 +169,7 @@ export function BidBox({ auction }: Props) {
               fullWidth
               onClick={() => setShowAuto(true)}
             >
-              Activer l'auto-enchère
+              Activer l&apos;auto-enchère
             </Button>
           </div>
 
@@ -246,9 +246,9 @@ Confirmer et payer
       >
         <ul className="space-y-3 text-sm text-[var(--foreground-muted)] leading-relaxed">
           <li>• <strong className="text-foreground">Caution 5%:</strong> Payée une fois par enchère, remboursée si vous ne gagnez pas.</li>
-          <li>• <strong className="text-foreground">Anti-Sniping:</strong> Toute offre dans les 5 dernières minutes prolonge l'enchère de 5 minutes.</li>
-          <li>• <strong className="text-foreground">Réserve :</strong> Si le prix de réserve n'est pas atteint, l'enchère n'est pas conclue.</li>
-          <li>• <strong className="text-foreground">Auto-enchère :</strong> Enchérit en votre nom jusqu'au maximum.</li>
+          <li>• <strong className="text-foreground">Anti-Sniping:</strong> Toute offre dans les 5 dernières minutes prolonge l&apos;enchère de 5 minutes.</li>
+          <li>• <strong className="text-foreground">Réserve :</strong> Si le prix de réserve n&apos;est pas atteint, l&apos;enchère n&apos;est pas conclue.</li>
+          <li>• <strong className="text-foreground">Auto-enchère :</strong> Enchérit en votre nom jusqu&apos;au maximum.</li>
           <li>• <strong className="text-foreground">Retrait après victoire :</strong> Caution saisie + bannissement 30 jours.</li>
         </ul>
       </Modal>
@@ -279,7 +279,7 @@ Confirmer et payer
             />
           </div>
           <p className="text-xs text-[var(--foreground-muted)] leading-relaxed">
-            À chaque nouvelle offre, nous proposons une contre-offre avec l'incrément minimum, jusqu'à ce que
+            À chaque nouvelle offre, nous proposons une contre-offre avec l&apos;incrément minimum, jusqu&apos;à ce que
             votre offre maximum de {formatPrice(autoMax)} soit atteinte.
           </p>
         </div>

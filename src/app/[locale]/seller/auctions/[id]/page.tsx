@@ -277,13 +277,13 @@ Modifier les données
           ) : (
             <Button variant="secondary" size="md" fullWidth disabled>
               <Edit className="h-4 w-4" />
-Modification impossible après le début de l'enchère
+Modification impossible après le début de l&apos;enchère
             </Button>
           )}
           {canCancel ? (
             <Button variant="danger" size="md" fullWidth>
               <XIcon className="h-4 w-4" />
-              Annuler l'enchère
+              Annuler l&apos;enchère
             </Button>
           ) : (
             <Button variant="secondary" size="md" fullWidth disabled>

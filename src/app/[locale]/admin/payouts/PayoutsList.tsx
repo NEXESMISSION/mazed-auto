@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Check, X, Download } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -32,6 +33,10 @@ interface PayoutRow {
 export function PayoutsList({ rows }: { rows: PayoutRow[] }) {
   const router = useRouter();
   const { toast } = useToast();
+  // Pulled from `admin.prompts` — the admin panel UI is FR/AR-aware so
+  // these confirm dialogs need to follow suit. Previously hardcoded FR
+  // meant Arabic admins saw mixed-language dialogs every action.
+  const tPrompt = useTranslations("admin.prompts");
   const [filter, setFilter] = useState<
     "all" | "pending" | "approved" | "paid" | "cancelled"
   >("pending");
@@ -42,7 +47,9 @@ export function PayoutsList({ rows }: { rows: PayoutRow[] }) {
 
   async function pay(p: PayoutRow) {
     const reference = window.prompt(
-      `Marquer ${formatPrice(Number(p.net_amount))} comme payé.\nRéférence virement (RIB / BIC / banque) :`,
+      tPrompt("payoutMarkPaid", {
+        amount: formatPrice(Number(p.net_amount)),
+      }),
       "",
     );
     if (!reference || !reference.trim()) return;
@@ -61,7 +68,7 @@ export function PayoutsList({ rows }: { rows: PayoutRow[] }) {
   }
 
   async function cancel(p: PayoutRow) {
-    const reason = window.prompt("Raison de l'annulation :", "");
+    const reason = window.prompt(tPrompt("payoutCancelReason"), "");
     if (!reason || !reason.trim()) return;
     setBusy(p.id);
     const r = await cancelPayoutAction({
@@ -145,7 +152,7 @@ export function PayoutsList({ rows }: { rows: PayoutRow[] }) {
           size="sm"
           variant="secondary"
           onClick={exportBatchCsv}
-          className="ml-auto"
+          className="ms-auto"
         >
           <Download className="h-4 w-4" />
           CSV batch banque
@@ -224,7 +231,8 @@ export function PayoutsList({ rows }: { rows: PayoutRow[] }) {
                       onClick={() => pay(p)}
                       disabled={busy === p.id}
                       title="Marquer payé"
-                      className="h-8 w-8 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 flex items-center justify-center hover:bg-emerald-500/25"
+                      aria-label="Marquer ce versement comme payé"
+                      className="h-10 w-10 md:h-8 md:w-8 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 flex items-center justify-center hover:bg-emerald-500/25 disabled:opacity-50"
                     >
                       <Check className="h-4 w-4" />
                     </button>
@@ -233,7 +241,8 @@ export function PayoutsList({ rows }: { rows: PayoutRow[] }) {
                       onClick={() => cancel(p)}
                       disabled={busy === p.id}
                       title="Annuler"
-                      className="h-8 w-8 rounded-full bg-red-500/10 border border-red-500/30 text-red-300 flex items-center justify-center hover:bg-red-500/20"
+                      aria-label="Annuler ce versement"
+                      className="h-10 w-10 md:h-8 md:w-8 rounded-full bg-red-500/10 border border-red-500/30 text-red-300 flex items-center justify-center hover:bg-red-500/20 disabled:opacity-50"
                     >
                       <X className="h-4 w-4" />
                     </button>

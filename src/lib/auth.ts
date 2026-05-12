@@ -105,6 +105,9 @@ export function useAuth() {
     const supabase = createClient();
     await supabase.auth.signOut();
     setUser(null);
+    // setUser is stable (from useState); React docs explicitly allow
+    // omitting it from deps.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const sendPasswordReset = useCallback(async (email: string) => {
@@ -181,6 +184,8 @@ export function useAuth() {
       if (data.user) setUser(mapUser(data.user));
       return { error };
     },
+    // setUser is stable (from useState); omitting per React docs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
 

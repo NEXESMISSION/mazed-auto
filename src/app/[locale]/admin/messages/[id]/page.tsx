@@ -1,7 +1,6 @@
 import { Link } from "@/i18n/navigation";
 import { ArrowLeft } from "lucide-react";
 import { AdminShell } from "@/components/layout/AdminShell";
-import { Button } from "@/components/ui/Button";
 import { ModerationReader } from "./ModerationReader";
 
 export const dynamic = "force-dynamic";

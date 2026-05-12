@@ -34,6 +34,7 @@ function SuccessContent() {
   const auctionId = params.get("auction");
   const isBuyNow = params.get("buy_now") === "1";
   const subId = params.get("sub");
+  // eslint-disable-next-line react-hooks/purity
   const ref = useRef("TX-" + Math.random().toString(36).slice(2, 10).toUpperCase());
   const fired = useRef(false);
   const [recorded, setRecorded] = useState<"pending" | "ok" | "failed">("pending");
@@ -134,6 +135,7 @@ function SuccessContent() {
 
         <div className="rounded-[var(--radius-md)] bg-[var(--surface)] border border-[var(--border)] p-4 text-end space-y-2">
           <Row label="Numéro de transaction" mono>
+            {/* eslint-disable-next-line react-hooks/refs */}
             {ref.current}
           </Row>
           <Row label="Montant" bold>
@@ -244,7 +246,7 @@ Retour aux enchères
     <Link href={deepLinkHref}>
       <Button size="lg" fullWidth>
         <ArrowRight className="h-5 w-5" />
-        Commencer l'enchère maintenant
+        Commencer l&apos;enchère maintenant
       </Button>
     </Link>
   );

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { AppShell } from "@/components/layout/AppShell";
 import { BrowseHeader } from "@/components/layout/BrowseHeader";
 import { getLiveAuctionsCached } from "@/lib/home-cache";
@@ -13,7 +14,79 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 interface Props {
-  searchParams: Promise<{ view?: string }>;
+  searchParams: Promise<{ view?: string; brand?: string; body?: string; q?: string }>;
+  params: Promise<{ locale: string }>;
+}
+
+/**
+ * Browse-page metadata. Beyond a static "all auctions" title we also
+ * narrow the title + description when a `?brand=` or `?q=` is set, so
+ * shared filtered URLs unfurl with descriptive previews ("Voitures
+ * Renault aux enchères — Mazed Auto" rather than the generic browse
+ * title). The dynamic title is also what Google shows in SERP, so
+ * users searching "Renault Tunisie occasion" benefit from seeing
+ * "Renault" right in our snippet.
+ */
+export async function generateMetadata({
+  searchParams,
+  params,
+}: Props): Promise<Metadata> {
+  const sp = await searchParams;
+  const { locale } = await params;
+  const isAr = locale === "ar";
+
+  const brand = sp.brand?.trim();
+  const q = sp.q?.trim();
+
+  // Title is "Voitures aux enchères — Mazed Auto" by default; narrows
+  // to the brand or free-text scope when one is set.
+  let title: string;
+  let description: string;
+  if (brand) {
+    title = isAr
+      ? `سيارات ${brand} في المزاد — Mazed Auto`
+      : `Voitures ${brand} aux enchères — Mazed Auto`;
+    description = isAr
+      ? `كل سيارات ${brand} المعروضة حالياً للمزاد العلني في تونس. تصفّح، زاود، واربح.`
+      : `Toutes les voitures ${brand} actuellement en vente aux enchères en Tunisie. Parcourez, enchérissez, gagnez.`;
+  } else if (q) {
+    title = isAr
+      ? `بحث : ${q} — Mazed Auto`
+      : `Recherche : ${q} — Mazed Auto`;
+    description = isAr
+      ? `نتائج البحث عن ${q} في المزادات الحالية.`
+      : `Résultats de recherche pour ${q} parmi les enchères en cours.`;
+  } else {
+    title = isAr
+      ? "كل المزادات السيارات في تونس — Mazed Auto"
+      : "Toutes les enchères auto en Tunisie — Mazed Auto";
+    description = isAr
+      ? "اكتشف كل السيارات المعروضة حالياً للمزاد العلني في تونس. سيارات معتمدة، بائعون موثوقون، أسعار شفافة."
+      : "Découvrez toutes les voitures en vente aux enchères en Tunisie. Véhicules vérifiés, vendeurs de confiance, prix transparents.";
+  }
+
+  return {
+    title,
+    description,
+    openGraph: {
+      type: "website",
+      title,
+      description,
+      locale: isAr ? "ar_TN" : "fr_TN",
+    },
+    twitter: { card: "summary_large_image", title, description },
+    // Encourage Google to crawl every filter combination — but cap
+    // depth so the bot doesn't recurse into infinite ?brand=X&body=Y&...
+    // permutations. Canonical points at the bare /auctions so filtered
+    // views don't compete for PageRank against the parent.
+    alternates: {
+      canonical: "/auctions",
+      languages: {
+        fr: "/fr/auctions",
+        ar: "/ar/auctions",
+      },
+    },
+  };
 }
 
 export default async function AuctionsPage({ searchParams }: Props) {

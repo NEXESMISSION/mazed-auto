@@ -33,8 +33,8 @@ export default async function AboutPage() {
             À <span className="gradient-gold-text">propos</span>
           </h1>
           <p className="text-[var(--foreground-muted)] max-w-xl mx-auto leading-relaxed">
-            Mazed Auto est une plateforme tunisienne intelligente d'enchères automobiles, fondée pour
-            transformer la vente et l'achat de véhicules en Tunisie en une expérience sûre et transparente.
+            Mazed Auto est une plateforme tunisienne intelligente d&apos;enchères automobiles, fondée pour
+            transformer la vente et l&apos;achat de véhicules en Tunisie en une expérience sûre et transparente.
           </p>
         </header>
 

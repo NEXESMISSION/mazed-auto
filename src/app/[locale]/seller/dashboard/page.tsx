@@ -70,6 +70,9 @@ export default function SellerDashboardPage() {
   // Time-aware "active" check — covers the brief window between an
   // auction's end_time passing and end_expired_auctions flipping its
   // status. Without this, the count momentarily disagrees with the UI.
+  // Date.now during render is "impure" by lint, but the intent is the
+  // ticking countdown — render-time freshness is exactly what we want.
+  // eslint-disable-next-line react-hooks/purity
   const now = Date.now();
   const isLive = (a: Auction) =>
     (a.status === "active" || a.status === "ending") &&
@@ -136,7 +139,7 @@ export default function SellerDashboardPage() {
         <Link href="/seller/new/step-1">
           <div className="relative overflow-hidden rounded-[var(--radius-md)] border border-[var(--gold-soft)]/40 bg-gradient-to-br from-[var(--surface)] to-[var(--surface-2)] p-5 hover:border-[var(--gold)] transition-colors cursor-pointer group">
             <div
-              className="absolute -top-10 -left-10 h-32 w-32 rounded-full opacity-30 group-hover:opacity-50 transition-opacity"
+              className="absolute -top-10 -start-10 h-32 w-32 rounded-full opacity-30 group-hover:opacity-50 transition-opacity"
               style={{
                 background:
                   "radial-gradient(circle, var(--gold), transparent 70%)",
@@ -149,11 +152,26 @@ export default function SellerDashboardPage() {
               <div className="flex-1">
                 <div className="font-bold text-lg">Publier une nouvelle enchère</div>
                 <div className="text-xs text-[var(--foreground-muted)] mt-0.5">
-                  5 étapes, vérification automatique, des milliers d'acheteurs
+                  5 étapes, vérification automatique, des milliers d&apos;acheteurs
                 </div>
               </div>
               <ArrowRight className="h-5 w-5 text-[var(--gold)]" />
             </div>
+          </div>
+        </Link>
+
+        <Link href="/seller/analytics">
+          <div className="rounded-[var(--radius-md)] border border-[var(--border)] hover:border-[var(--gold-soft)] bg-[var(--surface)] p-4 flex items-center gap-4 group transition-colors">
+            <div className="h-10 w-10 rounded-full bg-[var(--surface-2)] text-[var(--gold)] flex items-center justify-center shrink-0">
+              <TrendingUp className="h-4 w-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="font-bold text-sm">Mes analytiques</div>
+              <div className="text-[11px] text-[var(--foreground-muted)] mt-0.5">
+                Performances, conversions, top marques
+              </div>
+            </div>
+            <ArrowRight className="h-4 w-4 text-[var(--foreground-muted)] group-hover:text-[var(--gold)] transition-colors" />
           </div>
         </Link>
 
@@ -170,7 +188,7 @@ export default function SellerDashboardPage() {
           </div>
           {myAuctions.length === 0 ? (
             <div className="rounded-[var(--radius)] bg-[var(--surface)] border border-[var(--border)] p-8 text-center text-sm text-[var(--foreground-muted)]">
-              Vous n'avez encore publié aucune enchère. Cliquez sur &ldquo;Publier une nouvelle enchère&rdquo; pour commencer.
+              Vous n&apos;avez encore publié aucune enchère. Cliquez sur &ldquo;Publier une nouvelle enchère&rdquo; pour commencer.
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3">
@@ -447,14 +465,18 @@ function Stat({
   small?: boolean;
 }) {
   return (
-    <div className="rounded-[var(--radius)] bg-[var(--surface)] border border-[var(--border)] p-3">
-      <div className="flex items-center gap-1.5 text-[var(--foreground-muted)] text-xs mb-1.5">
-        {icon}
-        {label}
+    <div className="rounded-[var(--radius)] bg-[var(--surface)] border border-[var(--border)] p-2.5 sm:p-3 min-w-0">
+      {/* Icon on its own row so labels like "Total des revenus" wrap
+          to a second line on 360px phones instead of getting clipped. */}
+      <div className="text-[var(--foreground-muted)] mb-1.5 flex items-center gap-1.5">
+        <span className="shrink-0">{icon}</span>
+        <span className="text-[11px] sm:text-xs leading-tight line-clamp-2">
+          {label}
+        </span>
       </div>
       <div
-        className={`font-extrabold text-[var(--gold)] tabular-nums ${
-          small ? "text-base" : "text-xl"
+        className={`font-extrabold text-[var(--gold)] tabular-nums truncate ${
+          small ? "text-sm sm:text-base" : "text-lg sm:text-xl"
         }`}
       >
         {value}

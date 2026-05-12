@@ -8,9 +8,16 @@ export const revalidate = 0;
 
 export default async function ContactInboxPage() {
   const supabase = await createClient();
+  // Explicit column projection — the `ip_address` column has an `inet`
+  // type that the Supabase JS client serializes as a string anyway, and
+  // we don't display it in this table. Dropping it (and the rarely-set
+  // reply_body, which can be long) keeps the payload small as the
+  // inbox grows.
   const { data, error } = await supabase
     .from("contact_messages")
-    .select("*")
+    .select(
+      "id, name, email, topic, body, user_id, status, reply_body, replied_by, replied_at, created_at",
+    )
     .order("created_at", { ascending: false })
     .limit(200);
 

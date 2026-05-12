@@ -118,9 +118,9 @@ export function useRealtimeBids(
     let cancelled = false;
     listRecentBids(supabase, auctionId, limit).then((rows) => {
       if (cancelled) return;
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       setBids(rows);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       setLoaded(true);
     });
     return () => {
@@ -148,6 +148,7 @@ export function useRealtimeNotifications(
 
   useEffect(() => {
     if (!userId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setItems([]);
       setLoaded(true);
       return;
@@ -271,6 +272,7 @@ export function useRealtimeAuctionList(initial: Auction[]) {
   const instanceId = useId();
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setList(initial);
   }, [initial]);
 

@@ -82,14 +82,13 @@ export function AuctionEndModal({ auction: initial, userId }: Props) {
         auction.status === "pending_seller_decision" ||
         auction.status === "reserve_not_met"
       ) {
-        const { data: top } = await supabase
-          .from("bids")
-          .select("user_id")
-          .eq("auction_id", auction.id)
-          .order("amount", { ascending: false })
-          .order("placed_at", { ascending: true })
-          .limit(1);
-        const wasTop = top?.[0]?.user_id === userId;
+        // Round-21 audit fix H-1: bids.user_id is no longer publicly
+        // readable. The is_top_bidder() RPC is SECURITY DEFINER so it
+        // can answer the comparison without leaking other users' IDs.
+        const { data: wasTop } = await supabase.rpc("is_top_bidder", {
+          p_auction_id: auction.id,
+          p_user_id: userId,
+        });
         if (wasTop && auction.status === "pending_seller_decision") {
           setOutcome({ kind: "reserve_top", topPrice: auction.currentPrice });
         } else {
@@ -100,17 +99,24 @@ export function AuctionEndModal({ auction: initial, userId }: Props) {
         return;
       }
 
-      // Ended normally — winner or outbid
-      const { data: top } = await supabase
-        .from("bids")
-        .select("user_id, amount")
-        .eq("auction_id", auction.id)
-        .order("amount", { ascending: false })
-        .order("placed_at", { ascending: true })
-        .limit(1);
-      const isWinner = top?.[0]?.user_id === userId;
+      // Ended normally — winner or outbid. Use is_top_bidder() RPC
+      // (round-21 audit fix H-1) instead of reading bids.user_id, which
+      // is no longer publicly readable.
+      const { data: isWinner } = await supabase.rpc("is_top_bidder", {
+        p_auction_id: auction.id,
+        p_user_id: userId,
+      });
 
       if (isWinner) {
+        // We can read our OWN top bid amount (owner clause on the new
+        // bids RLS). Take the user's highest bid as the final price.
+        const { data: own } = await supabase
+          .from("bids")
+          .select("amount")
+          .eq("auction_id", auction.id)
+          .eq("user_id", userId)
+          .order("amount", { ascending: false })
+          .limit(1);
         const { data: paid } = await supabase
           .from("transactions")
           .select("id")
@@ -121,7 +127,7 @@ export function AuctionEndModal({ auction: initial, userId }: Props) {
           .limit(1);
         setOutcome({
           kind: "winner",
-          finalPrice: Number(top?.[0]?.amount ?? auction.currentPrice),
+          finalPrice: Number(own?.[0]?.amount ?? auction.currentPrice),
           finalPaid: (paid ?? []).length > 0,
         });
       } else {
@@ -189,7 +195,7 @@ Finaliser le paiement
             <Link href="/auctions" className="block">
               <Button size="md" fullWidth>
                 <ArrowRight className="h-4 w-4" />
-                Parcourir d'autres enchères
+                Parcourir d&apos;autres enchères
               </Button>
             </Link>
           ),
@@ -206,7 +212,7 @@ Finaliser le paiement
           primary: (
             <Button size="md" fullWidth onClick={() => setOpen(false)}>
               <PartyPopper className="h-4 w-4" />
-Compris, j'attends
+Compris, j&apos;attends
             </Button>
           ),
         };

@@ -33,6 +33,7 @@ export function PhoneCompletionGate() {
   const [locallySatisfied, setLocallySatisfied] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
     // Per-tab cache: if we already saved the phone in this session,
     // don't re-prompt even if the cookie is briefly stale.
@@ -190,7 +191,7 @@ export function PhoneCompletionGate() {
 
           <p className="text-[11px] text-center text-[var(--foreground-subtle)] leading-relaxed">
             Cette information reste confidentielle. Nous ne la partagerons
-            jamais avec d'autres utilisateurs.
+            jamais avec d&apos;autres utilisateurs.
           </p>
         </div>
       </div>

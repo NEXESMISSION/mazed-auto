@@ -43,9 +43,9 @@ export function MaintenanceBanner() {
               ""
             : (map["system.maintenance_message_fr"] as string | undefined) ??
               "";
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+         
         setEnabled(on);
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+         
         setMessage(msg);
       });
     return () => {

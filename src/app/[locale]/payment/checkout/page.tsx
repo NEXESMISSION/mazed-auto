@@ -51,6 +51,7 @@ function CheckoutContent() {
   // silently used the old default of 1600 DT.
   useEffect(() => {
     if (amount <= 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setBlock({
         title: "Montant manquant ou invalide",
         body: "Le lien de paiement est incomplet. Revenez à l'enchère et réessayez.",
@@ -112,6 +113,10 @@ function CheckoutContent() {
         }
         setValidating(false);
       });
+    // `amount` intentionally excluded — the validation depends on
+    // auctionId + type only; refetching on amount changes would
+    // double-hit Supabase for a value the user is still typing.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auctionId, type]);
 
   function handleSubmit(e: React.FormEvent) {
@@ -154,7 +159,7 @@ function CheckoutContent() {
             {auctionId && (
               <Link href={`/auctions/${auctionId}`} className="block">
                 <Button variant="secondary" size="md" fullWidth>
-Voir l'enchère
+Voir l&apos;enchère
                 </Button>
               </Link>
             )}

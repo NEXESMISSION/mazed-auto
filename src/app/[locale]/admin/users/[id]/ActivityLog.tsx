@@ -72,10 +72,15 @@ export function ActivityLog({ entries }: Props) {
     );
   }
   return (
-    <ol className="relative pl-5 space-y-4">
+    // Use logical properties (ps-, start-) so the timeline spine and
+    // its connector dots flip to the right edge under `dir="rtl"`. The
+    // previous physical `pl-5` / `left-[7px]` / `-left-5` glued the
+    // entire timeline to the left edge even in Arabic, which read as
+    // "broken layout" to RTL users.
+    <ol className="relative ps-5 space-y-4">
       <span
         aria-hidden
-        className="absolute top-2 bottom-2 left-[7px] w-px bg-[var(--border)]"
+        className="absolute top-2 bottom-2 start-[7px] w-px bg-[var(--border)]"
       />
       {entries.map((e) => {
         const Icon = iconFor(e.kind);
@@ -83,7 +88,7 @@ export function ActivityLog({ entries }: Props) {
         return (
           <li key={e.id} className="relative flex gap-3">
             <span
-              className={`absolute -left-5 mt-0.5 h-4 w-4 rounded-full ${TONE_CLASSES[tone]} flex items-center justify-center`}
+              className={`absolute -start-5 mt-0.5 h-4 w-4 rounded-full ${TONE_CLASSES[tone]} flex items-center justify-center`}
             >
               <Icon className="h-2.5 w-2.5" strokeWidth={3} />
             </span>

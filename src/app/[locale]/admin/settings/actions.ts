@@ -12,10 +12,39 @@ import { getAdminRole, hasCapability } from "@/lib/admin";
  * (super_admin + admin). The audit log trigger captures who changed
  * what; we only need to pass the new value here.
  */
+// Round-22 audit fix M-3: cap the input size so a forged-admin caller
+// (one who got past `getAdminRole` via spoofed user_metadata before the
+// app_metadata switch lands everywhere) can't push a multi-MB blob
+// through the parse path before RLS rejects the write. 4 KB is well
+// above any legitimate platform setting (the largest today is a JSON
+// list of ~30 deposit tiers, well under 1 KB).
+const MAX_SETTING_VALUE_BYTES = 4096;
+// Setting keys are lowercase dotted identifiers (e.g.
+// `auction.payment.deadline_days`). Cap at 128 chars to match the
+// platform_settings.key column convention.
+const MAX_SETTING_KEY_BYTES = 128;
+const SETTING_KEY_RE = /^[a-z0-9][a-z0-9._-]{0,127}$/;
+
 export async function updateSettingAction(
   key: string,
   rawValue: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
+  // Validate inputs BEFORE touching Supabase — cheap rejections first.
+  if (typeof key !== "string" || !SETTING_KEY_RE.test(key)) {
+    return { ok: false, error: "INVALID_KEY" };
+  }
+  if (typeof rawValue !== "string") {
+    return { ok: false, error: "INVALID_VALUE" };
+  }
+  if (rawValue.length > MAX_SETTING_VALUE_BYTES) {
+    return { ok: false, error: "VALUE_TOO_LARGE" };
+  }
+  // Defensive: the regex caps key length, but double-check in case the
+  // regex is changed in the future without updating the cap.
+  if (key.length > MAX_SETTING_KEY_BYTES) {
+    return { ok: false, error: "KEY_TOO_LARGE" };
+  }
+
   const supabase = await createClient();
 
   const {
@@ -25,7 +54,10 @@ export async function updateSettingAction(
 
   // Admin gate. Without this, ANY signed-in user could change
   // commission rates, KYC thresholds, etc. — the previous version had
-  // only the auth check and a TODO. Audit finding #2.
+  // only the auth check and a TODO. After round-22 fix M-1 this reads
+  // app_metadata.adminRole first (un-forgeable) then falls back to
+  // user_metadata for legacy sessions. The actual UPDATE is also
+  // gated by RLS via SQL `is_admin()` (admin_users table).
   const role = getAdminRole(user);
   if (!hasCapability(role, "settings.approve")) {
     return { ok: false, error: "NOT_AUTHORIZED" };

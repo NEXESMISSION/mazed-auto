@@ -217,7 +217,12 @@ function Section({
 function RevenueChart({ data }: { data: { label: string; value: number }[] }) {
   const max = Math.max(...data.map((d) => d.value), 1);
   return (
-    <div className="grid grid-cols-6 gap-2 h-48 items-end">
+    // Six bars on a 360px mobile screen leaves ~50px per column — the
+    // value labels (formatPrice) overflow into neighbours. Allow the
+    // chart to scroll horizontally on small screens, locking each bar to
+    // a comfortable min-width; from `sm:` up the chart fits the card.
+    <div className="overflow-x-auto -mx-1 px-1">
+      <div className="grid grid-cols-6 gap-2 h-48 items-end min-w-[420px] sm:min-w-0">
       {data.map((d, i) => (
         <div key={i} className="flex flex-col items-center gap-1.5 h-full">
           <div className="text-[10px] tabular-nums text-[var(--foreground-muted)]">
@@ -232,6 +237,7 @@ function RevenueChart({ data }: { data: { label: string; value: number }[] }) {
           <div className="text-[10px] text-[var(--foreground-subtle)]">{d.label}</div>
         </div>
       ))}
+      </div>
     </div>
   );
 }

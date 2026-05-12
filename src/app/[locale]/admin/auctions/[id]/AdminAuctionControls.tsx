@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import {
   Star,
@@ -76,6 +77,7 @@ export function AdminAuctionControls({
 }: Props) {
   const router = useRouter();
   const { toast } = useToast();
+  const tPrompt = useTranslations("admin.prompts");
   const [busy, setBusy] = useState(false);
   const [featured, setFeatured] = useState(isFeatured);
   const [vip, setVip] = useState(isVip);
@@ -226,7 +228,7 @@ export function AdminAuctionControls({
   }
 
   async function submitForceEnd() {
-    const reason = window.prompt("Raison de la clôture forcée :", "");
+    const reason = window.prompt(tPrompt("auctionForceClose"), "");
     if (!reason || !reason.trim()) return;
     setBusy(true);
     const r = await forceEndAuctionAction({
@@ -475,7 +477,7 @@ export function AdminAuctionControls({
             onClick={submitCancel}
             disabled={busy}
           >
-            Confirmer l'annulation
+            Confirmer l&apos;annulation
           </Button>
         </ModalFooter>
       </Modal>
@@ -511,7 +513,11 @@ export function AdminAuctionControls({
         mobileSheet={false}
       >
         <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-2">
+          {/* Stack to one column < 400px so each input has the full
+              width — at the previous breakpoint the labels wrapped on
+              two lines and the inputs ended up ~120px wide on a 360px
+              phone, making numeric typing painful. */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <FieldLabel label="Marque">
               <Input value={feMake} onChange={(e) => setFeMake(e.target.value)} />
             </FieldLabel>
@@ -629,7 +635,7 @@ export function AdminAuctionControls({
               className="mt-1 w-full bg-[var(--surface-2)] border border-[var(--border)] rounded-[var(--radius)] px-3 py-2 text-sm focus:outline-none focus:border-[var(--gold)]"
             />
           </FieldLabel>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <FieldLabel label="Début (datetime-local)">
               <Input
                 type="datetime-local"

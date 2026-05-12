@@ -63,7 +63,7 @@ export default async function AdminAuctionDetailPage({ params }: Props) {
           className="inline-flex items-center gap-1.5 text-sm text-[var(--foreground-muted)] hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
-          Retour à la file d'attente
+          Retour à la file d&apos;attente
         </Link>
 
         <div className="rounded-[var(--radius-md)] bg-[var(--surface)] border border-[var(--border)] overflow-hidden">
@@ -129,7 +129,7 @@ export default async function AdminAuctionDetailPage({ params }: Props) {
                   rel="noopener"
                   className="inline-flex items-center gap-1.5 text-xs text-[var(--gold)] hover:underline"
                 >
-                  Voir l'enchère publique
+                  Voir l&apos;enchère publique
                   <ExternalLink className="h-3 w-3" />
                 </Link>
               </div>

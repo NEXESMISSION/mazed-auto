@@ -94,10 +94,23 @@ export async function initiateSubscriptionPaymentAction(input: {
   };
 
   // 3. Initiate payment with the active provider.
+  // Re-validate the price coming out of the DB — Supabase types `numeric`
+  // as `string | number` depending on the codepath, and a malformed
+  // setting (`monthly_price` set to NULL by a bad admin edit, or a
+  // string-typed value that fails to parse) would otherwise reach the
+  // provider as NaN and produce an opaque integration error. Fail loud
+  // and refund the pending row.
+  const planAmount = Number(planRow.monthly_price);
+  if (!Number.isFinite(planAmount) || planAmount <= 0) {
+    await supabase.rpc("fail_pending_subscription", {
+      p_subscription_id: subscriptionId,
+    });
+    return { ok: false, error: "PLAN_PRICE_INVALID" } as const;
+  }
   let providerResult;
   try {
     providerResult = await initPaymentWithActiveProvider({
-      amount: Number(planRow.monthly_price),
+      amount: planAmount,
       description: `Abonnement Mazed Auto — ${planRow.name_fr}`,
       orderId: subscriptionId,
       successUrl,

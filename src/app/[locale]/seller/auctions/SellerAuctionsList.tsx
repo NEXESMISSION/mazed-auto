@@ -97,7 +97,7 @@ export function SellerAuctionsList({ list }: { list: Auction[] }) {
                   : `${needsDecision.length} enchères attendent votre décision`}
               </div>
               <div className="text-[11px] text-[var(--foreground-muted)] mt-0.5">
-                Vous n'êtes pas obligé de vendre — acceptez l'offre du plus haut enchérisseur ou refusez.
+                Vous n&apos;êtes pas obligé de vendre — acceptez l&apos;offre du plus haut enchérisseur ou refusez.
               </div>
             </div>
           </div>

@@ -11,7 +11,7 @@ import { compressImage, type CompressOptions } from "@/lib/imageCompress";
 const TAG = "[NativeCapture]";
 function log(...args: unknown[]) {
   const ts = new Date().toISOString().slice(11, 23);
-  // eslint-disable-next-line no-console
+   
   console.log(
     `%c${TAG} %c${ts}`,
     "color:#d4af37;font-weight:bold",
@@ -21,7 +21,7 @@ function log(...args: unknown[]) {
 }
 function err(...args: unknown[]) {
   const ts = new Date().toISOString().slice(11, 23);
-  // eslint-disable-next-line no-console
+   
   console.error(
     `%c${TAG} %c${ts}`,
     "color:#ef4444;font-weight:bold",
@@ -174,6 +174,7 @@ export function NativeCapture({
         className="hidden"
       />
       {children ? (
+        // eslint-disable-next-line react-hooks/refs
         children({ open, uploading })
       ) : (
         <Button

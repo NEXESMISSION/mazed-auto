@@ -4,7 +4,25 @@
 // reaches a terminal state. Konnect's webhook is unsigned — it's a
 // "go check this id" notification, not a trusted payload — so we MUST
 // re-fetch the payment from Konnect with our API key before activating
-// anything.
+// anything. That alone makes the "completed" branch un-spoofable: an
+// attacker can flood us with bogus payment_refs, but `complete_*` only
+// runs when Konnect's own API confirms `status: "completed"`.
+//
+// Defense in depth, in order of importance:
+//   1. Re-fetch from Konnect (already in place). Foundational.
+//   2. Optional shared secret. If `KONNECT_WEBHOOK_SECRET` is set in
+//      env, the request must include `?token=<secret>` (or
+//      `x-konnect-token` header) for any handler work to happen. This
+//      lets ops add a quick gate without needing Konnect-side feature
+//      support, since Konnect itself doesn't sign webhooks today.
+//   3. Format-validate the `payment_ref` — Konnect refs are ~24-char
+//      hex, anything outside that shape is rejected without touching
+//      the Konnect API (saves us from SSRF-via-control-chars and
+//      cheaper per-RPS budget burn).
+//   4. Idempotency lives in the SQL layer: `complete_subscription_from_payment`
+//      is a no-op if the subscription is already active, and
+//      `fail_pending_subscription` is a no-op past the pending state.
+//      Replay-safe.
 //
 // The endpoint accepts both GET (Konnect's default) and POST so it's
 // resilient to either format.
@@ -16,10 +34,58 @@ import { getKonnectPaymentStatus } from "@/lib/payments/konnect";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-async function handle(paymentRef: string | null) {
+// Konnect's documented payment ref shape is a 24-character lowercase
+// hex string. We allow any [a-f0-9]{16,64} as a defensive widening in
+// case Konnect later adopts a longer format — but anything outside hex
+// is a forged request. Tight enough to reject `../../../`, control
+// chars, and SSRF payloads.
+const PAYMENT_REF_SHAPE = /^[a-f0-9]{16,64}$/i;
+
+/**
+ * Constant-time string compare. `a === b` short-circuits on the first
+ * mismatched character, which leaks the shared-secret length and
+ * approximate prefix via timing. The webhook is low-traffic so the
+ * crypto cost is irrelevant; correctness matters.
+ */
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
+async function handle(
+  paymentRef: string | null,
+  presentedToken: string | null,
+) {
+  // If a webhook secret is configured, require it. When absent we
+  // intentionally keep the route open — the Konnect API-key re-check
+  // is the primary defense, and ops shouldn't be forced into a config
+  // change to unbreak the system if the secret rotates.
+  const required = process.env.KONNECT_WEBHOOK_SECRET;
+  if (required) {
+    if (!presentedToken || !timingSafeEqual(presentedToken, required)) {
+      // Generic 401 — no information about whether the route exists,
+      // the secret format, or how close they got. Attackers see the
+      // same response for "missing token" and "wrong token".
+      return NextResponse.json({ ok: false }, { status: 401 });
+    }
+  }
+
   if (!paymentRef) {
     return NextResponse.json(
       { ok: false, error: "missing payment_ref" },
+      { status: 400 },
+    );
+  }
+  if (!PAYMENT_REF_SHAPE.test(paymentRef)) {
+    // Reject obviously-bogus refs before they cost us a Konnect API
+    // call. A real payment_ref always matches; failed-match means
+    // either a typo, a probe, or a forged request.
+    return NextResponse.json(
+      { ok: false, error: "invalid payment_ref" },
       { status: 400 },
     );
   }
@@ -122,9 +188,20 @@ async function handle(paymentRef: string | null) {
   return NextResponse.json({ ok: true, status: payment.status });
 }
 
+function extractToken(request: NextRequest): string | null {
+  // Accept the shared secret in either a query param (`?token=...`)
+  // or a header (`x-konnect-token: ...`). Query is simpler for
+  // ops-driven testing; header is preferred for production.
+  return (
+    request.headers.get("x-konnect-token") ??
+    request.nextUrl.searchParams.get("token") ??
+    null
+  );
+}
+
 export async function GET(request: NextRequest) {
   const ref = request.nextUrl.searchParams.get("payment_ref");
-  return handle(ref);
+  return handle(ref, extractToken(request));
 }
 
 export async function POST(request: NextRequest) {
@@ -139,5 +216,5 @@ export async function POST(request: NextRequest) {
     body?.payment_ref ??
     request.nextUrl.searchParams.get("payment_ref") ??
     null;
-  return handle(ref);
+  return handle(ref, extractToken(request));
 }

@@ -28,6 +28,7 @@ export function RateSellerButton({ sellerId, sellerName }: Props) {
 
   useEffect(() => {
     if (!user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setEligible(false);
       return;
     }

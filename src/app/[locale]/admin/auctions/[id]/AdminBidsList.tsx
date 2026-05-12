@@ -77,7 +77,8 @@ export function AdminBidsList({ bids, auctionId: _auctionId }: Props) {
             onClick={() => invalidate(b)}
             disabled={busy === b.id}
             title="Invalider l'offre (fraude)"
-            className="h-7 w-7 rounded-full bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center hover:border-red-500/40 hover:text-red-300 transition-colors disabled:opacity-50"
+            aria-label="Invalider cette offre"
+            className="h-10 w-10 md:h-7 md:w-7 rounded-full bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center hover:border-red-500/40 hover:text-red-300 transition-colors disabled:opacity-50"
           >
             <Trash2 className="h-3.5 w-3.5" />
           </button>

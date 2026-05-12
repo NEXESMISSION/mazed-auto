@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { Link, useRouter } from "@/i18n/navigation";
 import {
   Trophy,
-  Clock,
   XCircle,
   Hourglass,
   CheckCircle2,
@@ -57,6 +56,7 @@ export function AuctionResultBanner({ auction }: Props) {
   useEffect(() => {
     if (!loaded) return;
     if (!isFinal) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setOutcome({ kind: "live" });
       return;
     }
@@ -87,16 +87,15 @@ export function AuctionResultBanner({ auction }: Props) {
         return;
       }
       const supabase = createClient();
+      // Round-21 audit fix H-1: bids.user_id is no longer publicly
+      // readable. is_top_bidder() RPC answers without leaking IDs.
       supabase
-        .from("bids")
-        .select("user_id")
-        .eq("auction_id", auction.id)
-        .order("amount", { ascending: false })
-        .order("placed_at", { ascending: true })
-        .limit(1)
-        .then(({ data }) => {
-          const topUser = data?.[0]?.user_id;
-          if (topUser === user.id) {
+        .rpc("is_top_bidder", {
+          p_auction_id: auction.id,
+          p_user_id: user.id,
+        })
+        .then(({ data: isTop }) => {
+          if (isTop) {
             setOutcome({
               kind: "seller_decision_top_bidder",
               topBid: top,
@@ -126,19 +125,25 @@ export function AuctionResultBanner({ auction }: Props) {
     }
     const supabase = createClient();
     (async () => {
-      const { data } = await supabase
-        .from("bids")
-        .select("user_id, amount")
-        .eq("auction_id", auction.id)
-        .order("amount", { ascending: false })
-        .order("placed_at", { ascending: true })
-        .limit(1);
-      const top = data?.[0];
-      if (!top || top.user_id !== user.id) {
+      // Round-21 audit fix H-1: use is_top_bidder() since bids.user_id
+      // is no longer publicly readable. Then read the user's own top
+      // bid amount (allowed by the new owner-clause RLS) for display.
+      const { data: isWinner } = await supabase.rpc("is_top_bidder", {
+        p_auction_id: auction.id,
+        p_user_id: user.id,
+      });
+      if (!isWinner) {
         setOutcome({ kind: "loser_ended" });
         return;
       }
-      const myBid = Number(top.amount);
+      const { data: own } = await supabase
+        .from("bids")
+        .select("amount")
+        .eq("auction_id", auction.id)
+        .eq("user_id", user.id)
+        .order("amount", { ascending: false })
+        .limit(1);
+      const myBid = Number(own?.[0]?.amount ?? auction.currentPrice);
       const { data: paid } = await supabase
         .from("transactions")
         .select("id")
@@ -352,7 +357,7 @@ export function AuctionResultBanner({ auction }: Props) {
                 </Button>
                 <Button size="md" onClick={() => setDecisionOpen("accept")}>
                   <CheckCircle2 className="h-4 w-4" />
-                  Accepter l'offre
+                  Accepter l&apos;offre
                 </Button>
               </div>
             }
@@ -368,8 +373,8 @@ export function AuctionResultBanner({ auction }: Props) {
             body={
               <>
                 Enchère terminée au prix de <strong>{formatPrice(outcome.topBid)}</strong>, sans atteindre
-                le prix de réserve ({formatPrice(outcome.reserve)}). Le vendeur a jusqu'au{" "}
-                <Countdown deadline={outcome.deadline} /> pour décider d'accepter votre offre. Vous serez notifié dès la décision.
+                le prix de réserve ({formatPrice(outcome.reserve)}). Le vendeur a jusqu&apos;au{" "}
+                <Countdown deadline={outcome.deadline} /> pour décider d&apos;accepter votre offre. Vous serez notifié dès la décision.
               </>
             }
           />
@@ -459,6 +464,7 @@ function WinnerPopup({
     } catch {
       // sessionStorage unavailable — pop anyway
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setOpen(true);
   }, [auction.id]);
 
@@ -502,6 +508,7 @@ function Countdown({ deadline }: { deadline: Date }) {
     return () => clearInterval(t);
   }, []);
 
+  // eslint-disable-next-line react-hooks/purity
   const ms = deadline.getTime() - Date.now();
   if (ms <= 0)
     return <span className="text-[var(--danger)] font-bold">Délai dépassé</span>;

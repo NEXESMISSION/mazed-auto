@@ -1,7 +1,38 @@
-export function formatPrice(amount: number, currency: string = "DT"): string {
-  return new Intl.NumberFormat("fr-TN", {
-    maximumFractionDigits: 0,
-  }).format(amount) + " " + currency;
+/**
+ * Map next-intl bare locale codes (`fr`, `ar`) to BCP-47 tags with a
+ * region. Without the region, Intl falls back to language-only defaults
+ * which differ subtly: Arabic without a region prints Eastern Arabic
+ * numerals (٠١٢٣…) which look right in MSA text, but the Tunisian
+ * regional variant (`ar-TN`) prints Western Arabic numerals (0123…) —
+ * matching what users see on banknotes, fuel pumps, and government
+ * forms. Pinning the region avoids the digit-system mismatch.
+ */
+function resolveLocaleTag(locale: string | undefined): string {
+  if (!locale) return "fr-TN";
+  if (locale === "ar") return "ar-TN";
+  if (locale === "fr") return "fr-TN";
+  return locale;
+}
+
+/**
+ * Format a price in DT. Defaults to "fr-TN" for backwards compatibility
+ * with the dozens of call sites that don't yet pass a locale — but new
+ * call sites in pages with `useLocale()` should pass the active locale
+ * so Arabic users see the Arabic thousand-separator (٬ instead of the
+ * narrow no-break space) and digits group correctly per their script.
+ */
+export function formatPrice(
+  amount: number,
+  currency: string = "DT",
+  locale?: string,
+): string {
+  return (
+    new Intl.NumberFormat(resolveLocaleTag(locale), {
+      maximumFractionDigits: 0,
+    }).format(amount) +
+    " " +
+    currency
+  );
 }
 
 export function formatPriceShort(amount: number): string {
@@ -10,8 +41,8 @@ export function formatPriceShort(amount: number): string {
   return amount.toString();
 }
 
-export function formatNumber(n: number): string {
-  return new Intl.NumberFormat("fr-TN").format(n);
+export function formatNumber(n: number, locale?: string): string {
+  return new Intl.NumberFormat(resolveLocaleTag(locale)).format(n);
 }
 
 /**
@@ -71,9 +102,5 @@ export function formatDateTime(
   locale: string = "fr-TN",
   options?: Intl.DateTimeFormatOptions,
 ): string {
-  // Map next-intl locale codes to BCP-47 tags. The app uses bare "fr"
-  // and "ar" — Intl prefers a region for date-formatting nuances.
-  const tag =
-    locale === "ar" ? "ar-TN" : locale === "fr" ? "fr-TN" : locale;
-  return new Date(d).toLocaleString(tag, options);
+  return new Date(d).toLocaleString(resolveLocaleTag(locale), options);
 }

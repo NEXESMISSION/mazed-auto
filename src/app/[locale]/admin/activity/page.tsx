@@ -31,9 +31,16 @@ export default async function AdminActivityPage({ searchParams, params }: Props)
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "admin.activity" });
   const supabase = await createClient();
+  // Narrow the select to the exact columns the AuditRow interface
+  // declares. `select("*")` on this table dragged a `metadata` jsonb
+  // column that occasionally holds 10-50 KB blobs (full RPC params);
+  // multiplied by 300 rows that's a 3-15 MB transfer the page never
+  // renders. Explicit projection keeps the payload around 50 KB.
   let q = supabase
     .from("admin_audit_log")
-    .select("*")
+    .select(
+      "id, actor_id, actor_role, action, target_user_id, target_auction_id, target_id, target_type, detail, metadata, created_at",
+    )
     .order("created_at", { ascending: false })
     .limit(300);
   if (sp.action) q = q.ilike("action", `${sp.action}%`);

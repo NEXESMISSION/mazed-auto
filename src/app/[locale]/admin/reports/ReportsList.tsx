@@ -193,7 +193,7 @@ export function ReportsList({ initial }: { initial: ReportRow[] }) {
                 <Link href={`/auctions/${r.auction_id}`}>
                   <Button size="sm" variant="ghost">
                     <ArrowUpRight className="h-4 w-4" />
-Voir l'enchère
+Voir l&apos;enchère
                   </Button>
                 </Link>
               )}
@@ -203,7 +203,7 @@ Voir l'enchère
                   variant="secondary"
                   onClick={() => setStatus(r.id, "reviewing")}
                 >
-Commencer l'examen
+Commencer l&apos;examen
                 </Button>
               )}
               <Button size="sm" onClick={() => setStatus(r.id, "resolved")}>
@@ -225,7 +225,7 @@ Résoudre le signalement
                   onClick={() => escalateCancel(r)}
                 >
                   <Ban className="h-4 w-4" />
-                  Annuler l'enchère
+                  Annuler l&apos;enchère
                 </Button>
               )}
               {r.auction?.seller_id && (

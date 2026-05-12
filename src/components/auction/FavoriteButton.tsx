@@ -38,6 +38,7 @@ export function FavoriteButton({
   useEffect(() => {
     if (!authLoaded) return;
     if (!user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActive(false); // signed-out is "not favorited"
       return;
     }

@@ -12,6 +12,7 @@ import { ADMIN_IDLE_TIMEOUT_MS } from "@/lib/admin";
  */
 export function AdminIdleTimer({ locale }: { locale: string }) {
   const router = useRouter();
+  // eslint-disable-next-line react-hooks/purity
   const lastActiveRef = useRef<number>(Date.now());
 
   useEffect(() => {

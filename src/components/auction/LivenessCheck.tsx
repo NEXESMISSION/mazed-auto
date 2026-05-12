@@ -19,7 +19,7 @@ import { createClient } from "@/lib/supabase/client";
 const TAG = "[Liveness]";
 function log(...args: unknown[]) {
   const ts = new Date().toISOString().slice(11, 23);
-  // eslint-disable-next-line no-console
+   
   console.log(
     `%c${TAG} %c${ts}`,
     "color:#d4af37;font-weight:bold",
@@ -29,7 +29,7 @@ function log(...args: unknown[]) {
 }
 function warn(...args: unknown[]) {
   const ts = new Date().toISOString().slice(11, 23);
-  // eslint-disable-next-line no-console
+   
   console.warn(
     `%c${TAG} %c${ts}`,
     "color:#f59e0b;font-weight:bold",
@@ -39,7 +39,7 @@ function warn(...args: unknown[]) {
 }
 function err(...args: unknown[]) {
   const ts = new Date().toISOString().slice(11, 23);
-  // eslint-disable-next-line no-console
+   
   console.error(
     `%c${TAG} %c${ts}`,
     "color:#ef4444;font-weight:bold",
@@ -301,7 +301,7 @@ export function LivenessCheck({ onComplete, onCancel }: Props) {
       audioCtxRef.current = null;
       stopAll();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   /* ─────────────────────────────────────────────────────────────────────────
@@ -527,6 +527,10 @@ export function LivenessCheck({ onComplete, onCancel }: Props) {
         finalize();
       }
     }
+    // `finalize` is intentionally not in deps — including it would
+    // re-run this effect on every render (finalize is created on
+    // each render); we want it to fire only when totalSteps changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [totalSteps]);
 
   /* ─────────────────────────────────────────────────────────────────────────

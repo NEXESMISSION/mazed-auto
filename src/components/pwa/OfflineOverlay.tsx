@@ -21,6 +21,7 @@ export function OfflineOverlay() {
 
   useEffect(() => {
     if (typeof navigator === "undefined") return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setOnline(navigator.onLine);
     const goOnline = () => setOnline(true);
     const goOffline = () => setOnline(false);

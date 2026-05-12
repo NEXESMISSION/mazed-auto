@@ -206,7 +206,7 @@ function FaqRow({
             Masqué
           </span>
         )}
-        <div className="ml-auto flex gap-2">
+        <div className="ms-auto flex gap-2">
           {onCancel && (
             <Button size="sm" variant="ghost" onClick={onCancel}>
               Annuler

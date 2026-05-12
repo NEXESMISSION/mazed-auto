@@ -26,7 +26,10 @@ interface AuctionMeta {
 interface BidPayload {
   id: string;
   auction_id: string;
-  user_id: string | null;
+  // user_id is no longer projected to public consumers (round-21 audit
+  // fix H-1) — kept optional in the payload type only because realtime
+  // INSERT events on `bids` still carry the column for the row owner.
+  user_id?: string | null;
   bidder_label: string | null;
   amount: number | string;
   placed_at: string;
@@ -74,10 +77,12 @@ export function LiveActivityTicker({ initial }: Props = {}) {
     const supabase = createClient();
 
     async function seed() {
+      // Read from the `public_bids` view — strips user_id so anonymous
+      // home-page viewers can't deanonymise bidders.
       const { data } = await supabase
-        .from("bids")
+        .from("public_bids")
         .select(
-          "id, auction_id, user_id, bidder_label, amount, placed_at, auctions:auction_id(make, model, year)",
+          "id, auction_id, bidder_label, amount, placed_at, auctions:auction_id(make, model, year)",
         )
         .order("placed_at", { ascending: false })
         .limit(MAX_ITEMS);
@@ -234,10 +239,16 @@ function Pill({
 }
 
 function toItem(meta: AuctionMeta | null, b: BidPayload): ActivityItem {
+  // Prefer the per-auction bidder_label (e.g. "Acheteur #4") since
+  // user_id is no longer publicly readable. Fall back to anonBidder
+  // for the legacy realtime path that still carries user_id for the
+  // bidder's own session.
+  const bidder =
+    b.bidder_label || (b.user_id ? anonBidder(b.user_id, 0) : "Enchérisseur");
   return {
     id: b.id,
     auctionId: b.auction_id,
-    bidder: anonBidder(b.user_id, 0),
+    bidder,
     amount: Number(b.amount),
     vehicle: meta ? `${meta.make} ${meta.model} ${meta.year}` : "Une voiture",
     at: new Date(b.placed_at).getTime(),

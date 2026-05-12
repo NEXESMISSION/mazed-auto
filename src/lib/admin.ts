@@ -119,14 +119,33 @@ const CAPS_BY_ROLE: Record<AdminRole, AdminCapability[] | "*"> = {
 };
 
 /**
- * Best-effort role read from a Supabase user object. Falls back to
- * `'admin'` when the legacy boolean role flag is set so existing
- * single-role admins keep working.
+ * Best-effort role read from a Supabase user object.
+ *
+ * Source-of-truth precedence (round-22 audit fix M-1):
+ *   1. `app_metadata.adminRole` — service-role-only writes, trustworthy.
+ *   2. `user_metadata.adminRole` — legacy mirror, kept for backwards
+ *      compat with sessions issued before migrate-admin-role-app-metadata.
+ *      A signed-in user CAN forge this via supabase.auth.updateUser, so
+ *      treat it as a hint only.
+ *   3. legacy `user_metadata.role === 'admin'` boolean.
+ *
+ * Server-side authorization MUST NOT trust this function alone — every
+ * destructive RPC re-checks via SQL `is_admin()` / `has_admin_capability()`
+ * which read from the `admin_users` table.
  */
 export function getAdminRole(user: {
   user_metadata?: Record<string, unknown> | null;
+  app_metadata?: Record<string, unknown> | null;
 } | null | undefined): AdminRole | null {
   if (!user) return null;
+  const appMeta = (user.app_metadata ?? {}) as Record<string, unknown>;
+  const appExplicit = appMeta.adminRole;
+  if (
+    typeof appExplicit === "string" &&
+    ADMIN_ROLES.includes(appExplicit as AdminRole)
+  ) {
+    return appExplicit as AdminRole;
+  }
   const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
   const explicit = meta.adminRole;
   if (typeof explicit === "string" && ADMIN_ROLES.includes(explicit as AdminRole)) {

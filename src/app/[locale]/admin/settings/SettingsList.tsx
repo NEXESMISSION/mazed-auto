@@ -258,7 +258,7 @@ function SettingItem({ row }: { row: SettingRow }) {
       {row.pending_value !== null && row.pending_value !== undefined && !editing && (
         <div className="mt-2 rounded-[var(--radius)] bg-amber-500/10 border border-amber-500/30 p-2.5">
           <div className="text-[10px] uppercase tracking-[0.18em] font-bold text-amber-300">
-            Modification proposée — en attente d'approbation
+            Modification proposée — en attente d&apos;approbation
           </div>
           <div className="mt-1 flex items-center gap-2 flex-wrap">
             <code className="text-[11px] font-mono px-2 py-1 rounded bg-[var(--surface-2)] border border-[var(--border)] text-amber-200">

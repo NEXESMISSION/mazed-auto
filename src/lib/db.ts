@@ -355,10 +355,15 @@ export async function seedActivityItems(
   // Filter `auction_id IS NOT NULL` server-side — without it, orphaned
   // bid rows came back from the table and we threw them out client-side
   // post-filter, leaving fewer than `limit` items in the rail.
+  //
+  // Switched to `public_bids` view (round-21 audit fix H-1) — the view
+  // already exposes the per-auction `bidder_label` (e.g. "Acheteur #4")
+  // so we no longer have to derive a tag from user_id (which is now
+  // hidden from public consumers).
   const { data } = await supabase
-    .from("bids")
+    .from("public_bids")
     .select(
-      "id, auction_id, user_id, amount, placed_at, auctions:auction_id(make, model, year)",
+      "id, auction_id, amount, placed_at, bidder_label, auctions:auction_id(make, model, year)",
     )
     .not("auction_id", "is", null)
     .order("placed_at", { ascending: false })
@@ -367,17 +372,16 @@ export async function seedActivityItems(
   return (data as unknown as Array<{
     id: string;
     auction_id: string | null;
-    user_id: string | null;
     amount: number | string;
     placed_at: string;
+    bidder_label: string | null;
     auctions: { make: string; model: string; year: number } | null;
   }>)
     .filter((r) => Boolean(r.auctions))
     .map((r) => ({
       id: r.id,
       auctionId: r.auction_id,
-      // Same opaque tag rule as the client — keep identities anonymous.
-      bidder: `Enchérisseur #${(r.user_id ?? "0000").replace(/-/g, "").slice(-4).toUpperCase()}`,
+      bidder: r.bidder_label || "Enchérisseur",
       amount: Number(r.amount),
       vehicle: r.auctions
         ? `${r.auctions.make} ${r.auctions.model} ${r.auctions.year}`
@@ -533,12 +537,19 @@ export async function listUserActivity(
 export async function listAuctionsBySeller(
   supabase: SupabaseClient,
   sellerId: string,
+  limit = 200,
 ): Promise<Auction[]> {
+  // Cap at 200 by default — prolific sellers may have 500+ lifetime
+  // listings, but the "my auctions" page renders cards (~800 KB DOM at
+  // 200) and pulling the full history every visit is wasted work. The
+  // page provides filter chips (active / ended / etc.) that can re-fetch
+  // a specific slice if the seller really wants to scroll older rows.
   const { data, error } = await supabase
     .from("auctions")
     .select(AUCTION_SELECT)
     .eq("seller_id", sellerId)
-    .order("end_time", { ascending: true });
+    .order("end_time", { ascending: true })
+    .limit(limit);
   if (error) return [];
   return (data ?? []).map((r) => mapAuction(r as unknown as AuctionRow));
 }
@@ -550,18 +561,21 @@ export async function listRecentBids(
 ): Promise<BidRow[]> {
   // Order by amount first, then recency, so the highest bid is always
   // labeled "Offre la plus haute" even if a slow lower bid lands later.
-  // Project only the columns BidRow consumers actually read — `select("*")`
-  // pulled `bidder_label` and other denormalised fields that get
-  // discarded after `mapBid` anyway.
+  //
+  // Reads from `public_bids` view (round-21 audit fix H-1) — it strips
+  // `user_id` so anonymous viewers can't deanonymise bidders. Owner /
+  // seller / admin pages that need user_id query `bids` directly with
+  // an `.eq("user_id", ...)` filter; the new RLS allows that for the
+  // owner clause.
   const { data, error } = await supabase
-    .from("bids")
-    .select("id, auction_id, user_id, amount, placed_at, is_auto_bid")
+    .from("public_bids")
+    .select("id, auction_id, amount, placed_at, is_auto_bid, bidder_label")
     .eq("auction_id", auctionId)
     .order("amount", { ascending: false })
     .order("placed_at", { ascending: false })
     .limit(limit);
   if (error) return [];
-  return (data ?? []) as BidRow[];
+  return (data ?? []).map((b) => ({ ...b, user_id: null })) as BidRow[];
 }
 
 export interface TransactionRow {

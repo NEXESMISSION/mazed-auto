@@ -103,6 +103,7 @@ export function BidComposer({
     if (!user) {
       // SSR may have seeded a value when the cookie was valid; if auth says
       // we're not signed in client-side, drop it and let the gate redirect.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDepositPaid(initialDepositPaid ?? null);
       setActiveAutoMax(null);
       return;
@@ -143,13 +144,17 @@ export function BidComposer({
   }, [user, authLoaded, auction.id, initialDepositPaid]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setAmount((v) => (v < minBid ? minBid : v));
+    // setAmount is stable (from useState); omitting per React docs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [minBid]);
 
   // Seed the cap input with a sensible starting value: their existing cap
   // if they already set one (so they can clearly raise it), otherwise a
   // forward-looking suggestion at ~2x the next legal bid.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setAutoMax(activeAutoMax ?? minBid * 2);
   }, [activeAutoMax, minBid]);
 
@@ -706,8 +711,8 @@ export function BidComposer({
       <Modal open={showRules} onClose={() => setShowRules(false)} title="Règles de l'enchère">
         <ul className="space-y-3 text-sm text-[var(--foreground-muted)] leading-relaxed">
           <li>• <strong className="text-foreground">Caution :</strong> Montant fixe (500 / 1 000 / 2 000 DT selon le prix de départ), payée une fois par enchère, remboursée si vous ne gagnez pas.</li>
-          <li>• <strong className="text-foreground">Anti-Sniping:</strong> Toute offre dans les 5 dernières minutes prolonge l'enchère de 5 minutes.</li>
-          <li>• <strong className="text-foreground">Réserve :</strong> Si le prix de réserve n'est pas atteint, l'enchère n'est pas conclue.</li>
+          <li>• <strong className="text-foreground">Anti-Sniping:</strong> Toute offre dans les 5 dernières minutes prolonge l&apos;enchère de 5 minutes.</li>
+          <li>• <strong className="text-foreground">Réserve :</strong> Si le prix de réserve n&apos;est pas atteint, l&apos;enchère n&apos;est pas conclue.</li>
           <li>• <strong className="text-foreground">Plafond automatique :</strong> Vous fixez un montant maximum caché. Le système enchérit pour vous au minimum nécessaire pour devancer le 2ᵉ plafond — jamais plus.</li>
           <li>• <strong className="text-foreground">Retrait après victoire :</strong> Caution saisie + bannissement 30 jours.</li>
         </ul>
@@ -772,7 +777,7 @@ export function BidComposer({
             <li className="flex gap-2">
               <span className="text-[var(--gold)]">•</span>
               <span>
-                En cas d'égalité de plafond, <strong className="text-foreground">le plus ancien gagne</strong>.
+                En cas d&apos;égalité de plafond, <strong className="text-foreground">le plus ancien gagne</strong>.
               </span>
             </li>
           </ul>
