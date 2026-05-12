@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+import { cache } from "react";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
@@ -20,12 +22,113 @@ import {
   getSellerPublicPhone,
 } from "@/lib/subscription";
 import { auctionCode, formatPrice } from "@/lib/format";
+import { thumb } from "@/lib/imageUrl";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 interface Props {
   params: Promise<{ id: string; locale: string }>;
+}
+
+/**
+ * Per-request memoized fetch — `generateMetadata` runs first to build
+ * the <head>, then the page component renders the body. Both need the
+ * same auction row, and Next.js only auto-dedupes `fetch()` calls (not
+ * Supabase RPCs). React.cache wraps the function so the second call
+ * inside the same request returns the first call's promise, halving
+ * the DB round-trips on every auction-detail page load.
+ */
+const getCachedAuction = cache(async (id: string) => {
+  const supabase = await createClient();
+  return getAuctionById(supabase, id);
+});
+
+/**
+ * Per-auction social-share metadata. Without this, every link shared
+ * to Facebook / WhatsApp / Twitter renders the site-default OG card
+ * ("Mazed Auto") — useless for catalogue listings where the entire
+ * point is "look at THIS car." With it, the link unfurls to the make /
+ * model / year, current price, and the first vehicle photo.
+ *
+ * Two notable choices:
+ *   - Auctions in `pending_review` / `scheduled` (non-public) are
+ *     intentionally rendered with a generic title and `robots.noindex`
+ *     so crawlers don't index pre-launch listings. The page itself
+ *     already 404s for non-owners, so this just keeps the SEO surface
+ *     consistent.
+ *   - The OG image is the same supabase image-transform URL we use for
+ *     the cards (1200×630 is Facebook's recommended OG dimensions).
+ *     Falls back to /og-default.png if no vehicle image is present.
+ */
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id, locale } = await params;
+  const auction = await getCachedAuction(id).catch(() => null);
+
+  if (!auction) {
+    return {
+      title: "Enchère introuvable — Mazed Auto",
+      robots: { index: false, follow: false },
+    };
+  }
+
+  const isAr = locale === "ar";
+  const make = auction.vehicle.make ?? "";
+  const model = auction.vehicle.model ?? "";
+  const year = auction.vehicle.year ?? "";
+  const carName = [make, model, year].filter(Boolean).join(" ").trim();
+
+  const title = isAr
+    ? `${carName} — مزاد على Mazed Auto`
+    : `${carName} — enchère sur Mazed Auto`;
+
+  // The current price is the single most informative datum to show in
+  // a share preview ("starts at 25 000 DT" gets clicks, "see car"
+  // doesn't). Use starting price for not-yet-active listings and
+  // current for everything else.
+  const showPrice =
+    auction.status === "active" || auction.status === "ending"
+      ? auction.currentPrice
+      : (auction.startingPrice ?? auction.currentPrice);
+  const priceStr = showPrice
+    ? formatPrice(showPrice)
+    : isAr
+      ? "ابدأ المزايدة الآن"
+      : "Mise à prix";
+  const description = isAr
+    ? `${carName} — ${priceStr} · ${auction.vehicle.city ?? ""}`
+    : `${carName} — ${priceStr} · ${auction.vehicle.city ?? ""}`;
+
+  // OG image: 1200×630 keeps Facebook / WhatsApp from cropping
+  // unpredictably. Without the explicit thumb() call, social platforms
+  // would download the original (often 3MB+) and a slow fetch means
+  // their preview-bot times out and shows nothing.
+  const firstImage = auction.vehicle.imageUrls?.[0];
+  const ogImage = firstImage
+    ? thumb(firstImage, { width: 1200, height: 630, quality: 80 })
+    : "/og-default.png";
+
+  const nonPublic =
+    auction.status === "pending_review" || auction.status === "scheduled";
+
+  return {
+    title,
+    description,
+    openGraph: {
+      type: "website",
+      title,
+      description,
+      images: [{ url: ogImage, width: 1200, height: 630, alt: carName }],
+      locale: isAr ? "ar_TN" : "fr_TN",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [ogImage],
+    },
+    robots: nonPublic ? { index: false, follow: false } : undefined,
+  };
 }
 
 export default async function AuctionDetailPage({ params }: Props) {
@@ -40,22 +143,21 @@ export default async function AuctionDetailPage({ params }: Props) {
     // ignore
   }
 
-  const auction = await getAuctionById(supabase, id);
+  const auction = await getCachedAuction(id);
   if (!auction) notFound();
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Hide auctions that haven't been approved by the admin yet — or that
-  // were rejected — from the public. Only the owning seller and admins
-  // can preview these. Everyone else gets a 404 so the URL doesn't
-  // confirm the listing's existence.
-  const NON_PUBLIC_STATUSES = new Set([
-    "pending_review",
-    "scheduled",
-    "cancelled",
-  ]);
+  // Hide auctions that haven't been admin-approved (or are admin-only
+  // pre-launch state) from anyone but the owner / admin. `cancelled`
+  // is intentionally NOT hidden here — bidders need to see "this
+  // auction was cancelled, your deposit was refunded" pages, and the
+  // RLS policy already allows bidders to read their own cancelled
+  // rows. Everyone else gets a 404 so the URL doesn't confirm the
+  // pre-approval listing exists.
+  const NON_PUBLIC_STATUSES = new Set(["pending_review", "scheduled"]);
   if (NON_PUBLIC_STATUSES.has(auction.status)) {
     const role = (user?.user_metadata as { role?: string } | null)?.role;
     const isOwner = Boolean(user && auction.seller.id === user.id);
@@ -73,6 +175,8 @@ export default async function AuctionDetailPage({ params }: Props) {
     hasBid = (count ?? 0) > 0;
   }
 
+  const isOwnAuction = Boolean(user && auction.seller.id === user.id);
+
   const { vehicle, seller } = auction;
 
   // Pro plan perks for this seller — drives the trusted-seller badge
@@ -84,8 +188,100 @@ export default async function AuctionDetailPage({ params }: Props) {
     getSellerPublicPhone(seller.id).catch(() => null),
   ]);
 
+  // ─── JSON-LD structured data (schema.org Car + Offer) ─────────────
+  //
+  // This is the SEO multiplier: it gives Google enough information to
+  // render this listing as a *rich snippet* in search results — the
+  // user sees price, availability ("In stock"), photo, and seller
+  // before they click. Without it, our auction page competes against
+  // dealer sites on a level visual playing field; with it, our listing
+  // takes 2-3x the SERP real estate. Schema.org `Car` extends `Vehicle`
+  // extends `Product`, so all the Product validators apply.
+  //
+  // Only emit while the auction is publicly accessible (active/ending);
+  // for cancelled/ended/pending states we skip it so dead listings
+  // don't pollute Google's freshness signals.
+  const isPubliclyBiddable =
+    auction.status === "active" || auction.status === "ending";
+  const isAr = locale === "ar";
+  const carName = [vehicle.make, vehicle.model, vehicle.year]
+    .filter(Boolean)
+    .join(" ");
+  const jsonLd = isPubliclyBiddable
+    ? {
+        "@context": "https://schema.org",
+        "@type": "Car",
+        name: carName,
+        description:
+          vehicle.description ||
+          `${carName} en vente aux enchères sur Mazed Auto`,
+        image: vehicle.imageUrls?.slice(0, 6) ?? [],
+        brand: { "@type": "Brand", name: vehicle.make ?? "" },
+        model: vehicle.model ?? undefined,
+        vehicleModelDate: vehicle.year
+          ? String(vehicle.year)
+          : undefined,
+        color: vehicle.color ?? undefined,
+        vehicleTransmission:
+          vehicle.transmission === "automatic"
+            ? "AutomaticTransmission"
+            : vehicle.transmission === "manual"
+              ? "ManualTransmission"
+              : undefined,
+        fuelType: vehicle.fuelType ?? undefined,
+        mileageFromOdometer: vehicle.mileage
+          ? { "@type": "QuantitativeValue", value: vehicle.mileage, unitCode: "KMT" }
+          : undefined,
+        offers: {
+          "@type": "Offer",
+          // Price is the *current bid* — Google's snippet shows this
+          // as the "starting at" amount. priceValidUntil gives the bot
+          // a TTL so it knows when to re-crawl.
+          price: auction.currentPrice,
+          priceCurrency: "TND",
+          priceValidUntil: auction.endTime.toISOString().slice(0, 10),
+          availability: "https://schema.org/InStock",
+          itemCondition:
+            vehicle.condition === "new"
+              ? "https://schema.org/NewCondition"
+              : "https://schema.org/UsedCondition",
+          url: `/${locale}/auctions/${auction.id}`,
+          seller: {
+            "@type": "Person",
+            name: seller.displayName || seller.username || "Vendeur",
+          },
+        },
+        ...(vehicle.city
+          ? {
+              availableAtOrFrom: {
+                "@type": "Place",
+                address: {
+                  "@type": "PostalAddress",
+                  addressLocality: vehicle.city,
+                  addressCountry: "TN",
+                },
+              },
+            }
+          : {}),
+        inLanguage: isAr ? "ar-TN" : "fr-TN",
+      }
+    : null;
+
   return (
     <AppShell noTopBar>
+      {jsonLd && (
+        // Inline JSON-LD. Next.js SSRs this as a regular <script> in the
+        // <head>; Google's bot parses it without executing JS. Using
+        // `dangerouslySetInnerHTML` because React's normal JSX escapes
+        // quotes inside strings — for JSON-LD that breaks the spec
+        // contract. The content is JSON.stringify'd from our own data,
+        // so there's no untrusted-string XSS risk here.
+        <script
+          type="application/ld+json"
+          // Stringify with JSON.stringify so any quote-escaping is correct.
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
       <AuctionEndModal auction={auction} userId={user?.id ?? null} />
 
       {/* ============================================================
@@ -145,6 +341,7 @@ export default async function AuctionDetailPage({ params }: Props) {
         <LiveAuctionPanel
           initialAuction={auction}
           hasBid={hasBid}
+          isOwnAuction={isOwnAuction}
           videoUrl={vehicle.videoUrl}
           videoPoster={vehicle.imageUrls[0]}
         />

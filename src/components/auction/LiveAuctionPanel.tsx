@@ -9,6 +9,7 @@ import {
   XCircle,
   ShieldCheck,
   TrendingUp,
+  LayoutDashboard,
 } from "lucide-react";
 import { Countdown } from "./Countdown";
 import { AuctionResultBanner } from "./AuctionResultBanner";
@@ -31,6 +32,9 @@ const FINAL_STATUSES = new Set([
 interface Props {
   initialAuction: Auction;
   hasBid: boolean;
+  /** True when the signed-in user is the seller of this auction. Swaps the
+   *  bid CTA for a non-scary "your auction" link to the seller dashboard. */
+  isOwnAuction?: boolean;
   /** Mobile-only — shown above the live panel on mobile. */
   videoUrl?: string;
   videoPoster?: string;
@@ -58,6 +62,7 @@ interface Props {
 export function LiveAuctionPanel({
   initialAuction,
   hasBid,
+  isOwnAuction = false,
   videoUrl,
   videoPoster,
 }: Props) {
@@ -90,7 +95,7 @@ export function LiveAuctionPanel({
 
         {isLive && <BidPills auction={auction} />}
 
-        {isLive && (
+        {isLive && !isOwnAuction && (
           <Link
             href={`/auctions/${auction.id}/bid`}
             className="block h-14 rounded-full gradient-gold text-black font-extrabold text-[15px] shadow-[var(--shadow-gold)] flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99] transition-transform"
@@ -100,7 +105,11 @@ export function LiveAuctionPanel({
           </Link>
         )}
 
-        {auction.buyNowPrice && isLive && <BuyNowButton auction={auction} />}
+        {isLive && isOwnAuction && <OwnAuctionCta auctionId={auction.id} />}
+
+        {auction.buyNowPrice && isLive && !isOwnAuction && (
+          <BuyNowButton auction={auction} />
+        )}
 
         {videoUrl && <VideoButton url={videoUrl} poster={videoPoster} />}
       </div>
@@ -208,21 +217,30 @@ export function LiveAuctionPanel({
           {/* ── CTA stack ── */}
           <div className="p-7 space-y-3">
             {isLive ? (
-              <>
-                <Link
-                  href={`/auctions/${auction.id}/bid`}
-                  className="block h-14 rounded-full bg-[var(--gold)] text-black font-extrabold text-base shadow-[var(--shadow-gold)] flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99] transition-transform"
-                >
-                  <Gavel className="h-5 w-5" />
-                  {hasBid ? "Continuer l'enchère" : "Rejoindre l'enchère"}
-                </Link>
+              isOwnAuction ? (
+                <>
+                  <OwnAuctionCta auctionId={auction.id} />
+                  {videoUrl && (
+                    <VideoButton url={videoUrl} poster={videoPoster} />
+                  )}
+                </>
+              ) : (
+                <>
+                  <Link
+                    href={`/auctions/${auction.id}/bid`}
+                    className="block h-14 rounded-full bg-[var(--gold)] text-black font-extrabold text-base shadow-[var(--shadow-gold)] flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99] transition-transform"
+                  >
+                    <Gavel className="h-5 w-5" />
+                    {hasBid ? "Continuer l'enchère" : "Rejoindre l'enchère"}
+                  </Link>
 
-                {auction.buyNowPrice && <BuyNowButton auction={auction} />}
+                  {auction.buyNowPrice && <BuyNowButton auction={auction} />}
 
-                {videoUrl && (
-                  <VideoButton url={videoUrl} poster={videoPoster} />
-                )}
-              </>
+                  {videoUrl && (
+                    <VideoButton url={videoUrl} poster={videoPoster} />
+                  )}
+                </>
+              )
             ) : isFinal ? (
               <div className="text-center text-sm text-[var(--foreground-muted)] py-2">
                 Cette enchère est{" "}
@@ -244,7 +262,7 @@ export function LiveAuctionPanel({
           {/* ── Trust signals footer — only when live, only when there's a
               bid action above. Keeps the user on rails about what their
               money does on this platform. ── */}
-          {isLive && (
+          {isLive && !isOwnAuction && (
             <div className="px-7 py-4 bg-[var(--surface-2)]/50 border-t border-[var(--border)] grid grid-cols-1 gap-2.5 text-[11px] text-[var(--foreground-muted)] leading-snug">
               <span className="inline-flex items-start gap-2">
                 <ShieldCheck className="h-3.5 w-3.5 text-[var(--gold)] mt-0.5 shrink-0" />
@@ -268,6 +286,21 @@ export function LiveAuctionPanel({
         )}
       </aside>
     </>
+  );
+}
+
+/** Calm seller-side replacement for the bid CTA — same height/shape as
+ *  the bidder button, but routes to the seller dashboard instead of
+ *  the dead-end "you can't bid on your own auction" gate. */
+function OwnAuctionCta({ auctionId }: { auctionId: string }) {
+  return (
+    <Link
+      href={`/seller/auctions/${auctionId}`}
+      className="block h-14 rounded-full bg-[var(--surface-2)] ring-1 ring-[var(--border)] text-foreground font-extrabold text-[15px] flex items-center justify-center gap-2 hover:ring-[var(--gold-soft)] hover:text-[var(--gold)] transition-colors"
+    >
+      <LayoutDashboard className="h-5 w-5" />
+      Tableau du vendeur
+    </Link>
   );
 }
 

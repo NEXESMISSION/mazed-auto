@@ -87,6 +87,13 @@ export default async function BidPage({ params, searchParams }: Props) {
     redirect({ href: `/auctions/${id}`, locale });
   }
 
+  // Sellers viewing their own auction don't need the dead-end "you can't bid"
+  // gate — the detail page already shows everything they care about, plus a
+  // calm link to /seller/auctions/[id]. Send them there.
+  if (user && auction.seller.id === user.id) {
+    redirect({ href: `/auctions/${id}`, locale });
+  }
+
   // The user is "in" the auction (cleared every gate) iff:
   //  - signed in
   //  - not the seller
