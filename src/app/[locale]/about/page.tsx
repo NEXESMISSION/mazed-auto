@@ -6,8 +6,11 @@ import { Button } from "@/components/ui/Button";
 import { createClient } from "@/lib/supabase/server";
 import { getCmsPage } from "@/lib/cms";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+// ISR — content is CMS-driven and the admin action calls revalidatePath()
+// on save (see /admin/cms/actions.ts), so cached HTML updates immediately
+// when the admin edits. The 1-hour TTL is a safety net for missed
+// revalidations; nothing here is per-user.
+export const revalidate = 3600;
 
 export default async function AboutPage() {
   const locale = await getLocale();

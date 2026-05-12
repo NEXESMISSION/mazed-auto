@@ -10,8 +10,12 @@ import { AuctionsBrowser } from "./AuctionsBrowser";
 import { BrowseViewToggle } from "./BrowseViewToggle";
 import type { Auction } from "@/lib/types";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+// ISR — page has no per-user reads (no getUser). The auction pool is
+// already served from a 30s in-memory TTL via getLiveAuctionsCached();
+// this adds the CDN/edge layer on top so cached HTML serves from
+// Vercel instead of triggering a SSR render every request. Realtime
+// price/countdown updates land via the per-card client subscription.
+export const revalidate = 30;
 
 interface Props {
   searchParams: Promise<{ view?: string; brand?: string; body?: string; q?: string }>;

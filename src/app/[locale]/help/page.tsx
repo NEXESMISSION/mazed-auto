@@ -16,8 +16,10 @@ const FALLBACK_FAQS = [
   },
 ];
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+// ISR — FAQs are CMS-driven; the admin upsert action revalidatePaths
+// this route on save, so cache invalidates immediately on edits.
+// 1-hour TTL is a safety net.
+export const revalidate = 3600;
 
 export default async function HelpPage() {
   const locale = await getLocale();
