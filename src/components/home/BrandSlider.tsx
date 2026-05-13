@@ -90,11 +90,11 @@ export function BrandSlider({ pool, brands }: Props) {
                   <div className="text-[13px] font-extrabold leading-tight text-white">
                     {t.name}
                   </div>
-                  {t.count > 0 && (
-                    <div className="text-[10px] tabular-nums text-white/70 mt-0.5">
-                      {t.count} {t.count === 1 ? "voiture" : "voitures"}
-                    </div>
-                  )}
+                  <div className="text-[10px] tabular-nums text-white/70 mt-0.5">
+                    {t.count > 0
+                      ? `${t.count} ${t.count === 1 ? "voiture" : "voitures"}`
+                      : "Bientôt"}
+                  </div>
                 </div>
               </Link>
             ))}
@@ -130,11 +130,11 @@ export function BrandSlider({ pool, brands }: Props) {
               <div className="text-base font-extrabold leading-tight text-white">
                 {t.name}
               </div>
-              {t.count > 0 && (
-                <div className="text-[11px] tabular-nums text-white/70 mt-0.5">
-                  {t.count} {t.count === 1 ? "voiture" : "voitures"}
-                </div>
-              )}
+              <div className="text-[11px] tabular-nums text-white/70 mt-0.5">
+                {t.count > 0
+                  ? `${t.count} ${t.count === 1 ? "voiture" : "voitures"}`
+                  : "Bientôt"}
+              </div>
             </div>
           </Link>
         ))}
