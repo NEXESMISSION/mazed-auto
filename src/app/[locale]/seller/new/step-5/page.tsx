@@ -137,23 +137,49 @@ export default function Step5Page() {
     draft.buyNowPrice !== undefined ? Boolean(draft.buyNowPrice) : true,
   );
 
-  // Local state is seeded from `draft` on first render, but `draft` is empty
-  // until sessionStorage hydrates one tick later. On back-nav from /review
-  // the user would otherwise see the defaults instead of their real values
-  // — re-seed once we have the hydrated draft.
-  const seededRef = useRef(false);
+  // Reactive sync from the draft. NO seededRef guard here — that pattern
+  // had a race: under React 19 strict-mode double-effects or back-nav
+  // from /review, the effect could fire BEFORE the draft hydrated, then
+  // refuse to re-seed when the real data arrived (leaving the user
+  // staring at hardcoded defaults instead of their saved values). Same
+  // family of bug as step-2's lost-photos issue.
+  //
+  // Removing the guard is safe because:
+  //   • User input updates LOCAL state (setStartingPrice etc.), NOT the
+  //     draft — so editing doesn't trigger this effect to re-fire and
+  //     clobber what they just typed.
+  //   • Draft fields only change when update() is explicitly called
+  //     (on "Continue"), at which point the new value === local value,
+  //     so the sync is a no-op.
+  //   • Initial mount → effect runs with hydrated=false, bails. Then
+  //     hydrated flips true with draft populated in the same batched
+  //     render → effect re-runs and seeds. No more refusal.
   useEffect(() => {
-    if (!hydrated || seededRef.current) return;
-    seededRef.current = true;
+    if (!hydrated) return;
     /* eslint-disable react-hooks/set-state-in-effect */
     if (draft.startingPrice !== undefined) setStartingPrice(draft.startingPrice);
     if (draft.reservePrice !== undefined) setReservePrice(draft.reservePrice);
     if (draft.buyNowPrice !== undefined) setBuyNowPrice(draft.buyNowPrice);
     if (draft.durationDays !== undefined) setDuration(draft.durationDays);
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [hydrated, draft.startingPrice, draft.reservePrice, draft.buyNowPrice, draft.durationDays]);
+
+  // Toggles get a SEPARATE one-shot seeding effect — they're derived
+  // from the presence of reservePrice/buyNowPrice in the draft, not
+  // stored in their own draft field, so we can't safely re-derive on
+  // every change (the user might have toggled off while keeping the
+  // price value cached). One-shot is fine here because toggles are
+  // local UX state, not persisted business data — losing them on
+  // back-nav is annoying but not "data lost".
+  const togglesSeededRef = useRef(false);
+  useEffect(() => {
+    if (!hydrated || togglesSeededRef.current) return;
+    togglesSeededRef.current = true;
+    /* eslint-disable react-hooks/set-state-in-effect */
     setHasReserve(draft.reservePrice !== undefined ? Boolean(draft.reservePrice) : true);
     setHasBuyNow(draft.buyNowPrice !== undefined ? Boolean(draft.buyNowPrice) : true);
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [hydrated, draft.startingPrice, draft.reservePrice, draft.buyNowPrice, draft.durationDays]);
+  }, [hydrated, draft.reservePrice, draft.buyNowPrice]);
 
   // Apply the plan cap to the duration picker (if any).
   const effectiveDurationOpts =
