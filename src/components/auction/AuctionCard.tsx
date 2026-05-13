@@ -24,6 +24,11 @@ interface Props {
    *  `sellers_search_priority` RPC). Default false to keep the card
    *  visually clean on free-tier listings. */
   isTrustedSeller?: boolean;
+  /** Eager-load + high-priority fetch for above-the-fold cards.
+   *  Rails should pass `priority={index < 4}` for the first row of
+   *  visible thumbnails so the user sees photos on the first paint
+   *  instead of after-scroll. Lazy for everything below. */
+  priority?: boolean;
 }
 
 /**
@@ -36,6 +41,7 @@ export function AuctionCard({
   auction,
   variant = "default",
   isTrustedSeller = false,
+  priority = false,
 }: Props) {
   const { vehicle, currentPrice, totalParticipants, totalBids, endTime } =
     auction;
@@ -69,15 +75,23 @@ export function AuctionCard({
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={thumb(vehicle.imageUrls[0], { width: 500, quality: 65 })}
+            /* Lowered q=65 → q=58 on cards. On a phone the difference
+               is invisible (4:5 thumbnail at most 360 CSS px wide),
+               but the bytes drop ~15–20% which compounds across the
+               60+ cards rendered on the home page. */
+            src={thumb(vehicle.imageUrls[0], { width: 500, quality: 58 })}
             /* Responsive variants — phones get 360w (no point fetching
                a 500w image to render at 180 CSS px), tablets 500w,
                desktop 600w for the larger grid columns. Saves ~40-80
                KB per card on mobile. */
-            srcSet={`${thumb(vehicle.imageUrls[0], { width: 360, quality: 62 })} 360w, ${thumb(vehicle.imageUrls[0], { width: 500, quality: 65 })} 500w, ${thumb(vehicle.imageUrls[0], { width: 600, quality: 65 })} 600w`}
+            srcSet={`${thumb(vehicle.imageUrls[0], { width: 360, quality: 55 })} 360w, ${thumb(vehicle.imageUrls[0], { width: 500, quality: 58 })} 500w, ${thumb(vehicle.imageUrls[0], { width: 600, quality: 60 })} 600w`}
             sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 240px"
             alt={`${vehicle.make} ${vehicle.model}`}
-            loading="lazy"
+            /* Above-fold cards (first 4 per rail) eager-load so the
+               home page paints with real photos on first frame;
+               everything below the fold stays lazy. */
+            loading={priority ? "eager" : "lazy"}
+            fetchPriority={priority ? "high" : "auto"}
             decoding="async"
             width={500}
             height={625}
