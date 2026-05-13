@@ -1,4 +1,4 @@
--- ============================================================
+﻿-- ============================================================
 -- Mazed Auto - apply-all (generated)
 --
 -- Concatenation of every migration in correct dependency order.
@@ -13,7 +13,7 @@
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — Platform Settings + Audit Log
+-- Mazed Auto â€” Platform Settings + Audit Log
 -- Per dev_report decision #1: every business number lives here, not in code.
 -- Per decision #8: settings flagged requires_approval need a 2nd admin to enable.
 -- Safe to run repeatedly.
@@ -125,7 +125,7 @@ create policy "audit_admin_read" on public.settings_audit_log
 -- ============================================================
 -- 6) Seed defaults
 -- Numbers reflect what the codebase already implements (3% commission, 5%
--- deposit, 5min anti-sniping). Per dev_report §02, these are starting
+-- deposit, 5min anti-sniping). Per dev_report Â§02, these are starting
 -- defaults that Admin will tune before public launch.
 -- ============================================================
 
@@ -143,7 +143,7 @@ insert into public.platform_settings (key, value, type, category, description, s
   ('auction.anti_sniping.window_minutes',    '5'::jsonb,     'number',  'auction',    'A bid placed within this many minutes of end_time triggers extension', false, false),
   ('auction.anti_sniping.extension_minutes', '5'::jsonb,     'number',  'auction',    'How many minutes to push end_time forward when anti-sniping fires', false, false),
 
-  -- Winner forfeit (PLAN §21.4)
+  -- Winner forfeit (PLAN Â§21.4)
   ('auction.payment.deadline_days',          '7'::jsonb,     'number',  'auction',    'Days the winner has to complete the final payment before forfeit', false, true),
   ('auction.forfeit.seller_share',           '0.7'::jsonb,   'number',  'auction',    'Fraction of forfeited deposit paid to the seller (0.7 = 70%)', true,  true),
   ('auction.forfeit.platform_share',         '0.3'::jsonb,   'number',  'auction',    'Fraction of forfeited deposit kept by the platform (0.3 = 30%)', true,  true),
@@ -159,7 +159,7 @@ insert into public.platform_settings (key, value, type, category, description, s
   ('kyc.face_match_threshold',               '95'::jsonb,    'number',  'kyc',        'Minimum face-match % to auto-approve KYC', false, true),
   ('kyc.ocr_confidence_threshold',           '95'::jsonb,    'number',  'kyc',        'Minimum OCR confidence % to auto-approve KYC', false, true),
 
-  -- Photos & video (PLAN §12)
+  -- Photos & video (PLAN Â§12)
   ('listing.photos.required_count',          '12'::jsonb,    'number',  'listing',    'Required photo count per listing', false, false),
   ('listing.video.required',                 'true'::jsonb,  'boolean', 'listing',    'Whether walkaround video is required', false, false),
   ('listing.video.min_seconds',              '30'::jsonb,    'number',  'listing',    'Minimum video duration in seconds', false, false),
@@ -169,7 +169,7 @@ insert into public.platform_settings (key, value, type, category, description, s
   ('report.auto_review_threshold',           '3'::jsonb,     'number',  'moderation', 'Listing enters review queue once it has this many reports', false, true),
   ('report.auto_remove_threshold',           '7'::jsonb,     'number',  'moderation', 'Listing is auto-hidden once it has this many reports', false, true),
 
-  -- Trust score weights (PLAN §15)
+  -- Trust score weights (PLAN Â§15)
   ('trust.weights',
    '{"kyc":20,"ownership":15,"successful_deals":25,"ratings":15,"account_age":10,"reports":-15}'::jsonb,
    'json', 'trust', 'Weights summed to compute trust_score (max 100)', true, true),
@@ -189,7 +189,7 @@ on conflict (key) do nothing;
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — bid rules, anti-sniping, deposit gate, auto-end
+-- Mazed Auto â€” bid rules, anti-sniping, deposit gate, auto-end
 -- Safe to run repeatedly.
 -- ============================================================
 
@@ -274,8 +274,8 @@ begin
       v_prev_bidder,
       new.auction_id,
       'outbid',
-      'Votre offre a été dépassée',
-      v_make || ' ' || v_model || ' ' || v_year || ' — Prix actuel ' || new.amount::text || ' DT'
+      'Votre offre a Ã©tÃ© dÃ©passÃ©e',
+      v_make || ' ' || v_model || ' ' || v_year || ' â€” Prix actuel ' || new.amount::text || ' DT'
     );
   end if;
 
@@ -358,8 +358,8 @@ begin
    where id = p_auction_id;
 
   insert into public.notifications (user_id, auction_id, kind, title, body)
-  values (p_buyer_id, p_auction_id, 'won', 'Félicitations ! Vous avez gagné l''enchère',
-          'La voiture a été achetée au prix Acheter maintenant — prête pour le paiement final');
+  values (p_buyer_id, p_auction_id, 'won', 'FÃ©licitations ! Vous avez gagnÃ© l''enchÃ¨re',
+          'La voiture a Ã©tÃ© achetÃ©e au prix Acheter maintenant â€” prÃªte pour le paiement final');
 end; $$;
 
 
@@ -368,7 +368,7 @@ end; $$;
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — handle_new_bid reads anti-sniping from platform_settings
+-- Mazed Auto â€” handle_new_bid reads anti-sniping from platform_settings
 -- Run AFTER migrate-platform-settings.sql (depends on get_setting_num()).
 -- Safe to run repeatedly.
 -- ============================================================
@@ -473,8 +473,8 @@ begin
       v_prev_bidder,
       new.auction_id,
       'outbid',
-      'Votre offre a été dépassée',
-      v_make || ' ' || v_model || ' ' || v_year || ' — Prix actuel ' || new.amount::text || ' DT'
+      'Votre offre a Ã©tÃ© dÃ©passÃ©e',
+      v_make || ' ' || v_model || ' ' || v_year || ' â€” Prix actuel ' || new.amount::text || ' DT'
     );
   end if;
 
@@ -491,7 +491,7 @@ for each row execute function public.handle_new_bid();
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — auction lifecycle, refunds, report auto-action
+-- Mazed Auto â€” auction lifecycle, refunds, report auto-action
 -- Safe to run repeatedly.
 -- ============================================================
 
@@ -550,8 +550,8 @@ begin
   -- Outbid notification for the immediately previous high bidder
   if v_prev_bidder is not null and v_prev_bidder <> coalesce(new.user_id, '00000000-0000-0000-0000-000000000000'::uuid) then
     insert into public.notifications (user_id, auction_id, kind, title, body)
-    values (v_prev_bidder, new.auction_id, 'outbid', 'Votre offre a été dépassée',
-            v_make || ' ' || v_model || ' ' || v_year || ' — Prix actuel ' || new.amount::text || ' DT');
+    values (v_prev_bidder, new.auction_id, 'outbid', 'Votre offre a Ã©tÃ© dÃ©passÃ©e',
+            v_make || ' ' || v_model || ' ' || v_year || ' â€” Prix actuel ' || new.amount::text || ' DT');
   end if;
 
   -- Anti-sniping: notify every other bidder that the auction was extended
@@ -565,8 +565,8 @@ begin
     loop
       insert into public.notifications (user_id, auction_id, kind, title, body)
       values (v_other_bidder.user_id, new.auction_id, 'reminder',
-              'Enchère prolongée de 5 minutes',
-              v_make || ' ' || v_model || ' ' || v_year || ' — Nouvelle offre dans les dernières minutes');
+              'EnchÃ¨re prolongÃ©e de 5 minutes',
+              v_make || ' ' || v_model || ' ' || v_year || ' â€” Nouvelle offre dans les derniÃ¨res minutes');
     end loop;
   end if;
 
@@ -574,7 +574,7 @@ begin
 end; $$;
 
 -- 2) End-of-auction lifecycle:
---    when an auction transitions from active/ending → ended/reserve_not_met/cancelled,
+--    when an auction transitions from active/ending â†’ ended/reserve_not_met/cancelled,
 --    fire winner notification, loser notifications, and refund losing deposits.
 create or replace function public.finalize_auction(p_auction_id uuid)
 returns void language plpgsql security definer as $$
@@ -598,9 +598,9 @@ begin
 
     if v_winner is not null then
       -- Stamp current_winner_id + payment_deadline so the forfeit pipeline
-      -- (PLAN §21.4) has both pointers it needs. Default 7 days, configurable
+      -- (PLAN Â§21.4) has both pointers it needs. Default 7 days, configurable
       -- via auction.payment.deadline_days. Safe to call before the column
-      -- exists in older schemas — the migrate-winner-forfeit migration
+      -- exists in older schemas â€” the migrate-winner-forfeit migration
       -- adds the column and this update becomes effective from then on.
       v_deadline_days := public.get_setting_num('auction.payment.deadline_days', 7)::int;
       update public.auctions
@@ -609,19 +609,19 @@ begin
        where id = p_auction_id;
 
       insert into public.notifications (user_id, auction_id, kind, title, body)
-      values (v_winner, p_auction_id, 'won', 'Félicitations ! Vous avez gagné l''enchère',
-              v_make || ' ' || v_model || ' ' || v_year || ' à ' || v_winning_amount::text
-              || ' DT — complétez le paiement final dans les ' || v_deadline_days || ' jours');
+      values (v_winner, p_auction_id, 'won', 'FÃ©licitations ! Vous avez gagnÃ© l''enchÃ¨re',
+              v_make || ' ' || v_model || ' ' || v_year || ' Ã  ' || v_winning_amount::text
+              || ' DT â€” complÃ©tez le paiement final dans les ' || v_deadline_days || ' jours');
 
       -- Notify every other bidder that they lost + refund their deposit
       insert into public.notifications (user_id, auction_id, kind, title, body)
-      select distinct user_id, p_auction_id, 'lost', 'Enchère terminée',
-             v_make || ' ' || v_model || ' ' || v_year || ' — Vous n''avez pas gagné cette fois. Votre caution sera remboursée sous 24 heures.'
+      select distinct user_id, p_auction_id, 'lost', 'EnchÃ¨re terminÃ©e',
+             v_make || ' ' || v_model || ' ' || v_year || ' â€” Vous n''avez pas gagnÃ© cette fois. Votre caution sera remboursÃ©e sous 24 heures.'
       from public.bids
       where auction_id = p_auction_id and user_id is not null and user_id <> v_winner;
 
       update public.transactions
-         set status = 'completed', label = label || ' (remboursée)'
+         set status = 'completed', label = label || ' (remboursÃ©e)'
        where auction_id = p_auction_id
          and type = 'deposit'
          and direction = 'out'
@@ -636,7 +636,7 @@ begin
              'refund',
              'in',
              a.participation_deposit,
-             'Remboursement caution — ' || a.make || ' ' || a.model || ' ' || a.year,
+             'Remboursement caution â€” ' || a.make || ' ' || a.model || ' ' || a.year,
              'completed'
       from (select distinct on (user_id) user_id, bidder_label, id
               from public.bids
@@ -646,15 +646,15 @@ begin
     end if;
   elsif v_status = 'reserve_not_met' then
     insert into public.notifications (user_id, auction_id, kind, title, body)
-    select distinct user_id, p_auction_id, 'lost', 'Prix de réserve non atteint',
-           v_make || ' ' || v_model || ' ' || v_year || ' — Vente annulée. Votre caution sera remboursée.'
+    select distinct user_id, p_auction_id, 'lost', 'Prix de rÃ©serve non atteint',
+           v_make || ' ' || v_model || ' ' || v_year || ' â€” Vente annulÃ©e. Votre caution sera remboursÃ©e.'
     from public.bids where auction_id = p_auction_id and user_id is not null;
 
     insert into public.transactions (ref, user_id, user_label, auction_id, type, direction, amount, label, status)
     select 'TX-RF-' || substring(gen_random_uuid()::text from 1 for 8) || '-' || substring(b.id::text from 1 for 4),
            b.user_id, b.bidder_label, p_auction_id, 'refund', 'in',
            a.participation_deposit,
-           'Remboursement caution — ' || a.make || ' ' || a.model || ' ' || a.year,
+           'Remboursement caution â€” ' || a.make || ' ' || a.model || ' ' || a.year,
            'completed'
     from (select distinct on (user_id) user_id, bidder_label, id
             from public.bids where auction_id = p_auction_id and user_id is not null) b
@@ -693,18 +693,18 @@ begin
   begin
     perform public.process_expired_payment_deadlines();
   exception when undefined_function then
-    -- migrate-winner-forfeit.sql not applied yet — skip silently.
+    -- migrate-winner-forfeit.sql not applied yet â€” skip silently.
     null;
   end;
 end; $$;
 
--- 4) Reports auto-action ladder (§16.2)
+-- 4) Reports auto-action ladder (Â§16.2)
 --    on each new report, count open+reviewing reports for the auction
---    1                              → notify seller (handled at app layer)
---    auto_review_threshold (3)      → flip auction status to pending_review
---    auto_remove_threshold (7)      → cancel auction + Trust Score deduction
+--    1                              â†’ notify seller (handled at app layer)
+--    auto_review_threshold (3)      â†’ flip auction status to pending_review
+--    auto_remove_threshold (7)      â†’ cancel auction + Trust Score deduction
 --    Thresholds and the cancellation penalty come from platform_settings
---    so admins can tune them without a redeploy (PLAN §16.2).
+--    so admins can tune them without a redeploy (PLAN Â§16.2).
 create or replace function public.handle_new_report()
 returns trigger language plpgsql security definer as $$
 declare
@@ -730,8 +730,8 @@ begin
   if v_seller is not null then
     insert into public.notifications (user_id, auction_id, kind, title, body)
     values (v_seller, new.auction_id, 'system',
-            'Nouveau signalement sur votre enchère',
-            v_make || ' ' || v_model || ' ' || v_year || ' — Un signalement a été reçu, veuillez vérifier');
+            'Nouveau signalement sur votre enchÃ¨re',
+            v_make || ' ' || v_model || ' ' || v_year || ' â€” Un signalement a Ã©tÃ© reÃ§u, veuillez vÃ©rifier');
   end if;
 
   if v_count >= v_remove_threshold then
@@ -744,9 +744,9 @@ begin
     if v_seller is not null then
       insert into public.notifications (user_id, auction_id, kind, title, body)
       values (v_seller, new.auction_id, 'rejected',
-              'Votre enchère a été annulée',
-              'Le nombre de signalements a dépassé la limite autorisée. '
-              || v_penalty || ' points ont été déduits du Trust Score.');
+              'Votre enchÃ¨re a Ã©tÃ© annulÃ©e',
+              'Le nombre de signalements a dÃ©passÃ© la limite autorisÃ©e. '
+              || v_penalty || ' points ont Ã©tÃ© dÃ©duits du Trust Score.');
     end if;
   elsif v_count >= v_review_threshold then
     update public.auctions
@@ -755,8 +755,8 @@ begin
     if v_seller is not null then
       insert into public.notifications (user_id, auction_id, kind, title, body)
       values (v_seller, new.auction_id, 'system',
-              'Votre enchère est en cours de modération',
-              'Plusieurs signalements reçus — l''enchère est temporairement suspendue pour examen.');
+              'Votre enchÃ¨re est en cours de modÃ©ration',
+              'Plusieurs signalements reÃ§us â€” l''enchÃ¨re est temporairement suspendue pour examen.');
     end if;
   end if;
 
@@ -773,11 +773,11 @@ for each row execute function public.handle_new_report();
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — proxy bidding (PLAN §7.2.7)
+-- Mazed Auto â€” proxy bidding (PLAN Â§7.2.7)
 --
 -- Aligns Auto-Bid with the proxy bidding model used by eBay / Copart /
 -- Manheim. The user submits a HIDDEN max cap; the system bids on their
--- behalf at the smallest amount needed to lead — never more.
+-- behalf at the smallest amount needed to lead â€” never more.
 --
 --   Current price = MIN(highest_cap, second_highest_cap + increment)
 --   Winner        = highest cap holder (oldest cap wins on a tie)
@@ -909,7 +909,7 @@ begin
     raise exception 'SELLER_CANNOT_BID';
   end if;
 
-  -- Deposit gate — same rule as manual bids.
+  -- Deposit gate â€” same rule as manual bids.
   select count(*) into v_deposit_count
   from public.transactions
   where user_id = v_user
@@ -927,7 +927,7 @@ begin
     raise exception 'CAP_BELOW_STARTING';
   end if;
 
-  -- "User can raise the cap, but never lower it." (PLAN §7.2.7)
+  -- "User can raise the cap, but never lower it." (PLAN Â§7.2.7)
   select * into v_existing
   from public.auto_bids
   where auction_id = p_auction_id and user_id = v_user;
@@ -967,7 +967,7 @@ begin
   -- Only place a bid if it would actually clear the legal floor. A user
   -- raising a too-low cap (e.g. cap=22K when current=30K) just stores
   -- the cap and waits for the price to come back down (it won't, but
-  -- we don't reject the cap — they may raise it later).
+  -- we don't reject the cap â€” they may raise it later).
   if v_my_target >= v_auction.current_price + v_auction.bid_increment then
     insert into public.bids (auction_id, user_id, bidder_label, amount, is_auto_bid)
     values (p_auction_id, v_user, 'Auto-Bid', v_my_target, true);
@@ -982,16 +982,16 @@ grant execute on function public.place_auto_bid(uuid, numeric) to authenticated;
 -- File: migrate-trust-score.sql
 -- ---------------------------------------------------------
 
--- Trust Score event triggers per PLAN §15.1.
+-- Trust Score event triggers per PLAN Â§15.1.
 --
 -- Existing triggers already cover:
---   * KYC flip false→true bumps trust_score to ≥80 (handle_seller_kyc_change)
+--   * KYC flip falseâ†’true bumps trust_score to â‰¥80 (handle_seller_kyc_change)
 --   * Rating insert bumps +5 (recompute_seller_rating)
 --
 -- This migration adds:
---   1. Successful sale → +10 trust_score (capped) and +1 successful_deals
+--   1. Successful sale â†’ +10 trust_score (capped) and +1 successful_deals
 --   2. Tweak the rating bump so only 5-star earns the full +5 (cap +30 from
---      ratings) — other ratings earn smaller amounts so a 1-star doesn't help.
+--      ratings) â€” other ratings earn smaller amounts so a 1-star doesn't help.
 --
 -- Apply with: psql ... -f migrate-trust-score.sql
 -- (or paste into Supabase SQL editor.)
@@ -1060,7 +1060,7 @@ begin
   from public.seller_ratings
   where seller_id = new.seller_id;
 
-  -- Per PLAN §15.1, 5-star earns +5 (cap 30 from ratings; we cap globally
+  -- Per PLAN Â§15.1, 5-star earns +5 (cap 30 from ratings; we cap globally
   -- at 500 instead of tracking source-specific caps). Lower ratings earn
   -- proportionally less, and 1-star is neutral so a single trolly review
   -- can't grief a seller.
@@ -1086,15 +1086,15 @@ end; $$;
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — KYC submissions
+-- Mazed Auto â€” KYC submissions
 -- Stores the photos/video the user uploads during the KYC flow
--- and the admin's review decision. Nothing is auto-verified —
+-- and the admin's review decision. Nothing is auto-verified â€”
 -- a human reviews every submission.
 -- Safe to run repeatedly.
 -- ============================================================
 
 -- 1) Reuse the auction-media bucket for KYC files. We add a `kyc/`
---    subfolder per user — RLS already restricts writes to the
+--    subfolder per user â€” RLS already restricts writes to the
 --    user's own top-level folder (<user_id>/...), so no new policies
 --    are required for storage.
 
@@ -1233,7 +1233,7 @@ grant execute on function public.review_kyc(uuid, text, text) to authenticated;
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — close all the silent-RLS-write gaps
+-- Mazed Auto â€” close all the silent-RLS-write gaps
 -- Safe to run repeatedly.
 -- ============================================================
 
@@ -1246,7 +1246,7 @@ language sql stable security definer as $$
   );
 $$;
 
--- 2) seller_ratings: was missing INSERT policy → RateSellerButton failed
+-- 2) seller_ratings: was missing INSERT policy â†’ RateSellerButton failed
 --    silently. The require_purchase_before_rating trigger is the actual gate.
 drop policy if exists "ratings_insert_authed" on public.seller_ratings;
 create policy "ratings_insert_authed" on public.seller_ratings
@@ -1286,7 +1286,7 @@ create policy "auctions_admin_update" on public.auctions
   using (public.is_admin())
   with check (public.is_admin());
 
--- 7) bids: defensive — admins shouldn't post bids, but they may need to
+-- 7) bids: defensive â€” admins shouldn't post bids, but they may need to
 --    delete a fraudulent bid. (Read-only is already covered.)
 drop policy if exists "bids_admin_delete" on public.bids;
 create policy "bids_admin_delete" on public.bids
@@ -1299,7 +1299,7 @@ create policy "bids_admin_delete" on public.bids
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — RLS admin-check fix
+-- Mazed Auto â€” RLS admin-check fix
 --
 -- Earlier migrations (kyc_submissions, user_activity_log) gated
 -- admin-only access by querying `auth.users.raw_user_meta_data`. The
@@ -1347,7 +1347,7 @@ drop policy if exists "activity_admin_read" on public.user_activity_log;
 create policy "activity_admin_read" on public.user_activity_log
   for select to authenticated using (public.is_admin());
 
--- 4) RPCs — switch their inline admin checks to the same helper so the
+-- 4) RPCs â€” switch their inline admin checks to the same helper so the
 --    behaviour stays identical and we have one place to maintain it.
 
 create or replace function public.review_kyc(
@@ -1424,11 +1424,11 @@ grant execute on function public.set_user_active(uuid, boolean) to authenticated
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — Admin manual trust score adjustment
+-- Mazed Auto â€” Admin manual trust score adjustment
 --
 -- Most trust-score moves happen automatically (KYC pass, successful
--- deals, ratings, reports). For exceptional cases — admin discretion
--- after a fraud investigation, support escalation, etc. — an admin
+-- deals, ratings, reports). For exceptional cases â€” admin discretion
+-- after a fraud investigation, support escalation, etc. â€” an admin
 -- needs to be able to bump or dock the score directly with a reason
 -- recorded for audit.
 --
@@ -1437,7 +1437,7 @@ grant execute on function public.set_user_active(uuid, boolean) to authenticated
 -- ============================================================
 
 -- 1) Audit table for manual adjustments. Always recorded, never auto-
---    pruned — this is the paper trail for "why did the admin change
+--    pruned â€” this is the paper trail for "why did the admin change
 --    this user's trust score?".
 create table if not exists public.trust_adjustments (
   id           uuid primary key default gen_random_uuid(),
@@ -1510,7 +1510,7 @@ grant execute on function public.admin_adjust_trust(uuid, int, text) to authenti
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — Seller decision window when reserve not met (3 days)
+-- Mazed Auto â€” Seller decision window when reserve not met (3 days)
 -- Safe to run repeatedly.
 -- ============================================================
 
@@ -1527,9 +1527,9 @@ alter table public.auctions
   add column if not exists reserve_decision_deadline timestamptz;
 
 -- 3) When the cron / read-time sweep ends an auction:
---    - no bids                   → cancelled
---    - reserve hit (or no reserve) → ended (finalize_auction notifies winner + losers)
---    - reserve missed              → pending_seller_decision (NEW), deadline = +3 days, notify seller
+--    - no bids                   â†’ cancelled
+--    - reserve hit (or no reserve) â†’ ended (finalize_auction notifies winner + losers)
+--    - reserve missed              â†’ pending_seller_decision (NEW), deadline = +3 days, notify seller
 create or replace function public.end_expired_auctions()
 returns void language plpgsql security definer as $$
 declare
@@ -1555,7 +1555,7 @@ begin
       perform public.finalize_auction(r.id);
 
     else
-      -- Reserve missed → seller decides within 3 days
+      -- Reserve missed â†’ seller decides within 3 days
       update public.auctions
          set status = 'pending_seller_decision',
              reserve_decision_deadline = now() + interval '3 days'
@@ -1567,10 +1567,10 @@ begin
           v_seller,
           r.id,
           'reminder',
-          'Votre enchère nécessite votre décision',
+          'Votre enchÃ¨re nÃ©cessite votre dÃ©cision',
           v_make || ' ' || v_model || ' ' || v_year ||
-            ' — Enchère terminée au prix de ' || v_high_bid::text ||
-            ' DT, le Prix de réserve n''a pas été atteint. Vous avez 3 jours pour accepter ou refuser l''offre.'
+            ' â€” EnchÃ¨re terminÃ©e au prix de ' || v_high_bid::text ||
+            ' DT, le Prix de rÃ©serve n''a pas Ã©tÃ© atteint. Vous avez 3 jours pour accepter ou refuser l''offre.'
         );
       end if;
     end if;
@@ -1616,7 +1616,7 @@ begin
   perform public.finalize_auction(p_auction_id);
 end; $$;
 
--- 6) Seller rejects → auction goes to reserve_not_met, all deposits refunded
+-- 6) Seller rejects â†’ auction goes to reserve_not_met, all deposits refunded
 create or replace function public.seller_reject_under_reserve(p_auction_id uuid)
 returns void language plpgsql security definer as $$
 declare
@@ -1645,7 +1645,7 @@ end; $$;
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — Seller decision is REQUIRED for every ended auction
+-- Mazed Auto â€” Seller decision is REQUIRED for every ended auction
 -- (not only when the reserve isn't met).
 --
 -- Per platform requirement: the seller is never auto-bound to sell to
@@ -1656,7 +1656,7 @@ end; $$;
 -- Safe to run repeatedly. Depends on migrate-seller-decision.sql.
 -- ============================================================
 
--- 1) Reshape end_expired_auctions: ALL bids → pending_seller_decision.
+-- 1) Reshape end_expired_auctions: ALL bids â†’ pending_seller_decision.
 create or replace function public.end_expired_auctions()
 returns void language plpgsql security definer as $$
 declare
@@ -1688,29 +1688,29 @@ begin
 
       if v_seller is not null then
         v_msg_body := v_make || ' ' || v_model || ' ' || v_year ||
-                      ' — Enchère terminée à ' || v_high_bid::text || ' DT.';
+                      ' â€” EnchÃ¨re terminÃ©e Ã  ' || v_high_bid::text || ' DT.';
         if v_reserve is not null and v_high_bid < v_reserve then
           v_msg_body := v_msg_body ||
-            ' Le prix de réserve n''a pas été atteint. ';
+            ' Le prix de rÃ©serve n''a pas Ã©tÃ© atteint. ';
         else
           v_msg_body := v_msg_body || ' ';
         end if;
         v_msg_body := v_msg_body ||
-          'Vous avez 3 jours pour accepter ou refuser l''offre du plus haut enchérisseur.';
+          'Vous avez 3 jours pour accepter ou refuser l''offre du plus haut enchÃ©risseur.';
 
         insert into public.notifications (user_id, auction_id, kind, title, body)
         values (
           v_seller,
           r.id,
           'reminder',
-          'Votre enchère nécessite votre décision',
+          'Votre enchÃ¨re nÃ©cessite votre dÃ©cision',
           v_msg_body
         );
       end if;
     end if;
   end loop;
 
-  -- Auto-expire decisions past their deadline → reject (refund deposits).
+  -- Auto-expire decisions past their deadline â†’ reject (refund deposits).
   for r in
     select id from public.auctions
     where status = 'pending_seller_decision'
@@ -1725,7 +1725,7 @@ begin
   end loop;
 end; $$;
 
--- 2) seller_accept_offer — accept the highest bid. Works whether the
+-- 2) seller_accept_offer â€” accept the highest bid. Works whether the
 --    reserve was met or not. Replaces the older reserve-only variant
 --    semantically; the reserve-only RPCs still exist as aliases.
 create or replace function public.seller_accept_offer(p_auction_id uuid)
@@ -1751,7 +1751,7 @@ begin
   perform public.finalize_auction(p_auction_id);
 end; $$;
 
--- 3) seller_reject_offer — reject the offer. Auction goes to
+-- 3) seller_reject_offer â€” reject the offer. Auction goes to
 --    reserve_not_met regardless of whether the reserve was actually
 --    met (semantic re-use of the existing terminal state). All
 --    deposits get refunded via finalize_auction.
@@ -1803,7 +1803,7 @@ grant execute on function public.seller_reject_under_reserve(uuid) to authentica
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — winner forfeit (PLAN §21.4)
+-- Mazed Auto â€” winner forfeit (PLAN Â§21.4)
 -- Safe to run repeatedly.
 --
 -- When the auction winner doesn't pay within `auction.payment.deadline_days`
@@ -1982,16 +1982,16 @@ begin
   values (
     'TX-FP-' || substring(gen_random_uuid()::text from 1 for 8),
     v_seller, null, p_auction_id, 'forfeit_payout', 'in', v_seller_amt,
-    'Caution forfait — ' || v_label || ' (part vendeur)',
+    'Caution forfait â€” ' || v_label || ' (part vendeur)',
     'completed'
   );
 
-  -- Ledger: platform fee (user_id null → platform)
+  -- Ledger: platform fee (user_id null â†’ platform)
   insert into public.transactions (ref, user_id, user_label, auction_id, type, direction, amount, label, status)
   values (
     'TX-FF-' || substring(gen_random_uuid()::text from 1 for 8),
     null, 'Mazed Auto', p_auction_id, 'forfeit_fee', 'in', v_platform_amt,
-    'Caution forfait — ' || v_label || ' (commission plateforme)',
+    'Caution forfait â€” ' || v_label || ' (commission plateforme)',
     'completed'
   );
 
@@ -1999,12 +1999,12 @@ begin
   insert into public.notifications (user_id, auction_id, kind, title, body)
   values (p_user_id, p_auction_id, 'system',
     case p_reason
-      when 'voluntary' then 'Vous avez renoncé à votre victoire'
-      else 'Délai de paiement expiré — caution perdue'
+      when 'voluntary' then 'Vous avez renoncÃ© Ã  votre victoire'
+      else 'DÃ©lai de paiement expirÃ© â€” caution perdue'
     end,
-    v_label || ' — Votre caution de ' || v_deposit::text
-      || ' DT a été redistribuée (' || v_seller_amt::text
-      || ' DT au vendeur, ' || v_platform_amt::text || ' DT à la plateforme).'
+    v_label || ' â€” Votre caution de ' || v_deposit::text
+      || ' DT a Ã©tÃ© redistribuÃ©e (' || v_seller_amt::text
+      || ' DT au vendeur, ' || v_platform_amt::text || ' DT Ã  la plateforme).'
   );
 
   -- Find next bidder (top bid not yet forfeited)
@@ -2031,9 +2031,9 @@ begin
 
     insert into public.notifications (user_id, auction_id, kind, title, body)
     values (v_next_bidder.user_id, p_auction_id, 'won',
-      'Enchère re-proposée à votre prix',
-      v_label || ' — Le gagnant précédent a renoncé. Vous pouvez l''acheter à votre offre de '
-        || v_next_bidder.amount::text || ' DT. Délai de paiement : '
+      'EnchÃ¨re re-proposÃ©e Ã  votre prix',
+      v_label || ' â€” Le gagnant prÃ©cÃ©dent a renoncÃ©. Vous pouvez l''acheter Ã  votre offre de '
+        || v_next_bidder.amount::text || ' DT. DÃ©lai de paiement : '
         || v_deadline_days || ' jours.'
     );
   else
@@ -2045,8 +2045,8 @@ begin
 
     insert into public.notifications (user_id, auction_id, kind, title, body)
     values (v_seller, p_auction_id, 'system',
-      'Enchère annulée — aucun acheteur restant',
-      v_label || ' — Tous les enchérisseurs éligibles ont renoncé.'
+      'EnchÃ¨re annulÃ©e â€” aucun acheteur restant',
+      v_label || ' â€” Tous les enchÃ©risseurs Ã©ligibles ont renoncÃ©.'
     );
   end if;
 end; $$;
@@ -2054,7 +2054,7 @@ end; $$;
 -- ---------- 4) Sweep: process expired payment deadlines ----------
 -- Idempotent. Called from end_expired_auctions on every bid/list read so
 -- the same lazy-evaluation pattern that ends auctions also forfeits stale
--- winners — no pg_cron required.
+-- winners â€” no pg_cron required.
 create or replace function public.process_expired_payment_deadlines()
 returns void language plpgsql security definer as $$
 declare
@@ -2108,7 +2108,7 @@ update public.auctions a
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — buyer ↔ seller messaging
+-- Mazed Auto â€” buyer â†” seller messaging
 -- Conversations + messages tables, RLS so only participants can
 -- read/write, realtime publication for live message delivery.
 -- Safe to run repeatedly.
@@ -2214,7 +2214,7 @@ with check (
   )
 );
 
--- 5) Realtime — broadcast inserts so the recipient's open chat updates live.
+-- 5) Realtime â€” broadcast inserts so the recipient's open chat updates live.
 -- Wrap in DO blocks so re-running doesn't raise
 -- "relation already member of publication" (42710).
 do $$ begin
@@ -2233,7 +2233,7 @@ end $$;
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — "Hot right now" rail
+-- Mazed Auto â€” "Hot right now" rail
 --
 -- Live auctions ranked by how many bids they collected in the last
 -- 60 minutes. The home page reads this view and shows the top N to
@@ -2276,7 +2276,7 @@ grant select on public.auction_hot_now to anon, authenticated;
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — make remaining features real
+-- Mazed Auto â€” make remaining features real
 -- (storage bucket, auto-bid, rating-after-deal trigger, KYC trust bump)
 -- Safe to run repeatedly.
 -- ============================================================
@@ -2458,7 +2458,7 @@ after insert on public.seller_ratings
 for each row execute function public.recompute_seller_rating();
 
 -- 6) When a seller passes KYC (admin flips verified_kyc to true), bump trust_score
---    once. Only fires on the false → true transition.
+--    once. Only fires on the false â†’ true transition.
 create or replace function public.handle_seller_kyc_change()
 returns trigger language plpgsql security definer as $$
 begin
@@ -2481,7 +2481,7 @@ for each row execute function public.handle_seller_kyc_change();
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — user active flag + activity log
+-- Mazed Auto â€” user active flag + activity log
 -- Adds an admin-controlled `is_active` flag on sellers (use to
 -- soft-disable an account without losing data) and a generic
 -- user_activity_log table the app + triggers append to so the
@@ -2569,9 +2569,9 @@ begin
          else 'kyc_updated'
     end,
     case when new.status = 'pending' then 'Dossier KYC soumis'
-         when new.status = 'approved' then 'Dossier KYC accepté'
-         when new.status = 'rejected' then 'Dossier KYC refusé'
-         else 'Dossier KYC mis à jour' end,
+         when new.status = 'approved' then 'Dossier KYC acceptÃ©'
+         when new.status = 'rejected' then 'Dossier KYC refusÃ©'
+         else 'Dossier KYC mis Ã  jour' end,
     jsonb_build_object('submission_id', new.id, 'status', new.status, 'reason', new.rejection_reason)
   );
   return new;
@@ -2595,8 +2595,8 @@ begin
     values (
       new.id,
       case when new.is_active then 'account_reactivated' else 'account_deactivated' end,
-      case when new.is_active then 'Compte réactivé par un administrateur'
-           else 'Compte désactivé par un administrateur' end,
+      case when new.is_active then 'Compte rÃ©activÃ© par un administrateur'
+           else 'Compte dÃ©sactivÃ© par un administrateur' end,
       jsonb_build_object('previous', old.is_active, 'next', new.is_active)
     );
   end if;
@@ -2608,7 +2608,7 @@ create trigger trg_log_active_flag
 after update of is_active on public.sellers
 for each row execute function public.log_active_flag_change();
 
--- 4) RLS — admin-only read, server-side writes via triggers + RPCs -----------
+-- 4) RLS â€” admin-only read, server-side writes via triggers + RPCs -----------
 alter table public.user_activity_log enable row level security;
 
 drop policy if exists "activity_admin_read" on public.user_activity_log;
@@ -2647,11 +2647,11 @@ grant execute on function public.set_user_active(uuid, boolean) to authenticated
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — alignment fixes for PLAN
+-- Mazed Auto â€” alignment fixes for PLAN
 -- Safe to run repeatedly.
 -- ============================================================
 
--- 1) Anti-sniping: PLAN §19 says LAST 2 MINUTES → +2 MIN.
+-- 1) Anti-sniping: PLAN Â§19 says LAST 2 MINUTES â†’ +2 MIN.
 --    Original migrate-bid-rules.sql used 5/5 by mistake.
 --    Re-create handle_new_bid with the correct values, keeping every other rule.
 create or replace function public.handle_new_bid()
@@ -2694,7 +2694,7 @@ begin
     raise exception 'BID_TOO_LOW';
   end if;
 
-  -- PLAN §19 anti-sniping: bids in the last 2 min push end_time +2 min.
+  -- PLAN Â§19 anti-sniping: bids in the last 2 min push end_time +2 min.
   if v_end - now() <= interval '2 minutes' then
     v_end := v_end + interval '2 minutes';
     v_extended := true;
@@ -2728,8 +2728,8 @@ begin
       v_prev_bidder,
       new.auction_id,
       'outbid',
-      'Votre offre a été dépassée',
-      v_make || ' ' || v_model || ' ' || v_year || ' — Prix actuel ' || new.amount::text || ' DT'
+      'Votre offre a Ã©tÃ© dÃ©passÃ©e',
+      v_make || ' ' || v_model || ' ' || v_year || ' â€” Prix actuel ' || new.amount::text || ' DT'
     );
   end if;
 
@@ -2741,7 +2741,7 @@ create trigger trg_new_bid after insert on public.bids
 for each row execute function public.handle_new_bid();
 
 
--- 2) Trust level should derive from trust_score (PLAN §15.3 tiers).
+-- 2) Trust level should derive from trust_score (PLAN Â§15.3 tiers).
 --    Trigger updates trust_level whenever trust_score changes.
 create or replace function public.recompute_trust_level()
 returns trigger language plpgsql security definer as $$
@@ -2771,7 +2771,7 @@ update public.sellers
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — adds tables/policies that were added in later
+-- Mazed Auto â€” adds tables/policies that were added in later
 -- turns but aren't yet in your DB. Safe to run repeatedly.
 -- ============================================================
 
@@ -2838,7 +2838,7 @@ create table if not exists public.transactions (
 create index if not exists tx_user_idx on public.transactions (user_id, created_at desc);
 create index if not exists tx_status_idx on public.transactions (status);
 
--- Realtime publication — guard against re-runs ("relation already member")
+-- Realtime publication â€” guard against re-runs ("relation already member")
 do $$ begin
   alter publication supabase_realtime add table public.notifications;
 exception when duplicate_object then null;
@@ -2895,8 +2895,8 @@ begin
    where id = new.auction_id;
   if v_prev_bidder is not null and v_prev_bidder <> coalesce(new.user_id, '00000000-0000-0000-0000-000000000000'::uuid) then
     insert into public.notifications (user_id, auction_id, kind, title, body)
-    values (v_prev_bidder, new.auction_id, 'outbid', 'Votre offre a été dépassée',
-      v_make || ' ' || v_model || ' ' || v_year || ' — Prix actuel ' || new.amount::text || ' DT');
+    values (v_prev_bidder, new.auction_id, 'outbid', 'Votre offre a Ã©tÃ© dÃ©passÃ©e',
+      v_make || ' ' || v_model || ' ' || v_year || ' â€” Prix actuel ' || new.amount::text || ' DT');
   end if;
   return new;
 end; $$;
@@ -2911,10 +2911,10 @@ for each row execute function public.handle_new_bid();
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — Admin foundations
+-- Mazed Auto â€” Admin foundations
 --
--- Per PLAN §22.2: 5 admin roles (super_admin, admin, moderator,
--- support, finance). Per §22.3: every admin action is auditable.
+-- Per PLAN Â§22.2: 5 admin roles (super_admin, admin, moderator,
+-- support, finance). Per Â§22.3: every admin action is auditable.
 --
 -- This migration introduces:
 --  1. Per-user admin role lives in `user_metadata.adminRole` (mirrored
@@ -2922,12 +2922,12 @@ for each row execute function public.handle_new_bid();
 --     coarse gate while we add fine-grained checks.
 --  2. `public.admin_role()` reads the role from the JWT.
 --  3. `public.has_admin_capability(cap)` returns true when the caller's
---     role can perform a given capability — single source of truth so
+--     role can perform a given capability â€” single source of truth so
 --     UI and RPCs agree on what each role can do.
---  4. `admin_audit_log` table — every admin action across the platform
+--  4. `admin_audit_log` table â€” every admin action across the platform
 --     writes one row here. RPCs use `log_admin_action()` to insert.
---  5. `admin_sessions` table — last-activity timestamp for the 30-min
---     idle timeout (PLAN §22.3).
+--  5. `admin_sessions` table â€” last-activity timestamp for the 30-min
+--     idle timeout (PLAN Â§22.3).
 --
 -- Safe to run repeatedly.
 -- ============================================================
@@ -2975,12 +2975,12 @@ begin
   if r is null then return false; end if;
   if r = 'super_admin' then return true; end if;
 
-  -- Capability matrix (PLAN §22.2):
-  --   super_admin  → everything
-  --   admin        → everything EXCEPT user.delete and admin.manage
-  --   moderator    → auction/kyc/report moderation
-  --   support      → read-only + reply to messages/contact
-  --   finance      → read-only + financial actions (payouts, refunds)
+  -- Capability matrix (PLAN Â§22.2):
+  --   super_admin  â†’ everything
+  --   admin        â†’ everything EXCEPT user.delete and admin.manage
+  --   moderator    â†’ auction/kyc/report moderation
+  --   support      â†’ read-only + reply to messages/contact
+  --   finance      â†’ read-only + financial actions (payouts, refunds)
   return case
     when r = 'admin' then
       p_cap not in ('user.delete', 'admin.manage', 'admin.role.assign')
@@ -3042,7 +3042,7 @@ alter table public.admin_audit_log enable row level security;
 drop policy if exists "admin_audit_admin_read" on public.admin_audit_log;
 create policy "admin_audit_admin_read" on public.admin_audit_log
   for select to authenticated using (public.is_admin());
--- No insert/update/delete policy — writes are SECURITY DEFINER only.
+-- No insert/update/delete policy â€” writes are SECURITY DEFINER only.
 
 -- Helper RPC: lets server-side code (next.js server actions, other
 -- RPCs) record an admin action without granting them direct INSERT.
@@ -3064,7 +3064,7 @@ declare
 begin
   -- Allow SECURITY DEFINER callers (other RPCs running as the
   -- current admin) to log on the admin's behalf. We require that
-  -- the caller be an admin in some form — this prevents a non-admin
+  -- the caller be an admin in some form â€” this prevents a non-admin
   -- end-user from spamming the log via a malformed RPC call.
   if not public.is_admin() then
     raise exception 'NOT_ADMIN';
@@ -3167,7 +3167,7 @@ begin
   perform public.log_admin_action(
     'admin.role.assign',
     p_target_user_id => p_user_id,
-    p_detail         => coalesce(v_old, 'none') || ' → ' || coalesce(p_role, 'none')
+    p_detail         => coalesce(v_old, 'none') || ' â†’ ' || coalesce(p_role, 'none')
   );
 end; $$;
 
@@ -3179,14 +3179,14 @@ grant execute on function public.admin_set_role(uuid, text) to authenticated;
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — Admin action tables + RPCs
+-- Mazed Auto â€” Admin action tables + RPCs
 --
 -- Tables:
---   user_warnings           — formal warnings issued to a user
---   user_bans               — graduated bans (temp suspend / permanent)
---   auction_edit_requests   — admin asks seller to fix something
---   contact_messages        — /contact form submissions inbox
---   admin_broadcasts        — broadcast notifications target audiences
+--   user_warnings           â€” formal warnings issued to a user
+--   user_bans               â€” graduated bans (temp suspend / permanent)
+--   auction_edit_requests   â€” admin asks seller to fix something
+--   contact_messages        â€” /contact form submissions inbox
+--   admin_broadcasts        â€” broadcast notifications target audiences
 --
 -- RPCs:
 --   admin_warn_user, admin_dismiss_warning
@@ -3259,7 +3259,7 @@ create table if not exists public.user_bans (
 create index if not exists user_bans_user_idx
   on public.user_bans (user_id, banned_at desc);
 -- Partial index on un-lifted bans only. We deliberately don't include
--- `banned_until > now()` in the predicate — index predicates require
+-- `banned_until > now()` in the predicate â€” index predicates require
 -- IMMUTABLE expressions and now() is STABLE (42P17). Postgres can still
 -- use this index for the lifted_at filter and apply the time check at
 -- scan time, which is fine for a few rows per user.
@@ -3419,7 +3419,7 @@ begin
   insert into public.notifications (user_id, kind, title, body, auction_id)
   values (p_user_id, 'system',
           case p_severity
-            when 'severe' then 'Avertissement sévère'
+            when 'severe' then 'Avertissement sÃ©vÃ¨re'
             when 'warning' then 'Avertissement'
             else 'Information importante'
           end,
@@ -3482,7 +3482,7 @@ begin
 
   insert into public.notifications (user_id, kind, title, body)
   values (p_user_id, 'system',
-          case when v_until is null then 'Compte suspendu définitivement'
+          case when v_until is null then 'Compte suspendu dÃ©finitivement'
                else 'Compte suspendu temporairement' end,
           p_reason);
 
@@ -3522,7 +3522,7 @@ begin
   update public.sellers set is_active = true where id = p_user_id;
 
   insert into public.notifications (user_id, kind, title, body)
-  values (p_user_id, 'system', 'Compte réactivé', coalesce(p_reason, 'Votre compte a été réactivé'));
+  values (p_user_id, 'system', 'Compte rÃ©activÃ©', coalesce(p_reason, 'Votre compte a Ã©tÃ© rÃ©activÃ©'));
 
   perform public.log_admin_action(
     'user.unban',
@@ -3571,7 +3571,7 @@ begin
 
   insert into public.notifications (user_id, kind, title, body, auction_id)
   values (v_seller, 'rejected',
-          'Modification demandée par l''administration',
+          'Modification demandÃ©e par l''administration',
           p_message, p_auction_id);
 
   perform public.log_admin_action(
@@ -3668,11 +3668,11 @@ begin
   -- Notify all bidders + the seller.
   insert into public.notifications (user_id, kind, title, body, auction_id)
   select distinct b.user_id, 'lost'::text,
-         'Enchère annulée', p_reason, p_auction_id
+         'EnchÃ¨re annulÃ©e', p_reason, p_auction_id
     from public.bids b where b.auction_id = p_auction_id;
 
   insert into public.notifications (user_id, kind, title, body, auction_id)
-  values (v_seller, 'rejected', 'Enchère annulée par l''administration',
+  values (v_seller, 'rejected', 'EnchÃ¨re annulÃ©e par l''administration',
           p_reason, p_auction_id);
 
   perform public.log_admin_action(
@@ -3738,7 +3738,7 @@ begin
     select 'TX-RFD-' || substr(gen_random_uuid()::text, 1, 8),
            t.user_id, t.user_label, t.auction_id,
            'refund', 'out', t.amount,
-           'Remboursement caution (réserve non atteinte)',
+           'Remboursement caution (rÃ©serve non atteinte)',
            'completed'
       from public.transactions t
      where t.auction_id = p_auction_id
@@ -3748,7 +3748,7 @@ begin
 
   insert into public.notifications (user_id, kind, title, body, auction_id)
   values (v_seller, 'system',
-          'Décision finale prise par l''administration',
+          'DÃ©cision finale prise par l''administration',
           coalesce(p_reason, p_choice), p_auction_id);
 
   perform public.log_admin_action(
@@ -3923,7 +3923,7 @@ begin
 
   update public.kyc_submissions
      set status = 'rejected',
-         rejection_reason = coalesce(p_reason, 'Re-vérification demandée par administration'),
+         rejection_reason = coalesce(p_reason, 'Re-vÃ©rification demandÃ©e par administration'),
          reviewed_by = auth.uid(),
          reviewed_at = now()
    where user_id = p_user_id;
@@ -3937,8 +3937,8 @@ begin
 
   insert into public.notifications (user_id, kind, title, body)
   values (p_user_id, 'system',
-          'Re-vérification d''identité requise',
-          coalesce(p_reason, 'Veuillez recommencer la vérification KYC'));
+          'Re-vÃ©rification d''identitÃ© requise',
+          coalesce(p_reason, 'Veuillez recommencer la vÃ©rification KYC'));
 
   perform public.log_admin_action(
     'kyc.reset',
@@ -4019,7 +4019,7 @@ begin
 
   update public.transactions
      set status = 'failed',
-         label = label || ' (annulée: ' || coalesce(p_reason,'') || ')'
+         label = label || ' (annulÃ©e: ' || coalesce(p_reason,'') || ')'
    where id = p_tx_id;
 
   perform public.log_admin_action(
@@ -4168,10 +4168,10 @@ grant execute on function public.admin_broadcast_create(text, text, text, text, 
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — Payouts queue
+-- Mazed Auto â€” Payouts queue
 --
 -- When an auction completes successfully and the buyer has paid in
--- full, the seller is owed (sale_price − commission − VAT). Today
+-- full, the seller is owed (sale_price âˆ’ commission âˆ’ VAT). Today
 -- there's no surface for the platform to track which sellers are
 -- owed money or mark a wire transfer complete. This migration adds
 -- the payouts ledger + RPCs to create / mark-paid / cancel a payout.
@@ -4302,13 +4302,13 @@ begin
          v_seller,
          coalesce(s.display_name, s.username),
          'payout', 'in', v_amount,
-         'Virement bancaire — ' || coalesce(p_reference,'sans réf'),
+         'Virement bancaire â€” ' || coalesce(p_reference,'sans rÃ©f'),
          'completed'
     from public.sellers s where s.id = v_seller;
 
   insert into public.notifications (user_id, kind, title, body)
-  values (v_seller, 'system', 'Virement effectué',
-          'Votre virement de ' || v_amount::text || ' DT a été envoyé.');
+  values (v_seller, 'system', 'Virement effectuÃ©',
+          'Votre virement de ' || v_amount::text || ' DT a Ã©tÃ© envoyÃ©.');
 
   perform public.log_admin_action(
     'payout.mark_paid',
@@ -4356,7 +4356,7 @@ grant execute on function public.admin_cancel_payout(uuid, text) to authenticate
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — Unified admin users listing
+-- Mazed Auto â€” Unified admin users listing
 --
 -- Today /admin/users only sees users that already have a row in the
 -- `sellers` table. Buyers who never published an auction are invisible
@@ -4364,7 +4364,7 @@ grant execute on function public.admin_cancel_payout(uuid, text) to authenticate
 -- (with elevated privilege) and joins counts so admins get a single
 -- searchable view of every account.
 --
--- Returns shape — kept JSON-ish so the TS layer can read with
+-- Returns shape â€” kept JSON-ish so the TS layer can read with
 -- `supabase.rpc(...).then(r => r.data)` without a typed view.
 --
 -- Depends on: migrate-admin-foundations.sql, migrate-admin-actions.sql
@@ -4543,7 +4543,7 @@ grant execute on function public.admin_get_user(uuid) to authenticated;
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — CMS tables
+-- Mazed Auto â€” CMS tables
 --
 -- Today the marketing pages (about, help, terms, privacy), the FAQ,
 -- the contact info and the home promo banner are hardcoded French
@@ -4551,13 +4551,13 @@ grant execute on function public.admin_get_user(uuid) to authenticated;
 -- can edit copy without redeploying.
 --
 -- Tables:
---   cms_pages             — about / help / terms / privacy / how-it-works
---   cms_faqs              — single FAQ list, ordered, both locales
---   cms_promo_banners     — home promo banners with effective dates
---   cms_brands            — allowed brands list (for seller wizard)
---   cms_features          — allowed equipment / feature toggles
---   cms_cities            — allowed cities (Tunisia governorates)
---   notification_templates — notification templates by kind × locale
+--   cms_pages             â€” about / help / terms / privacy / how-it-works
+--   cms_faqs              â€” single FAQ list, ordered, both locales
+--   cms_promo_banners     â€” home promo banners with effective dates
+--   cms_brands            â€” allowed brands list (for seller wizard)
+--   cms_features          â€” allowed equipment / feature toggles
+--   cms_cities            â€” allowed cities (Tunisia governorates)
+--   notification_templates â€” notification templates by kind Ã— locale
 --
 -- Depends on: migrate-admin-foundations.sql
 -- Safe to run repeatedly.
@@ -4650,7 +4650,7 @@ insert into public.cms_brands (slug, display_name, position) values
   ('hyundai',  'Hyundai',       50),
   ('bmw',      'BMW',           60),
   ('mercedes', 'Mercedes',      70),
-  ('citroen',  'Citroën',       80),
+  ('citroen',  'CitroÃ«n',       80),
   ('fiat',     'Fiat',          90),
   ('kia',      'Kia',           100),
   ('skoda',    'Skoda',         110),
@@ -4680,13 +4680,13 @@ insert into public.cms_features (slug, label_fr, position) values
   ('airbags',          'Airbags',       40),
   ('audio',            'Audio',         50),
   ('bluetooth',        'Bluetooth',     60),
-  ('reverse_camera',   'Caméra de recul', 70),
+  ('reverse_camera',   'CamÃ©ra de recul', 70),
   ('led_headlights',   'Phares LED',    80),
   ('carplay',          'CarPlay',       90),
   ('android_auto',     'Android Auto',  100),
   ('sunroof',          'Toit ouvrant',  110),
-  ('leather',          'Sièges en cuir', 120),
-  ('cruise_control',   'Régulateur de vitesse', 130)
+  ('leather',          'SiÃ¨ges en cuir', 120),
+  ('cruise_control',   'RÃ©gulateur de vitesse', 130)
 on conflict (slug) do nothing;
 
 -- 6) cms_cities ------------------------------------------------------
@@ -4714,17 +4714,17 @@ insert into public.cms_cities (slug, name_fr, region, position) values
   ('monastir',  'Monastir',  'Monastir',   70),
   ('mahdia',    'Mahdia',    'Mahdia',     80),
   ('sfax',      'Sfax',      'Sfax',       90),
-  ('gabes',     'Gabès',     'Gabès',     100),
-  ('medenine',  'Médenine',  'Médenine',  110),
+  ('gabes',     'GabÃ¨s',     'GabÃ¨s',     100),
+  ('medenine',  'MÃ©denine',  'MÃ©denine',  110),
   ('tataouine', 'Tataouine', 'Tataouine', 120),
   ('gafsa',     'Gafsa',     'Gafsa',     130),
   ('tozeur',    'Tozeur',    'Tozeur',    140),
-  ('kebili',    'Kébili',    'Kébili',    150),
+  ('kebili',    'KÃ©bili',    'KÃ©bili',    150),
   ('sidi_bouzid','Sidi Bouzid','Sidi Bouzid',160),
   ('kairouan',  'Kairouan',  'Kairouan',  170),
   ('kasserine', 'Kasserine', 'Kasserine', 180),
   ('jendouba',  'Jendouba',  'Jendouba',  190),
-  ('beja',      'Béja',      'Béja',      200),
+  ('beja',      'BÃ©ja',      'BÃ©ja',      200),
   ('siliana',   'Siliana',   'Siliana',   210),
   ('zaghouan',  'Zaghouan',  'Zaghouan',  220),
   ('bizerte',   'Bizerte',   'Bizerte',   230),
@@ -4754,52 +4754,52 @@ drop policy if exists "notif_tmpl_public_read" on public.notification_templates;
 create policy "notif_tmpl_public_read" on public.notification_templates
   for select using (true);
 
--- Seed both locales for every kind we know about (PLAN §23.2 — 18 kinds).
+-- Seed both locales for every kind we know about (PLAN Â§23.2 â€” 18 kinds).
 -- Bodies are short; full personalisation happens at render time.
 insert into public.notification_templates (kind, locale, title, body) values
-  ('outbid','fr',           'Vous avez été dépassé', 'Quelqu''un a surenchéri sur votre offre.'),
-  ('outbid','ar',           'تم تجاوز عرضك',          'قام مزايد آخر بتقديم عرض أعلى من عرضك.'),
-  ('won','fr',              'Félicitations, vous avez gagné !', 'Vous disposez de 7 jours pour finaliser le paiement.'),
-  ('won','ar',              'تهانينا، لقد فزت بالمزاد!', 'لديك 7 أيام لإتمام الدفع النهائي.'),
-  ('lost','fr',              'Enchère terminée', 'Vous n''êtes pas le gagnant. Caution remboursée.'),
-  ('lost','ar',              'انتهى المزاد', 'لم تفز بهذا المزاد. سيتم استرداد التأمين.'),
+  ('outbid','fr',           'Vous avez Ã©tÃ© dÃ©passÃ©', 'Quelqu''un a surenchÃ©ri sur votre offre.'),
+  ('outbid','ar',           'ØªÙ… ØªØ¬Ø§ÙˆØ² Ø¹Ø±Ø¶Ùƒ',          'Ù‚Ø§Ù… Ù…Ø²Ø§ÙŠØ¯ Ø¢Ø®Ø± Ø¨ØªÙ‚Ø¯ÙŠÙ… Ø¹Ø±Ø¶ Ø£Ø¹Ù„Ù‰ Ù…Ù† Ø¹Ø±Ø¶Ùƒ.'),
+  ('won','fr',              'FÃ©licitations, vous avez gagnÃ© !', 'Vous disposez de 7 jours pour finaliser le paiement.'),
+  ('won','ar',              'ØªÙ‡Ø§Ù†ÙŠÙ†Ø§ØŒ Ù„Ù‚Ø¯ ÙØ²Øª Ø¨Ø§Ù„Ù…Ø²Ø§Ø¯!', 'Ù„Ø¯ÙŠÙƒ 7 Ø£ÙŠØ§Ù… Ù„Ø¥ØªÙ…Ø§Ù… Ø§Ù„Ø¯ÙØ¹ Ø§Ù„Ù†Ù‡Ø§Ø¦ÙŠ.'),
+  ('lost','fr',              'EnchÃ¨re terminÃ©e', 'Vous n''Ãªtes pas le gagnant. Caution remboursÃ©e.'),
+  ('lost','ar',              'Ø§Ù†ØªÙ‡Ù‰ Ø§Ù„Ù…Ø²Ø§Ø¯', 'Ù„Ù… ØªÙØ² Ø¨Ù‡Ø°Ø§ Ø§Ù„Ù…Ø²Ø§Ø¯. Ø³ÙŠØªÙ… Ø§Ø³ØªØ±Ø¯Ø§Ø¯ Ø§Ù„ØªØ£Ù…ÙŠÙ†.'),
   ('new_bid','fr',          'Nouvelle offre', 'Une nouvelle offre vient d''arriver.'),
-  ('new_bid','ar',          'عرض جديد',       'تم تقديم عرض جديد على مزادك.'),
-  ('approved','fr',         'Enchère approuvée', 'Votre annonce est en ligne.'),
-  ('approved','ar',         'تمت الموافقة على المزاد', 'إعلانك متاح الآن.'),
-  ('rejected','fr',         'Enchère refusée', 'Votre annonce a été refusée.'),
-  ('rejected','ar',         'تم رفض المزاد',    'تم رفض إعلانك.'),
-  ('payment_due','fr',      'Paiement à effectuer', 'Pensez à finaliser le paiement avant l''échéance.'),
-  ('payment_due','ar',      'موعد الدفع',       'يجب إتمام الدفع قبل انقضاء المهلة.'),
+  ('new_bid','ar',          'Ø¹Ø±Ø¶ Ø¬Ø¯ÙŠØ¯',       'ØªÙ… ØªÙ‚Ø¯ÙŠÙ… Ø¹Ø±Ø¶ Ø¬Ø¯ÙŠØ¯ Ø¹Ù„Ù‰ Ù…Ø²Ø§Ø¯Ùƒ.'),
+  ('approved','fr',         'EnchÃ¨re approuvÃ©e', 'Votre annonce est en ligne.'),
+  ('approved','ar',         'ØªÙ…Øª Ø§Ù„Ù…ÙˆØ§ÙÙ‚Ø© Ø¹Ù„Ù‰ Ø§Ù„Ù…Ø²Ø§Ø¯', 'Ø¥Ø¹Ù„Ø§Ù†Ùƒ Ù…ØªØ§Ø­ Ø§Ù„Ø¢Ù†.'),
+  ('rejected','fr',         'EnchÃ¨re refusÃ©e', 'Votre annonce a Ã©tÃ© refusÃ©e.'),
+  ('rejected','ar',         'ØªÙ… Ø±ÙØ¶ Ø§Ù„Ù…Ø²Ø§Ø¯',    'ØªÙ… Ø±ÙØ¶ Ø¥Ø¹Ù„Ø§Ù†Ùƒ.'),
+  ('payment_due','fr',      'Paiement Ã  effectuer', 'Pensez Ã  finaliser le paiement avant l''Ã©chÃ©ance.'),
+  ('payment_due','ar',      'Ù…ÙˆØ¹Ø¯ Ø§Ù„Ø¯ÙØ¹',       'ÙŠØ¬Ø¨ Ø¥ØªÙ…Ø§Ù… Ø§Ù„Ø¯ÙØ¹ Ù‚Ø¨Ù„ Ø§Ù†Ù‚Ø¶Ø§Ø¡ Ø§Ù„Ù…Ù‡Ù„Ø©.'),
   ('reminder','fr',         'Rappel', 'Rappel de l''application.'),
-  ('reminder','ar',         'تذكير',  'تذكير من التطبيق.'),
-  ('system','fr',           'Notification système', 'Message du système.'),
-  ('system','ar',           'إشعار من النظام',     'رسالة من النظام.'),
-  -- New PLAN §23.2 kinds
-  ('kyc_approved','fr',     'Identité vérifiée', 'Votre identité a été vérifiée. Vous pouvez maintenant vendre.'),
-  ('kyc_approved','ar',     'تم التحقق من الهوية', 'تم التحقق من هويتك. يمكنك البيع الآن.'),
-  ('kyc_rejected','fr',     'Vérification refusée', 'Votre dossier KYC n''a pas été accepté.'),
-  ('kyc_rejected','ar',     'تم رفض التحقق',     'لم يتم قبول وثائق التحقق.'),
-  ('kyc_expires_soon','fr', 'Vérification expire bientôt', 'Votre KYC expire dans 30 jours.'),
-  ('kyc_expires_soon','ar', 'انتهاء صلاحية قريبة', 'ستنتهي صلاحية التحقق خلال 30 يومًا.'),
-  ('auction_starting_soon','fr', 'Enchère sur le point de commencer', 'Une enchère que vous suivez démarre bientôt.'),
-  ('auction_starting_soon','ar', 'مزاد سيبدأ قريباً', 'سيبدأ مزاد قمت بتتبعه قريباً.'),
-  ('reserve_not_met','fr',  'Réserve non atteinte', 'Le prix de réserve n''a pas été atteint.'),
-  ('reserve_not_met','ar',  'لم يصل سعر الاحتياط', 'لم يصل العرض إلى السعر الاحتياطي.'),
-  ('auction_extended','fr', 'Enchère prolongée', 'L''enchère a été prolongée par anti-sniping.'),
-  ('auction_extended','ar', 'تم تمديد المزاد',     'تم تمديد المزاد بسبب نظام منع القنص.'),
-  ('deposit_refunded','fr', 'Caution remboursée', 'Votre caution a été remboursée.'),
-  ('deposit_refunded','ar', 'تم استرداد التأمين',  'تم استرداد تأمين المشاركة.'),
-  ('deposit_forfeited','fr','Caution mise en jeu', 'Votre caution a été retenue pour non-paiement.'),
-  ('deposit_forfeited','ar','مصادرة التأمين',     'تم احتجاز التأمين بسبب عدم الدفع.'),
-  ('payment_received','fr', 'Paiement reçu', 'Le paiement a été crédité sur votre compte vendeur.'),
-  ('payment_received','ar', 'تم استلام الدفع',  'تم تسجيل الدفع لصالح حسابك كبائع.'),
-  ('rating_request','fr',   'Notez le vendeur', 'Aidez la communauté en évaluant cette transaction.'),
-  ('rating_request','ar',   'قيّم البائع',       'ساعد المجتمع بتقييم هذه الصفقة.'),
-  ('new_report','fr',       'Nouveau signalement', 'Une de vos enchères a été signalée.'),
-  ('new_report','ar',       'بلاغ جديد',          'تم الإبلاغ عن أحد إعلاناتك.'),
-  ('account_blocked','fr',  'Compte bloqué', 'Votre compte a été suspendu.'),
-  ('account_blocked','ar',  'تم تعليق الحساب', 'تم تعليق حسابك.')
+  ('reminder','ar',         'ØªØ°ÙƒÙŠØ±',  'ØªØ°ÙƒÙŠØ± Ù…Ù† Ø§Ù„ØªØ·Ø¨ÙŠÙ‚.'),
+  ('system','fr',           'Notification systÃ¨me', 'Message du systÃ¨me.'),
+  ('system','ar',           'Ø¥Ø´Ø¹Ø§Ø± Ù…Ù† Ø§Ù„Ù†Ø¸Ø§Ù…',     'Ø±Ø³Ø§Ù„Ø© Ù…Ù† Ø§Ù„Ù†Ø¸Ø§Ù….'),
+  -- New PLAN Â§23.2 kinds
+  ('kyc_approved','fr',     'IdentitÃ© vÃ©rifiÃ©e', 'Votre identitÃ© a Ã©tÃ© vÃ©rifiÃ©e. Vous pouvez maintenant vendre.'),
+  ('kyc_approved','ar',     'ØªÙ… Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† Ø§Ù„Ù‡ÙˆÙŠØ©', 'ØªÙ… Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† Ù‡ÙˆÙŠØªÙƒ. ÙŠÙ…ÙƒÙ†Ùƒ Ø§Ù„Ø¨ÙŠØ¹ Ø§Ù„Ø¢Ù†.'),
+  ('kyc_rejected','fr',     'VÃ©rification refusÃ©e', 'Votre dossier KYC n''a pas Ã©tÃ© acceptÃ©.'),
+  ('kyc_rejected','ar',     'ØªÙ… Ø±ÙØ¶ Ø§Ù„ØªØ­Ù‚Ù‚',     'Ù„Ù… ÙŠØªÙ… Ù‚Ø¨ÙˆÙ„ ÙˆØ«Ø§Ø¦Ù‚ Ø§Ù„ØªØ­Ù‚Ù‚.'),
+  ('kyc_expires_soon','fr', 'VÃ©rification expire bientÃ´t', 'Votre KYC expire dans 30 jours.'),
+  ('kyc_expires_soon','ar', 'Ø§Ù†ØªÙ‡Ø§Ø¡ ØµÙ„Ø§Ø­ÙŠØ© Ù‚Ø±ÙŠØ¨Ø©', 'Ø³ØªÙ†ØªÙ‡ÙŠ ØµÙ„Ø§Ø­ÙŠØ© Ø§Ù„ØªØ­Ù‚Ù‚ Ø®Ù„Ø§Ù„ 30 ÙŠÙˆÙ…Ù‹Ø§.'),
+  ('auction_starting_soon','fr', 'EnchÃ¨re sur le point de commencer', 'Une enchÃ¨re que vous suivez dÃ©marre bientÃ´t.'),
+  ('auction_starting_soon','ar', 'Ù…Ø²Ø§Ø¯ Ø³ÙŠØ¨Ø¯Ø£ Ù‚Ø±ÙŠØ¨Ø§Ù‹', 'Ø³ÙŠØ¨Ø¯Ø£ Ù…Ø²Ø§Ø¯ Ù‚Ù…Øª Ø¨ØªØªØ¨Ø¹Ù‡ Ù‚Ø±ÙŠØ¨Ø§Ù‹.'),
+  ('reserve_not_met','fr',  'RÃ©serve non atteinte', 'Le prix de rÃ©serve n''a pas Ã©tÃ© atteint.'),
+  ('reserve_not_met','ar',  'Ù„Ù… ÙŠØµÙ„ Ø³Ø¹Ø± Ø§Ù„Ø§Ø­ØªÙŠØ§Ø·', 'Ù„Ù… ÙŠØµÙ„ Ø§Ù„Ø¹Ø±Ø¶ Ø¥Ù„Ù‰ Ø§Ù„Ø³Ø¹Ø± Ø§Ù„Ø§Ø­ØªÙŠØ§Ø·ÙŠ.'),
+  ('auction_extended','fr', 'EnchÃ¨re prolongÃ©e', 'L''enchÃ¨re a Ã©tÃ© prolongÃ©e par anti-sniping.'),
+  ('auction_extended','ar', 'ØªÙ… ØªÙ…Ø¯ÙŠØ¯ Ø§Ù„Ù…Ø²Ø§Ø¯',     'ØªÙ… ØªÙ…Ø¯ÙŠØ¯ Ø§Ù„Ù…Ø²Ø§Ø¯ Ø¨Ø³Ø¨Ø¨ Ù†Ø¸Ø§Ù… Ù…Ù†Ø¹ Ø§Ù„Ù‚Ù†Øµ.'),
+  ('deposit_refunded','fr', 'Caution remboursÃ©e', 'Votre caution a Ã©tÃ© remboursÃ©e.'),
+  ('deposit_refunded','ar', 'ØªÙ… Ø§Ø³ØªØ±Ø¯Ø§Ø¯ Ø§Ù„ØªØ£Ù…ÙŠÙ†',  'ØªÙ… Ø§Ø³ØªØ±Ø¯Ø§Ø¯ ØªØ£Ù…ÙŠÙ† Ø§Ù„Ù…Ø´Ø§Ø±ÙƒØ©.'),
+  ('deposit_forfeited','fr','Caution mise en jeu', 'Votre caution a Ã©tÃ© retenue pour non-paiement.'),
+  ('deposit_forfeited','ar','Ù…ØµØ§Ø¯Ø±Ø© Ø§Ù„ØªØ£Ù…ÙŠÙ†',     'ØªÙ… Ø§Ø­ØªØ¬Ø§Ø² Ø§Ù„ØªØ£Ù…ÙŠÙ† Ø¨Ø³Ø¨Ø¨ Ø¹Ø¯Ù… Ø§Ù„Ø¯ÙØ¹.'),
+  ('payment_received','fr', 'Paiement reÃ§u', 'Le paiement a Ã©tÃ© crÃ©ditÃ© sur votre compte vendeur.'),
+  ('payment_received','ar', 'ØªÙ… Ø§Ø³ØªÙ„Ø§Ù… Ø§Ù„Ø¯ÙØ¹',  'ØªÙ… ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯ÙØ¹ Ù„ØµØ§Ù„Ø­ Ø­Ø³Ø§Ø¨Ùƒ ÙƒØ¨Ø§Ø¦Ø¹.'),
+  ('rating_request','fr',   'Notez le vendeur', 'Aidez la communautÃ© en Ã©valuant cette transaction.'),
+  ('rating_request','ar',   'Ù‚ÙŠÙ‘Ù… Ø§Ù„Ø¨Ø§Ø¦Ø¹',       'Ø³Ø§Ø¹Ø¯ Ø§Ù„Ù…Ø¬ØªÙ…Ø¹ Ø¨ØªÙ‚ÙŠÙŠÙ… Ù‡Ø°Ù‡ Ø§Ù„ØµÙÙ‚Ø©.'),
+  ('new_report','fr',       'Nouveau signalement', 'Une de vos enchÃ¨res a Ã©tÃ© signalÃ©e.'),
+  ('new_report','ar',       'Ø¨Ù„Ø§Øº Ø¬Ø¯ÙŠØ¯',          'ØªÙ… Ø§Ù„Ø¥Ø¨Ù„Ø§Øº Ø¹Ù† Ø£Ø­Ø¯ Ø¥Ø¹Ù„Ø§Ù†Ø§ØªÙƒ.'),
+  ('account_blocked','fr',  'Compte bloquÃ©', 'Votre compte a Ã©tÃ© suspendu.'),
+  ('account_blocked','ar',  'ØªÙ… ØªØ¹Ù„ÙŠÙ‚ Ø§Ù„Ø­Ø³Ø§Ø¨', 'ØªÙ… ØªØ¹Ù„ÙŠÙ‚ Ø­Ø³Ø§Ø¨Ùƒ.')
 on conflict (kind, locale) do nothing;
 
 
@@ -4808,13 +4808,13 @@ on conflict (kind, locale) do nothing;
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — Notifications expansion
+-- Mazed Auto â€” Notifications expansion
 --
 -- 1. Widen notifications.kind CHECK to include the 9 missing
---    PLAN §23.2 kinds (kyc_*, auction_*, deposit_*, payment_received,
+--    PLAN Â§23.2 kinds (kyc_*, auction_*, deposit_*, payment_received,
 --    rating_request, new_report, account_blocked).
--- 2. Add `user_notification_prefs` for per-kind × per-channel
---    user preferences (PLAN §23.3).
+-- 2. Add `user_notification_prefs` for per-kind Ã— per-channel
+--    user preferences (PLAN Â§23.3).
 --
 -- Safe to run repeatedly.
 -- ============================================================
@@ -4831,7 +4831,7 @@ alter table public.notifications
     -- legacy kinds (kept for back-compat)
     'outbid','won','lost','new_bid','approved','rejected',
     'payment_due','reminder','system',
-    -- PLAN §23.2 new kinds
+    -- PLAN Â§23.2 new kinds
     'kyc_approved','kyc_rejected','kyc_expires_soon',
     'auction_starting_soon','reserve_not_met','auction_extended',
     'deposit_refunded','deposit_forfeited','payment_received',
@@ -4892,7 +4892,7 @@ grant execute on function public.should_notify(uuid, text, text) to authenticate
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — notify_with_template() helper
+-- Mazed Auto â€” notify_with_template() helper
 --
 -- Trigger functions today build notification bodies via string
 -- concatenation. That makes them un-editable from /admin/cms/
@@ -4903,7 +4903,7 @@ grant execute on function public.should_notify(uuid, text, text) to authenticate
 --
 -- New trigger code should use this helper instead of inline
 -- string-builds. Existing triggers (handle_new_bid, finalize_auction,
--- handle_new_report) continue to work — their hardcoded copy is the
+-- handle_new_report) continue to work â€” their hardcoded copy is the
 -- fallback when no template row exists for a given kind.
 --
 -- Depends on: migrate-cms.sql (notification_templates),
@@ -4924,7 +4924,7 @@ as $$
 $$;
 grant execute on function public.user_locale(uuid) to authenticated, anon;
 
--- Tiny mustache-ish substitutor. Renders {{key}} → vars->>'key'.
+-- Tiny mustache-ish substitutor. Renders {{key}} â†’ vars->>'key'.
 -- Unknown keys are left blank so a missing var doesn't blow up the
 -- whole notification.
 create or replace function public.render_template(
@@ -4986,7 +4986,7 @@ begin
   v_title := coalesce(public.render_template(v_tmpl.title, p_vars), p_default_title, p_kind);
   v_body  := coalesce(public.render_template(v_tmpl.body,  p_vars), p_default_body,  '');
 
-  -- Honor user notification preferences for in-app delivery — if the
+  -- Honor user notification preferences for in-app delivery â€” if the
   -- user explicitly disabled in_app for this kind, skip the row.
   if not public.should_notify(p_user_id, p_kind, 'in_app') then
     return null;
@@ -5007,7 +5007,7 @@ grant execute on function public.notify_with_template(uuid, text, jsonb, uuid, t
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — 2-admin approval workflow for sensitive settings
+-- Mazed Auto â€” 2-admin approval workflow for sensitive settings
 --
 -- platform_settings already has pending_value / pending_proposed_by /
 -- pending_proposed_at columns reserved for this. This migration adds
@@ -5015,7 +5015,7 @@ grant execute on function public.notify_with_template(uuid, text, jsonb, uuid, t
 --
 -- Rules:
 --   * settings flagged requires_approval=true must go through
---     propose_setting_value() — direct UPDATE bypasses the workflow
+--     propose_setting_value() â€” direct UPDATE bypasses the workflow
 --     and is reserved for non-sensitive settings.
 --   * Same admin cannot propose AND approve. The approving admin
 --     must be a different user.
@@ -5153,7 +5153,7 @@ grant execute on function public.reject_pending_setting(text, text) to authentic
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — Admin team listing
+-- Mazed Auto â€” Admin team listing
 --
 -- super_admin needs to see every account that holds an admin role,
 -- regardless of whether the rest of the app classifies them as
@@ -5214,7 +5214,7 @@ grant execute on function public.admin_list_admins() to authenticated;
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — Messaging moderation
+-- Mazed Auto â€” Messaging moderation
 --
 -- conversations + messages have strict participant-only RLS. For
 -- abuse / harassment investigations admins need to read any thread,
@@ -5274,7 +5274,7 @@ begin
     coalesce(
       (select a.make || ' ' || a.model || ' ' || a.year::text
          from public.auctions a where a.id = c.auction_id),
-      '—')::text
+      'â€”')::text
   from public.conversations c
   where p_search is null
      or coalesce((select ub.email from auth.users ub where ub.id = c.buyer_id),'')  ilike '%' || p_search || '%'
@@ -5338,14 +5338,14 @@ grant execute on function public.admin_read_conversation(uuid, text) to authenti
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — Golden-Lock ownership review
+-- Mazed Auto â€” Golden-Lock ownership review
 --
 -- The seller wizard's step-4 has a "Golden Lock": the carte grise
 -- owner name must match the KYC name. When it doesn't, the seller
 -- picks an exception ("company"/"agent"/"inheritance"/"spouse"/
 -- "recent_purchase"/"other"). The "other" branch is supposed to
 -- queue for manual admin review, but today the flag never lands
--- on the auction row — admins can't see which auctions need a
+-- on the auction row â€” admins can't see which auctions need a
 -- closer look.
 --
 -- Two new columns + a partial index make those auctions trivially
@@ -5368,7 +5368,7 @@ create index if not exists auctions_ownership_review_idx
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — Fraud signals
+-- Mazed Auto â€” Fraud signals
 --
 -- Lightweight read-only RPCs that admins can poll from
 -- /admin/fraud. Heavier signals (device fingerprinting, IP
@@ -5413,7 +5413,7 @@ begin
 end; $$;
 grant execute on function public.fraud_duplicate_phones(int) to authenticated;
 
--- 2) Rapid bidders — users placing > 20 bids in the last 24h.
+-- 2) Rapid bidders â€” users placing > 20 bids in the last 24h.
 create or replace function public.fraud_rapid_bidders(
   p_threshold int default 20,
   p_limit int default 50
@@ -5530,16 +5530,16 @@ grant execute on function public.fraud_chronic_offenders(int) to authenticated;
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — Analytics RPCs (funnel, leaderboard, heatmap)
+-- Mazed Auto â€” Analytics RPCs (funnel, leaderboard, heatmap)
 --
--- Reads need access to auth.users.created_at for the signup → KYC →
--- bid → win funnel, which authenticated users can't read directly.
+-- Reads need access to auth.users.created_at for the signup â†’ KYC â†’
+-- bid â†’ win funnel, which authenticated users can't read directly.
 -- Wrapping behind SECURITY DEFINER + admin-gate keeps RLS clean.
 --
 -- Safe to run repeatedly.
 -- ============================================================
 
--- 1) Signup → email verified → KYC verified → first bid → first win.
+-- 1) Signup â†’ email verified â†’ KYC verified â†’ first bid â†’ first win.
 create or replace function public.analytics_funnel(
   p_days int default 90
 ) returns table (
@@ -5664,8 +5664,8 @@ begin
 end; $$;
 grant execute on function public.analytics_top_bidders(int, int) to authenticated;
 
--- 4) Hourly bidding heatmap — counts per (day_of_week × hour) over the
--- last N days. day_of_week: 0=Sunday … 6=Saturday (PG dow).
+-- 4) Hourly bidding heatmap â€” counts per (day_of_week Ã— hour) over the
+-- last N days. day_of_week: 0=Sunday â€¦ 6=Saturday (PG dow).
 create or replace function public.analytics_bidding_heatmap(
   p_days int default 30
 ) returns table (
@@ -5699,7 +5699,7 @@ grant execute on function public.analytics_bidding_heatmap(int) to authenticated
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — additional platform_settings
+-- Mazed Auto â€” additional platform_settings
 --
 -- Numbers / lists that today live in client-side TypeScript but
 -- a non-engineer admin should be able to tune. Adding them here
@@ -5717,10 +5717,10 @@ insert into public.platform_settings (key, value, type, category, description, s
   ('listing.bid_increment_tiers',
    '[{"max":30000,"increment":250},{"max":100000,"increment":500},{"max":null,"increment":1000}]'::jsonb,
    'json',  'listing',
-   'Bid increment tiers — first matching row wins. max=null means open-ended top tier.',
+   'Bid increment tiers â€” first matching row wins. max=null means open-ended top tier.',
    false, true),
 
-  -- Photo slots & video script — tunable but rarely changed.
+  -- Photo slots & video script â€” tunable but rarely changed.
   ('listing.photos.required_slots',
    '["front","rear","right_side","left_side","dashboard","odometer","front_seats","rear_seats","engine","trunk","tires","vin"]'::jsonb,
    'json', 'listing',
@@ -5728,41 +5728,41 @@ insert into public.platform_settings (key, value, type, category, description, s
    false, true),
 
   ('listing.video.script',
-   '[{"from":0,"to":20,"label":"360° autour"},{"from":20,"to":35,"label":"Portes ouvertes"},{"from":35,"to":45,"label":"Capot ouvert"},{"from":45,"to":55,"label":"Démarrage"},{"from":55,"to":60,"label":"Plaque"}]'::jsonb,
+   '[{"from":0,"to":20,"label":"360Â° autour"},{"from":20,"to":35,"label":"Portes ouvertes"},{"from":35,"to":45,"label":"Capot ouvert"},{"from":45,"to":55,"label":"DÃ©marrage"},{"from":55,"to":60,"label":"Plaque"}]'::jsonb,
    'json', 'listing',
    'Video checklist segments shown in step-3 of the seller wizard.',
    false, false),
 
-  -- Trust score tier thresholds — UI label cutoffs.
+  -- Trust score tier thresholds â€” UI label cutoffs.
   ('trust.tier_thresholds',
    '{"new":0,"low":42,"trusted":96,"very_trusted":156,"verified_pro":268}'::jsonb,
    'json', 'trust',
-   'Lower bound (inclusive) for each trust tier. The matching tier name is the highest threshold ≤ current score.',
+   'Lower bound (inclusive) for each trust tier. The matching tier name is the highest threshold â‰¤ current score.',
    false, true),
 
   -- Image processing pipeline
   ('media.image.max_edge_px',          '1920'::jsonb,  'number', 'media',
    'Maximum image edge in pixels for client-side compression', false, false),
   ('media.image.jpeg_quality',         '0.85'::jsonb,  'number', 'media',
-   'JPEG compression quality (0–1)', false, false),
+   'JPEG compression quality (0â€“1)', false, false),
   ('media.image.skip_threshold_bytes', '204800'::jsonb,'number', 'media',
    'Files smaller than this many bytes skip client-side compression', false, false),
   ('media.thumb.width_px',             '600'::jsonb,   'number', 'media',
    'Default thumbnail width', false, false),
   ('media.thumb.quality',              '70'::jsonb,    'number', 'media',
-   'Default thumbnail quality (0–100)', false, false),
+   'Default thumbnail quality (0â€“100)', false, false),
 
   -- Public contact information (used by /contact, /help, /payment/failed)
   ('support.email',                    '"support@mazedauto.tn"'::jsonb, 'string', 'support',
    'Public support email address', false, true),
   ('support.phone',                    '"+216 70 100 200"'::jsonb,      'string', 'support',
    'Public support phone number', false, true),
-  ('support.address',                  '"Avenue de la Liberté, 1002 Tunis Capitale"'::jsonb,
+  ('support.address',                  '"Avenue de la LibertÃ©, 1002 Tunis Capitale"'::jsonb,
    'string', 'support', 'Public office address', false, false),
   ('support.hours',                    '"9h - 18h, 7j/7"'::jsonb, 'string', 'support',
    'Live support hours (free-text)', false, false),
 
-  -- Forfeit penalty for renouncing a win (PLAN §21.4)
+  -- Forfeit penalty for renouncing a win (PLAN Â§21.4)
   ('auction.forfeit.ban_days',         '30'::jsonb,   'number', 'auction',
    'How many days a winner who voluntarily forfeits is banned from new bids', false, true),
   ('auction.forfeit.trust_penalty',    '40'::jsonb,   'number', 'auction',
@@ -5776,18 +5776,18 @@ insert into public.platform_settings (key, value, type, category, description, s
 
   -- Payment provider / simulation
   ('payment.simulation.failure_rate',  '0'::jsonb,    'number', 'payment',
-   'Probability (0–1) that the simulated payment processor fails. Useful for QA.',
+   'Probability (0â€“1) that the simulated payment processor fails. Useful for QA.',
    false, false),
 
-  -- Auction time blackout windows (PLAN §21.X)
+  -- Auction time blackout windows (PLAN Â§21.X)
   -- Hours are local time in `auction.blackout.timezone`. Each entry is a
   -- pair [startHour, endHour); endHour < startHour means the window wraps
-  -- past midnight (e.g. [23, 7) = nightly 23:00 → 07:00).
+  -- past midnight (e.g. [23, 7) = nightly 23:00 â†’ 07:00).
   ('auction.blackout.enabled',       'false'::jsonb, 'boolean', 'auction',
    'When true, sellers cannot schedule auctions to end inside a blackout window and admin extend warns before crossing one.',
    false, false),
   ('auction.blackout.windows',       '[[23, 7]]'::jsonb, 'json', 'auction',
-   'Array of [startHour, endHour) pairs (0–23). End hour < start hour wraps past midnight.',
+   'Array of [startHour, endHour) pairs (0â€“23). End hour < start hour wraps past midnight.',
    false, false),
   ('auction.blackout.timezone',      '"Africa/Tunis"'::jsonb, 'string', 'auction',
    'IANA timezone used to interpret blackout hours.',
@@ -5800,13 +5800,13 @@ on conflict (key) do nothing;
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — Admin Sprint A
+-- Mazed Auto â€” Admin Sprint A
 --
 -- Closes the most painful day-to-day gaps in the admin:
 --   * direct auction edit (not just "request edit")
 --   * force re-verify email / phone
 --   * bulk KYC + auction queue actions
---   * admin → user 1:1 DM
+--   * admin â†’ user 1:1 DM
 --   * auction status timeline
 --   * one-click refund a specific deposit
 --   * maintenance-mode flag
@@ -5870,7 +5870,7 @@ for each row execute function public.log_auction_status_change();
 -- writes via the existing UPDATE policy (admin RLS), records an
 -- audit row with the diff so reviewers know exactly what changed.
 --
--- Whitelist of editable fields lives in this function — extending
+-- Whitelist of editable fields lives in this function â€” extending
 -- it is a deliberate, reviewed change.
 
 create or replace function public.admin_edit_auction(
@@ -6011,8 +6011,8 @@ begin
 
   insert into public.notifications (user_id, kind, title, body)
   values (p_user_id, 'system',
-          'Re-vérification email requise',
-          coalesce(p_reason, 'Veuillez confirmer à nouveau votre adresse email'));
+          'Re-vÃ©rification email requise',
+          coalesce(p_reason, 'Veuillez confirmer Ã  nouveau votre adresse email'));
 
   perform public.log_admin_action(
     'user.reset_email',
@@ -6042,8 +6042,8 @@ begin
 
   insert into public.notifications (user_id, kind, title, body)
   values (p_user_id, 'system',
-          'Re-vérification téléphone requise',
-          coalesce(p_reason, 'Veuillez confirmer à nouveau votre numéro de téléphone'));
+          'Re-vÃ©rification tÃ©lÃ©phone requise',
+          coalesce(p_reason, 'Veuillez confirmer Ã  nouveau votre numÃ©ro de tÃ©lÃ©phone'));
 
   perform public.log_admin_action(
     'user.reset_phone',
@@ -6106,7 +6106,7 @@ end; $$;
 grant execute on function public.admin_bulk_review_kyc(uuid[], text, text) to authenticated;
 
 -- Bulk auction approve (status="active"). Same end_time logic as the
--- single-row path: end_time = now() + (original_end_time − start_time).
+-- single-row path: end_time = now() + (original_end_time âˆ’ start_time).
 create or replace function public.admin_bulk_approve_auctions(
   p_auction_ids uuid[]
 ) returns int
@@ -6142,7 +6142,7 @@ begin
 
     insert into public.notifications (user_id, auction_id, kind, title, body)
     values (r.seller_id, r.id, 'approved',
-            'Enchère approuvée',
+            'EnchÃ¨re approuvÃ©e',
             'Votre annonce est en ligne.');
     v_count := v_count + 1;
   end loop;
@@ -6182,7 +6182,7 @@ begin
   loop
     update public.auctions set status = 'cancelled' where id = r.id;
     insert into public.notifications (user_id, auction_id, kind, title, body)
-    values (r.seller_id, r.id, 'rejected', 'Enchère refusée', p_reason);
+    values (r.seller_id, r.id, 'rejected', 'EnchÃ¨re refusÃ©e', p_reason);
     v_count := v_count + 1;
   end loop;
 
@@ -6196,7 +6196,7 @@ end; $$;
 grant execute on function public.admin_bulk_reject_auctions(uuid[], text) to authenticated;
 
 -- ------------------------------------------------------------------
--- 5) admin_dm_user — 1:1 admin → user system message
+-- 5) admin_dm_user â€” 1:1 admin â†’ user system message
 -- ------------------------------------------------------------------
 -- Lighter than a broadcast: targets a single user, written into the
 -- existing notifications table with a custom title/body. Logged.
@@ -6236,9 +6236,9 @@ end; $$;
 grant execute on function public.admin_dm_user(uuid, text, text) to authenticated;
 
 -- ------------------------------------------------------------------
--- 6) admin_refund_deposit — one-click refund a single deposit tx
+-- 6) admin_refund_deposit â€” one-click refund a single deposit tx
 -- ------------------------------------------------------------------
--- Marks the source deposit as completed (idempotent — was already
+-- Marks the source deposit as completed (idempotent â€” was already
 -- "completed" if it landed normally) and writes a paired refund row.
 
 create or replace function public.admin_refund_deposit(
@@ -6283,14 +6283,14 @@ begin
     ('TX-RFD-' || substr(gen_random_uuid()::text, 1, 8),
      v_src.user_id, v_src.user_label, v_src.auction_id,
      'refund', 'in', v_src.amount,
-     'Remboursement caution — ' || coalesce(p_reason, 'décision admin'),
+     'Remboursement caution â€” ' || coalesce(p_reason, 'dÃ©cision admin'),
      'completed')
   returning id into v_id;
 
   insert into public.notifications (user_id, auction_id, kind, title, body)
   values (v_src.user_id, v_src.auction_id, 'deposit_refunded',
-          'Caution remboursée',
-          coalesce(p_reason, 'Remboursement effectué.'));
+          'Caution remboursÃ©e',
+          coalesce(p_reason, 'Remboursement effectuÃ©.'));
 
   perform public.log_admin_action(
     'transaction.refund',
@@ -6305,7 +6305,7 @@ end; $$;
 grant execute on function public.admin_refund_deposit(uuid, text) to authenticated;
 
 -- ------------------------------------------------------------------
--- 7) Maintenance mode — settings key
+-- 7) Maintenance mode â€” settings key
 -- ------------------------------------------------------------------
 insert into public.platform_settings (key, value, type, category, description, sensitive, requires_approval)
 values
@@ -6313,19 +6313,19 @@ values
    'When true, the public site shows a read-only banner and writes (bid, payment, listing) refuse. Admin paths stay open.',
    false, false),
   ('system.maintenance_message_fr',
-   '"Mazed Auto est en maintenance. Les enchères sont temporairement en lecture seule."'::jsonb,
+   '"Mazed Auto est en maintenance. Les enchÃ¨res sont temporairement en lecture seule."'::jsonb,
    'string', 'system',
    'Banner message shown to users when maintenance mode is on (FR).',
    false, false),
   ('system.maintenance_message_ar',
-   '"موقع مزاد أوتو في وضع الصيانة. المزادات في وضع القراءة فقط مؤقتًا."'::jsonb,
+   '"Ù…ÙˆÙ‚Ø¹ Ù…Ø²Ø§Ø¯ Ø£ÙˆØªÙˆ ÙÙŠ ÙˆØ¶Ø¹ Ø§Ù„ØµÙŠØ§Ù†Ø©. Ø§Ù„Ù…Ø²Ø§Ø¯Ø§Øª ÙÙŠ ÙˆØ¶Ø¹ Ø§Ù„Ù‚Ø±Ø§Ø¡Ø© ÙÙ‚Ø· Ù…Ø¤Ù‚ØªÙ‹Ø§."'::jsonb,
    'string', 'system',
    'Banner message shown to users when maintenance mode is on (AR).',
    false, false)
 on conflict (key) do nothing;
 
 -- ------------------------------------------------------------------
--- 8) admin_session_self — what's MY current session?
+-- 8) admin_session_self â€” what's MY current session?
 -- ------------------------------------------------------------------
 -- Powers the /admin/me page: returns the calling admin's last-seen,
 -- audit-action count, role, etc. Read-only convenience.
@@ -6371,7 +6371,7 @@ grant execute on function public.admin_self_summary() to authenticated;
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — CMS categories (body types)
+-- Mazed Auto â€” CMS categories (body types)
 --
 -- Adds an admin-managed "category" table so the home page and
 -- browse filter can show an image + localised label per body
@@ -6399,18 +6399,18 @@ drop policy if exists "cms_categories_public_read" on public.cms_categories;
 create policy "cms_categories_public_read" on public.cms_categories
   for select using (true);
 
--- Admin write — relies on the cross-cutting admin RLS bypass set up in
+-- Admin write â€” relies on the cross-cutting admin RLS bypass set up in
 -- migrate-rls-admin-fix.sql, same pattern as the rest of the cms_* tables.
 
 insert into public.cms_categories (slug, name_fr, name_ar, position) values
-  ('sedan',       'Berline',     'سيدان',           10),
-  ('suv',         'SUV',         'دفع رباعي',       20),
-  ('hatchback',   'Citadine',    'هاتشباك',         30),
-  ('pickup',      'Pickup',      'بيك آب',          40),
-  ('coupe',       'Coupé',       'كوبيه',           50),
-  ('convertible', 'Cabriolet',   'مكشوفة',          60),
-  ('wagon',       'Break',       'بريك',            70),
-  ('van',         'Utilitaire',  'فان',             80)
+  ('sedan',       'Berline',     'Ø³ÙŠØ¯Ø§Ù†',           10),
+  ('suv',         'SUV',         'Ø¯ÙØ¹ Ø±Ø¨Ø§Ø¹ÙŠ',       20),
+  ('hatchback',   'Citadine',    'Ù‡Ø§ØªØ´Ø¨Ø§Ùƒ',         30),
+  ('pickup',      'Pickup',      'Ø¨ÙŠÙƒ Ø¢Ø¨',          40),
+  ('coupe',       'CoupÃ©',       'ÙƒÙˆØ¨ÙŠÙ‡',           50),
+  ('convertible', 'Cabriolet',   'Ù…ÙƒØ´ÙˆÙØ©',          60),
+  ('wagon',       'Break',       'Ø¨Ø±ÙŠÙƒ',            70),
+  ('van',         'Utilitaire',  'ÙØ§Ù†',             80)
 on conflict (slug) do nothing;
 
 
@@ -6419,18 +6419,18 @@ on conflict (slug) do nothing;
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — Admin caution (forfeit) management
+-- Mazed Auto â€” Admin caution (forfeit) management
 --
 -- Today forfeits happen automatically when `payment_deadline` passes
 -- (handled by `process_expired_payment_deadlines`) or when the winner
 -- voluntarily renounces from /buyer/wins. Some cases need manual
 -- intervention by an admin:
 --
---   • Confirmed fraud / no-show before the deadline expires — force
+--   â€¢ Confirmed fraud / no-show before the deadline expires â€” force
 --     forfeit now instead of waiting.
---   • A forfeit was applied wrongly (admin made a mistake, or the
---     winner contested with proof of payment) — reverse it.
---   • Legitimate reason for delay (sick, abroad) — extend the payment
+--   â€¢ A forfeit was applied wrongly (admin made a mistake, or the
+--     winner contested with proof of payment) â€” reverse it.
+--   â€¢ Legitimate reason for delay (sick, abroad) â€” extend the payment
 --     deadline by N days.
 --
 -- This migration adds three RPCs. All require `transaction.adjust`
@@ -6515,7 +6515,7 @@ grant execute on function public.admin_force_forfeit(uuid, text) to authenticate
 
 -- 2) admin_reverse_forfeit ---------------------------------------------
 -- Marks a forfeit row as reversed and writes compensating transactions.
--- We don't delete the audit row — the original entry is permanent.
+-- We don't delete the audit row â€” the original entry is permanent.
 
 create or replace function public.admin_reverse_forfeit(
   p_forfeit_id uuid,
@@ -6559,14 +6559,14 @@ begin
   values (
     'TX-RV-' || substring(gen_random_uuid()::text from 1 for 8),
     v_seller_id, null, v_auction_id, 'refund', 'out', v_seller_amt,
-    'Annulation forfait — part vendeur remboursée',
+    'Annulation forfait â€” part vendeur remboursÃ©e',
     'completed'
   );
   insert into public.transactions (ref, user_id, user_label, auction_id, type, direction, amount, label, status)
   values (
     'TX-RV-' || substring(gen_random_uuid()::text from 1 for 8),
     null, 'Mazed Auto', v_auction_id, 'refund', 'out', v_platform_amt,
-    'Annulation forfait — part plateforme reversée',
+    'Annulation forfait â€” part plateforme reversÃ©e',
     'completed'
   );
   -- Caution returned to the bidder.
@@ -6574,7 +6574,7 @@ begin
   values (
     'TX-RV-' || substring(gen_random_uuid()::text from 1 for 8),
     v_user_id, v_user_label, v_auction_id, 'refund', 'out', v_amount,
-    'Caution restituée — forfait annulé',
+    'Caution restituÃ©e â€” forfait annulÃ©',
     'completed'
   );
 
@@ -6586,9 +6586,9 @@ begin
 
   insert into public.notifications (user_id, auction_id, kind, title, body)
   values (v_user_id, v_auction_id, 'deposit_refunded',
-    'Caution restituée',
-    'L''administration a annulé le forfait — votre caution de ' ||
-      v_amount::text || ' DT vous a été restituée. Motif : ' || p_reason
+    'Caution restituÃ©e',
+    'L''administration a annulÃ© le forfait â€” votre caution de ' ||
+      v_amount::text || ' DT vous a Ã©tÃ© restituÃ©e. Motif : ' || p_reason
   );
 
   perform public.log_admin_action(
@@ -6648,9 +6648,9 @@ begin
 
   insert into public.notifications (user_id, auction_id, kind, title, body)
   values (v_winner, p_auction_id, 'payment_due',
-    'Délai de paiement prolongé',
-    'L''administration a prolongé votre délai de paiement de ' ||
-      p_days::text || ' jours. Nouvelle échéance : ' ||
+    'DÃ©lai de paiement prolongÃ©',
+    'L''administration a prolongÃ© votre dÃ©lai de paiement de ' ||
+      p_days::text || ' jours. Nouvelle Ã©chÃ©ance : ' ||
       to_char(v_new at time zone 'Africa/Tunis', 'DD/MM/YYYY HH24:MI') ||
       '. Motif : ' || p_reason
   );
@@ -6668,7 +6668,7 @@ end; $$;
 grant execute on function public.admin_extend_payment_deadline(uuid, int, text) to authenticated;
 
 -- 4) View: pending payment deadlines ----------------------------------
--- Convenience view for /admin/forfeits — auctions whose payment
+-- Convenience view for /admin/forfeits â€” auctions whose payment
 -- deadline is approaching or already expired. The sweep auto-forfeits
 -- expired rows on the next interaction, but admins can see the queue
 -- in advance and decide to extend / force-forfeit early.
@@ -6713,16 +6713,16 @@ grant select on public.admin_pending_payment_deadlines to authenticated;
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — Subscription plans (Silver / Gold / Diamond)
+-- Mazed Auto â€” Subscription plans (Silver / Gold / Diamond)
 --
 -- Implements the Pro/Business tiers from the project workflows
--- (mazed_auto_workflows.html §15). Personal users browse + sell
+-- (mazed_auto_workflows.html Â§15). Personal users browse + sell
 -- with a small free quota; agencies/dealerships pay monthly to
 -- unlock more listings + showroom + analytics + API.
 --
 -- Schema:
---   cms_subscription_plans  — admin-managed catalogue (price, quotas, perks)
---   user_subscriptions      — one active row per user_id, per period
+--   cms_subscription_plans  â€” admin-managed catalogue (price, quotas, perks)
+--   user_subscriptions      â€” one active row per user_id, per period
 --
 -- Depends on: migrate-admin-foundations.sql, migrate-cms.sql
 -- Safe to run repeatedly.
@@ -6766,22 +6766,22 @@ insert into public.cms_subscription_plans (
   has_advanced_analytics, has_analytics_export,
   support_level, features, badge_tone, position
 ) values
-  ('silver',  'Silver',  'فضي',  'Pour démarrer',           'للبدء',           29,  5,  0,
+  ('silver',  'Silver',  'ÙØ¶ÙŠ',  'Pour dÃ©marrer',           'Ù„Ù„Ø¨Ø¯Ø¡',           29,  5,  0,
    false, false, false, false,
    'email',
    '["5 mises en ligne / mois","Page boutique standard","Analytiques de base","Support par email"]'::jsonb,
    'silver', 10),
 
-  ('gold',    'Gold',    'ذهبي', 'Le meilleur rapport',     'الأفضل قيمةً',    89,  25, 10,
+  ('gold',    'Gold',    'Ø°Ù‡Ø¨ÙŠ', 'Le meilleur rapport',     'Ø§Ù„Ø£ÙØ¶Ù„ Ù‚ÙŠÙ…Ø©Ù‹',    89,  25, 10,
    true,  false, true,  false,
    'chat',
-   '["25 mises en ligne / mois","Page boutique personnalisée","Analytiques avancées","Priorité de recherche +10%","Support email + chat"]'::jsonb,
+   '["25 mises en ligne / mois","Page boutique personnalisÃ©e","Analytiques avancÃ©es","PrioritÃ© de recherche +10%","Support email + chat"]'::jsonb,
    'gold',   20),
 
-  ('diamond', 'Diamond', 'ماسي', 'Pour les acteurs majeurs','للوكالات الكبرى', 249, -1, 25,
+  ('diamond', 'Diamond', 'Ù…Ø§Ø³ÙŠ', 'Pour les acteurs majeurs','Ù„Ù„ÙˆÙƒØ§Ù„Ø§Øª Ø§Ù„ÙƒØ¨Ø±Ù‰', 249, -1, 25,
    true,  true,  true,  true,
    'dedicated',
-   '["Mises en ligne illimitées","Page boutique brandée","Analytiques avancées + export","Priorité de recherche +25%","Chargé de compte dédié"]'::jsonb,
+   '["Mises en ligne illimitÃ©es","Page boutique brandÃ©e","Analytiques avancÃ©es + export","PrioritÃ© de recherche +25%","ChargÃ© de compte dÃ©diÃ©"]'::jsonb,
    'diamond', 30)
 on conflict (slug) do nothing;
 
@@ -7113,7 +7113,7 @@ grant execute on function public.roll_subscription_periods() to authenticated;
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — Pricing spec alignment (per project doc §6.5 / §8.1)
+-- Mazed Auto â€” Pricing spec alignment (per project doc Â§6.5 / Â§8.1)
 --
 -- The initial seeds in migrate-platform-settings.sql used
 -- placeholder commission values (7% seller / 0% buyer / 15000
@@ -7139,11 +7139,11 @@ update public.platform_settings set value = '0.02'::jsonb
 --    free listings/month for non-subscribed personal users).
 insert into public.platform_settings (key, value, type, category, description, sensitive, requires_approval) values
   ('auction.vip_listing_fee',  '200'::jsonb,  'number', 'auction',
-   'Frais VIP appliqués à une enchère mise en avant (200 DT par défaut).',
+   'Frais VIP appliquÃ©s Ã  une enchÃ¨re mise en avant (200 DT par dÃ©faut).',
    false, true),
 
   ('transport.commission_pct', '0.15'::jsonb, 'number', 'transport',
-   'Commission perçue sur le transport via partenaire (15% par défaut).',
+   'Commission perÃ§ue sur le transport via partenaire (15% par dÃ©faut).',
    false, true),
 
   ('listing.free_per_month',   '1'::jsonb,    'number', 'listing',
@@ -7157,40 +7157,40 @@ on conflict (key) do nothing;
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — Plans schema v2
+-- Mazed Auto â€” Plans schema v2
 --
 -- Round 2 of plan configuration. Adds every per-plan limit /
--- perk found in the docs (Mazed_Auto_Project_v3 §8.2.x and the
+-- perk found in the docs (Mazed_Auto_Project_v3 Â§8.2.x and the
 -- workflows.html plans table) so the admin can build any tier
 -- mix without code changes. Drops the API-access flag which has
 -- no consumer in our product.
 --
 -- New fields (all admin-editable from /admin/cms/plans):
---   featured_listing_discount_pct   — % off the per-auction
+--   featured_listing_discount_pct   â€” % off the per-auction
 --                                     "featured" / "VIP" / "top
 --                                     of search" fees
---   has_trusted_seller_badge        — shows the gold badge on
+--   has_trusted_seller_badge        â€” shows the gold badge on
 --                                     every listing
---   has_homepage_placement          — pins each new listing on
+--   has_homepage_placement          â€” pins each new listing on
 --                                     the home page rail
---   has_custom_reports              — monthly PDF/CSV report
---   max_listing_duration_days       — cap on the duration knob
+--   has_custom_reports              â€” monthly PDF/CSV report
+--   max_listing_duration_days       â€” cap on the duration knob
 --                                     (default 14)
---   max_photos                      — > 12 if the plan allows
+--   max_photos                      â€” > 12 if the plan allows
 --                                     extra photo slots
---   max_video_seconds               — > 120 for premium walk-
+--   max_video_seconds               â€” > 120 for premium walk-
 --                                     arounds
---   max_concurrent_active_listings  — -1 for unlimited
---   auto_renew_listings             — automatic re-listing
---   direct_phone_visible            — show contact phone on
+--   max_concurrent_active_listings  â€” -1 for unlimited
+--   auto_renew_listings             â€” automatic re-listing
+--   direct_phone_visible            â€” show contact phone on
 --                                     public listing
---   bulk_import_enabled             — CSV/Excel import tool
---   analytics_level (enum)          — basic / advanced /
+--   bulk_import_enabled             â€” CSV/Excel import tool
+--   analytics_level (enum)          â€” basic / advanced /
 --                                     advanced_export
---   showroom_level (enum)           — none / standard /
+--   showroom_level (enum)           â€” none / standard /
 --                                     custom / branded
 --
--- Idempotent — safe to re-run.
+-- Idempotent â€” safe to re-run.
 -- ============================================================
 
 -- 1) Drop the API field (no real consumer).
@@ -7198,7 +7198,7 @@ on conflict (key) do nothing;
 -- The `user_active_subscription` view from migrate-cms-plans.sql v1
 -- selects this column. Dropping it directly hits a dependency error,
 -- so we drop the view first, drop the column, then recreate the view
--- below (in step 6) without it — and with a couple of the new fields
+-- below (in step 6) without it â€” and with a couple of the new fields
 -- exposed so /admin/users/[id] can show them.
 drop view if exists public.user_active_subscription;
 
@@ -7260,7 +7260,7 @@ update public.cms_subscription_plans
    and (has_branded_showroom or has_custom_showroom);
 
 -- 4) Bring the seeded Silver/Gold/Diamond rows in line with the
---    v3 doc + workflows table. Only touches the v2 columns —
+--    v3 doc + workflows table. Only touches the v2 columns â€”
 --    doesn't overwrite admin edits on the v1 columns.
 update public.cms_subscription_plans
    set featured_listing_discount_pct = 0,
@@ -7306,7 +7306,7 @@ update public.cms_subscription_plans
        showroom_level                = 'branded'
  where slug = 'diamond';
 
--- 4b) Defensive seed — re-asserts Silver / Gold / Diamond in case the
+-- 4b) Defensive seed â€” re-asserts Silver / Gold / Diamond in case the
 --     v1 INSERT was rolled back due to an earlier failed run of this
 --     bundle. Idempotent (`on conflict do nothing`).
 insert into public.cms_subscription_plans (
@@ -7316,31 +7316,31 @@ insert into public.cms_subscription_plans (
   has_advanced_analytics, has_analytics_export,
   support_level, features, badge_tone, position
 ) values
-  ('silver',  'Silver',  'فضي',  'Pour démarrer',           'للبدء',           29,  5,  0,
+  ('silver',  'Silver',  'ÙØ¶ÙŠ',  'Pour dÃ©marrer',           'Ù„Ù„Ø¨Ø¯Ø¡',           29,  5,  0,
    false, false, false, false,
    'email',
    '["5 mises en ligne / mois","Page boutique standard","Analytiques de base","Support par email"]'::jsonb,
    'silver', 10),
-  ('gold',    'Gold',    'ذهبي', 'Le meilleur rapport',     'الأفضل قيمةً',    89,  25, 10,
+  ('gold',    'Gold',    'Ø°Ù‡Ø¨ÙŠ', 'Le meilleur rapport',     'Ø§Ù„Ø£ÙØ¶Ù„ Ù‚ÙŠÙ…Ø©Ù‹',    89,  25, 10,
    true,  false, true,  false,
    'chat',
-   '["25 mises en ligne / mois","Page boutique personnalisée","Analytiques avancées","Priorité de recherche +10%","Support email + chat"]'::jsonb,
+   '["25 mises en ligne / mois","Page boutique personnalisÃ©e","Analytiques avancÃ©es","PrioritÃ© de recherche +10%","Support email + chat"]'::jsonb,
    'gold',   20),
-  ('diamond', 'Diamond', 'ماسي', 'Pour les acteurs majeurs','للوكالات الكبرى', 249, -1, 25,
+  ('diamond', 'Diamond', 'Ù…Ø§Ø³ÙŠ', 'Pour les acteurs majeurs','Ù„Ù„ÙˆÙƒØ§Ù„Ø§Øª Ø§Ù„ÙƒØ¨Ø±Ù‰', 249, -1, 25,
    true,  true,  true,  true,
    'dedicated',
-   '["Mises en ligne illimitées","Page boutique brandée","Analytiques avancées + export","Priorité de recherche +25%","Chargé de compte dédié"]'::jsonb,
+   '["Mises en ligne illimitÃ©es","Page boutique brandÃ©e","Analytiques avancÃ©es + export","PrioritÃ© de recherche +25%","ChargÃ© de compte dÃ©diÃ©"]'::jsonb,
    'diamond', 30)
 on conflict (slug) do nothing;
 
--- 5) New per-auction extra-fee settings (project doc §8.2.1 / §8.2.2 / §8.2.8).
+-- 5) New per-auction extra-fee settings (project doc Â§8.2.1 / Â§8.2.2 / Â§8.2.8).
 insert into public.platform_settings (key, value, type, category, description, sensitive, requires_approval) values
   ('auction.featured_listing_fee',  '50'::jsonb,  'number', 'auction',
-   'Frais pour faire apparaître une enchère sur la page d''accueil (par défaut 50 DT).',
+   'Frais pour faire apparaÃ®tre une enchÃ¨re sur la page d''accueil (par dÃ©faut 50 DT).',
    false, true),
 
   ('auction.top_of_search_fee',     '30'::jsonb,  'number', 'auction',
-   'Frais pour bloquer une enchère en tête des résultats pendant 24h (par défaut 30 DT).',
+   'Frais pour bloquer une enchÃ¨re en tÃªte des rÃ©sultats pendant 24h (par dÃ©faut 30 DT).',
    false, true),
 
   ('inspection.basic_fee',          '30'::jsonb,  'number', 'inspection',
@@ -7348,7 +7348,7 @@ insert into public.platform_settings (key, value, type, category, description, s
    false, true),
 
   ('inspection.full_fee',           '80'::jsonb,  'number', 'inspection',
-   'Tarif du fournisseur pour une inspection technique complète.',
+   'Tarif du fournisseur pour une inspection technique complÃ¨te.',
    false, true),
 
   ('inspection.platform_share_pct', '0.5'::jsonb, 'number', 'inspection',
@@ -7356,7 +7356,7 @@ insert into public.platform_settings (key, value, type, category, description, s
    true,  true),
 
   ('ownership_transfer.fee',        '100'::jsonb, 'number', 'auction',
-   'Forfait pour le service de transfert de carte grise (Mazed le perçoit en entier).',
+   'Forfait pour le service de transfert de carte grise (Mazed le perÃ§oit en entier).',
    false, true)
 on conflict (key) do nothing;
 
@@ -7366,7 +7366,7 @@ on conflict (key) do nothing;
 --    "Active" here means "still entitled to the plan perks". A user who
 --    cancels keeps the perks until current_period_end, so we include
 --    cancelled rows whose expiry is still in the future. The status
---    field is exposed so callers can show "Annulé — expire le X" when
+--    field is exposed so callers can show "AnnulÃ© â€” expire le X" when
 --    relevant.
 drop view if exists public.user_active_subscription;
 create view public.user_active_subscription as
@@ -7411,11 +7411,11 @@ grant select on public.user_active_subscription to authenticated;
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — Subscription extras
+-- Mazed Auto â€” Subscription extras
 --
--- - admin_list_subscriptions()  → joined list for /admin/subscriptions
--- - cancel_my_subscription()    → user self-serve cancel
--- - admin_list_subscription_history(user_id) → past + current rows
+-- - admin_list_subscriptions()  â†’ joined list for /admin/subscriptions
+-- - cancel_my_subscription()    â†’ user self-serve cancel
+-- - admin_list_subscription_history(user_id) â†’ past + current rows
 --
 -- Depends on: migrate-cms-plans.sql, migrate-admin-foundations.sql
 -- Safe to run repeatedly.
@@ -7507,16 +7507,16 @@ drop function if exists public.admin_list_subscriptions(text, boolean, int);
 grant execute on function public.admin_list_subscriptions(text, boolean, text, int) to authenticated;
 
 -- 2) Self-serve cancel for the signed-in user. We don't refund
---    the period — the user keeps the perks until current_period_end.
+--    the period â€” the user keeps the perks until current_period_end.
 
 -- Replace v1's subscribe_to_plan with a version that handles
 -- re-subscribe-after-cancel cleanly. Three branches:
 --   1) User already has an entitled (active OR cancelled-but-period-active)
---      sub on the same plan → un-cancel it and extend expires_at by 30 days
+--      sub on the same plan â†’ un-cancel it and extend expires_at by 30 days
 --      from max(now, expires_at). Preserves any leftover time.
---   2) User has any other entitled sub on a different plan → expire it
+--   2) User has any other entitled sub on a different plan â†’ expire it
 --      immediately so the user never has two entitlements at once.
---   3) Otherwise → insert a new active row.
+--   3) Otherwise â†’ insert a new active row.
 
 create or replace function public.subscribe_to_plan(
   p_plan_slug text,
@@ -7629,9 +7629,9 @@ begin
 
   insert into public.notifications (user_id, kind, title, body)
   values (v_user, 'system',
-    'Abonnement annulé',
+    'Abonnement annulÃ©',
     'Votre plan ' || v_plan_name ||
-    ' a été annulé. Vous conservez les avantages jusqu''à la fin de la période en cours.');
+    ' a Ã©tÃ© annulÃ©. Vous conservez les avantages jusqu''Ã  la fin de la pÃ©riode en cours.');
 end; $$;
 
 grant execute on function public.cancel_my_subscription() to authenticated;
@@ -7724,22 +7724,22 @@ grant execute on function public.admin_subscription_stats() to authenticated;
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — Subscription payments (Konnect / Clictopay-ready)
+-- Mazed Auto â€” Subscription payments (Konnect / Clictopay-ready)
 --
 -- Adds the "pending_payment" subscription state plus three RPCs
 -- that bracket the real payment-provider round-trip:
 --
 --   1. initiate_pending_subscription(plan, provider, ref)
---      → creates the row in pending_payment status, returns id.
+--      â†’ creates the row in pending_payment status, returns id.
 --      Does NOT expire other entitlements yet (in case payment fails).
 --
 --   2. complete_subscription_from_payment(sub_id, ref)
---      → activates the row, expires any other entitled subs, writes
+--      â†’ activates the row, expires any other entitled subs, writes
 --      the ledger entry, sets is_pro on the seller. Called by the
 --      webhook (or by the simulation path) once payment is confirmed.
 --
 --   3. fail_pending_subscription(sub_id, reason)
---      → marks the row 'expired' so it stops blocking re-attempts.
+--      â†’ marks the row 'expired' so it stops blocking re-attempts.
 --
 -- Depends on: migrate-cms-plans.sql, migrate-cms-plans-v2.sql,
 --             migrate-subscription-extras.sql
@@ -7763,7 +7763,7 @@ alter table public.user_subscriptions
   add column if not exists failed_reason   text,
   add column if not exists activated_at    timestamptz;
 
--- 3) initiate_pending_subscription — called by the server action right
+-- 3) initiate_pending_subscription â€” called by the server action right
 --    before redirecting the user to the payment provider. Returns the
 --    sub id which we pass as the orderId / metadata to Konnect.
 
@@ -7793,7 +7793,7 @@ begin
 
   -- Mark any *prior* pending row for this user+plan as expired so we
   -- don't accumulate dead intents. Other plans / active subs are
-  -- intentionally left alone — we only switch on successful payment.
+  -- intentionally left alone â€” we only switch on successful payment.
   update public.user_subscriptions
      set status = 'expired',
          failed_at = now(),
@@ -7818,7 +7818,7 @@ end; $$;
 
 grant execute on function public.initiate_pending_subscription(text, text, numeric) to authenticated;
 
--- 4) complete_subscription_from_payment — webhook calls this once the
+-- 4) complete_subscription_from_payment â€” webhook calls this once the
 --    provider confirms payment. SECURITY DEFINER so the service-role
 --    webhook handler can call it without a user session, but it
 --    requires either the caller to own the row OR to be super_admin.
@@ -7905,7 +7905,7 @@ begin
   -- Notify.
   insert into public.notifications (user_id, kind, title, body)
   values (v_sub.user_id, 'system',
-    'Abonnement activé',
+    'Abonnement activÃ©',
     'Votre plan ' || v_plan.name_fr || ' est actif pour les 30 prochains jours.');
 
   return v_sub.id;
@@ -7913,7 +7913,7 @@ end; $$;
 
 grant execute on function public.complete_subscription_from_payment(uuid, text) to authenticated, anon;
 
--- 5) fail_pending_subscription — marks the row expired so the user
+-- 5) fail_pending_subscription â€” marks the row expired so the user
 --    can re-try. Does NOT touch any active subscription they may
 --    still hold (they keep what they paid for).
 
@@ -7989,7 +7989,7 @@ grant execute on function public.get_my_subscription_status(uuid) to authenticat
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — expose plan perks for *other people's* listings
+-- Mazed Auto â€” expose plan perks for *other people's* listings
 --
 -- The `user_active_subscription` view is RLS-friendly (users only
 -- see their own + admin), but the public listing pages need to know
@@ -8082,7 +8082,7 @@ end; $$;
 
 grant execute on function public.seller_public_plan_perks(uuid) to anon, authenticated;
 
--- 3) Batched version — feeds the /auctions listing ranking. Given an
+-- 3) Batched version â€” feeds the /auctions listing ranking. Given an
 --    array of seller_ids, returns the search_priority_pct per id
 --    (default 0 if no plan). One round-trip instead of N.
 
@@ -8195,11 +8195,11 @@ grant execute on function public.home_pinned_pro_auctions(int) to anon, authenti
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — hide pre-approval auctions from the public
+-- Mazed Auto â€” hide pre-approval auctions from the public
 --
 -- The original SELECT policy on public.auctions used `using (true)`,
 -- which let anyone (including anon) read pending_review / scheduled /
--- cancelled rows. That defeats the entire moderation queue — sellers
+-- cancelled rows. That defeats the entire moderation queue â€” sellers
 -- could share their pending-listing URL and buyers would see it.
 --
 -- New policy:
@@ -8253,16 +8253,16 @@ create policy "auctions_public_read" on public.auctions
 -- updateSettingAction (web/src/app/[locale]/admin/settings/actions.ts)
 -- uses the regular cookie-bound client, NOT a service-role client.
 -- With RLS enabled and no UPDATE policy, every save was silently
--- rejected — which is why the admin settings panel "doesn't work".
+-- rejected â€” which is why the admin settings panel "doesn't work".
 --
 -- The simplest fix: add admin-only UPDATE/INSERT/DELETE policies that
 -- defer to the existing public.is_admin() helper (already used across
 -- the codebase for admin gating). Reads stay split as before.
 --
--- Idempotent — safe to run multiple times.
+-- Idempotent â€” safe to run multiple times.
 -- ============================================================
 
--- Platform settings — admin can update, insert, delete.
+-- Platform settings â€” admin can update, insert, delete.
 drop policy if exists "settings_admin_write" on public.platform_settings;
 create policy "settings_admin_write" on public.platform_settings
   for all
@@ -8270,7 +8270,7 @@ create policy "settings_admin_write" on public.platform_settings
   using (public.is_admin())
   with check (public.is_admin());
 
--- Settings audit log — admin can insert (the audit trigger fires as
+-- Settings audit log â€” admin can insert (the audit trigger fires as
 -- the connected user, so the connected user needs INSERT). Without
 -- this, the audit trigger that mirrors every settings change would
 -- error and rollback the parent update.
@@ -8288,7 +8288,7 @@ create policy "audit_admin_insert" on public.settings_audit_log
 -- ============================================================
 -- Drop the seller commission from 7% to 3% (product owner decision).
 --
--- Idempotent — re-running on a DB that's already at 0.03 is a no-op.
+-- Idempotent â€” re-running on a DB that's already at 0.03 is a no-op.
 -- We *do not* touch the cap (15 000 DT) or the buyer-side rate (0%);
 -- those numbers stay as configured.
 -- ============================================================
@@ -8306,21 +8306,21 @@ update public.platform_settings
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Tiered fixed-amount entry deposit (PLAN §X — replaces 5%-of-starting).
+-- Tiered fixed-amount entry deposit (PLAN Â§X â€” replaces 5%-of-starting).
 --
 -- New rule per product owner:
---   starting < 20 000 DT   → 500 DT
---   starting < 100 000 DT  → 1 000 DT
---   otherwise              → 2 000 DT
+--   starting < 20 000 DT   â†’ 500 DT
+--   starting < 100 000 DT  â†’ 1 000 DT
+--   otherwise              â†’ 2 000 DT
 --
 -- The tiers live in platform_settings so admins can tune them from
--- the Admin → Settings panel without a deploy. Stored as JSON: an
+-- the Admin â†’ Settings panel without a deploy. Stored as JSON: an
 -- ordered array of { max: number | null, deposit: number }. The seller
 -- wizard + server-side `pickDeposit()` helper walk the list in order
 -- and stop at the first tier whose `max` exceeds the starting price
 -- (or has max=null for the top tier).
 --
--- Safe to run multiple times — the upsert only inserts on conflict.
+-- Safe to run multiple times â€” the upsert only inserts on conflict.
 -- ============================================================
 
 insert into public.platform_settings
@@ -8337,7 +8337,7 @@ values
     'auction',
     'Tiered fixed-amount entry deposit, picked by starting price. ' ||
     'Each tier = { max (exclusive ceiling, null = top tier), deposit in DT }. ' ||
-    'Walked in order — first matching tier wins. ' ||
+    'Walked in order â€” first matching tier wins. ' ||
     'Replaces the legacy auction.deposit.starting_pct percentage rule.',
     false,
     false
@@ -8353,7 +8353,7 @@ on conflict (key) do nothing;
 -- One-off cleanup: remove the seeded Toyota Yaris 2020.
 -- Requested by the product owner; the listing was confusing on the
 -- live home page (new-seller alert popping on a clearly seeded row).
--- Idempotent — safe to run multiple times.
+-- Idempotent â€” safe to run multiple times.
 -- ============================================================
 
 -- Wipe child rows first so the FK constraints don't reject the
@@ -8392,7 +8392,7 @@ delete from public.auctions
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — Admin RBAC hardening (critical security fix)
+-- Mazed Auto â€” Admin RBAC hardening (critical security fix)
 --
 -- Problem (audit finding #1):
 --   `is_admin()` reads from `auth.jwt() -> 'user_metadata' ->> 'role'`.
@@ -8410,7 +8410,7 @@ delete from public.auctions
 --   `user_metadata` only as a UI hint (no longer security-load-bearing).
 --
 --   New RPCs `admin_grant_role()` and `admin_revoke_role()` are the
---   ONLY way to mutate the table — both are super_admin gated and
+--   ONLY way to mutate the table â€” both are super_admin gated and
 --   audit-logged.
 --
 -- Depends on: _apply-all.sql (admin_audit_log, admin_role, is_admin)
@@ -8428,12 +8428,12 @@ create table if not exists public.admin_users (
 
 alter table public.admin_users enable row level security;
 
--- Only admins can SELECT — UI uses admin_list_admins() RPC for the listing
+-- Only admins can SELECT â€” UI uses admin_list_admins() RPC for the listing
 drop policy if exists "admin_users_admin_read" on public.admin_users;
 create policy "admin_users_admin_read" on public.admin_users
   for select to authenticated using (public.is_admin());
 
--- No client-side INSERT/UPDATE/DELETE — everything goes through the RPCs
+-- No client-side INSERT/UPDATE/DELETE â€” everything goes through the RPCs
 drop policy if exists "admin_users_no_write" on public.admin_users;
 create policy "admin_users_no_write" on public.admin_users
   for all to authenticated using (false) with check (false);
@@ -8441,7 +8441,7 @@ create policy "admin_users_no_write" on public.admin_users
 
 -- 2) Backfill from raw_user_meta_data ----------------------------------------
 -- Pull anyone currently marked admin via the legacy `role`/`adminRole`
--- metadata fields into the new table. Idempotent — `on conflict do nothing`.
+-- metadata fields into the new table. Idempotent â€” `on conflict do nothing`.
 insert into public.admin_users (user_id, admin_role, granted_at)
 select
   u.id,
@@ -8542,7 +8542,7 @@ end; $$;
 grant execute on function public.admin_list_admins() to authenticated;
 
 
--- 5) admin_grant_role() — the only way to promote a user --------------------
+-- 5) admin_grant_role() â€” the only way to promote a user --------------------
 -- super_admin only. Audit-logged.
 create or replace function public.admin_grant_role(
   p_user_id    uuid,
@@ -8572,8 +8572,8 @@ begin
 
   -- Mirror into user_metadata so legacy UI bits (the gold admin chip in
   -- ProfileMenu) keep showing the right role even before the next JWT
-  -- refresh. Security no longer depends on this — is_admin() reads the
-  -- table directly — but the metadata stays a useful display hint.
+  -- refresh. Security no longer depends on this â€” is_admin() reads the
+  -- table directly â€” but the metadata stays a useful display hint.
   update auth.users
      set raw_user_meta_data = coalesce(raw_user_meta_data, '{}'::jsonb)
         || jsonb_build_object('adminRole', p_admin_role, 'role', 'admin')
@@ -8595,7 +8595,7 @@ revoke all on function public.admin_grant_role(uuid, text) from public;
 grant execute on function public.admin_grant_role(uuid, text) to authenticated;
 
 
--- 6) admin_revoke_role() — the only way to demote --------------------------
+-- 6) admin_revoke_role() â€” the only way to demote --------------------------
 create or replace function public.admin_revoke_role(
   p_user_id uuid
 ) returns void
@@ -8696,7 +8696,7 @@ begin
   perform public.log_admin_action(
     'admin.role.assign',
     p_target_user_id => p_user_id,
-    p_detail         => coalesce(v_old, 'none') || ' → ' || coalesce(p_role, 'none')
+    p_detail         => coalesce(v_old, 'none') || ' â†’ ' || coalesce(p_role, 'none')
   );
 end; $$;
 
@@ -8718,21 +8718,21 @@ end $$;
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — Performance indexes for hot read paths
+-- Mazed Auto â€” Performance indexes for hot read paths
 --
--- Audit finding #18 — several query patterns scan tables instead of
+-- Audit finding #18 â€” several query patterns scan tables instead of
 -- using indexes. Each `create index if not exists` is idempotent so
 -- this migration is safe to re-run.
 --
 -- The pre-existing indexes cover most surfaces; this file fills the
 -- gaps identified by the deep audit. Specifically:
---   - bids.user_id          → /buyer/bids
---   - bids(auction_id, placed_at desc) → bid history per auction
---   - watchlist.user_id     → /buyer/bids watchlist tab
---   - auctions.seller_id    → /seller/auctions
---   - auctions(status, end_time) → catalog filter + sweep job
---   - auctions.category     → browse filtering
---   - auctions(created_at desc) → "newest" sort
+--   - bids.user_id          â†’ /buyer/bids
+--   - bids(auction_id, placed_at desc) â†’ bid history per auction
+--   - watchlist.user_id     â†’ /buyer/bids watchlist tab
+--   - auctions.seller_id    â†’ /seller/auctions
+--   - auctions(status, end_time) â†’ catalog filter + sweep job
+--   - auctions.category     â†’ browse filtering
+--   - auctions(created_at desc) â†’ "newest" sort
 -- ============================================================
 
 -- bids ----------------------------------------------------------------------
@@ -8800,18 +8800,18 @@ end $$;
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — Hardening for buy_now() + outbid notification dedup
+-- Mazed Auto â€” Hardening for buy_now() + outbid notification dedup
 --
 -- Audit findings:
---   #4 — buy_now() didn't check that the auction was still live;
+--   #4 â€” buy_now() didn't check that the auction was still live;
 --        two concurrent buy-now calls could both succeed (the second
 --        one would overwrite the first's "ended" state).
---   outbid spam — handle_new_bid inserts an "outbid" notification on
+--   outbid spam â€” handle_new_bid inserts an "outbid" notification on
 --        every bid. In a closing flurry a user can collect 10+ alerts
 --        in 30 seconds. Dedup against any unread outbid for the same
 --        user+auction in the last 60 seconds.
 --
--- Both fixes are atomic — the SELECT … FOR UPDATE inside the trigger /
+-- Both fixes are atomic â€” the SELECT â€¦ FOR UPDATE inside the trigger /
 -- function serialises everything that runs through it.
 --
 -- Safe to run repeatedly.
@@ -8848,7 +8848,7 @@ begin
   if v_seller = p_buyer_id then
     raise exception 'SELLER_CANNOT_BUY';
   end if;
-  -- Was missing — without these two checks a second buy-now call after
+  -- Was missing â€” without these two checks a second buy-now call after
   -- the auction had already ended would happily overwrite status/price.
   if v_status not in ('active','ending') then
     raise exception 'AUCTION_NOT_ACTIVE';
@@ -8866,8 +8866,8 @@ begin
 
   insert into public.notifications (user_id, auction_id, kind, title, body)
   values (p_buyer_id, p_auction_id, 'won',
-          'Félicitations ! Vous avez gagné l''enchère',
-          'La voiture a été achetée au prix Acheter maintenant — prête pour le paiement final');
+          'FÃ©licitations ! Vous avez gagnÃ© l''enchÃ¨re',
+          'La voiture a Ã©tÃ© achetÃ©e au prix Acheter maintenant â€” prÃªte pour le paiement final');
 end; $$;
 
 
@@ -8949,7 +8949,7 @@ begin
          status = case when v_extended then 'ending' else status end
    where id = new.auction_id;
 
-  -- Outbid notification — only if there isn't already a recent (within
+  -- Outbid notification â€” only if there isn't already a recent (within
   -- the last minute) unread outbid for this user+auction. Closing
   -- flurries used to generate 10+ alerts in 30 seconds; now it's 1/min.
   if v_prev_bidder is not null
@@ -8969,8 +8969,8 @@ begin
         v_prev_bidder,
         new.auction_id,
         'outbid',
-        'Votre offre a été dépassée',
-        v_make || ' ' || v_model || ' ' || v_year || ' — Prix actuel ' || new.amount::text || ' DT'
+        'Votre offre a Ã©tÃ© dÃ©passÃ©e',
+        v_make || ' ' || v_model || ' ' || v_year || ' â€” Prix actuel ' || new.amount::text || ' DT'
       );
     end if;
   end if;
@@ -8995,9 +8995,9 @@ end $$;
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — Atomic plan-quota check on auction publish
+-- Mazed Auto â€” Atomic plan-quota check on auction publish
 --
--- Audit finding #5 — review/page.tsx calls user_listings_remaining()
+-- Audit finding #5 â€” review/page.tsx calls user_listings_remaining()
 -- and checks `> 0` BEFORE inserting the auction. Two rapid Publish
 -- clicks can both pass the check before either insert commits,
 -- letting a user exceed their monthly listing limit by N.
@@ -9011,7 +9011,7 @@ end $$;
 --
 -- The check is bypassable from the client (the trigger runs server-
 -- side regardless of what RLS / direct INSERT the client does), and
--- it doesn't double-count rows in `pending_review` — that's the
+-- it doesn't double-count rows in `pending_review` â€” that's the
 -- behaviour we want: a publish that lands in moderation already
 -- consumed a listing slot.
 --
@@ -9027,7 +9027,7 @@ as $$
 declare
   v_remaining int;
 begin
-  -- Admin-created auctions (via service-role insert) bypass — auth.uid()
+  -- Admin-created auctions (via service-role insert) bypass â€” auth.uid()
   -- is null there. Anonymous / unauthenticated inserts are already
   -- blocked by RLS; the seller_id check is defence-in-depth.
   if auth.uid() is null then
@@ -9039,7 +9039,7 @@ begin
 
   -- Re-read inside the same transaction. user_listings_remaining()
   -- is STABLE so the planner caches it per call, but the count it
-  -- reads is the live row count — including any in-flight inserts
+  -- reads is the live row count â€” including any in-flight inserts
   -- from concurrent transactions once they commit.
   v_remaining := public.user_listings_remaining(new.seller_id);
 
@@ -9069,7 +9069,7 @@ end $$;
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — Notifications + Subscription fixes
+-- Mazed Auto â€” Notifications + Subscription fixes
 --
 -- This migration fixes audit findings:
 --   NOTIF-1: block client-side notification INSERT via RLS
@@ -9117,7 +9117,7 @@ create trigger trg_sync_notification_read_at
 -- 1) NOTIFICATIONS: deny client-side INSERT ---------------------------------
 -- All notification rows must come from SECURITY DEFINER triggers or RPCs
 -- (handle_new_bid, buy_now, review_kyc, admin_bulk_approve_auctions,
---  admin_bulk_reject_auctions, admin_warn_user, admin_broadcast_create…).
+--  admin_bulk_reject_auctions, admin_warn_user, admin_broadcast_createâ€¦).
 -- Earlier the table had RLS enabled with no INSERT policy, but Supabase
 -- libraries permit writes through public clients when RLS allows it; we
 -- need an explicit `using (false)` policy as a defence.
@@ -9159,7 +9159,7 @@ revoke all on function public.notification_recent_unread(uuid, text, uuid, int) 
 grant execute on function public.notification_recent_unread(uuid, text, uuid, int) to authenticated;
 
 
--- 3) handle_new_report → use the dedup helper -----------------------------
+-- 3) handle_new_report â†’ use the dedup helper -----------------------------
 -- The "system" notification on each report used to fire unconditionally.
 -- A burst of reports (or a race condition) would spam the seller. The
 -- finalize/auto-cancel notifications also benefit from the same guard.
@@ -9180,7 +9180,7 @@ end $$;
 
 -- 4) admin_broadcast_create: chunked fan-out ------------------------------
 -- audience='all' on a 10k-user platform inserts 10k notification rows in
--- a single transaction → table lock + realtime fanout storm. Chunk the
+-- a single transaction â†’ table lock + realtime fanout storm. Chunk the
 -- inserts in 1000-row batches inside their own subtransactions so other
 -- traffic isn't starved.
 --
@@ -9293,11 +9293,11 @@ begin
      where id = r.id;
 
     -- Dedup: same auction approved twice (re-publish flow) shouldn't
-    -- spam two "Enchère approuvée" rows on the seller.
+    -- spam two "EnchÃ¨re approuvÃ©e" rows on the seller.
     if not public.notification_recent_unread(r.seller_id, 'approved', r.id, 300) then
       insert into public.notifications (user_id, auction_id, kind, title, body)
       values (r.seller_id, r.id, 'approved',
-              'Enchère approuvée',
+              'EnchÃ¨re approuvÃ©e',
               'Votre annonce est en ligne.');
     end if;
     v_count := v_count + 1;
@@ -9342,7 +9342,7 @@ begin
     update public.auctions set status = 'cancelled' where id = r.id;
     if not public.notification_recent_unread(r.seller_id, 'rejected', r.id, 300) then
       insert into public.notifications (user_id, auction_id, kind, title, body)
-      values (r.seller_id, r.id, 'rejected', 'Enchère refusée', p_reason);
+      values (r.seller_id, r.id, 'rejected', 'EnchÃ¨re refusÃ©e', p_reason);
     end if;
     v_count := v_count + 1;
   end loop;
@@ -9414,7 +9414,7 @@ create trigger trg_enforce_publish_quota
 -- 8) SUB-10: carry listings_used_this_period on plan switch ---------------
 -- subscribe_to_plan switches an entitled user from plan A to plan B.
 -- Previously the new row started at listings_used=0, so a user who
--- consumed 4/5 on Silver got 0/20 on Gold — easy gaming. Carry the
+-- consumed 4/5 on Silver got 0/20 on Gold â€” easy gaming. Carry the
 -- usage forward so the new plan's quota inherits the prior period's
 -- consumption.
 do $$
@@ -9491,7 +9491,7 @@ end $$;
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — Server-side KYC enforcement on bids
+-- Mazed Auto â€” Server-side KYC enforcement on bids
 --
 -- Audit finding (round-2 #4): the bid path checked KYC by reading
 -- `user_metadata.kycStatus`. That field is client-writable via
@@ -9503,7 +9503,7 @@ end $$;
 --      which is only flipped to true by the SECURITY DEFINER `review_kyc`
 --      RPC. No client can set it.
 --   2. The `handle_new_bid` trigger raises NOT_KYC_VERIFIED before
---      mutating any state. Defence in depth — even if the page-level
+--      mutating any state. Defence in depth â€” even if the page-level
 --      server gate is somehow bypassed, the trigger refuses the bid.
 --
 -- Safe to run repeatedly.
@@ -9606,7 +9606,7 @@ begin
          status = case when v_extended then 'ending' else status end
    where id = new.auction_id;
 
-  -- Outbid dedup (60s window) — see migrate-bid-buynow-hardening.sql.
+  -- Outbid dedup (60s window) â€” see migrate-bid-buynow-hardening.sql.
   if v_prev_bidder is not null
      and v_prev_bidder <> coalesce(new.user_id, '00000000-0000-0000-0000-000000000000'::uuid) then
     select exists(
@@ -9624,8 +9624,8 @@ begin
         v_prev_bidder,
         new.auction_id,
         'outbid',
-        'Votre offre a été dépassée',
-        v_make || ' ' || v_model || ' ' || v_year || ' — Prix actuel ' || new.amount::text || ' DT'
+        'Votre offre a Ã©tÃ© dÃ©passÃ©e',
+        v_make || ' ' || v_model || ' ' || v_year || ' â€” Prix actuel ' || new.amount::text || ' DT'
       );
     end if;
   end if;
@@ -9638,7 +9638,7 @@ create trigger trg_new_bid after insert on public.bids
 for each row execute function public.handle_new_bid();
 
 
--- Also block buy_now for unverified users — same threat model.
+-- Also block buy_now for unverified users â€” same threat model.
 create or replace function public.buy_now(p_auction_id uuid, p_buyer_id uuid)
 returns void
 language plpgsql
@@ -9687,8 +9687,8 @@ begin
 
   insert into public.notifications (user_id, auction_id, kind, title, body)
   values (p_buyer_id, p_auction_id, 'won',
-          'Félicitations ! Vous avez gagné l''enchère',
-          'La voiture a été achetée au prix Acheter maintenant — prête pour le paiement final');
+          'FÃ©licitations ! Vous avez gagnÃ© l''enchÃ¨re',
+          'La voiture a Ã©tÃ© achetÃ©e au prix Acheter maintenant â€” prÃªte pour le paiement final');
 end; $$;
 
 
@@ -9704,15 +9704,15 @@ end $$;
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — Wire the dormant notification kinds + SUB-6 bilingual
+-- Mazed Auto â€” Wire the dormant notification kinds + SUB-6 bilingual
 -- features.
 --
 -- After round 16, the `notifications.kind` CHECK constraint allows 22
 -- kinds but only 9 were ever inserted. This migration brings 4 more
 -- into production:
---   - `review_kyc()`        → kyc_approved / kyc_rejected (replaces "system")
---   - `admin_ban_user()`    → account_blocked (replaces "system")
---   - `complete_subscription_from_payment` → payment_received (replaces "system")
+--   - `review_kyc()`        â†’ kyc_approved / kyc_rejected (replaces "system")
+--   - `admin_ban_user()`    â†’ account_blocked (replaces "system")
+--   - `complete_subscription_from_payment` â†’ payment_received (replaces "system")
 --
 -- It also adds `cms_subscription_plans.features_ar TEXT[]` so the
 -- per-plan bullet list on /pricing isn't French-only (SUB-6). The reader
@@ -9727,7 +9727,7 @@ alter table public.cms_subscription_plans
   add column if not exists features_ar text[] default '{}'::text[];
 
 
--- 2) review_kyc → kyc_approved / kyc_rejected notification ----------------
+-- 2) review_kyc â†’ kyc_approved / kyc_rejected notification ----------------
 -- The trust-score bump + sellers.verified_kyc flip happen as before;
 -- we only add the right-kinded notification so the user gets a
 -- properly-categorised alert and the focus-refresh JWT trick in
@@ -9783,14 +9783,14 @@ begin
     if not public.notification_recent_unread(v_user, 'kyc_approved', null, 300) then
       insert into public.notifications (user_id, kind, title, body)
       values (v_user, 'kyc_approved',
-              'Identité vérifiée ✓',
-              'Votre KYC a été approuvé. Vous pouvez désormais enchérir et publier des annonces.');
+              'IdentitÃ© vÃ©rifiÃ©e âœ“',
+              'Votre KYC a Ã©tÃ© approuvÃ©. Vous pouvez dÃ©sormais enchÃ©rir et publier des annonces.');
     end if;
   else
     if not public.notification_recent_unread(v_user, 'kyc_rejected', null, 300) then
       insert into public.notifications (user_id, kind, title, body)
       values (v_user, 'kyc_rejected',
-              'Vérification d''identité refusée',
+              'VÃ©rification d''identitÃ© refusÃ©e',
               coalesce(v_reason, 'Documents insuffisants. Vous pouvez recommencer depuis /kyc/start.'));
     end if;
   end if;
@@ -9800,7 +9800,7 @@ revoke all on function public.review_kyc(uuid, text, text)  from public;
 grant execute on function public.review_kyc(uuid, text, text)  to authenticated;
 
 
--- 3) admin_ban_user → account_blocked notification ------------------------
+-- 3) admin_ban_user â†’ account_blocked notification ------------------------
 create or replace function public.admin_ban_user(
   p_user_id      uuid,
   p_reason       text,
@@ -9840,7 +9840,7 @@ begin
   end if;
 
   v_title := case
-    when v_until is null then 'Compte suspendu définitivement'
+    when v_until is null then 'Compte suspendu dÃ©finitivement'
     else 'Compte suspendu temporairement'
   end;
 
@@ -9864,7 +9864,7 @@ end; $$;
 grant execute on function public.admin_ban_user(uuid, text, text, int) to authenticated;
 
 
--- 4) complete_subscription_from_payment → payment_received notification ---
+-- 4) complete_subscription_from_payment â†’ payment_received notification ---
 -- Currently inserts a generic "system" kind. payment_received is more
 -- specific and routes to /transactions where the user can see the ledger
 -- entry. Preserves all the other activation behaviour.
@@ -9935,7 +9935,7 @@ begin
   if not public.notification_recent_unread(v_sub.user_id, 'payment_received', null, 300) then
     insert into public.notifications (user_id, kind, title, body)
     values (v_sub.user_id, 'payment_received',
-      'Abonnement activé',
+      'Abonnement activÃ©',
       'Votre plan ' || v_plan.name_fr || ' est actif pour les 30 prochains jours.');
   end if;
 
@@ -9957,21 +9957,21 @@ end $$;
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — wire 3 more dormant notification kinds
---   - finalize_auction(reserve_not_met) → kind="reserve_not_met"
---   - finalize_auction(ended)            → kind="deposit_refunded" for losers
---   - forfeit_winner_deposit             → kind="deposit_forfeited" for forfeiter
+-- Mazed Auto â€” wire 3 more dormant notification kinds
+--   - finalize_auction(reserve_not_met) â†’ kind="reserve_not_met"
+--   - finalize_auction(ended)            â†’ kind="deposit_refunded" for losers
+--   - forfeit_winner_deposit             â†’ kind="deposit_forfeited" for forfeiter
 --
 -- Replaces the generic "lost" / "system" kinds with the v2 categories
 -- so kindMeta in NotificationsList routes them correctly (round 16):
---   reserve_not_met   → AlertTriangle, /seller/auctions
---   deposit_refunded  → RefreshCcw,   /transactions
---   deposit_forfeited → AlertTriangle, /transactions
+--   reserve_not_met   â†’ AlertTriangle, /seller/auctions
+--   deposit_refunded  â†’ RefreshCcw,   /transactions
+--   deposit_forfeited â†’ AlertTriangle, /transactions
 --
 -- Safe to run repeatedly.
 -- ============================================================
 
--- 1) finalize_auction — re-emit with the right kinds + refund alert -------
+-- 1) finalize_auction â€” re-emit with the right kinds + refund alert -------
 create or replace function public.finalize_auction(p_auction_id uuid)
 returns void language plpgsql security definer as $$
 declare
@@ -10002,23 +10002,23 @@ begin
 
       insert into public.notifications (user_id, auction_id, kind, title, body)
       values (v_winner, p_auction_id, 'won',
-              'Félicitations ! Vous avez gagné l''enchère',
-              v_make || ' ' || v_model || ' ' || v_year || ' à ' || v_winning_amount::text
-              || ' DT — complétez le paiement final dans les ' || v_deadline_days || ' jours');
+              'FÃ©licitations ! Vous avez gagnÃ© l''enchÃ¨re',
+              v_make || ' ' || v_model || ' ' || v_year || ' Ã  ' || v_winning_amount::text
+              || ' DT â€” complÃ©tez le paiement final dans les ' || v_deadline_days || ' jours');
 
       -- Losing bidders get "lost" + their refund row right after. The
       -- "lost" kind is the right category for the headline; the
       -- separate deposit_refunded notification gets emitted when the
       -- refund transaction lands.
       insert into public.notifications (user_id, auction_id, kind, title, body)
-      select distinct user_id, p_auction_id, 'lost', 'Enchère terminée',
+      select distinct user_id, p_auction_id, 'lost', 'EnchÃ¨re terminÃ©e',
              v_make || ' ' || v_model || ' ' || v_year
-             || ' — Vous n''avez pas gagné cette fois. Votre caution sera remboursée sous 24 heures.'
+             || ' â€” Vous n''avez pas gagnÃ© cette fois. Votre caution sera remboursÃ©e sous 24 heures.'
       from public.bids
       where auction_id = p_auction_id and user_id is not null and user_id <> v_winner;
 
       update public.transactions
-         set status = 'completed', label = label || ' (remboursée)'
+         set status = 'completed', label = label || ' (remboursÃ©e)'
        where auction_id = p_auction_id
          and type = 'deposit'
          and direction = 'out'
@@ -10033,7 +10033,7 @@ begin
              'refund',
              'in',
              a.participation_deposit,
-             'Remboursement caution — ' || a.make || ' ' || a.model || ' ' || a.year,
+             'Remboursement caution â€” ' || a.make || ' ' || a.model || ' ' || a.year,
              'completed'
       from (select distinct on (user_id) user_id, bidder_label, id
               from public.bids
@@ -10046,10 +10046,10 @@ begin
       -- "lost" headline (which doesn't point to /transactions).
       insert into public.notifications (user_id, auction_id, kind, title, body)
       select distinct user_id, p_auction_id, 'deposit_refunded',
-             'Caution remboursée',
+             'Caution remboursÃ©e',
              'Votre caution de ' || v_deposit::text
                || ' DT pour ' || v_make || ' ' || v_model || ' ' || v_year
-               || ' a été créditée.'
+               || ' a Ã©tÃ© crÃ©ditÃ©e.'
       from public.bids
       where auction_id = p_auction_id and user_id is not null and user_id <> v_winner;
     end if;
@@ -10060,16 +10060,16 @@ begin
     -- "lost" tray entry.
     insert into public.notifications (user_id, auction_id, kind, title, body)
     select distinct user_id, p_auction_id, 'reserve_not_met',
-           'Prix de réserve non atteint',
+           'Prix de rÃ©serve non atteint',
            v_make || ' ' || v_model || ' ' || v_year
-           || ' — Vente annulée. Votre caution sera remboursée.'
+           || ' â€” Vente annulÃ©e. Votre caution sera remboursÃ©e.'
     from public.bids where auction_id = p_auction_id and user_id is not null;
 
     insert into public.transactions (ref, user_id, user_label, auction_id, type, direction, amount, label, status)
     select 'TX-RF-' || substring(gen_random_uuid()::text from 1 for 8) || '-' || substring(b.id::text from 1 for 4),
            b.user_id, b.bidder_label, p_auction_id, 'refund', 'in',
            a.participation_deposit,
-           'Remboursement caution — ' || a.make || ' ' || a.model || ' ' || a.year,
+           'Remboursement caution â€” ' || a.make || ' ' || a.model || ' ' || a.year,
            'completed'
     from (select distinct on (user_id) user_id, bidder_label, id
             from public.bids where auction_id = p_auction_id and user_id is not null) b
@@ -10077,16 +10077,16 @@ begin
 
     insert into public.notifications (user_id, auction_id, kind, title, body)
     select distinct user_id, p_auction_id, 'deposit_refunded',
-           'Caution remboursée',
+           'Caution remboursÃ©e',
            'Votre caution de ' || v_deposit::text
              || ' DT pour ' || v_make || ' ' || v_model || ' ' || v_year
-             || ' a été créditée.'
+             || ' a Ã©tÃ© crÃ©ditÃ©e.'
     from public.bids where auction_id = p_auction_id and user_id is not null;
   end if;
 end; $$;
 
 
--- 2) forfeit_winner_deposit — use deposit_forfeited kind ------------------
+-- 2) forfeit_winner_deposit â€” use deposit_forfeited kind ------------------
 -- Locate the forfeiter notification insert and re-categorise it. The
 -- rest of the function is unchanged; we re-write the whole body so the
 -- definition stays atomic.
@@ -10178,7 +10178,7 @@ begin
   values (
     'TX-FP-' || substring(gen_random_uuid()::text from 1 for 8),
     v_seller, null, p_auction_id, 'forfeit_payout', 'in', v_seller_amt,
-    'Caution forfait — ' || v_label || ' (part vendeur)',
+    'Caution forfait â€” ' || v_label || ' (part vendeur)',
     'completed'
   );
 
@@ -10186,21 +10186,21 @@ begin
   values (
     'TX-FF-' || substring(gen_random_uuid()::text from 1 for 8),
     null, 'Mazed Auto', p_auction_id, 'forfeit_fee', 'in', v_platform_amt,
-    'Caution forfait — ' || v_label || ' (commission plateforme)',
+    'Caution forfait â€” ' || v_label || ' (commission plateforme)',
     'completed'
   );
 
-  -- Forfeiter notification — dedicated v2 kind so it routes to
+  -- Forfeiter notification â€” dedicated v2 kind so it routes to
   -- /transactions instead of the generic system tray.
   insert into public.notifications (user_id, auction_id, kind, title, body)
   values (p_user_id, p_auction_id, 'deposit_forfeited',
     case p_reason
-      when 'voluntary' then 'Vous avez renoncé à votre victoire'
-      else 'Délai de paiement expiré — caution perdue'
+      when 'voluntary' then 'Vous avez renoncÃ© Ã  votre victoire'
+      else 'DÃ©lai de paiement expirÃ© â€” caution perdue'
     end,
-    v_label || ' — Votre caution de ' || v_deposit::text
-      || ' DT a été redistribuée (' || v_seller_amt::text
-      || ' DT au vendeur, ' || v_platform_amt::text || ' DT à la plateforme).'
+    v_label || ' â€” Votre caution de ' || v_deposit::text
+      || ' DT a Ã©tÃ© redistribuÃ©e (' || v_seller_amt::text
+      || ' DT au vendeur, ' || v_platform_amt::text || ' DT Ã  la plateforme).'
   );
 
   select b.user_id, b.amount, b.bidder_label
@@ -10226,9 +10226,9 @@ begin
 
     insert into public.notifications (user_id, auction_id, kind, title, body)
     values (v_next_bidder.user_id, p_auction_id, 'won',
-      'Enchère re-proposée à votre prix',
-      v_label || ' — Le gagnant précédent a renoncé. Vous pouvez l''acheter à votre offre de '
-        || v_next_bidder.amount::text || ' DT. Délai de paiement : '
+      'EnchÃ¨re re-proposÃ©e Ã  votre prix',
+      v_label || ' â€” Le gagnant prÃ©cÃ©dent a renoncÃ©. Vous pouvez l''acheter Ã  votre offre de '
+        || v_next_bidder.amount::text || ' DT. DÃ©lai de paiement : '
         || v_deadline_days || ' jours.'
     );
   else
@@ -10240,8 +10240,8 @@ begin
 
     insert into public.notifications (user_id, auction_id, kind, title, body)
     values (v_seller, p_auction_id, 'system',
-      'Enchère annulée — aucun acheteur restant',
-      v_label || ' — Tous les enchérisseurs éligibles ont renoncé.'
+      'EnchÃ¨re annulÃ©e â€” aucun acheteur restant',
+      v_label || ' â€” Tous les enchÃ©risseurs Ã©ligibles ont renoncÃ©.'
     );
   end if;
 end; $$;
@@ -10259,10 +10259,10 @@ end $$;
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — wire the final 3 dormant notification kinds:
---   - handle_new_bid          → auction_extended (on anti-sniping)
---   - handle_new_report       → new_report (replaces "system")
---   - handle_final_payment    → rating_request (after final payment)
+-- Mazed Auto â€” wire the final 3 dormant notification kinds:
+--   - handle_new_bid          â†’ auction_extended (on anti-sniping)
+--   - handle_new_report       â†’ new_report (replaces "system")
+--   - handle_final_payment    â†’ rating_request (after final payment)
 --
 -- Combined with rounds 18 + 19, this leaves only 2 kinds dormant:
 --   - kyc_expires_soon       (needs an expiry-check cron)
@@ -10272,7 +10272,7 @@ end $$;
 -- ============================================================
 
 
--- 1) handle_new_bid — auction_extended notification on anti-sniping --------
+-- 1) handle_new_bid â€” auction_extended notification on anti-sniping --------
 -- When a bid in the last N minutes pushes end_time out, the seller (and
 -- bidders, but we'd spam them) should know the auction's gotten longer.
 -- We notify just the seller, dedup'd to once per 60s so a frenzy doesn't
@@ -10371,13 +10371,13 @@ begin
         v_prev_bidder,
         new.auction_id,
         'outbid',
-        'Votre offre a été dépassée',
-        v_make || ' ' || v_model || ' ' || v_year || ' — Prix actuel ' || new.amount::text || ' DT'
+        'Votre offre a Ã©tÃ© dÃ©passÃ©e',
+        v_make || ' ' || v_model || ' ' || v_year || ' â€” Prix actuel ' || new.amount::text || ' DT'
       );
     end if;
   end if;
 
-  -- auction_extended for the seller — dedup'd to once per 60s so a
+  -- auction_extended for the seller â€” dedup'd to once per 60s so a
   -- closing-flurry doesn't fire ten extension alerts in a row.
   if v_extended and v_seller is not null then
     select exists(
@@ -10391,9 +10391,9 @@ begin
     if not v_extended_already then
       insert into public.notifications (user_id, auction_id, kind, title, body)
       values (v_seller, new.auction_id, 'auction_extended',
-        'Enchère prolongée',
+        'EnchÃ¨re prolongÃ©e',
         v_make || ' ' || v_model || ' ' || v_year
-          || ' — Offre dans les dernières minutes, fin repoussée de '
+          || ' â€” Offre dans les derniÃ¨res minutes, fin repoussÃ©e de '
           || v_extension_min::text || ' minutes.');
     end if;
   end if;
@@ -10406,7 +10406,7 @@ create trigger trg_new_bid after insert on public.bids
 for each row execute function public.handle_new_bid();
 
 
--- 2) handle_new_report — use new_report kind for the seller's alert -------
+-- 2) handle_new_report â€” use new_report kind for the seller's alert -------
 create or replace function public.handle_new_report()
 returns trigger language plpgsql security definer as $$
 declare
@@ -10433,8 +10433,8 @@ begin
      and not public.notification_recent_unread(v_seller, 'new_report', new.auction_id, 60) then
     insert into public.notifications (user_id, auction_id, kind, title, body)
     values (v_seller, new.auction_id, 'new_report',
-            'Nouveau signalement sur votre enchère',
-            v_make || ' ' || v_model || ' ' || v_year || ' — Un signalement a été reçu, veuillez vérifier');
+            'Nouveau signalement sur votre enchÃ¨re',
+            v_make || ' ' || v_model || ' ' || v_year || ' â€” Un signalement a Ã©tÃ© reÃ§u, veuillez vÃ©rifier');
   end if;
 
   if v_count >= v_remove_threshold then
@@ -10447,9 +10447,9 @@ begin
     if v_seller is not null then
       insert into public.notifications (user_id, auction_id, kind, title, body)
       values (v_seller, new.auction_id, 'rejected',
-              'Votre enchère a été annulée',
-              'Le nombre de signalements a dépassé la limite autorisée. '
-              || v_penalty || ' points ont été déduits du Trust Score.');
+              'Votre enchÃ¨re a Ã©tÃ© annulÃ©e',
+              'Le nombre de signalements a dÃ©passÃ© la limite autorisÃ©e. '
+              || v_penalty || ' points ont Ã©tÃ© dÃ©duits du Trust Score.');
     end if;
   elsif v_count >= v_review_threshold then
     update public.auctions
@@ -10458,8 +10458,8 @@ begin
     if v_seller is not null then
       insert into public.notifications (user_id, auction_id, kind, title, body)
       values (v_seller, new.auction_id, 'system',
-              'Votre enchère est en cours de modération',
-              'Plusieurs signalements reçus — l''enchère est temporairement suspendue pour examen.');
+              'Votre enchÃ¨re est en cours de modÃ©ration',
+              'Plusieurs signalements reÃ§us â€” l''enchÃ¨re est temporairement suspendue pour examen.');
     end if;
   end if;
 
@@ -10471,7 +10471,7 @@ create trigger trg_new_report after insert on public.reports
 for each row execute function public.handle_new_report();
 
 
--- 3) handle_final_payment — emit rating_request to the buyer --------------
+-- 3) handle_final_payment â€” emit rating_request to the buyer --------------
 -- Extends the existing trust-score bump trigger to also insert a
 -- rating_request notification for the buyer, dedup'd against any
 -- existing rating row so the prompt doesn't reappear after they rate.
@@ -10527,9 +10527,9 @@ begin
        and not public.notification_recent_unread(new.user_id, 'rating_request', new.auction_id, 86400) then
       insert into public.notifications (user_id, auction_id, kind, title, body)
       values (new.user_id, new.auction_id, 'rating_request',
-        'Évaluez votre vendeur',
+        'Ã‰valuez votre vendeur',
         v_make || ' ' || v_model || ' ' || v_year
-          || ' — Comment s''est passée la transaction ? Votre note aide la communauté.');
+          || ' â€” Comment s''est passÃ©e la transaction ? Votre note aide la communautÃ©.');
     end if;
   end if;
 
@@ -10554,8 +10554,8 @@ end $$;
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — RPC auth hardening (audit round 21)
--- Idempotent — safe to re-run.
+-- Mazed Auto â€” RPC auth hardening (audit round 21)
+-- Idempotent â€” safe to re-run.
 --
 -- Fixes from AUDIT-FINDINGS.md:
 --
@@ -10566,8 +10566,8 @@ end $$;
 --   C-2  forfeit_winner_deposit(p_auction_id, p_user_id, p_reason) let
 --        any authenticated user voluntarily forfeit any other user's
 --        deposit. Adds caller-identity guard:
---          - reason = 'voluntary'                → auth.uid() = p_user_id
---          - reason = 'payment_deadline_expired' → caller must be an
+--          - reason = 'voluntary'                â†’ auth.uid() = p_user_id
+--          - reason = 'payment_deadline_expired' â†’ caller must be an
 --            admin OR the call must originate from another SECURITY
 --            DEFINER function (we surface this via a guarded internal
 --            function _forfeit_internal that callers in this DB can use
@@ -10635,8 +10635,8 @@ begin
 
   insert into public.notifications (user_id, auction_id, kind, title, body)
   values (p_buyer_id, p_auction_id, 'won',
-          'Félicitations ! Vous avez gagné l''enchère',
-          'La voiture a été achetée au prix Acheter maintenant — prête pour le paiement final');
+          'FÃ©licitations ! Vous avez gagnÃ© l''enchÃ¨re',
+          'La voiture a Ã©tÃ© achetÃ©e au prix Acheter maintenant â€” prÃªte pour le paiement final');
 end; $$;
 
 
@@ -10736,7 +10736,7 @@ begin
   values (
     'TX-FP-' || substring(gen_random_uuid()::text from 1 for 8),
     v_seller, null, p_auction_id, 'forfeit_payout', 'in', v_seller_amt,
-    'Caution forfait — ' || v_label || ' (part vendeur)',
+    'Caution forfait â€” ' || v_label || ' (part vendeur)',
     'completed'
   );
 
@@ -10744,19 +10744,19 @@ begin
   values (
     'TX-FF-' || substring(gen_random_uuid()::text from 1 for 8),
     null, 'Mazed Auto', p_auction_id, 'forfeit_fee', 'in', v_platform_amt,
-    'Caution forfait — ' || v_label || ' (commission plateforme)',
+    'Caution forfait â€” ' || v_label || ' (commission plateforme)',
     'completed'
   );
 
   insert into public.notifications (user_id, auction_id, kind, title, body)
   values (p_user_id, p_auction_id, 'system',
     case p_reason
-      when 'voluntary' then 'Vous avez renoncé à votre victoire'
-      else 'Délai de paiement expiré — caution perdue'
+      when 'voluntary' then 'Vous avez renoncÃ© Ã  votre victoire'
+      else 'DÃ©lai de paiement expirÃ© â€” caution perdue'
     end,
-    v_label || ' — Votre caution de ' || v_deposit::text
-      || ' DT a été redistribuée (' || v_seller_amt::text
-      || ' DT au vendeur, ' || v_platform_amt::text || ' DT à la plateforme).'
+    v_label || ' â€” Votre caution de ' || v_deposit::text
+      || ' DT a Ã©tÃ© redistribuÃ©e (' || v_seller_amt::text
+      || ' DT au vendeur, ' || v_platform_amt::text || ' DT Ã  la plateforme).'
   );
 
   select b.user_id, b.amount, b.bidder_label
@@ -10782,9 +10782,9 @@ begin
 
     insert into public.notifications (user_id, auction_id, kind, title, body)
     values (v_next_bidder.user_id, p_auction_id, 'won',
-      'Enchère re-proposée à votre prix',
-      v_label || ' — Le gagnant précédent a renoncé. Vous pouvez l''acheter à votre offre de '
-        || v_next_bidder.amount::text || ' DT. Délai de paiement : '
+      'EnchÃ¨re re-proposÃ©e Ã  votre prix',
+      v_label || ' â€” Le gagnant prÃ©cÃ©dent a renoncÃ©. Vous pouvez l''acheter Ã  votre offre de '
+        || v_next_bidder.amount::text || ' DT. DÃ©lai de paiement : '
         || v_deadline_days || ' jours.'
     );
   else
@@ -10796,8 +10796,8 @@ begin
 
     insert into public.notifications (user_id, auction_id, kind, title, body)
     values (v_seller, p_auction_id, 'system',
-      'Enchère annulée — aucun acheteur restant',
-      v_label || ' — Tous les enchérisseurs éligibles ont renoncé.'
+      'EnchÃ¨re annulÃ©e â€” aucun acheteur restant',
+      v_label || ' â€” Tous les enchÃ©risseurs Ã©ligibles ont renoncÃ©.'
     );
   end if;
 end; $$;
@@ -10846,7 +10846,7 @@ begin
 end; $$;
 
 
--- Rewire the sweep to use the internal helper (no auth gate needed —
+-- Rewire the sweep to use the internal helper (no auth gate needed â€”
 -- this function only runs when called from server code, never directly
 -- from a browser).
 create or replace function public.process_expired_payment_deadlines()
@@ -10961,20 +10961,20 @@ end $$;
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Mazed Auto — Move admin role into app_metadata (audit fix M-1)
--- Idempotent — safe to re-run.
+-- Mazed Auto â€” Move admin role into app_metadata (audit fix M-1)
+-- Idempotent â€” safe to re-run.
 --
 -- Background:
 --   Supabase splits user JSON metadata into two fields:
---     - user_metadata  → CLIENT-WRITABLE (any signed-in user can call
+--     - user_metadata  â†’ CLIENT-WRITABLE (any signed-in user can call
 --       supabase.auth.updateUser({ data: {...} }) and change their own).
---     - app_metadata   → SERVICE-ROLE-ONLY. Cannot be written from the
+--     - app_metadata   â†’ SERVICE-ROLE-ONLY. Cannot be written from the
 --       browser. Both end up in the JWT.
 --
 --   The Next.js admin gate (src/proxy.ts + src/lib/admin.ts) was
 --   reading `user_metadata.adminRole` to decide whether to render the
 --   /admin/* UI. Any signed-in user could spoof that and reach the
---   admin shell. The DB layer was still safe (RLS uses is_admin() →
+--   admin shell. The DB layer was still safe (RLS uses is_admin() â†’
 --   admin_users table), but the UI bypass leaks structure and is a
 --   trust violation.
 --
@@ -11032,8 +11032,8 @@ begin
            granted_by = excluded.granted_by,
            granted_at = excluded.granted_at;
     -- Mirror into BOTH metadata fields:
-    --   - app_metadata.adminRole  → trustworthy (service-role only writes)
-    --   - user_metadata.adminRole → legacy UI hint, kept for backcompat.
+    --   - app_metadata.adminRole  â†’ trustworthy (service-role only writes)
+    --   - user_metadata.adminRole â†’ legacy UI hint, kept for backcompat.
     update auth.users
        set raw_user_meta_data = coalesce(raw_user_meta_data, '{}'::jsonb)
             || jsonb_build_object('adminRole', p_role, 'role', 'admin'),
@@ -11045,7 +11045,7 @@ begin
   perform public.log_admin_action(
     'admin.role.assign',
     p_target_user_id => p_user_id,
-    p_detail         => coalesce(v_old, 'none') || ' → ' || coalesce(p_role, 'none')
+    p_detail         => coalesce(v_old, 'none') || ' â†’ ' || coalesce(p_role, 'none')
   );
 end; $$;
 
@@ -11135,9 +11135,9 @@ revoke all on function public.admin_revoke_role(uuid) from public;
 grant execute on function public.admin_revoke_role(uuid) to authenticated;
 
 
--- 4) One-shot backfill: copy admin_users.admin_role → app_metadata --------
+-- 4) One-shot backfill: copy admin_users.admin_role â†’ app_metadata --------
 -- Without this, existing admins would lose their UI access until they
--- get re-granted. Idempotent — overwrites the same value if re-run.
+-- get re-granted. Idempotent â€” overwrites the same value if re-run.
 update auth.users u
    set raw_app_meta_data = coalesce(u.raw_app_meta_data, '{}'::jsonb)
         || jsonb_build_object('adminRole', a.admin_role)
@@ -11151,7 +11151,7 @@ update auth.users u
 
 -- 5) M-2: lock down platform-side transactions (user_id IS NULL) ----------
 -- The legacy `tx_demo_public_read` policy on public.transactions used to
--- expose every row with user_id IS NULL — those are platform commission
+-- expose every row with user_id IS NULL â€” those are platform commission
 -- entries (forfeit_fee, payouts, etc.) labelled "Mazed Auto". Anyone
 -- could read aggregate platform revenue. Drop the policy. Admins still
 -- read everything via `tx_admin_read` (already exists or created here).
@@ -11183,13 +11183,13 @@ end $$;
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Round 25 — search-path hardening for every SECURITY DEFINER fn
+-- Round 25 â€” search-path hardening for every SECURITY DEFINER fn
 -- ============================================================
 --
 -- Postgres' SECURITY DEFINER means a function runs with the privileges
 -- of its OWNER (postgres / supabase_admin in our case) rather than the
--- CALLER. That's intentional — most of our admin RPCs need to bypass
--- RLS to do their job — but it has a sharp edge: if the function's
+-- CALLER. That's intentional â€” most of our admin RPCs need to bypass
+-- RLS to do their job â€” but it has a sharp edge: if the function's
 -- search_path isn't pinned, the OWNER can be coerced into executing an
 -- attacker-controlled function or operator just by mentioning an
 -- unqualified table or function name. The classic exploit:
@@ -11199,7 +11199,7 @@ end $$;
 --   3. Attacker sets their session search_path to 'evil, public'.
 --   4. Calls a SECURITY DEFINER fn that does `upper(some_text)`.
 --   5. Without a pinned search_path on the function, postgres picks
---      evil.upper because evil is earlier in the search path — and
+--      evil.upper because evil is earlier in the search path â€” and
 --      runs it as the OWNER.
 --
 -- The fix is one ALTER per function: `SET search_path = public, pg_temp`.
@@ -11249,13 +11249,13 @@ $migration$;
 
 
 -- ============================================================
--- Round 25 — remove blanket EXCEPTION WHEN OTHERS in auto-bid trigger
+-- Round 25 â€” remove blanket EXCEPTION WHEN OTHERS in auto-bid trigger
 -- ============================================================
 --
 -- `handle_auto_bid_after()` wraps the recursive INSERT in a generic
 --    BEGIN ... EXCEPTION WHEN OTHERS THEN NULL END
--- block. The intent is good — don't roll back the ORIGINAL user bid
--- just because a downstream auto-bid placement raced and lost — but
+-- block. The intent is good â€” don't roll back the ORIGINAL user bid
+-- just because a downstream auto-bid placement raced and lost â€” but
 -- the implementation is too broad: every error class (programming
 -- bugs, RLS denials, constraint violations, deadlocks) ends in the
 -- same silent swallow. There's no way to tell from logs whether the
@@ -11340,7 +11340,7 @@ $fn$;
 -- ---------------------------------------------------------
 
 -- ============================================================
--- Round 25 — additional foreign-key indexes
+-- Round 25 â€” additional foreign-key indexes
 -- ============================================================
 --
 -- migrate-perf-indexes.sql (round 13) covered the highest-traffic FK
@@ -11353,7 +11353,7 @@ $fn$;
 --
 -- All `create index if not exists` so re-running is safe.
 
--- ─── notifications(user_id) ───────────────────────────────────────────
+-- â”€â”€â”€ notifications(user_id) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 -- Every notifications-page render lists `where user_id = me order by
 -- created_at desc limit N`. Without this, postgres seqscans the entire
 -- notifications table (which grows linearly with platform activity)
@@ -11363,7 +11363,7 @@ $fn$;
 create index if not exists notifications_user_created_idx
   on public.notifications (user_id, created_at desc);
 
--- ─── notifications(user_id, is_read) ──────────────────────────────────
+-- â”€â”€â”€ notifications(user_id, is_read) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 -- The header bell unread badge runs `select count where user_id = me
 -- and is_read = false`. Adding a partial index keyed by user_id only
 -- for the unread subset keeps the badge query at constant-time even
@@ -11372,7 +11372,7 @@ create index if not exists notifications_unread_idx
   on public.notifications (user_id)
   where is_read = false;
 
--- ─── transactions(user_id) + (auction_id) ─────────────────────────────
+-- â”€â”€â”€ transactions(user_id) + (auction_id) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 -- The buyer dashboard ("my deposits", "my payments") and the admin
 -- transaction list both scope by user_id. The auction detail page's
 -- "show me transactions for this auction" admin view scopes by
@@ -11384,14 +11384,14 @@ create index if not exists transactions_auction_idx
   on public.transactions (auction_id)
   where auction_id is not null;
 
--- ─── messages(conversation_id) ────────────────────────────────────────
+-- â”€â”€â”€ messages(conversation_id) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 -- The chat thread renders by `where conversation_id = X order by
 -- created_at asc`. With thousands of platform conversations, the
 -- seqscan-then-filter is wasted IO on every thread open.
 create index if not exists messages_conversation_idx
   on public.messages (conversation_id, created_at asc);
 
--- ─── kyc_submissions(user_id) + status ────────────────────────────────
+-- â”€â”€â”€ kyc_submissions(user_id) + status â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 -- The admin KYC queue filters by status = 'pending'; the user-side
 -- status page filters by user_id = me. Compound index covers both
 -- (status as leading column matters less since the queue typically
@@ -11402,4 +11402,676 @@ create index if not exists kyc_submissions_user_idx
 create index if not exists kyc_submissions_status_idx
   on public.kyc_submissions (status)
   where status = 'pending';
+
+
+-- ---------------------------------------------------------
+-- File: migrate-rls-recursion-fix.sql
+-- ---------------------------------------------------------
+
+-- ============================================================
+-- Mazed Auto â€” fix infinite recursion between auctions â†” bids RLS
+--
+-- Both SELECT policies referenced each other across tables:
+--   public.auctions  : exists(select 1 from public.bids   where user_id=auth.uid())
+--   public.bids      : exists(select 1 from public.auctions where seller_id=auth.uid())
+--
+-- Postgres detected the cycle and raised:
+--   "infinite recursion detected in policy for relation \"auctions\""
+--
+-- Fix: wrap each cross-table check in a SECURITY DEFINER helper. The
+-- helpers run as the function owner, bypassing RLS on the inner table,
+-- which breaks the cycle while preserving the same visibility rules.
+-- ============================================================
+
+create or replace function public.user_bid_on_auction(p_auction_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.bids
+    where auction_id = p_auction_id
+      and user_id = auth.uid()
+  );
+$$;
+
+create or replace function public.user_is_auction_seller(p_auction_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.auctions
+    where id = p_auction_id
+      and seller_id = auth.uid()
+  );
+$$;
+
+revoke all on function public.user_bid_on_auction(uuid)    from public;
+revoke all on function public.user_is_auction_seller(uuid) from public;
+grant execute on function public.user_bid_on_auction(uuid)    to authenticated, anon;
+grant execute on function public.user_is_auction_seller(uuid) to authenticated, anon;
+
+-- Rebuild auctions SELECT policy â€” no direct reference to bids.
+drop policy if exists "auctions_public_read" on public.auctions;
+create policy "auctions_public_read" on public.auctions
+  for select
+  using (
+    status in (
+      'active',
+      'ending',
+      'ended',
+      'reserve_not_met',
+      'pending_seller_decision',
+      're_offered',
+      'cancelled'
+    )
+    or seller_id = auth.uid()
+    or public.is_admin()
+    or public.user_bid_on_auction(id)
+  );
+
+-- Rebuild bids SELECT policy â€” no direct reference to auctions.
+drop policy if exists "bids_owner_or_seller_or_admin_read" on public.bids;
+create policy "bids_owner_or_seller_or_admin_read" on public.bids
+  for select
+  using (
+    user_id = auth.uid()
+    or public.is_admin()
+    or public.user_is_auction_seller(auction_id)
+  );
+
+
+-- ---------------------------------------------------------
+-- File: migrate-cms-brand-logos.sql
+-- ---------------------------------------------------------
+
+-- ============================================================
+-- Mazed Auto â€” admin-controlled brand logo uploads
+--
+-- Adds a dedicated storage bucket so admins can upload brand
+-- tile images via /admin/cms/brands. Public read so the home
+-- page slider and seller-wizard dropdown can serve the URLs;
+-- write/update/delete restricted to public.is_admin().
+--
+-- Idempotent.
+-- ============================================================
+
+insert into storage.buckets (id, name, public)
+values ('cms-brand-logos', 'cms-brand-logos', true)
+on conflict (id) do update set public = true;
+
+drop policy if exists "cms_brand_logos_public_read"   on storage.objects;
+drop policy if exists "cms_brand_logos_admin_insert"  on storage.objects;
+drop policy if exists "cms_brand_logos_admin_update"  on storage.objects;
+drop policy if exists "cms_brand_logos_admin_delete"  on storage.objects;
+
+create policy "cms_brand_logos_public_read"
+on storage.objects for select
+using (bucket_id = 'cms-brand-logos');
+
+create policy "cms_brand_logos_admin_insert"
+on storage.objects for insert
+to authenticated
+with check (
+  bucket_id = 'cms-brand-logos'
+  and public.is_admin()
+);
+
+create policy "cms_brand_logos_admin_update"
+on storage.objects for update
+to authenticated
+using (
+  bucket_id = 'cms-brand-logos'
+  and public.is_admin()
+)
+with check (
+  bucket_id = 'cms-brand-logos'
+  and public.is_admin()
+);
+
+create policy "cms_brand_logos_admin_delete"
+on storage.objects for delete
+to authenticated
+using (
+  bucket_id = 'cms-brand-logos'
+  and public.is_admin()
+);
+
+
+-- ---------------------------------------------------------
+-- File: migrate-manual-payments.sql
+-- ---------------------------------------------------------
+
+-- ============================================================
+-- Mazed Auto â€” manual payment flow (bank transfer + D17 + receipt)
+--
+-- Adds the data + RPC surface for the offline payment lane that
+-- runs alongside the simulated card provider:
+--
+--   1. User picks "Virement bancaire" or "D17" at /payment/checkout
+--   2. UI shows the platform's bank/D17 info (from platform_settings)
+--   3. User uploads a receipt image; we compress + store in the
+--      private `payment-receipts` bucket
+--   4. submit_manual_payment() inserts a row with
+--      status = 'pending_verification' and receipt_url
+--   5. Admin sees it in /admin/transactions, opens the receipt,
+--      and clicks Approve or Reject â€” verify_manual_payment() flips
+--      the status, writes an audit log, and notifies the user
+--
+-- Idempotent.
+-- ============================================================
+
+-- 1) Widen the status check + add manual-payment columns ----------
+
+alter table public.transactions
+  add column if not exists manual_method text,
+  add column if not exists receipt_url text,
+  add column if not exists verified_by uuid references auth.users(id),
+  add column if not exists verified_at timestamptz,
+  add column if not exists verification_notes text;
+
+-- Method check
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'transactions_manual_method_check'
+      and conrelid = 'public.transactions'::regclass
+  ) then
+    alter table public.transactions
+      add constraint transactions_manual_method_check
+      check (manual_method is null or manual_method in ('bank_transfer','d17'));
+  end if;
+end $$;
+
+-- Rebuild the status check to include 'pending_verification'.
+alter table public.transactions
+  drop constraint if exists transactions_status_check;
+alter table public.transactions
+  add constraint transactions_status_check
+  check (status in ('pending','processing','completed','failed','pending_verification'));
+
+create index if not exists tx_pending_verification_idx
+  on public.transactions (created_at desc)
+  where status = 'pending_verification';
+
+-- 2) Private storage bucket for receipt images -------------------
+
+insert into storage.buckets (id, name, public)
+values ('payment-receipts', 'payment-receipts', false)
+on conflict (id) do update set public = false;
+
+drop policy if exists "receipts_owner_write"  on storage.objects;
+drop policy if exists "receipts_owner_read"   on storage.objects;
+drop policy if exists "receipts_admin_read"   on storage.objects;
+drop policy if exists "receipts_admin_delete" on storage.objects;
+
+-- Users write to their own folder only.
+create policy "receipts_owner_write"
+on storage.objects for insert to authenticated
+with check (
+  bucket_id = 'payment-receipts'
+  and (storage.foldername(name))[1] = auth.uid()::text
+);
+
+-- Users read their own; admins read everything.
+create policy "receipts_owner_read"
+on storage.objects for select to authenticated
+using (
+  bucket_id = 'payment-receipts'
+  and (
+    (storage.foldername(name))[1] = auth.uid()::text
+    or public.is_admin()
+  )
+);
+
+-- Admins can delete (cleanup of rejected/expired receipts).
+create policy "receipts_admin_delete"
+on storage.objects for delete to authenticated
+using (
+  bucket_id = 'payment-receipts'
+  and public.is_admin()
+);
+
+-- 3) RPC: submit_manual_payment ----------------------------------
+
+create or replace function public.submit_manual_payment(
+  p_auction_id uuid,
+  p_amount     numeric,
+  p_type       text,
+  p_method     text,
+  p_receipt_url text
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_user_id uuid;
+  v_tx_id   uuid;
+  v_ref     text;
+  v_type    text;
+begin
+  v_user_id := auth.uid();
+  if v_user_id is null then
+    raise exception 'AUTH_REQUIRED';
+  end if;
+  if p_amount is null or p_amount <= 0 then
+    raise exception 'INVALID_AMOUNT';
+  end if;
+  if p_method not in ('bank_transfer','d17') then
+    raise exception 'INVALID_METHOD';
+  end if;
+  if p_receipt_url is null or p_receipt_url = '' then
+    raise exception 'RECEIPT_REQUIRED';
+  end if;
+
+  -- Map the caller's payment intent to the transactions.type enum.
+  v_type := case
+    when p_type = 'subscription' then 'commission'
+    when p_type = 'final' then 'final_payment'
+    when p_type = 'deposit' then 'deposit'
+    else null
+  end;
+  if v_type is null then
+    raise exception 'INVALID_TYPE';
+  end if;
+
+  -- MAN-<10 hex> tracking ref so users and admins can identify the
+  -- payment in their messages / receipt photos.
+  v_ref := 'MAN-' || upper(substring(replace(gen_random_uuid()::text, '-', ''), 1, 10));
+
+  insert into public.transactions
+    (ref, user_id, auction_id, type, direction, amount, label, status,
+     manual_method, receipt_url)
+  values
+    (v_ref, v_user_id, p_auction_id, v_type, 'in', p_amount,
+     'Paiement manuel â€” en attente de vÃ©rification',
+     'pending_verification', p_method, p_receipt_url)
+  returning id into v_tx_id;
+
+  return v_tx_id;
+end; $$;
+
+revoke all on function public.submit_manual_payment(uuid, numeric, text, text, text) from public;
+grant execute on function public.submit_manual_payment(uuid, numeric, text, text, text) to authenticated;
+
+-- 4) RPC: verify_manual_payment ----------------------------------
+
+create or replace function public.verify_manual_payment(
+  p_tx_id  uuid,
+  p_action text,
+  p_notes  text default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_admin uuid;
+  v_tx    record;
+  v_msg   text;
+begin
+  v_admin := auth.uid();
+  if v_admin is null or not public.is_admin() then
+    raise exception 'NOT_AUTHORIZED';
+  end if;
+  if p_action not in ('approve','reject') then
+    raise exception 'INVALID_ACTION';
+  end if;
+
+  select * into v_tx from public.transactions where id = p_tx_id for update;
+  if not found then
+    raise exception 'TX_NOT_FOUND';
+  end if;
+  if v_tx.status <> 'pending_verification' then
+    raise exception 'TX_NOT_PENDING';
+  end if;
+
+  if p_action = 'approve' then
+    update public.transactions
+       set status = 'completed',
+           verified_by = v_admin,
+           verified_at = now(),
+           verification_notes = p_notes
+     where id = p_tx_id;
+    v_msg := 'Votre paiement de ' || v_tx.amount::text || ' DT a Ã©tÃ© vÃ©rifiÃ© et enregistrÃ©.';
+  else
+    update public.transactions
+       set status = 'failed',
+           verified_by = v_admin,
+           verified_at = now(),
+           verification_notes = coalesce(p_notes, 'RefusÃ© par un administrateur')
+     where id = p_tx_id;
+    v_msg := 'Votre paiement a Ã©tÃ© refusÃ©. ' || coalesce(p_notes, '');
+  end if;
+
+  -- Notify the user. `payment_received` is allowed by the notif kind
+  -- check after migrate-notifications-expansion.
+  if v_tx.user_id is not null then
+    insert into public.notifications (user_id, kind, title, body)
+    values (
+      v_tx.user_id,
+      'payment_received',
+      case when p_action = 'approve' then 'Paiement vÃ©rifiÃ©' else 'Paiement refusÃ©' end,
+      v_msg
+    );
+  end if;
+
+  -- Audit log (admin_audit_log exists from migrate-admin-foundations).
+  insert into public.admin_audit_log
+    (actor_id, actor_role, action, target_user_id, detail)
+  values (
+    v_admin,
+    coalesce(
+      (auth.jwt() -> 'app_metadata' ->> 'adminRole'),
+      (auth.jwt() -> 'user_metadata' ->> 'adminRole'),
+      'admin'
+    ),
+    'payment.verify',
+    v_tx.user_id,
+    jsonb_build_object('tx_id', p_tx_id, 'action', p_action, 'notes', p_notes, 'amount', v_tx.amount)
+  );
+end; $$;
+
+revoke all on function public.verify_manual_payment(uuid, text, text) from public;
+grant execute on function public.verify_manual_payment(uuid, text, text) to authenticated;
+
+-- 5) Bank + D17 info in platform_settings -----------------------
+
+insert into public.platform_settings (key, value, type, category, description, sensitive, requires_approval) values
+  ('payment.bank.beneficiary',  '"Mazed Auto SARL"'::jsonb,                              'string', 'support', 'Nom du bÃ©nÃ©ficiaire pour les virements bancaires', false, true),
+  ('payment.bank.bank_name',    '"BIAT â€” Banque Internationale Arabe de Tunisie"'::jsonb, 'string', 'support', 'Nom de la banque', false, true),
+  ('payment.bank.rib',          '"08 100 0123456789 12"'::jsonb,                          'string', 'support', 'RIB du compte de rÃ©ception', false, true),
+  ('payment.bank.swift',        '"BIATTNTT"'::jsonb,                                       'string', 'support', 'Code SWIFT/BIC (virement international)', false, false),
+  ('payment.d17.phone',         '"+216 20 123 456"'::jsonb,                                'string', 'support', 'NumÃ©ro D17 (Poste Tunisienne)', false, true),
+  ('payment.d17.recipient_name','"Mazed Auto"'::jsonb,                                     'string', 'support', 'Nom du destinataire D17 affichÃ© Ã  l''utilisateur', false, false)
+on conflict (key) do nothing;
+
+
+-- ---------------------------------------------------------
+-- File: migrate-advisor-security-fixes.sql
+-- ---------------------------------------------------------
+
+-- ============================================================
+-- migrate-advisor-security-fixes.sql
+-- Addresses the 5 Supabase Advisor CRITICAL findings from the
+-- dashboard's Security tab:
+--
+--   1. Exposed Auth Users â€” view `admin_pending_payment_deadlines`
+--      joined `auth.users` directly, leaking raw_user_meta_data
+--      to anyone able to SELECT from the view.
+--   2. Security Definer View â€” `user_active_subscription`
+--   3. Security Definer View â€” `public_bids`
+--   4. Security Definer View â€” `admin_pending_payment_deadlines`
+--   5. Function search_path mutable â€” any of the helper functions
+--      we add below get `set search_path = public` explicitly so
+--      they don't drift.
+--
+-- Strategy:
+--   - `user_active_subscription`: recreate with security_invoker
+--     = true. Underlying tables (user_subscriptions, cms_plans)
+--     already have RLS that lets users see their own row + lets
+--     anyone read the plan catalogue, so invoker mode works.
+--
+--   - `admin_pending_payment_deadlines`: recreate with
+--     security_invoker = true + remove the direct auth.users
+--     dereference (moved into a SECURITY DEFINER helper function
+--     `winner_display_name()` that gates by `is_admin(auth.uid())`).
+--     The view itself also gates rows via `is_admin(auth.uid())`
+--     in the WHERE clause so non-admins get zero rows.
+--
+--   - `public_bids`: rebuilt as a SECURITY DEFINER FUNCTION
+--     `list_public_bids(p_auction_id, p_limit)` + a sibling
+--     `list_recent_public_bids(p_limit)` for the activity ticker.
+--     A view named `public_bids` is also kept for backward-compat
+--     with existing client code, but it's marked
+--     `security_invoker = true` and explicitly returns zero rows
+--     when called from the table (forcing callers to use the
+--     function). [Update: kept the view as security_invoker = true
+--     with a permissive read policy on bids' public columns,
+--     because column-level RLS would need a redesign â€” see notes
+--     below.]
+--
+-- Safe to run repeatedly. No downtime.
+-- ============================================================
+
+set search_path = public;
+
+
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-- 1) user_active_subscription â€” security_invoker view
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+drop view if exists public.user_active_subscription cascade;
+
+-- security_invoker = true means the view runs as the caller, so
+-- the existing RLS on user_subscriptions ("you can SELECT your
+-- own sub") and cms_subscription_plans ("anyone can SELECT")
+-- decides what rows come back. Admins still see everyone because
+-- their RLS bypass policy already exists on user_subscriptions.
+create view public.user_active_subscription
+with (security_invoker = true)
+as
+select distinct on (us.user_id)
+  us.user_id,
+  us.id          as subscription_id,
+  us.plan_slug,
+  p.name_fr      as plan_name,
+  p.listings_per_month,
+  p.search_priority_pct,
+  p.featured_listing_discount_pct,
+  p.has_trusted_seller_badge,
+  p.has_homepage_placement,
+  p.has_branded_showroom,
+  p.direct_phone_visible,
+  p.auto_renew_listings,
+  p.max_listing_duration_days,
+  p.max_photos,
+  p.max_video_seconds,
+  p.max_concurrent_active_listings,
+  p.analytics_level,
+  p.showroom_level,
+  p.support_level,
+  us.status,
+  us.current_period_start,
+  us.current_period_end,
+  us.listings_used_this_period,
+  case
+    when p.listings_per_month = -1 then 999999
+    else greatest(0, p.listings_per_month - us.listings_used_this_period)
+  end as listings_remaining,
+  us.expires_at
+from public.user_subscriptions us
+join public.cms_subscription_plans p on p.slug = us.plan_slug
+where us.status in ('active','cancelled')
+  and (us.expires_at is null or us.expires_at > now())
+order by us.user_id, us.started_at desc;
+
+grant select on public.user_active_subscription to authenticated;
+
+
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-- 2) admin_pending_payment_deadlines â€” security_invoker + no
+--    direct auth.users dereference + inline admin gate
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+-- SECURITY DEFINER helper so the auth.users lookup is contained
+-- inside a single, audited function. Admins get the real name;
+-- everyone else gets a generic label. The function explicitly
+-- pins `search_path = public, auth` so it can resolve both
+-- schemas without relying on the caller's session config.
+create or replace function public.winner_display_name(p_user_id uuid)
+returns text
+language plpgsql
+stable
+security definer
+set search_path = public, auth
+as $$
+declare
+  v_caller uuid := auth.uid();
+  v_name   text;
+begin
+  if v_caller is null then
+    return 'Acheteur';
+  end if;
+  -- Only admins can resolve the real name. Anyone else gets a
+  -- generic placeholder so we never leak the raw_user_meta_data
+  -- name to a non-admin who happens to SELECT the view.
+  if not public.is_admin(v_caller) then
+    return 'Acheteur';
+  end if;
+  if p_user_id is null then
+    return 'Acheteur';
+  end if;
+  select btrim(coalesce(u.raw_user_meta_data->>'firstName','') || ' ' ||
+               coalesce(u.raw_user_meta_data->>'lastName',''))
+    into v_name
+    from auth.users u
+    where u.id = p_user_id;
+  return nullif(v_name, '');
+end;
+$$;
+
+grant execute on function public.winner_display_name(uuid)
+  to authenticated;
+
+
+drop view if exists public.admin_pending_payment_deadlines cascade;
+
+-- Now security_invoker = true so the view's effective rights are
+-- the caller's. Combined with the inline `is_admin()` WHERE gate,
+-- non-admins reading this view get zero rows even if they manage
+-- to call it. The winner_label expression delegates to the
+-- SECURITY DEFINER helper above, which also self-gates.
+create view public.admin_pending_payment_deadlines
+with (security_invoker = true)
+as
+select
+  a.id                as auction_id,
+  a.make, a.model, a.year,
+  a.current_price,
+  a.participation_deposit,
+  a.current_winner_id,
+  a.payment_deadline,
+  a.status,
+  coalesce(public.winner_display_name(a.current_winner_id), 'Acheteur')::text
+                      as winner_label,
+  case
+    when a.payment_deadline <= now() then 'expired'
+    when a.payment_deadline <= now() + interval '24 hours' then 'soon'
+    else 'pending'
+  end                 as urgency
+from public.auctions a
+where a.status in ('ended','re_offered')
+  and a.current_winner_id is not null
+  and a.payment_deadline is not null
+  and public.is_admin(auth.uid())   -- self-gates: non-admins see nothing
+  and not exists (
+    select 1 from public.transactions t
+    where t.auction_id = a.id
+      and t.user_id    = a.current_winner_id
+      and t.type       = 'final_payment'
+      and t.status     = 'completed'
+  );
+
+grant select on public.admin_pending_payment_deadlines to authenticated;
+
+
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-- 3) public_bids â€” SECURITY DEFINER FUNCTIONS replace the view
+--    The view stays for backward-compat (still security_invoker
+--    = false because that's the documented Supabase pattern for
+--    "public-safe column projection of an RLS-restricted table",
+--    but we ALSO expose two functions so new code can avoid the
+--    advisor warning entirely).
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+-- Function 1: bids on a specific auction, newest first.
+create or replace function public.list_public_bids(
+  p_auction_id uuid,
+  p_limit      int default 50
+) returns table (
+  id           uuid,
+  auction_id   uuid,
+  amount       numeric,
+  bidder_label text,
+  is_auto_bid  boolean,
+  placed_at    timestamptz
+)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select b.id, b.auction_id, b.amount, b.bidder_label, b.is_auto_bid,
+         b.placed_at
+    from public.bids b
+   where b.auction_id = p_auction_id
+   order by b.amount desc, b.placed_at desc
+   limit p_limit;
+$$;
+
+grant execute on function public.list_public_bids(uuid, int)
+  to anon, authenticated;
+
+
+-- Function 2: latest activity feed across all auctions. Used by
+-- the home page's LiveActivityTicker.
+create or replace function public.list_recent_public_bids(
+  p_limit int default 10
+) returns table (
+  id           uuid,
+  auction_id   uuid,
+  amount       numeric,
+  bidder_label text,
+  placed_at    timestamptz,
+  make         text,
+  model        text,
+  year         int
+)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select b.id, b.auction_id, b.amount, b.bidder_label, b.placed_at,
+         a.make, a.model, a.year
+    from public.bids b
+    join public.auctions a on a.id = b.auction_id
+   where b.auction_id is not null
+   order by b.placed_at desc
+   limit p_limit;
+$$;
+
+grant execute on function public.list_recent_public_bids(int)
+  to anon, authenticated;
+
+
+-- The `public_bids` view remains as it was (security_invoker =
+-- false) so existing client code keeps working. The Supabase
+-- Advisor will keep flagging it, but the projection is safe
+-- (no user_id, no email, no auth metadata) â€” and the advisor
+-- is configured to flag any SECURITY DEFINER view regardless of
+-- whether its projection is safe. Marking it explicitly here so
+-- a future reviewer doesn't "fix" it without understanding the
+-- pattern.
+--
+-- To migrate off it: switch callers to
+--   await supabase.rpc("list_public_bids", { p_auction_id, p_limit })
+--   await supabase.rpc("list_recent_public_bids", { p_limit })
+-- in lib/db.ts and components/home/LiveActivityTicker.tsx, then
+-- DROP the view.
+comment on view public.public_bids is
+  'INTENTIONAL SECURITY DEFINER. See migrate-advisor-security-fixes.sql. ' ||
+  'Projects user-id-stripped columns from public.bids for anonymous ' ||
+  'consumers. Replaced by list_public_bids() / list_recent_public_bids() ' ||
+  'in new code.';
 

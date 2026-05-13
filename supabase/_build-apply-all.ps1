@@ -79,7 +79,8 @@ $order = @(
   "migrate-perf-indexes-2.sql",           # round 25 — notifications/tx/messages/kyc FK idx
   "migrate-rls-recursion-fix.sql",        # round 26 — break auctions↔bids RLS cycle
   "migrate-cms-brand-logos.sql",          # round 27 — brand logo upload bucket
-  "migrate-manual-payments.sql"           # round 28 — bank-transfer / D17 + admin verify
+  "migrate-manual-payments.sql",          # round 28 — bank-transfer / D17 + admin verify
+  "migrate-advisor-security-fixes.sql"    # round 29 — fix 5 Supabase Advisor CRITICALs
 )
 
 $out = Join-Path $base "_apply-all.sql"
