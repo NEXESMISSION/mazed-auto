@@ -10,6 +10,10 @@ import {
   Plus,
   Ban,
   Undo2,
+  Receipt,
+  Check,
+  X,
+  Loader2,
 } from "lucide-react";
 import { useRouter } from "@/i18n/navigation";
 import { Input } from "@/components/ui/Input";
@@ -24,6 +28,8 @@ import {
   voidTransactionAction,
   createTransactionAction,
   refundDepositAction,
+  verifyManualPaymentAction,
+  getReceiptSignedUrlAction,
 } from "@/app/[locale]/admin/actions";
 
 const typeLabels: Record<string, string> = {
@@ -42,6 +48,7 @@ const statusColors: Record<
   pending: "warning",
   processing: "gold",
   failed: "danger",
+  pending_verification: "warning",
 };
 
 const statusLabels: Record<string, string> = {
@@ -49,6 +56,12 @@ const statusLabels: Record<string, string> = {
   pending: "En attente",
   processing: "En cours",
   failed: "Échouée",
+  pending_verification: "À vérifier",
+};
+
+const manualMethodLabels: Record<string, string> = {
+  bank_transfer: "Virement bancaire",
+  d17: "D17",
 };
 
 export function AdminTxList({ initial }: { initial: TransactionRow[] }) {
@@ -140,7 +153,11 @@ export function AdminTxList({ initial }: { initial: TransactionRow[] }) {
   }
 
   const filtered = txs
-    .filter((t) => filter === "all" || t.type === filter)
+    .filter((t) => {
+      if (filter === "all") return true;
+      if (filter === "to_verify") return t.status === "pending_verification";
+      return t.type === filter;
+    })
     .filter(
       (t) =>
         !q ||
@@ -148,6 +165,10 @@ export function AdminTxList({ initial }: { initial: TransactionRow[] }) {
         (t.user_label ?? "").includes(q) ||
         (t.label ?? "").includes(q),
     );
+
+  const pendingVerificationCount = txs.filter(
+    (t) => t.status === "pending_verification",
+  ).length;
 
   const totals = filtered.reduce(
     (acc, t) => {
@@ -250,6 +271,11 @@ export function AdminTxList({ initial }: { initial: TransactionRow[] }) {
       <div className="flex gap-2 overflow-x-auto hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
         {[
           { v: "all", l: "Tous" },
+          {
+            v: "to_verify",
+            l: `À vérifier${pendingVerificationCount > 0 ? ` (${pendingVerificationCount})` : ""}`,
+            highlight: pendingVerificationCount > 0,
+          },
           { v: "deposit", l: "Cautions" },
           { v: "refund", l: "Remboursements" },
           { v: "final_payment", l: "Paiements finaux" },
@@ -263,7 +289,9 @@ export function AdminTxList({ initial }: { initial: TransactionRow[] }) {
               "px-4 h-9 rounded-full text-sm font-semibold whitespace-nowrap shrink-0",
               filter === f.v
                 ? "bg-[var(--gold)] text-black"
-                : "bg-[var(--surface-2)] border border-[var(--border)] text-[var(--foreground-muted)] hover:text-foreground",
+                : f.highlight
+                  ? "bg-amber-500/15 text-amber-300 ring-1 ring-amber-500/40 hover:bg-amber-500/25"
+                  : "bg-[var(--surface-2)] border border-[var(--border)] text-[var(--foreground-muted)] hover:text-foreground",
             )}
           >
             {f.l}
@@ -290,7 +318,11 @@ Aucune transaction. Exécutez seed.sql dans Supabase.
             filtered.map((t) => (
               <div
                 key={t.id}
-                className="grid md:grid-cols-[140px_1fr_1.5fr_1fr_120px_120px] gap-2 p-4 items-center hover:bg-[var(--surface-2)] transition-colors"
+                className={cn(
+                  "grid md:grid-cols-[140px_1fr_1.5fr_1fr_120px_120px] gap-2 p-4 items-center hover:bg-[var(--surface-2)] transition-colors",
+                  t.status === "pending_verification" &&
+                    "bg-amber-500/[0.04] hover:bg-amber-500/[0.07]",
+                )}
               >
                 <div className="font-mono text-xs text-[var(--foreground-muted)]">
                   {t.ref}
@@ -301,7 +333,14 @@ Aucune transaction. Exécutez seed.sql dans Supabase.
                     {t.label}
                   </div>
                 </div>
-                <div className="hidden md:block text-sm">{t.label}</div>
+                <div className="hidden md:block text-sm">
+                  {t.label}
+                  {t.manual_method && (
+                    <div className="text-[10px] text-[var(--foreground-muted)] mt-0.5">
+                      via {manualMethodLabels[t.manual_method]}
+                    </div>
+                  )}
+                </div>
                 <div>
                   <Badge variant="default" size="sm">
                     {typeLabels[t.type]}
@@ -322,11 +361,14 @@ Aucune transaction. Exécutez seed.sql dans Supabase.
                   )}
                   {formatPrice(Number(t.amount))}
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 flex-wrap">
                   <Badge variant={statusColors[t.status]} size="sm">
                     {statusLabels[t.status]}
                   </Badge>
                   <div className="ms-auto flex items-center gap-1">
+                    {t.status === "pending_verification" && (
+                      <ManualVerifyControls tx={t} />
+                    )}
                     {t.type === "deposit" && t.status === "completed" && (
                       <button
                         type="button"
@@ -338,17 +380,18 @@ Aucune transaction. Exécutez seed.sql dans Supabase.
                         <Undo2 className="h-3.5 w-3.5" />
                       </button>
                     )}
-                    {t.status !== "failed" && (
-                      <button
-                        type="button"
-                        onClick={() => voidTx(t)}
-                        title="Annuler la transaction"
-                        aria-label="Annuler la transaction"
-                        className="h-10 w-10 md:h-7 md:w-7 rounded-full bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center hover:border-red-500/40 hover:text-red-300 transition-colors"
-                      >
-                        <Ban className="h-3.5 w-3.5" />
-                      </button>
-                    )}
+                    {t.status !== "failed" &&
+                      t.status !== "pending_verification" && (
+                        <button
+                          type="button"
+                          onClick={() => voidTx(t)}
+                          title="Annuler la transaction"
+                          aria-label="Annuler la transaction"
+                          className="h-10 w-10 md:h-7 md:w-7 rounded-full bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center hover:border-red-500/40 hover:text-red-300 transition-colors"
+                        >
+                          <Ban className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                   </div>
                 </div>
               </div>
@@ -492,3 +535,126 @@ function StatCard({
     </div>
   );
 }
+
+/** Per-row controls for manual-payment verification. Three actions:
+ *
+ *   - View receipt: opens a fresh 60s signed URL in a new tab
+ *   - Approve: flips status → completed via verify_manual_payment()
+ *   - Reject: prompts for a reason, flips status → failed
+ *
+ * The signed URL is minted on demand (not eagerly per row) so the
+ * page render doesn't fan out a Storage API call per row.
+ */
+function ManualVerifyControls({ tx }: { tx: TransactionRow }) {
+  const router = useRouter();
+  const { toast } = useToast();
+  const [busy, setBusy] = useState<"view" | "approve" | "reject" | null>(null);
+
+  async function viewReceipt() {
+    if (!tx.receipt_url) return;
+    setBusy("view");
+    try {
+      const r = await getReceiptSignedUrlAction({ path: tx.receipt_url });
+      if (!r.ok) {
+        toast("Impossible d'afficher le reçu : " + r.error, "error");
+        return;
+      }
+      if (!r.data) {
+        toast("Impossible d'afficher le reçu", "error");
+        return;
+      }
+      window.open(r.data.url, "_blank", "noopener,noreferrer");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function approve() {
+    if (!window.confirm(
+      `Approuver ce paiement de ${formatPrice(Number(tx.amount))} ? L'utilisateur sera notifié.`,
+    )) return;
+    setBusy("approve");
+    const r = await verifyManualPaymentAction({
+      txId: tx.id,
+      action: "approve",
+    });
+    setBusy(null);
+    if (!r.ok) {
+      toast("Échec : " + r.error, "error");
+      return;
+    }
+    toast("✓ Paiement vérifié", "success");
+    router.refresh();
+  }
+
+  async function reject() {
+    const reason = window.prompt(
+      "Motif du refus (sera envoyé à l'utilisateur) :",
+      "",
+    );
+    if (!reason || !reason.trim()) return;
+    setBusy("reject");
+    const r = await verifyManualPaymentAction({
+      txId: tx.id,
+      action: "reject",
+      notes: reason.trim(),
+    });
+    setBusy(null);
+    if (!r.ok) {
+      toast("Échec : " + r.error, "error");
+      return;
+    }
+    toast("Paiement refusé", "warning");
+    router.refresh();
+  }
+
+  return (
+    <>
+      {tx.receipt_url && (
+        <button
+          type="button"
+          onClick={viewReceipt}
+          disabled={busy !== null}
+          title="Voir le reçu"
+          aria-label="Voir le reçu"
+          className="h-10 w-10 md:h-7 md:w-7 rounded-full bg-[var(--surface-2)] border border-[var(--border)] flex items-center justify-center hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors disabled:opacity-50"
+        >
+          {busy === "view" ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Receipt className="h-3.5 w-3.5" />
+          )}
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={approve}
+        disabled={busy !== null}
+        title="Approuver"
+        aria-label="Approuver"
+        className="h-10 w-10 md:h-7 md:w-7 rounded-full bg-emerald-500/15 ring-1 ring-emerald-500/40 text-emerald-300 flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-colors disabled:opacity-50"
+      >
+        {busy === "approve" ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <Check className="h-3.5 w-3.5" strokeWidth={2.6} />
+        )}
+      </button>
+      <button
+        type="button"
+        onClick={reject}
+        disabled={busy !== null}
+        title="Refuser"
+        aria-label="Refuser"
+        className="h-10 w-10 md:h-7 md:w-7 rounded-full bg-red-500/15 ring-1 ring-red-500/40 text-red-300 flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors disabled:opacity-50"
+      >
+        {busy === "reject" ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <X className="h-3.5 w-3.5" strokeWidth={2.6} />
+        )}
+      </button>
+    </>
+  );
+}
+

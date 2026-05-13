@@ -367,6 +367,46 @@ export async function voidTransactionAction(input: {
   return { ok: true };
 }
 
+/** Approve or reject a manual payment sitting at pending_verification.
+ *  RPC flips the transaction status, writes an audit row, and notifies
+ *  the user. On approve, downstream effects (deposit consumed, etc.)
+ *  are kicked off by the existing transaction triggers. */
+export async function verifyManualPaymentAction(input: {
+  txId: string;
+  action: "approve" | "reject";
+  notes?: string | null;
+}): Promise<Result> {
+  const gate = await ensureAdmin();
+  if (!gate.ok) return gate;
+  const { error } = await gate.supabase.rpc("verify_manual_payment", {
+    p_tx_id: input.txId,
+    p_action: input.action,
+    p_notes: clamp(input.notes ?? null, MAX_TEXT_LEN),
+  });
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/[locale]/admin/transactions`, "page");
+  return { ok: true };
+}
+
+/** Mint a short-lived signed URL the admin's browser can use to view
+ *  a receipt image. The bucket is private so a plain public URL won't
+ *  work; we generate a 60-second signed link on demand, scoped to the
+ *  exact path. Admins are the only callers (bucket RLS allows
+ *  `is_admin()` to read every path, plus owners to read their own). */
+export async function getReceiptSignedUrlAction(input: {
+  path: string;
+}): Promise<Result<{ url: string }>> {
+  const gate = await ensureAdmin();
+  if (!gate.ok) return gate;
+  const { data, error } = await gate.supabase.storage
+    .from("payment-receipts")
+    .createSignedUrl(input.path, 60);
+  if (error || !data?.signedUrl) {
+    return { ok: false, error: error?.message ?? "SIGN_FAILED" };
+  }
+  return { ok: true, data: { url: data.signedUrl } };
+}
+
 export async function createTransactionAction(input: {
   userId: string;
   type: "deposit" | "refund" | "final_payment" | "commission" | "payout";
