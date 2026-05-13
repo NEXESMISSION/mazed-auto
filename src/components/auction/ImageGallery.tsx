@@ -33,8 +33,7 @@ export function ImageGallery({ images, alt = "" }: Props) {
           height={900}
           className="h-full w-full object-cover"
           loading="eager"
-          // @ts-expect-error — fetchpriority not in React's HTML types yet
-          fetchpriority="high"
+          fetchPriority="high"
           decoding="async"
         />
 

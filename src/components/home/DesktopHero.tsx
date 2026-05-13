@@ -139,10 +139,10 @@ function FeaturedCard({ auction }: { auction: HotAuction }) {
         alt={`${vehicle.make} ${vehicle.model}`}
         /* Desktop hero — must paint first. Eager + high priority,
            explicit dims for the browser to reserve layout before
-           bytes arrive (no CLS). */
+           bytes arrive (no CLS). React maps fetchPriority → the
+           HTML fetchpriority attribute. */
         loading="eager"
-        // @ts-expect-error — fetchpriority not in React's HTML types yet
-        fetchpriority="high"
+        fetchPriority="high"
         decoding="async"
         width={1440}
         height={900}

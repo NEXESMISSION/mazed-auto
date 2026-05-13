@@ -459,7 +459,9 @@ function ImagePreview({
         <img
           src={url}
           alt=""
-          className="h-full w-full object-cover"
+          /* contain so non-square uploads preview whole (matches the
+             public render). Square logos fill the box either way. */
+          className="h-full w-full object-contain bg-black"
           onError={() => {/* invalid URL — leave placeholder */}}
         />
       ) : (
