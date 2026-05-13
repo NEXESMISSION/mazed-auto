@@ -70,9 +70,17 @@ export function AuctionCard({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={thumb(vehicle.imageUrls[0], { width: 500, quality: 65 })}
+            /* Responsive variants — phones get 360w (no point fetching
+               a 500w image to render at 180 CSS px), tablets 500w,
+               desktop 600w for the larger grid columns. Saves ~40-80
+               KB per card on mobile. */
+            srcSet={`${thumb(vehicle.imageUrls[0], { width: 360, quality: 62 })} 360w, ${thumb(vehicle.imageUrls[0], { width: 500, quality: 65 })} 500w, ${thumb(vehicle.imageUrls[0], { width: 600, quality: 65 })} 600w`}
+            sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 240px"
             alt={`${vehicle.make} ${vehicle.model}`}
             loading="lazy"
             decoding="async"
+            width={500}
+            height={625}
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
           />
 

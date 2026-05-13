@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { AppShell } from "@/components/layout/AppShell";
 import { BrowseHeader } from "@/components/layout/BrowseHeader";
-import { getLiveAuctionsCached } from "@/lib/home-cache";
+import { getLiveAuctionsCached, getHomeRailsCached } from "@/lib/home-cache";
 import {
   getSellerSearchPriorities,
   type SellerSearchPriority,
@@ -94,12 +94,15 @@ export async function generateMetadata({
 }
 
 export default async function AuctionsPage({ searchParams }: Props) {
-  const [{ view }, auctions] = await Promise.all([
+  // Reuse the home-rails cache for the CMS brand list — same 30s TTL,
+  // same connection, no extra round-trip. The Classique view's brand
+  // grid uses these (with admin-uploaded logos) as the source of truth.
+  const [{ view }, auctions, rails] = await Promise.all([
     searchParams,
-    // Cached 30s — public read, RLS filters out non-live auctions
-    // already, so the full list is shareable across users.
     getLiveAuctionsCached(),
+    getHomeRailsCached(),
   ]);
+  const brands = rails.cmsBrands;
 
   // ONE batched RPC per render — serves both jobs:
   //   (a) Pro-priority sort: nudge subscribed sellers up by their
@@ -133,6 +136,7 @@ export default async function AuctionsPage({ searchParams }: Props) {
           initial={ranked}
           classicMode={view === "classic"}
           trustedSellerIds={trustedSellerIds}
+          brands={brands}
         />
       </div>
     </AppShell>

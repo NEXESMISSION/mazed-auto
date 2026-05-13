@@ -1,31 +1,48 @@
 /**
- * Supabase Storage image-transform helper.
+ * Image-transform helper. Rewrites URLs from the two image hosts the
+ * app uses (Supabase Storage for real uploads, Unsplash for seed/test
+ * data) so consumers load resized + recompressed variants instead of
+ * the multi-MB originals.
  *
- * Storage's public URLs look like
+ * Non-matching URLs are returned unchanged.
+ *
+ * Supabase Storage URLs:
  *   https://<proj>.supabase.co/storage/v1/object/public/<bucket>/<path>
- * The image-render endpoint at the same project resizes + recompresses:
- *   https://<proj>.supabase.co/storage/v1/render/image/public/<bucket>/<path>?width=600&quality=70
+ *   → /storage/v1/render/image/public/...?width=600&quality=70
  *
- * We rewrite the URL when it points at our own Supabase storage so cards
- * load thumbnail-sized JPEGs (~30-80 KB) instead of the full 2-3 MB
- * originals — which is what was making the home page feel slow and the
- * "image doesn't show up" symptom (long tap-to-paint on flaky networks
- * makes the placeholder look like a broken image).
- *
- * Non-supabase URLs and already-transformed URLs are returned unchanged.
+ * Unsplash URLs (only on seed auctions during testing):
+ *   https://images.unsplash.com/photo-…
+ *   → same URL + ?w=600&q=70&auto=format&fit=crop
  */
 export function thumb(
   url: string | null | undefined,
   opts: { width?: number; height?: number; quality?: number; resize?: "cover" | "contain" | "fill" } = {},
 ): string {
   if (!url) return "";
-  // Only rewrite Supabase Storage URLs.
+  const { width = 600, quality = 70, resize = "cover", height } = opts;
+
+  // Unsplash (seed/test images). Their CDN supports w/h/q/fit/auto knobs
+  // — without this branch the seed auctions pulled the full 5-10 MB
+  // original on every render, which is what made the home page feel
+  // slow during testing. Strip any existing query so we don't stack
+  // params on a re-rendered tile.
+  if (url.startsWith("https://images.unsplash.com/")) {
+    const base = url.split("?")[0];
+    const params = new URLSearchParams();
+    params.set("w", String(width));
+    if (height) params.set("h", String(height));
+    params.set("q", String(quality));
+    params.set("auto", "format");
+    if (resize === "cover") params.set("fit", "crop");
+    return `${base}?${params.toString()}`;
+  }
+
+  // Supabase Storage — rewrite to the render-image endpoint.
   if (!url.includes("/storage/v1/object/public/")) return url;
   const transformed = url.replace(
     "/storage/v1/object/public/",
     "/storage/v1/render/image/public/",
   );
-  const { width = 600, quality = 70, resize = "cover", height } = opts;
   const params = new URLSearchParams();
   params.set("width", String(width));
   if (height) params.set("height", String(height));

@@ -12,7 +12,6 @@ import { HotNowRail } from "@/components/home/HotNowRail";
 import { RecentlyEndedRail } from "@/components/home/RecentlyEndedRail";
 import { LiveActivityTicker } from "@/components/home/LiveActivityTicker";
 import { BrandSlider } from "@/components/home/BrandSlider";
-import { CategoryStrip } from "@/components/home/CategoryStrip";
 import { DesktopHero } from "@/components/home/DesktopHero";
 import { DesktopFinalCta } from "@/components/home/DesktopFinalCta";
 import { HomeSectionDivider } from "@/components/home/HomeSectionDivider";
@@ -52,7 +51,6 @@ export default async function HomePage() {
     activitySeed,
     cmsBanners,
     cmsBrands,
-    cmsCategories,
   } = rails;
 
   const rawBids = user
@@ -194,9 +192,9 @@ export default async function HomePage() {
         {/* Social proof — "this car just sold for X" */}
         <RecentlyEndedRail items={recentlyEnded} />
 
-        {/* Discovery footer */}
+        {/* Discovery footer — brand-only on purpose (Catégories rail
+            removed; categories still live on /auctions?view=classic). */}
         <BrandSlider pool={brandPool} brands={cmsBrands} />
-        <CategoryStrip categories={cmsCategories} locale={locale} />
 
         {/* Desktop closing CTA — buyer + seller pillars. Hidden on mobile. */}
         <DesktopFinalCta />

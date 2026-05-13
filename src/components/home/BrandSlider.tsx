@@ -64,20 +64,28 @@ export function BrandSlider({ pool, brands }: Props) {
                 key={`${t.name}-${i}`}
                 href={`/auctions?brand=${encodeURIComponent(t.name)}`}
                 aria-hidden={i >= tiles.length ? true : undefined}
-                className="group relative w-[120px] h-[120px] shrink-0 snap-center overflow-hidden rounded-2xl ring-1 ring-[var(--border)] bg-[var(--surface-2)] hover:ring-[var(--gold-soft)]/50 transition-shadow"
+                className="group relative w-[120px] h-[120px] shrink-0 snap-center overflow-hidden rounded-2xl ring-1 ring-[var(--border)] bg-black hover:ring-[var(--gold-soft)]/50 transition-shadow"
               >
                 {t.image ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={thumb(t.image, { width: 240, quality: 65 })}
+                    src={thumb(t.image, { width: 240, quality: 70 })}
                     alt={t.name}
                     loading="lazy"
                     decoding="async"
-                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.06]"
+                    /* object-contain + black tile bg + zero padding so
+                       the source image fills the tile edge-to-edge.
+                       Square source + square tile = no letterbox.
+                       Padding was making the logo look smaller than it
+                       had to (its own black canvas already provides
+                       breathing room). */
+                    className="absolute inset-0 h-full w-full object-contain"
                     draggable={false}
                   />
                 ) : null}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/10" />
+                {/* Gradient only behind the label so the logo on top
+                    is not dimmed. Was full-tile gradient. */}
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%] bg-gradient-to-t from-black via-black/70 to-transparent" />
                 <div className="absolute inset-x-0 bottom-0 px-3 pb-2.5">
                   <div className="text-[13px] font-extrabold leading-tight text-white">
                     {t.name}
@@ -100,20 +108,20 @@ export function BrandSlider({ pool, brands }: Props) {
           <Link
             key={t.name}
             href={`/auctions?brand=${encodeURIComponent(t.name)}`}
-            className="group relative aspect-square overflow-hidden rounded-2xl ring-1 ring-[var(--border)] bg-[var(--surface-2)] hover:ring-[var(--gold)] transition-all"
+            className="group relative aspect-square overflow-hidden rounded-2xl ring-1 ring-[var(--border)] bg-black hover:ring-[var(--gold)] transition-all"
           >
             {t.image ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={thumb(t.image, { width: 480, quality: 70 })}
+                src={thumb(t.image, { width: 480, quality: 75 })}
                 alt={t.name}
                 loading="lazy"
                 decoding="async"
-                className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.08]"
+                className="absolute inset-0 h-full w-full object-contain p-1"
                 draggable={false}
               />
             ) : null}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10" />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[40%] bg-gradient-to-t from-black via-black/70 to-transparent" />
             {/* Hover hint */}
             <span className="pointer-events-none absolute top-3 end-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/50 backdrop-blur-md ring-1 ring-white/10 text-white opacity-0 group-hover:opacity-100 group-hover:bg-[var(--gold)] group-hover:text-black transition-all">
               <ArrowUpRight className="h-4 w-4" />
@@ -148,11 +156,15 @@ function buildTiles(pool: Auction[], brands: CmsBrand[]): Tile[] {
   }
 
   if (brands.length > 0) {
+    // Skip brands without a logo — they'd render as a broken-image icon
+    // (auction-photo fallback can point at dead URLs) and look unprofessional.
+    // Upload a logo via /admin/cms/brands to bring a brand back into the rail.
     return brands
+      .filter((b) => Boolean(b.logoUrl))
       .slice(0, TILE_LIMIT)
       .map((b) => ({
         name: b.displayName,
-        image: b.logoUrl || firstPhotoByMake.get(b.displayName) || "",
+        image: b.logoUrl as string,
         count: countsByMake.get(b.displayName) ?? 0,
       }));
   }

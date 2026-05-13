@@ -23,7 +23,10 @@ import { AuctionCard } from "@/components/auction/AuctionCard";
 import { AuctionRow } from "@/components/auction/AuctionRow";
 import { LargeAuctionCard } from "@/components/auction/LargeAuctionCard";
 import { useRealtimeAuctionList } from "@/lib/realtime";
+import { thumb } from "@/lib/imageUrl";
 import type { Auction, VehicleCategory } from "@/lib/types";
+import type { CmsBrand } from "@/lib/cms";
+import { BrowseViewToggle } from "./BrowseViewToggle";
 import {
   BrowseFilters,
   EMPTY_FILTERS,
@@ -76,6 +79,11 @@ interface Props {
    *  once on the server and passed as a plain string[] (Set isn't
    *  JSON-serializable across the server→client boundary). */
   trustedSellerIds?: string[];
+  /** Admin-curated brand list from cms_brands. When provided, the
+   *  classic view's Marques grid uses these (with their uploaded logos)
+   *  as the source of truth instead of deriving tiles from auction
+   *  photos. Falls back to pool-derived tiles when empty. */
+  brands?: CmsBrand[];
 }
 
 // Body type values are stable enum keys; labels resolve via
@@ -116,12 +124,13 @@ export function AuctionsBrowser({
   initial,
   classicMode = false,
   trustedSellerIds = [],
+  brands = [],
 }: Props) {
   // Rebuild the Set once per render — passing it down keeps each card's
   // `.has()` lookup O(1) without rebuilding for every card.
   const trustedSet = new Set(trustedSellerIds);
   return classicMode ? (
-    <ClassicHub initial={initial} />
+    <ClassicHub initial={initial} brands={brands} />
   ) : (
     <ModernBrowser initial={initial} trustedSellers={trustedSet} />
   );
@@ -351,6 +360,22 @@ function ModernBrowser({
 
   return (
     <div className="pb-8">
+      {/* DESKTOP toolbar — title + view toggle. Mobile gets the toggle
+          via BrowseHeader; on desktop neither chrome layer renders it
+          so we surface it here, above the sticky filter bar, for both
+          view modes parity (the Classique branch has the same widget). */}
+      <div className="hidden lg:flex items-end justify-between gap-6 px-8 pt-10 pb-6">
+        <div>
+          <div className="text-[11px] uppercase tracking-[0.22em] font-extrabold text-[var(--gold)]">
+            Mazed Auto · Catalogue
+          </div>
+          <h1 className="mt-1.5 text-4xl xl:text-5xl font-black tracking-tight leading-none">
+            Toutes les <span className="gradient-gold-text">enchères</span>
+          </h1>
+        </div>
+        <BrowseViewToggle />
+      </div>
+
       {/* ─── Sticky control bar ───────────────────────────────────────── */}
       <div className="sticky top-0 z-30 bg-[var(--background)]/85 backdrop-blur-xl border-b border-[var(--border)]">
         <div className="px-4 pt-3 pb-2 space-y-2">
@@ -647,7 +672,13 @@ function ViewToggle({
  * `?brand=…` / `?body=…` and drop the `view=classic` flag, so the user
  * lands directly on filtered modern results.
  */
-function ClassicHub({ initial }: { initial: Auction[] }) {
+function ClassicHub({
+  initial,
+  brands,
+}: {
+  initial: Auction[];
+  brands: CmsBrand[];
+}) {
   const router = useRouter();
   const tCat = useTranslations("auctions.category");
   const list = useRealtimeAuctionList(initial);
@@ -656,21 +687,44 @@ function ClassicHub({ initial }: { initial: Auction[] }) {
   // filter, defer the actual filter recompute by one frame.
   const deferredSearch = useDeferredValue(search);
 
+  // Build the brand grid in two stages so admin-curated logos win over
+  // any auction fallback:
+  //   1. Count auctions per make + remember the first photo as fallback
+  //   2. If cms_brands is non-empty, render every active brand in its
+  //      admin-defined order with its uploaded logo, falling back to
+  //      the first auction photo only when no logo is uploaded.
+  //      If cms_brands is empty, derive tiles from the pool (legacy
+  //      behaviour — keeps a fresh install useful).
   const brandIndex = useMemo(() => {
-    const data = new Map<string, { count: number; image?: string }>();
+    const countByMake = new Map<string, number>();
+    const firstPhotoByMake = new Map<string, string>();
     for (const a of list) {
       const m = a.vehicle.make.trim();
       if (!m) continue;
-      const ex = data.get(m);
-      data.set(m, {
-        count: (ex?.count ?? 0) + 1,
-        image: ex?.image ?? a.vehicle.imageUrls[0],
-      });
+      countByMake.set(m, (countByMake.get(m) ?? 0) + 1);
+      if (!firstPhotoByMake.has(m) && a.vehicle.imageUrls[0]) {
+        firstPhotoByMake.set(m, a.vehicle.imageUrls[0]);
+      }
     }
-    return Array.from(data.entries())
-      .map(([name, d]) => ({ name, count: d.count, image: d.image }))
+    if (brands.length > 0) {
+      // Skip brands without a logo so the user never sees a broken-image
+      // placeholder. Upload a logo via /admin/cms/brands to surface them.
+      return brands
+        .filter((b) => Boolean(b.logoUrl))
+        .map((b) => ({
+          name: b.displayName,
+          count: countByMake.get(b.displayName) ?? 0,
+          image: b.logoUrl as string,
+        }));
+    }
+    return Array.from(countByMake.entries())
+      .map(([name, count]) => ({
+        name,
+        count,
+        image: firstPhotoByMake.get(name),
+      }))
       .sort((a, b) => b.count - a.count);
-  }, [list]);
+  }, [list, brands]);
 
   const bodyIndex = useMemo(() => {
     const firstByCategory = new Map<VehicleCategory, string>();
@@ -697,18 +751,42 @@ function ClassicHub({ initial }: { initial: Auction[] }) {
   }, [brandIndex, deferredSearch]);
 
   return (
-    <div className="pt-5 pb-8">
-      {/* Search bar — narrows the brand grid, lets users find a marque
-          in an alphabet of 60+ without scrolling. */}
-      <div className="px-4">
-        <div className="flex items-center gap-3 rounded-full bg-[var(--surface)] border border-[var(--border)] focus-within:border-[var(--gold-soft)] transition-colors ps-4 pe-1.5 h-12">
-          <Search className="h-4 w-4 text-[var(--foreground-muted)] shrink-0" />
+    <div className="pt-5 pb-8 lg:pt-10 lg:pb-16">
+      {/* ────────────────────────────────────────────────────────────
+          DESKTOP toolbar — gives the page its own title + a visible
+          view toggle so the user can flip back to Moderne. Mobile
+          uses BrowseHeader (which renders the toggle for that
+          viewport), so this block is lg-only.
+          ──────────────────────────────────────────────────────────── */}
+      <div className="hidden lg:flex items-end justify-between gap-6 px-8 mb-8">
+        <div>
+          <div className="text-[11px] uppercase tracking-[0.22em] font-extrabold text-[var(--gold)]">
+            Mazed Auto · Catalogue
+          </div>
+          <h1 className="mt-1.5 text-4xl xl:text-5xl font-black tracking-tight leading-none">
+            Parcourir par{" "}
+            <span className="gradient-gold-text">marque</span>
+          </h1>
+          <p className="mt-2.5 text-sm text-[var(--foreground-muted)] max-w-xl leading-relaxed">
+            Toutes les marques disponibles aux enchères en Tunisie.
+            Choisissez une marque ou une carrosserie pour filtrer les
+            voitures.
+          </p>
+        </div>
+        <BrowseViewToggle />
+      </div>
+
+      {/* Search bar — narrows the brand grid. Wider + centered on
+          desktop so it feels like a directory search, not a chip. */}
+      <div className="px-4 lg:px-8">
+        <div className="flex items-center gap-3 rounded-full bg-[var(--surface)] border border-[var(--border)] focus-within:border-[var(--gold-soft)] transition-colors ps-4 pe-1.5 h-12 lg:h-14 lg:max-w-xl">
+          <Search className="h-4 w-4 lg:h-5 lg:w-5 text-[var(--foreground-muted)] shrink-0" />
           <input
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Filtrer les marques..."
-            className="flex-1 bg-transparent text-base placeholder:text-[var(--foreground-subtle)] focus:outline-none min-w-0"
+            className="flex-1 bg-transparent text-base lg:text-[15px] placeholder:text-[var(--foreground-subtle)] focus:outline-none min-w-0"
           />
           {search && (
             <button
@@ -724,15 +802,17 @@ function ClassicHub({ initial }: { initial: Auction[] }) {
       </div>
 
       {filteredBrands.length > 0 && (
-        <section className="mt-6">
+        <section className="mt-6 lg:mt-10">
           <ClassicSectionHeader label="Marques" count={filteredBrands.length} />
-          <div className="px-4 mt-2.5 grid grid-cols-3 gap-2.5">
+          {/* Mobile: 3 cols, tight. Desktop: 6 cols, generous gap. */}
+          <div className="px-4 lg:px-8 mt-2.5 lg:mt-5 grid grid-cols-3 lg:grid-cols-6 xl:grid-cols-7 gap-2.5 lg:gap-4">
             {filteredBrands.map((b) => (
               <ClassicImageBox
                 key={b.name}
                 label={b.name}
                 count={b.count}
                 image={b.image}
+                fit="contain"
                 fallbackInitials={b.name.slice(0, 2).toUpperCase()}
                 onClick={() =>
                   router.push(
@@ -745,15 +825,18 @@ function ClassicHub({ initial }: { initial: Auction[] }) {
         </section>
       )}
 
-      <section className="mt-6">
+      <section className="mt-6 lg:mt-12">
         <ClassicSectionHeader label="Catégories" count={BODY_TYPES.length} />
-        <div className="px-4 mt-2.5 grid grid-cols-3 gap-2.5">
+        {/* Categories are full car photos — let them breathe on
+            desktop. 3 cols on mobile, 4 on lg, 5 on xl. */}
+        <div className="px-4 lg:px-8 mt-2.5 lg:mt-5 grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5 lg:gap-4">
           {bodyIndex.map((bt) => (
             <ClassicImageBox
               key={bt.value}
               label={bt.label}
               count={bt.count}
               image={bt.image}
+              fit="cover"
               fallbackIcon={bt.icon}
               disabled={bt.count === 0}
               onClick={() =>
@@ -767,10 +850,12 @@ function ClassicHub({ initial }: { initial: Auction[] }) {
   );
 }
 
+
 function ClassicImageBox({
   label,
   count,
   image,
+  fit = "cover",
   fallbackInitials,
   fallbackIcon: FallbackIcon,
   disabled,
@@ -779,29 +864,40 @@ function ClassicImageBox({
   label: string;
   count: number;
   image?: string;
+  /** "contain" for brand logos (sit whole inside the tile),
+   *  "cover" for category photos (fill the tile, may crop edges). */
+  fit?: "cover" | "contain";
   fallbackInitials?: string;
   fallbackIcon?: LucideIcon;
   disabled?: boolean;
   onClick: () => void;
 }) {
+  const isContain = fit === "contain";
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="relative aspect-[4/5] rounded-2xl overflow-hidden flex items-end transition-all disabled:opacity-40 disabled:cursor-not-allowed ring-1 ring-[var(--border)] hover:ring-2 hover:ring-[var(--gold-soft)] active:scale-[0.98]"
+      /* Brand tiles get a pure-black bg so logos (most have a black
+         canvas already) blend seamlessly with no visible seam.
+         Category tiles keep the standard surface bg + cover crop. */
+      className={`relative aspect-square rounded-2xl overflow-hidden flex items-end transition-all disabled:opacity-40 disabled:cursor-not-allowed ring-1 ring-[var(--border)] hover:ring-2 hover:ring-[var(--gold-soft)] active:scale-[0.98] ${
+        isContain ? "bg-black" : "bg-[var(--surface-2)]"
+      }`}
     >
       {image ? (
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={image}
+            src={thumb(image, { width: 480, quality: 70 })}
             alt=""
-            className="absolute inset-0 h-full w-full object-cover"
+            className={`absolute inset-0 h-full w-full ${
+              isContain ? "object-contain" : "object-cover"
+            }`}
             loading="lazy"
             decoding="async"
           />
-          <span className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
+          <span className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%] bg-gradient-to-t from-black via-black/70 to-transparent" />
         </>
       ) : (
         <span className="absolute inset-0 bg-gradient-to-br from-[var(--surface)] to-[var(--surface-2)] flex items-center justify-center">

@@ -216,7 +216,14 @@ function Slide({
           srcSet={`${thumb(image, { width: 720, quality: 65 })} 720w, ${thumb(image, { width: 1200, quality: 70 })} 1200w, ${thumb(image, { width: 1600, quality: 70 })} 1600w`}
           sizes="(max-width: 768px) 100vw, 1200px"
           alt=""
-          loading="lazy"
+          /* First slide is the hero — eager + high priority. Other
+             slides stay lazy so the browser doesn't burn bandwidth
+             on slides the user may never scroll to. */
+          loading={fallbackHue === 0 ? "eager" : "lazy"}
+          // @ts-expect-error — React types haven't caught up with this
+          // 2023 HTML attribute yet. Safe to ignore; falls back to
+          // standard priority on browsers that don't support it.
+          fetchpriority={fallbackHue === 0 ? "high" : "auto"}
           decoding="async"
           className={`absolute inset-0 h-full w-full object-cover transition-transform duration-[1500ms] ease-out ${
             active ? "scale-105" : "scale-100"

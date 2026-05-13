@@ -133,8 +133,19 @@ function FeaturedCard({ auction }: { auction: HotAuction }) {
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={thumb(vehicle.imageUrls[0], { width: 1600, quality: 75 })}
+        src={thumb(vehicle.imageUrls[0], { width: 1440, quality: 75 })}
+        srcSet={`${thumb(vehicle.imageUrls[0], { width: 1024, quality: 72 })} 1024w, ${thumb(vehicle.imageUrls[0], { width: 1440, quality: 75 })} 1440w, ${thumb(vehicle.imageUrls[0], { width: 1600, quality: 75 })} 1600w`}
+        sizes="(max-width: 1280px) 80vw, 1024px"
         alt={`${vehicle.make} ${vehicle.model}`}
+        /* Desktop hero — must paint first. Eager + high priority,
+           explicit dims for the browser to reserve layout before
+           bytes arrive (no CLS). */
+        loading="eager"
+        // @ts-expect-error — fetchpriority not in React's HTML types yet
+        fetchpriority="high"
+        decoding="async"
+        width={1440}
+        height={900}
         className="absolute inset-0 h-full w-full object-cover transition-transform duration-[900ms] ease-out group-hover:scale-[1.04]"
         draggable={false}
       />

@@ -23,9 +23,18 @@ export function ImageGallery({ images, alt = "" }: Props) {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={thumb(images[active], { width: 1200, quality: 75 })}
+          srcSet={`${thumb(images[active], { width: 720, quality: 70 })} 720w, ${thumb(images[active], { width: 1200, quality: 75 })} 1200w, ${thumb(images[active], { width: 1600, quality: 75 })} 1600w`}
+          sizes="(max-width: 768px) 100vw, 1024px"
           alt={`${alt} ${active + 1}`}
+          /* Explicit aspect (the wrapper already enforces 4:3 / 16:10,
+             but the dims help the browser allocate space before bytes
+             arrive — avoids layout shift on slow networks). */
+          width={1200}
+          height={900}
           className="h-full w-full object-cover"
           loading="eager"
+          // @ts-expect-error — fetchpriority not in React's HTML types yet
+          fetchpriority="high"
           decoding="async"
         />
 
