@@ -185,10 +185,14 @@ function SuccessContent() {
           </Link>
         </div>
 
-        <Button variant="ghost" size="sm" fullWidth disabled>
-          <Download className="h-4 w-4" />
-Télécharger le reçu
-        </Button>
+        {/* Receipt download was a permanently-disabled button (no PDF
+            generation pipeline yet). We surface the receipt info inline
+            via the transaction code above and a calmer notice here,
+            instead of a button that looks tappable but isn't. */}
+        <p className="text-[11px] text-[var(--foreground-subtle)] leading-relaxed pt-2">
+          <Download className="h-3 w-3 inline -mt-0.5 me-1" />
+          Un reçu détaillé sera envoyé sur votre adresse e-mail.
+        </p>
       </div>
     </div>
   );
