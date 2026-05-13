@@ -16,14 +16,25 @@ export default async function NotificationsPage() {
   } = await supabase.auth.getUser();
 
   if (!user) {
+    // Guest empty state — give a brief value-prop subtitle so users
+    // understand what they unlock by logging in. Single CTA, no
+    // decoy buttons.
     return (
       <AppShell noTopBar>
         <BackRow />
-        <div className="px-4 text-center py-16 space-y-3">
+        <div className="px-4 text-center py-16 space-y-4 max-w-sm mx-auto">
           <div className="mx-auto h-14 w-14 rounded-full bg-[var(--gold-faint)] text-[var(--gold)] flex items-center justify-center">
             <Bell className="h-6 w-6" />
           </div>
-          <div className="font-bold text-base">Connectez-vous pour voir vos notifications</div>
+          <div className="space-y-1">
+            <div className="font-bold text-base">
+              Connectez-vous pour voir vos notifications
+            </div>
+            <div className="text-sm text-[var(--foreground-muted)] leading-relaxed">
+              Suivez vos enchères, paiements, victoires et messages du
+              support en temps réel.
+            </div>
+          </div>
           <Link href="/login">
             <Button size="md">Connexion</Button>
           </Link>
