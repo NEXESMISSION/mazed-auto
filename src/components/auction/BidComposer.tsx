@@ -399,11 +399,22 @@ export function BidComposer({
   }
 
   if (depositPaid === null) {
+    // Skeleton instead of a "Préparation..." spinner. The bid composer has
+    // a distinctive shape (top row, big amount input, action button stack)
+    // so a shimmer layout helps the user predict what's loading and reduces
+    // perceived wait. ~1–2s on real networks.
     return (
-      <div className="rounded-[var(--radius-md)] bg-[var(--surface)] border border-[var(--border)] p-6 text-center">
-        <div className="inline-flex items-center gap-2 text-sm text-[var(--foreground-muted)]">
-          <span className="h-3 w-3 rounded-full border-2 border-[var(--gold)] border-t-transparent animate-spin" />
-          Préparation...
+      <div className="rounded-[var(--radius-md)] bg-[var(--surface)] border border-[var(--border)] p-5 space-y-4 animate-pulse">
+        <div className="h-4 w-32 rounded bg-[var(--surface-2)]" />
+        <div className="h-16 rounded-xl bg-[var(--surface-2)]" />
+        <div className="grid grid-cols-3 gap-2">
+          <div className="h-10 rounded-full bg-[var(--surface-2)]" />
+          <div className="h-10 rounded-full bg-[var(--surface-2)]" />
+          <div className="h-10 rounded-full bg-[var(--surface-2)]" />
+        </div>
+        <div className="h-12 rounded-full bg-[var(--surface-2)]" />
+        <div className="sr-only" aria-live="polite">
+          Vérification de votre caution en cours...
         </div>
       </div>
     );
