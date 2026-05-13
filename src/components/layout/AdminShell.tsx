@@ -169,7 +169,7 @@ export function AdminShell({ children }: Props) {
           <div className="h-8 w-8 rounded-[var(--radius)] overflow-hidden ring-1 ring-[var(--gold)]/30 shrink-0">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/logo.png"
+              src="/logo.webp"
               alt=""
               className="h-full w-full object-cover"
             />
@@ -209,7 +209,7 @@ export function AdminShell({ children }: Props) {
             <div className="h-9 w-9 rounded-[var(--radius)] overflow-hidden ring-1 ring-[var(--gold)]/30 shrink-0">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/logo.png"
+                src="/logo.webp"
                 alt=""
                 className="h-full w-full object-cover"
               />
@@ -283,7 +283,7 @@ export function AdminShell({ children }: Props) {
             <div className="h-9 w-9 rounded-[var(--radius)] overflow-hidden ring-1 ring-[var(--gold)]/30">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/logo.png"
+                src="/logo.webp"
                 alt=""
                 className="h-full w-full object-cover"
               />

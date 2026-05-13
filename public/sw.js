@@ -7,7 +7,7 @@
 // CACHE_VERSION (or IMAGE_CACHE), so users get a fresh load on their next visit.
 // v5: cache cross-origin Supabase image transforms with stale-while-revalidate
 // so the PWA stops re-downloading the same auction photos on every cold launch.
-const CACHE_VERSION = "mazed-v5-img-swr";
+const CACHE_VERSION = "mazed-v6-logo-webp";
 const IMAGE_CACHE = "mazed-img-v1"; // separate name so we don't nuke images
                                      // when CACHE_VERSION rolls forward on
                                      // every JS chunk bump.
@@ -19,7 +19,8 @@ const OFFLINE_URL = "/offline";
 // paint the splash from cache without a network round-trip.
 const PRECACHE = [
   OFFLINE_URL,
-  "/logo.png",
+  "/logo.webp",     // UI logo — 11 KB (was logo.png at 137 KB)
+  "/logo.png",      // PWA manifest icon — kept for Android home-screen
   "/loading.webp",
   "/loading.jpg",
   "/manifest.webmanifest",

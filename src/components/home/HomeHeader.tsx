@@ -38,7 +38,7 @@ export function HomeHeader({ signedIn: _signedIn }: Props) {
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/logo.png"
+            src="/logo.webp"
             alt="Mazed Auto"
             className="h-full w-full object-cover"
             draggable={false}

@@ -75,7 +75,7 @@ export function AuthShell({ title, subtitle, children, footer, backHref = "/" }:
           >
             <div className="h-8 w-8 rounded-[var(--radius)] overflow-hidden ring-1 ring-[var(--gold)]/30 shadow-[var(--shadow-gold)]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo.png" alt="" className="h-full w-full object-cover" />
+              <img src="/logo.webp" alt="" className="h-full w-full object-cover" />
             </div>
           </Link>
         </div>
@@ -127,7 +127,7 @@ export function AuthShell({ title, subtitle, children, footer, backHref = "/" }:
             <div className="h-12 w-12 rounded-full overflow-hidden ring-2 ring-[var(--gold)]/40 shadow-[var(--shadow-gold)]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/logo.png"
+                src="/logo.webp"
                 alt=""
                 className="h-full w-full object-cover"
                 draggable={false}

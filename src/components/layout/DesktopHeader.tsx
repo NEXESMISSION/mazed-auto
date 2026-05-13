@@ -48,7 +48,7 @@ export function DesktopHeader() {
           <div className="h-9 w-9 rounded-full overflow-hidden ring-1 ring-[var(--gold-soft)]/60">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/logo.png"
+              src="/logo.webp"
               alt=""
               className="h-full w-full object-cover"
               draggable={false}
