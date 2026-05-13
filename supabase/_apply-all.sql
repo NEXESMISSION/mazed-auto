@@ -11824,8 +11824,8 @@ on conflict (key) do nothing;
 --   - `admin_pending_payment_deadlines`: recreate with
 --     security_invoker = true + remove the direct auth.users
 --     dereference (moved into a SECURITY DEFINER helper function
---     `winner_display_name()` that gates by `is_admin(auth.uid())`).
---     The view itself also gates rows via `is_admin(auth.uid())`
+--     `winner_display_name()` that gates by `public.is_admin()`).
+--     The view itself also gates rows via `public.is_admin()`
 --     in the WHERE clause so non-admins get zero rows.
 --
 --   - `public_bids`: rebuilt as a SECURITY DEFINER FUNCTION
@@ -11925,7 +11925,7 @@ begin
   -- Only admins can resolve the real name. Anyone else gets a
   -- generic placeholder so we never leak the raw_user_meta_data
   -- name to a non-admin who happens to SELECT the view.
-  if not public.is_admin(v_caller) then
+  if not public.is_admin() then
     return 'Acheteur';
   end if;
   if p_user_id is null then
@@ -11973,7 +11973,7 @@ from public.auctions a
 where a.status in ('ended','re_offered')
   and a.current_winner_id is not null
   and a.payment_deadline is not null
-  and public.is_admin(auth.uid())   -- self-gates: non-admins see nothing
+  and public.is_admin()   -- self-gates: non-admins see nothing
   and not exists (
     select 1 from public.transactions t
     where t.auction_id = a.id
@@ -12070,8 +12070,5 @@ grant execute on function public.list_recent_public_bids(int)
 -- in lib/db.ts and components/home/LiveActivityTicker.tsx, then
 -- DROP the view.
 comment on view public.public_bids is
-  'INTENTIONAL SECURITY DEFINER. See migrate-advisor-security-fixes.sql. ' ||
-  'Projects user-id-stripped columns from public.bids for anonymous ' ||
-  'consumers. Replaced by list_public_bids() / list_recent_public_bids() ' ||
-  'in new code.';
+  'INTENTIONAL SECURITY DEFINER. See migrate-advisor-security-fixes.sql. Projects user-id-stripped columns from public.bids for anonymous consumers. Replaced by list_public_bids() / list_recent_public_bids() in new code.';
 
