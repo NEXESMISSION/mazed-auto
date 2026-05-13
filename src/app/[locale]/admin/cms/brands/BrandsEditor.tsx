@@ -145,6 +145,32 @@ function Row({
   pending: boolean;
   isNew?: boolean;
 }) {
+  const router = useRouter();
+  const { toast } = useToast();
+
+  // Auto-persist a freshly uploaded logo URL for EXISTING brands so the
+  // admin doesn't have to also hit Save afterwards. New drafts (isNew)
+  // still go through the explicit Save flow because the slug + name
+  // might still be blank. Failures fall back to the local-state-only
+  // path the user can save manually.
+  async function autoSaveLogo(newUrl: string | null) {
+    if (isNew) return;
+    if (!item.slug.trim() || !item.display_name.trim()) return;
+    const r = await upsertBrand({
+      slug: item.slug.trim(),
+      displayName: item.display_name.trim(),
+      logoUrl: newUrl,
+      isActive: item.is_active,
+      position: item.position,
+      isNew: false,
+    });
+    if (!r.ok) {
+      toast("Image téléversée mais non enregistrée : " + r.error, "warning");
+      return;
+    }
+    router.refresh();
+  }
+
   return (
     <>
       <MobileRow
@@ -155,6 +181,7 @@ function Row({
         onCancel={onCancel}
         pending={pending}
         isNew={isNew}
+        onLogoUploaded={autoSaveLogo}
       />
       <DesktopRow
         item={item}
@@ -164,6 +191,7 @@ function Row({
         onCancel={onCancel}
         pending={pending}
         isNew={isNew}
+        onLogoUploaded={autoSaveLogo}
       />
     </>
   );
@@ -185,6 +213,7 @@ function MobileRow({
   onCancel,
   pending,
   isNew,
+  onLogoUploaded,
 }: {
   item: Brand;
   onChange: (b: Brand) => void;
@@ -193,6 +222,7 @@ function MobileRow({
   onCancel?: () => void;
   pending: boolean;
   isNew?: boolean;
+  onLogoUploaded?: (url: string | null) => void;
 }) {
   return (
     <div
@@ -239,6 +269,7 @@ function MobileRow({
         slug={item.slug || "brand"}
         value={item.logo_url}
         onChange={(url) => onChange({ ...item, logo_url: url })}
+        onUploaded={onLogoUploaded}
         layout="mobile"
       />
 
@@ -337,6 +368,7 @@ function DesktopRow({
   onCancel,
   pending,
   isNew,
+  onLogoUploaded,
 }: {
   item: Brand;
   onChange: (b: Brand) => void;
@@ -345,6 +377,7 @@ function DesktopRow({
   onCancel?: () => void;
   pending: boolean;
   isNew?: boolean;
+  onLogoUploaded?: (url: string | null) => void;
 }) {
   return (
     <div className="hidden md:grid md:grid-cols-[120px_1fr_260px_80px_auto] gap-2 p-3 md:items-start">
@@ -363,6 +396,7 @@ function DesktopRow({
         slug={item.slug || "brand"}
         value={item.logo_url}
         onChange={(url) => onChange({ ...item, logo_url: url })}
+        onUploaded={onLogoUploaded}
         layout="desktop"
       />
       <Input
@@ -456,11 +490,16 @@ function UploadField({
   slug,
   value,
   onChange,
+  onUploaded,
   layout,
 }: {
   slug: string;
   value: string | null;
   onChange: (url: string | null) => void;
+  /** Fires AFTER the URL is successfully uploaded — the parent uses
+   *  this to auto-persist the new URL into cms_brands so the admin
+   *  doesn't have to also click the per-row Save button. */
+  onUploaded?: (url: string | null) => void;
   layout: "mobile" | "desktop";
 }) {
   const { toast } = useToast();
@@ -489,7 +528,11 @@ function UploadField({
         return;
       }
       onChange(r.url);
-      toast("✓ Image téléversée", "success");
+      toast("✓ Image enregistrée", "success");
+      // Persist immediately so the public pages see the new logo on
+      // the next visit (parent decides whether the row is in a state
+      // where it can save — new drafts won't trigger this).
+      onUploaded?.(r.url);
     } finally {
       setUploading(false);
     }

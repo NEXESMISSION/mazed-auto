@@ -111,7 +111,11 @@ export function LiveAuctionPanel({
           <BuyNowButton auction={auction} />
         )}
 
-        {videoUrl && <VideoButton url={videoUrl} poster={videoPoster} />}
+        {/* Always render the video widget — it self-renders the
+            "Aucune vidéo" placeholder when the seller didn't upload
+            one. Hiding the slot entirely made users wonder if it
+            failed to load. */}
+        <VideoButton url={videoUrl} poster={videoPoster} />
       </div>
 
       {/* ============================================================
@@ -220,9 +224,7 @@ export function LiveAuctionPanel({
               isOwnAuction ? (
                 <>
                   <OwnAuctionCta auctionId={auction.id} />
-                  {videoUrl && (
-                    <VideoButton url={videoUrl} poster={videoPoster} />
-                  )}
+                  <VideoButton url={videoUrl} poster={videoPoster} />
                 </>
               ) : (
                 <>
@@ -236,9 +238,7 @@ export function LiveAuctionPanel({
 
                   {auction.buyNowPrice && <BuyNowButton auction={auction} />}
 
-                  {videoUrl && (
-                    <VideoButton url={videoUrl} poster={videoPoster} />
-                  )}
+                  <VideoButton url={videoUrl} poster={videoPoster} />
                 </>
               )
             ) : isFinal ? (
