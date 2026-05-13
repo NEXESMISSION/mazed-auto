@@ -179,9 +179,7 @@ function BidCard({ bid: b }: { bid: MyBid }) {
                 {b.auction.vehicle.make} {b.auction.vehicle.model}
               </div>
               <div className="text-xs text-[var(--foreground-muted)] mt-0.5">
-                {b.auction.status === "ended"
-                  ? "Terminée"
-                  : `Se termine dans ${formatTimeRemaining(b.auction.endTime)}`}
+                {statusLabel(b.auction.status, b.auction.endTime)}
               </div>
             </div>
             {b.isWinning ? (
@@ -670,4 +668,28 @@ function EmptyHero({ Icon, title, subtitle, primary, secondary }: EmptyHeroProps
       </div>
     </div>
   );
+}
+
+/**
+ * Map the auction status to the short, user-facing label that should
+ * appear under the title in a bid row. Auctions that have technically
+ * passed their endTime but haven't been swept yet are treated as ended
+ * so we never show "Se termine dans -2m" or similar broken output.
+ *
+ * Final outcomes get their own label so a user can tell at a glance
+ * why their bid lost — "Réserve non atteinte" vs "Annulée" vs the
+ * vendor still deciding.
+ */
+function statusLabel(
+  status: Auction["status"],
+  endTime: Date,
+): string {
+  if (status === "cancelled") return "Annulée";
+  if (status === "reserve_not_met") return "Réserve non atteinte";
+  if (status === "pending_seller_decision") return "En attente du vendeur";
+  if (status === "ended") return "Terminée";
+  // active / ending — but if the timer has actually passed, the sweep
+  // hasn't run yet; show "Terminée" instead of a negative countdown.
+  if (endTime.getTime() <= Date.now()) return "Terminée";
+  return `Se termine dans ${formatTimeRemaining(endTime)}`;
 }
