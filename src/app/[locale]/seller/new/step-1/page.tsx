@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { ArrowRight } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { ArrowRight, Undo2 } from "lucide-react";
 import { CreateAuctionShell } from "@/components/layout/CreateAuctionShell";
 import { Input } from "@/components/ui/Input";
 import { NumberField } from "@/components/ui/NumberField";
@@ -69,6 +70,8 @@ export default function Step1Page() {
   const tWiz = useTranslations("wizard");
   const tCommon = useTranslations("common");
   const locale = useLocale();
+  const searchParams = useSearchParams();
+  const fromReview = searchParams.get("from") === "review";
   const features = draft.features ?? [];
 
   // Hydrate brands / features / cities from the CMS tables. We start
@@ -181,7 +184,7 @@ export default function Step1Page() {
       toast(tWiz("step1.toastBadVin"), "warning");
       return;
     }
-    router.push("/seller/new/step-2");
+    router.push(fromReview ? "/seller/new/review" : "/seller/new/step-2");
   }
 
   return (
@@ -407,22 +410,38 @@ export default function Step1Page() {
         </Field>
 
         <div className="pt-4 lg:pt-6 lg:border-t lg:border-[var(--border)] flex flex-col-reverse sm:flex-row gap-2 lg:gap-3 lg:justify-end">
-          <Button
-            variant="ghost"
-            size="lg"
-            fullWidth
-            onClick={() => router.push("/profile")}
-            className="lg:!w-auto lg:px-6"
-          >
-            {tWiz("action.saveExit")}
-          </Button>
+          {/* Back-to-review escape hatch — only when ?from=review. */}
+          {fromReview ? (
+            <Button
+              variant="secondary"
+              size="lg"
+              fullWidth
+              onClick={() => router.push("/seller/new/review")}
+              className="lg:!w-auto lg:px-6"
+            >
+              <Undo2 className="h-4 w-4" />
+              {tCommon("backToReview") ?? "Retour à la révision"}
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              size="lg"
+              fullWidth
+              onClick={() => router.push("/profile")}
+              className="lg:!w-auto lg:px-6"
+            >
+              {tWiz("action.saveExit")}
+            </Button>
+          )}
           <Button
             size="lg"
             fullWidth
             onClick={next}
             className="lg:!w-auto lg:px-8"
           >
-            {tCommon("continue")}
+            {fromReview
+              ? (tCommon("saveAndReturn") ?? "Enregistrer et revenir")
+              : tCommon("continue")}
             <ArrowRight className="h-5 w-5" />
           </Button>
         </div>

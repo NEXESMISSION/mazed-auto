@@ -47,6 +47,13 @@ export interface AuctionDraft {
   // True when the seller picked the "other" exception — the auction needs
   // a manual admin review before it can go live (PLAN §11.3 Golden Lock).
   requiresOwnershipReview?: boolean;
+  // Recto / verso photos of the carte grise. Previously these lived
+  // only in step-4's local useState — meaning if the user clicked
+  // "Modifier" from /review and came back, both slots were empty and
+  // they had to re-photograph the document. Persisting them here keeps
+  // the wizard's "navigate back, edit one thing, return" flow intact.
+  cartegriseFrontUrl?: string;
+  cartegriseBackUrl?: string;
 
   // step 5
   startingPrice?: number;

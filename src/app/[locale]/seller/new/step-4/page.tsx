@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
+import { useSearchParams } from "next/navigation";
 import {
   Check,
   AlertTriangle,
@@ -10,6 +11,7 @@ import {
   Camera,
   RotateCcw,
   Loader2,
+  Undo2,
 } from "lucide-react";
 import { CreateAuctionShell } from "@/components/layout/CreateAuctionShell";
 import { Button } from "@/components/ui/Button";
@@ -47,15 +49,49 @@ export default function Step4Page() {
   const { user } = useAuth();
   const tWiz = useTranslations("wizard");
   const tCommon = useTranslations("common");
+  const searchParams = useSearchParams();
+  const fromReview = searchParams.get("from") === "review";
 
-  const [front, setFront] = useState<string | null>(null);
-  const [back, setBack] = useState<string | null>(null);
+  // Carte grise photos read DIRECTLY from the draft (single source of
+  // truth). The previous version stored these in local useState only,
+  // so they vanished on every revisit — the user had to re-photograph
+  // their document if they came back to this step via /review's
+  // Modifier link. Persisting through update() means they survive
+  // navigation, reload, even the 7-day TTL of the draft.
+  const front = draft.cartegriseFrontUrl ?? null;
+  const back = draft.cartegriseBackUrl ?? null;
 
+  // Form fields — keep local state for input perf (typing into a
+  // controlled input that writes to localStorage on every keystroke
+  // is fine for our scale, but feels marginally smoother local). One
+  // useEffect re-syncs from the draft whenever it changes; no
+  // seededRef guard, so back-nav from /review fills the form again.
   const [ownerName, setOwnerName] = useState(draft.ownerName ?? "");
   const [plate, setPlate] = useState(draft.registration ?? "");
   const [vin, setVin] = useState(draft.vin ?? "");
   const [year, setYear] = useState(draft.year ? String(draft.year) : "");
   const [exception, setException] = useState(draft.ownershipException ?? "");
+
+  // Reactively sync the form fields from the draft. Same pattern as
+  // step-5's pricing sync — no seededRef guard, deps are narrow so user
+  // typing never triggers a re-run (typing updates local state only,
+  // draft fields don't change until commit() writes them).
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
+    if (draft.ownerName !== undefined) setOwnerName(draft.ownerName);
+    if (draft.registration !== undefined) setPlate(draft.registration);
+    if (draft.vin !== undefined) setVin(draft.vin);
+    if (draft.year !== undefined) setYear(String(draft.year));
+    if (draft.ownershipException !== undefined)
+      setException(draft.ownershipException);
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [
+    draft.ownerName,
+    draft.registration,
+    draft.vin,
+    draft.year,
+    draft.ownershipException,
+  ]);
 
   const kycName = [user?.firstName, user?.lastName].filter(Boolean).join(" ");
   const matched = ownerName ? namesMatch(ownerName, kycName) : false;
@@ -77,7 +113,7 @@ export default function Step4Page() {
       ownershipException: matched ? "" : exception,
       requiresOwnershipReview: !matched && exception === "other",
     });
-    router.push("/seller/new/step-5");
+    router.push(fromReview ? "/seller/new/review" : "/seller/new/step-5");
   }
 
   return (
@@ -90,12 +126,27 @@ export default function Step4Page() {
           </p>
         </div>
 
+        {/* Back-to-review banner — only when ?from=review (the user
+            tapped Modifier on /review). Lets them bail out without
+            walking through every subsequent step. */}
+        {fromReview && (
+          <Button
+            variant="secondary"
+            size="md"
+            fullWidth
+            onClick={() => router.push("/seller/new/review")}
+          >
+            <Undo2 className="h-4 w-4" />
+            {tCommon("backToReview") ?? "Retour à la révision"}
+          </Button>
+        )}
+
         <div className="grid grid-cols-2 gap-3">
           <NativeCapture
             kind="photo"
             facing="environment"
             folder="carte-grise"
-            onCaptured={(url) => setFront(url)}
+            onCaptured={(url) => update({ cartegriseFrontUrl: url })}
           >
             {({ open, uploading }) => (
               <ScanSlot
@@ -105,7 +156,7 @@ export default function Step4Page() {
                 url={front}
                 uploading={uploading}
                 onTap={open}
-                onClear={() => setFront(null)}
+                onClear={() => update({ cartegriseFrontUrl: undefined })}
               />
             )}
           </NativeCapture>
@@ -114,7 +165,7 @@ export default function Step4Page() {
             kind="photo"
             facing="environment"
             folder="carte-grise"
-            onCaptured={(url) => setBack(url)}
+            onCaptured={(url) => update({ cartegriseBackUrl: url })}
           >
             {({ open, uploading }) => (
               <ScanSlot
@@ -124,7 +175,7 @@ export default function Step4Page() {
                 url={back}
                 uploading={uploading}
                 onTap={open}
-                onClear={() => setBack(null)}
+                onClear={() => update({ cartegriseBackUrl: undefined })}
               />
             )}
           </NativeCapture>
@@ -247,7 +298,9 @@ export default function Step4Page() {
             {tCommon("back")}
           </Button>
           <Button size="lg" fullWidth disabled={!canContinue} onClick={commit}>
-            {tCommon("continue")}
+            {fromReview
+              ? (tCommon("saveAndReturn") ?? "Enregistrer et revenir")
+              : tCommon("continue")}
             <ArrowRight className="h-5 w-5" />
           </Button>
         </div>

@@ -387,7 +387,7 @@ export default function ReviewPage() {
         <Section
           title={t("sectionVehicle")}
           editLabel={t("edit")}
-          editHref="/seller/new/step-1"
+          editHref="/seller/new/step-1?from=review"
         >
           <Row
             k={t("rowMakeModel")}
@@ -413,7 +413,7 @@ export default function ReviewPage() {
         <Section
           title={t("sectionPhotos")}
           editLabel={t("edit")}
-          editHref="/seller/new/step-2"
+          editHref="/seller/new/step-2?from=review"
         >
           {photoCount === 12 ? (
             <div className="text-sm text-[var(--success)] flex items-center gap-2">
@@ -430,7 +430,7 @@ export default function ReviewPage() {
         <Section
           title={t("sectionVideo")}
           editLabel={t("edit")}
-          editHref="/seller/new/step-3"
+          editHref="/seller/new/step-3?from=review"
         >
           {draft.videoUrl ? (
             <div className="text-sm text-[var(--success)] flex items-center gap-2">
@@ -447,7 +447,7 @@ export default function ReviewPage() {
         <Section
           title={t("sectionOwnership")}
           editLabel={t("edit")}
-          editHref="/seller/new/step-4"
+          editHref="/seller/new/step-4?from=review"
         >
           <Row k={t("rowOwnerName")} v={draft.ownerName ?? "—"} />
           <Row k={t("rowPlate")} v={draft.registration ?? "—"} />
@@ -461,7 +461,7 @@ export default function ReviewPage() {
         <Section
           title={t("sectionPriceDuration")}
           editLabel={t("edit")}
-          editHref="/seller/new/step-5"
+          editHref="/seller/new/step-5?from=review"
         >
           <Row
             k={t("rowStartingPrice")}

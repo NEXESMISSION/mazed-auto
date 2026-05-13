@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { ArrowRight, RotateCcw, Check } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { ArrowRight, RotateCcw, Check, Undo2 } from "lucide-react";
 import { CreateAuctionShell } from "@/components/layout/CreateAuctionShell";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
@@ -51,8 +51,19 @@ export default function Step3Page() {
   const { draft, update } = useDraft();
   const tWiz = useTranslations("wizard");
   const tCommon = useTranslations("common");
-  const [videoUrl, setVideoUrl] = useState<string | null>(draft.videoUrl ?? null);
+  const searchParams = useSearchParams();
+  // When the user lands here from the /review "Modifier" link, we want
+  // to give them a one-click escape back to /review instead of forcing
+  // them through every subsequent step again. The Modifier link passes
+  // ?from=review so we know.
+  const fromReview = searchParams.get("from") === "review";
 
+  // Single source of truth — read directly from the draft. Previously
+  // this was useState(draft.videoUrl ?? null) which captured the value
+  // on first render (before localStorage hydrated) and never re-synced.
+  // Result: a video the user had already uploaded would appear gone
+  // on every revisit. Same family of bug as step-2's lost photos.
+  const videoUrl = draft.videoUrl ?? null;
   const done = Boolean(videoUrl);
 
   // Captured in the component so the rejection toast can use the active
@@ -95,13 +106,11 @@ export default function Step3Page() {
   }
 
   function handleCaptured(url: string) {
-    setVideoUrl(url);
     update({ videoUrl: url });
     toast(tWiz("step3.uploadSuccess"), "success");
   }
 
   function reset() {
-    setVideoUrl(null);
     update({ videoUrl: undefined });
   }
 
@@ -114,6 +123,22 @@ export default function Step3Page() {
             {tWiz("step3.subtitle")}
           </p>
         </div>
+
+        {/* Back-to-review banner — only visible when the user came from
+            the review page via a Modifier link. Clicking goes straight
+            back to /review with whatever they just changed, skipping the
+            otherwise-mandatory walk through step-4, step-5 to get back. */}
+        {fromReview && (
+          <Button
+            variant="secondary"
+            size="md"
+            fullWidth
+            onClick={() => router.push("/seller/new/review")}
+          >
+            <Undo2 className="h-4 w-4" />
+            {tCommon("backToReview") ?? "Retour à la révision"}
+          </Button>
+        )}
 
         {done && videoUrl ? (
           <div className="relative aspect-[9/16] sm:aspect-video rounded-[var(--radius-md)] overflow-hidden bg-black border border-[var(--border)]">
@@ -165,9 +190,15 @@ export default function Step3Page() {
             <Button
               size="lg"
               fullWidth
-              onClick={() => router.push("/seller/new/step-4")}
+              onClick={() =>
+                router.push(
+                  fromReview ? "/seller/new/review" : "/seller/new/step-4",
+                )
+              }
             >
-              {tCommon("continue")}
+              {fromReview
+                ? (tCommon("saveAndReturn") ?? "Enregistrer et revenir")
+                : tCommon("continue")}
               <ArrowRight className="h-5 w-5" />
             </Button>
           </div>

@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { ArrowRight, Info, Star, Crown, ArrowUp } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { ArrowRight, Info, Star, Crown, ArrowUp, Undo2 } from "lucide-react";
 import { CreateAuctionShell } from "@/components/layout/CreateAuctionShell";
 import { Button } from "@/components/ui/Button";
 import { NumberField } from "@/components/ui/NumberField";
@@ -21,6 +22,8 @@ export default function Step5Page() {
   const { draft, hydrated, update } = useDraft();
   const tWiz = useTranslations("wizard");
   const tCommon = useTranslations("common");
+  const searchParams = useSearchParams();
+  const fromReview = searchParams.get("from") === "review";
   const [startingPrice, setStartingPrice] = useState(draft.startingPrice ?? 30000);
   const [reservePrice, setReservePrice] = useState(draft.reservePrice ?? 35000);
   const [buyNowPrice, setBuyNowPrice] = useState(draft.buyNowPrice ?? 45000);
@@ -489,22 +492,41 @@ export default function Step5Page() {
         </div>
 
         <div className="pt-4 lg:pt-6 lg:border-t lg:border-[var(--border)] flex flex-col-reverse sm:flex-row gap-2 lg:gap-3 lg:justify-end">
-          <Button
-            variant="ghost"
-            size="lg"
-            fullWidth
-            onClick={() => router.back()}
-            className="lg:!w-auto lg:px-6"
-          >
-            {tCommon("back")}
-          </Button>
+          {/* When the user came here from /review (Modifier), the back
+              button should bring them right back to /review — not the
+              previous step. Standard browser-history back is too brittle
+              (deep-linking, hard refresh). */}
+          {fromReview ? (
+            <Button
+              variant="secondary"
+              size="lg"
+              fullWidth
+              onClick={() => router.push("/seller/new/review")}
+              className="lg:!w-auto lg:px-6"
+            >
+              <Undo2 className="h-4 w-4" />
+              {tCommon("backToReview") ?? "Retour à la révision"}
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              size="lg"
+              fullWidth
+              onClick={() => router.back()}
+              className="lg:!w-auto lg:px-6"
+            >
+              {tCommon("back")}
+            </Button>
+          )}
           <Button
             size="lg"
             fullWidth
             onClick={next}
             className="lg:!w-auto lg:px-8"
           >
-            {tWiz("step5.finalReview")}
+            {fromReview
+              ? (tCommon("saveAndReturn") ?? "Enregistrer et revenir")
+              : tWiz("step5.finalReview")}
             <ArrowRight className="h-5 w-5" />
           </Button>
         </div>

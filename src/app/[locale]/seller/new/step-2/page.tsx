@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
+import { useSearchParams } from "next/navigation";
 import {
   Camera,
   Check,
@@ -69,6 +70,8 @@ export default function Step2Page() {
   const { draft, update } = useDraft();
   const tWiz = useTranslations("wizard");
   const tCommon = useTranslations("common");
+  const searchParams = useSearchParams();
+  const fromReview = searchParams.get("from") === "review";
 
   // Derive `photos` directly from the draft so there's a SINGLE source
   // of truth (localStorage). Previously this lived in a separate
@@ -191,23 +194,44 @@ export default function Step2Page() {
         </div>
 
         <div className="pt-4 lg:pt-6 lg:border-t lg:border-[var(--border)] flex flex-col-reverse sm:flex-row gap-2 lg:gap-3 lg:justify-end">
-          <Button
-            variant="ghost"
-            size="lg"
-            fullWidth
-            onClick={() => router.back()}
-            className="lg:!w-auto lg:px-6"
-          >
-            {tCommon("back")}
-          </Button>
+          {/* Back-to-review escape hatch — only when ?from=review.
+              Skips the otherwise mandatory walk-through-every-step. */}
+          {fromReview ? (
+            <Button
+              variant="secondary"
+              size="lg"
+              fullWidth
+              onClick={() => router.push("/seller/new/review")}
+              className="lg:!w-auto lg:px-6"
+            >
+              <Undo2 className="h-4 w-4" />
+              {tCommon("backToReview") ?? "Retour à la révision"}
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              size="lg"
+              fullWidth
+              onClick={() => router.back()}
+              className="lg:!w-auto lg:px-6"
+            >
+              {tCommon("back")}
+            </Button>
+          )}
           <Button
             size="lg"
             fullWidth
             disabled={!allDone}
-            onClick={() => router.push("/seller/new/step-3")}
+            onClick={() =>
+              router.push(
+                fromReview ? "/seller/new/review" : "/seller/new/step-3",
+              )
+            }
             className="lg:!w-auto lg:px-8"
           >
-            {tCommon("continue")}
+            {fromReview
+              ? (tCommon("saveAndReturn") ?? "Enregistrer et revenir")
+              : tCommon("continue")}
             <ArrowRight className="h-5 w-5" />
           </Button>
         </div>
