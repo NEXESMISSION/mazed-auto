@@ -54,6 +54,12 @@ export function AuctionResultBanner({ auction }: Props) {
   const isSeller = user?.id === auction.seller.id;
 
   useEffect(() => {
+    // `cancelled` lets us bail out of every async path below when the
+    // user navigates away mid-flight. Without it, the .then() and the
+    // IIFE further down could land setOutcome() on a stale, unmounted
+    // component and trigger React's "state update on unmounted" warning.
+    let cancelled = false;
+
     if (!loaded) return;
     if (!isFinal) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -95,6 +101,7 @@ export function AuctionResultBanner({ auction }: Props) {
           p_user_id: user.id,
         })
         .then(({ data: isTop }) => {
+          if (cancelled) return;
           if (isTop) {
             setOutcome({
               kind: "seller_decision_top_bidder",
@@ -110,7 +117,9 @@ export function AuctionResultBanner({ auction }: Props) {
             });
           }
         });
-      return;
+      return () => {
+        cancelled = true;
+      };
     }
 
     if (auction.status === "reserve_not_met") {
@@ -128,10 +137,13 @@ export function AuctionResultBanner({ auction }: Props) {
       // Round-21 audit fix H-1: use is_top_bidder() since bids.user_id
       // is no longer publicly readable. Then read the user's own top
       // bid amount (allowed by the new owner-clause RLS) for display.
+      // Each await checks `cancelled` because the user might unmount
+      // (page navigation, auction status flip via realtime) mid-flight.
       const { data: isWinner } = await supabase.rpc("is_top_bidder", {
         p_auction_id: auction.id,
         p_user_id: user.id,
       });
+      if (cancelled) return;
       if (!isWinner) {
         setOutcome({ kind: "loser_ended" });
         return;
@@ -143,6 +155,7 @@ export function AuctionResultBanner({ auction }: Props) {
         .eq("user_id", user.id)
         .order("amount", { ascending: false })
         .limit(1);
+      if (cancelled) return;
       const myBid = Number(own?.[0]?.amount ?? auction.currentPrice);
       const { data: paid } = await supabase
         .from("transactions")
@@ -152,6 +165,7 @@ export function AuctionResultBanner({ auction }: Props) {
         .eq("type", "final_payment")
         .eq("status", "completed")
         .limit(1);
+      if (cancelled) return;
       setOutcome({
         kind: "winner",
         myBid,
@@ -159,6 +173,9 @@ export function AuctionResultBanner({ auction }: Props) {
         remaining: Math.max(0, myBid - auction.participationDeposit),
       });
     })();
+    return () => {
+      cancelled = true;
+    };
   }, [
     auction.id,
     auction.status,
