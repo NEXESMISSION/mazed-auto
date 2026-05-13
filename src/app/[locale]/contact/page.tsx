@@ -120,7 +120,7 @@ export default function ContactPage() {
           </div>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Field label="Nom complet">
+              <Field label="Nom complet" required>
                 <Input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -128,7 +128,7 @@ export default function ContactPage() {
                   required
                 />
               </Field>
-              <Field label="E-mail">
+              <Field label="E-mail" required>
                 <Input
                   type="email"
                   value={email}
@@ -158,7 +158,7 @@ export default function ContactPage() {
               </div>
             </Field>
 
-            <Field label="Message">
+            <Field label="Message" required>
               <textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
@@ -250,14 +250,23 @@ function Channel({
 
 function Field({
   label,
+  required,
   children,
 }: {
   label: string;
+  required?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <label className="block space-y-1.5">
-      <div className="text-xs font-bold text-[var(--foreground-muted)]">{label}</div>
+      <div className="text-xs font-bold text-[var(--foreground-muted)] inline-flex items-center gap-1">
+        {label}
+        {required && (
+          <span aria-hidden className="text-[var(--danger)]">
+            *
+          </span>
+        )}
+      </div>
       {children}
     </label>
   );
