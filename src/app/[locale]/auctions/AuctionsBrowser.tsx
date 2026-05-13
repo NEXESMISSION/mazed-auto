@@ -193,8 +193,29 @@ function ModernBrowser({
   }, [search]);
   const [filters, setFilters] = useState<BrowseFilterState>(EMPTY_FILTERS);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
-  const [sort, setSort] = useState<SortKey>("newest");
+  // Sort hydrates from ?sort= so a chip-click or refresh doesn't yank
+  // the user back to "newest" mid-browse. Any unrecognized value falls
+  // through to "newest" via the includes() guard.
+  const initialSort = ((): SortKey => {
+    const s = params.get("sort") as SortKey | null;
+    return s && SORT_VALUES.includes(s) ? s : "newest";
+  })();
+  const [sort, setSort] = useState<SortKey>(initialSort);
   const [sortOpen, setSortOpen] = useState(false);
+
+  // Mirror sort back into the URL so it survives refresh + filter
+  // chip clicks (those reset other query params via router.push, but
+  // sort lives alongside ?brand= / ?body= harmlessly).
+  useEffect(() => {
+    const fresh = new URLSearchParams(window.location.search);
+    if (sort === "newest") fresh.delete("sort");
+    else fresh.set("sort", sort);
+    const qs = fresh.toString();
+    router.replace(qs ? `/auctions?${qs}` : "/auctions");
+    // Same omission as the search-debounce effect above — router is
+    // stable and we read fresh from window.location each time.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sort]);
 
   // Brand index — count + first auction's image. Used for the quick-chip
   // strip and the "no scope" suggestion grid.
@@ -557,12 +578,22 @@ function ModernBrowser({
           )}
         </div>
       ) : viewMode === "grid" ? (
-        <div className="mt-3 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 px-4">
-          {filteredAuctions.map((auction) => (
+        // Mobile starts at 1-col so cards are big enough to scan without
+        // collisions between countdown / badges / favorite (was 2-col +
+        // cramped — every card was ~170 CSS px wide on a 375 viewport,
+        // which made the title clamp and the badge stack collide).
+        // Tablets and up keep the dense grid because there's room.
+        // Gap also bumps from 3 → 4 on phones so the cards breathe.
+        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-3 px-4">
+          {filteredAuctions.map((auction, i) => (
             <AuctionCard
               key={auction.id}
               auction={auction}
               isTrustedSeller={trustedSellers.has(auction.seller.id)}
+              /* First 2 results in the grid are above-the-fold on
+                 every viewport — eager-load them so the page paints
+                 with real photos instead of skeleton-into-shimmer. */
+              priority={i < 2}
             />
           ))}
         </div>

@@ -2,7 +2,7 @@
 
 import { useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
-import { LayoutGrid, Sparkles } from "lucide-react";
+import { LayoutGrid, Rows3 } from "lucide-react";
 
 /**
  * Compact two-state pill in the BrowseHeader that flips between the
@@ -36,7 +36,9 @@ export function BrowseViewToggle() {
             : "text-[var(--foreground-muted)] hover:text-foreground"
         }`}
       >
-        <Sparkles className="h-3.5 w-3.5" />
+        {/* Rows3 reads as a "results list" — clearer than Sparkles
+            for what "Moderne" actually is (the filterable card feed). */}
+        <Rows3 className="h-3.5 w-3.5" />
         <span className="hidden sm:inline">Moderne</span>
       </button>
       <button
