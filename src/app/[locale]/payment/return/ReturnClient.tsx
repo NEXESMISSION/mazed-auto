@@ -1,10 +1,13 @@
 "use client";
 
+// Client island for /payment/return. AppShell is rendered by the
+// server page.tsx around this component — see settings/SettingsClient
+// for the same pattern.
+
 import { useEffect, useState } from "react";
 import { Link } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { CheckCircle2, AlertTriangle, Loader2, ArrowRight } from "lucide-react";
-import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/Button";
 
 type Status =
@@ -92,8 +95,7 @@ export function ReturnClient() {
   }, [subId, simulated, failedFromProvider]);
 
   return (
-    <AppShell>
-      <div className="px-4 py-12 max-w-md mx-auto">
+    <div className="px-4 py-12 max-w-md mx-auto">
         {status === "loading" || status === "pending_payment" ? (
           <Card
             tone="info"
@@ -147,8 +149,7 @@ export function ReturnClient() {
             }
           />
         )}
-      </div>
-    </AppShell>
+    </div>
   );
 }
 
