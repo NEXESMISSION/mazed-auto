@@ -1,12 +1,22 @@
 "use client";
 
-import { useEffect, Suspense } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter } from "@/i18n/navigation";
+import { Link } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
+import { LifeBuoy } from "lucide-react";
 
+/**
+ * Stand-in "Traitement en cours" screen while the payment gateway
+ * settles. We auto-redirect to success/failure after a short delay,
+ * but if the redirect hangs (slow network, paused tab, etc.) we
+ * surface a manual escape after 8s so the user is never trapped on
+ * a spinner without options.
+ */
 function ProcessingContent() {
   const router = useRouter();
   const params = useSearchParams();
+  const [stalled, setStalled] = useState(false);
 
   useEffect(() => {
     const failureRate = 0;
@@ -18,7 +28,15 @@ function ProcessingContent() {
       params.forEach((v, k) => url.searchParams.set(k, v));
       router.replace(url.pathname + url.search);
     }, 2200);
-    return () => clearTimeout(t);
+
+    // If for any reason the navigation hasn't happened after 8s, give
+    // the user a way out. Mostly a guard for very slow connections.
+    const stallT = setTimeout(() => setStalled(true), 8000);
+
+    return () => {
+      clearTimeout(t);
+      clearTimeout(stallT);
+    };
   }, [router, params]);
 
   return (
@@ -38,9 +56,37 @@ function ProcessingContent() {
         <div>
           <div className="text-xl font-bold">Traitement du paiement</div>
           <p className="text-sm text-[var(--foreground-muted)] mt-2 leading-relaxed">
-            Ne fermez pas cette page, la finalisation de la transaction ne prend que quelques secondes...
+            Ne fermez pas cette page — la transaction se finalise en quelques secondes.
           </p>
         </div>
+
+        {stalled && (
+          <div className="rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] p-4 text-start space-y-3">
+            <div className="text-sm font-bold">
+              Le traitement prend plus de temps que prévu
+            </div>
+            <p className="text-xs text-[var(--foreground-muted)] leading-relaxed">
+              Aucun débit n&apos;a été confirmé. Vous pouvez vérifier l&apos;état
+              de votre transaction ou contacter le support si vous voyez un
+              prélèvement sans confirmation.
+            </p>
+            <div className="flex flex-col gap-2">
+              <Link
+                href="/transactions"
+                className="inline-flex items-center justify-center h-10 rounded-[var(--radius)] bg-[var(--surface-2)] ring-1 ring-[var(--border)] text-sm font-bold hover:ring-[var(--gold-soft)] transition-colors"
+              >
+                Voir mes transactions
+              </Link>
+              <Link
+                href="/contact"
+                className="inline-flex items-center justify-center gap-1.5 h-10 rounded-[var(--radius)] text-sm font-bold text-[var(--gold)] hover:underline"
+              >
+                <LifeBuoy className="h-4 w-4" />
+                Contacter le support
+              </Link>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
