@@ -279,7 +279,12 @@ export function NotificationsList({ userId, initial }: Props) {
             // with "Cannot read property 'icon' of undefined".
             const meta = kindMeta[n.kind] ?? FALLBACK_META;
             const Icon = meta.icon;
-            const href = meta.href?.(n) ?? "/notifications";
+            // Tap opens the notification's detail page — the user
+            // reads the full title + body before being routed onward
+            // to the related auction / queue from the CTA there.
+            // (Was: jumped straight to the auction, hiding the
+            // detail/context.)
+            const href = `/notifications/${n.id}`;
             return (
               <Link
                 key={n.id}
