@@ -254,7 +254,14 @@ export function BidComposer({
               ? "Cette enchère est terminée"
               : code.includes("SELLER_CANNOT_BID")
                 ? "Vous ne pouvez pas enchérir sur votre propre enchère"
-                : "Échec de l'enregistrement du plafond : " + error.message;
+                // Never paste raw RPC error text to users — it can leak
+                // SQL/Postgres internals and is in English. Generic copy
+                // + console log for debugging.
+                : "Une erreur est survenue. Veuillez réessayer dans un instant.";
+      if (!msg.startsWith("Vous") && !msg.startsWith("Cette") && !msg.startsWith("Le plafond") && !msg.startsWith("Payez")) {
+        // Log the raw cause for ops; user only sees the sanitized copy.
+        console.error("[place_auto_bid] unhandled error:", error.message);
+      }
       toast(msg, "error");
       return;
     }

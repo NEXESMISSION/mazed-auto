@@ -338,7 +338,14 @@ function BidPills({ auction }: { auction: Auction }) {
           {auction.totalParticipants === 1 ? "participant" : "participants"}
         </div>
       </div>
-      <div className="rounded-2xl bg-[var(--surface)] border border-[var(--border)] p-3.5">
+      <div className="rounded-2xl bg-[var(--surface)] border border-[var(--border)] p-3.5 relative">
+        {/* Pulse dot in the corner replaces the redundant "En direct" text
+            row — the live countdown right below is already proof-of-life,
+            adding the words felt repetitive. */}
+        <span
+          aria-label="En direct"
+          className="absolute top-2.5 end-2.5 h-1.5 w-1.5 rounded-full bg-[var(--gold)] pulse-gold"
+        />
         <div className="text-[10px] uppercase tracking-[0.18em] font-bold text-[var(--foreground-subtle)]">
           Se termine dans
         </div>
@@ -350,9 +357,8 @@ function BidPills({ auction }: { auction: Auction }) {
             className="text-lg leading-none"
           />
         </div>
-        <div className="text-[10px] text-[var(--foreground-muted)] mt-2 inline-flex items-center gap-1.5">
-          <span className="h-1.5 w-1.5 rounded-full bg-[var(--gold)] pulse-gold" />
-          En direct
+        <div className="text-[10px] text-[var(--foreground-muted)] mt-2 tabular-nums">
+          {auction.totalBids} {auction.totalBids === 1 ? "offre" : "offres"}
         </div>
       </div>
     </div>
