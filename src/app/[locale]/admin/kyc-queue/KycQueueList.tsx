@@ -61,6 +61,10 @@ export function KycQueueList({ items: initial }: { items: KycSubmission[] }) {
         t("bulkRejectDefault"),
       );
       if (reason === null) return;
+      // Cap rejection reason at 500 chars so an admin can't paste a
+      // novel into the user's inbox by accident. Trim + slice keeps
+      // the leading content (which is the actual reason).
+      reason = reason.trim().slice(0, 500);
     } else {
       if (
         !window.confirm(t("bulkApproveConfirm", { count: selected.size }))
@@ -75,7 +79,16 @@ export function KycQueueList({ items: initial }: { items: KycSubmission[] }) {
     });
     setBulkBusy(false);
     if (!r.ok) {
-      toast(t("toastFail", { error: r.error }), "error");
+      // Coerce r.error to a printable string so we never render
+      // `[object Object]` in the toast when the action layer returns
+      // a structured failure.
+      const errText =
+        typeof r.error === "string"
+          ? r.error
+          : r.error
+            ? JSON.stringify(r.error)
+            : "unknown";
+      toast(t("toastFail", { error: errText }), "error");
       return;
     }
     const count = r.data?.count ?? 0;
@@ -120,7 +133,10 @@ export function KycQueueList({ items: initial }: { items: KycSubmission[] }) {
   function reject(submission: KycSubmission) {
     const reason = window.prompt(t("rejectPrompt"), t("rejectDefault"));
     if (reason === null) return;
-    decide(submission, "rejected", reason.trim() || undefined);
+    // Same 500-char cap as the bulk path — keep the user-facing copy
+    // bounded regardless of admin clipboard.
+    const trimmed = reason.trim().slice(0, 500);
+    decide(submission, "rejected", trimmed || undefined);
   }
 
   return (
