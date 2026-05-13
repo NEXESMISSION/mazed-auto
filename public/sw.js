@@ -7,12 +7,19 @@
 // CACHE_VERSION, so users get a fresh load on their next visit.
 // Bump on any change to the precache list or the splash asset so all
 // installed clients refresh on next visit.
-const CACHE_VERSION = "mazed-v3-splash-jpg";
+const CACHE_VERSION = "mazed-v4-splash-webp";
 const OFFLINE_URL = "/offline";
-// /loading.jpg is the branded splash. Precaching it means subsequent
-// loads — including the installed PWA on cold start — paint the splash
-// from cache without a network round-trip.
-const PRECACHE = [OFFLINE_URL, "/logo.png", "/loading.jpg", "/manifest.webmanifest"];
+// /loading.webp is the branded splash (22 KB, was 69 KB JPG). JPG kept
+// as a <picture> fallback for ancient browsers. Precaching means
+// subsequent loads — including the installed PWA on cold start —
+// paint the splash from cache without a network round-trip.
+const PRECACHE = [
+  OFFLINE_URL,
+  "/logo.png",
+  "/loading.webp",
+  "/loading.jpg",
+  "/manifest.webmanifest",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

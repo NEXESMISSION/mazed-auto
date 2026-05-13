@@ -72,12 +72,18 @@ export default async function RootLayout({
     >
       <head>
         {/* Preload the splash image at the highest priority so it paints
-            with the very first frame. The black splash container is
-            painted instantly via inline CSS regardless — this just gets
-            the image visible faster. Was 2.94 MB PNG → now 70 KB JPG
-            (~42× smaller). The service worker also precaches it so
-            subsequent loads (including the installed PWA) paint instantly. */}
-        <link rel="preload" as="image" href="/loading.jpg" fetchPriority="high" />
+            with the very first frame. The inlined LQIP in SplashScreen
+            paints with the HTML itself; this preload gets the full
+            22 KB WebP arriving before the splash even mounts. JPG
+            fallback for ancient browsers is announced via <picture>
+            in SplashScreen so we only preload the WebP here. */}
+        <link
+          rel="preload"
+          as="image"
+          href="/loading.webp"
+          type="image/webp"
+          fetchPriority="high"
+        />
         {/* Preconnect to the Supabase origin so the first image / RPC
             call doesn't eat ~200-400ms on DNS + TLS. Every page hits
             this host (auth, image transforms, realtime). */}

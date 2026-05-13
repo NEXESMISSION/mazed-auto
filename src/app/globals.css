@@ -451,6 +451,25 @@ body {
      to drop after 5s so users aren't trapped. */
   animation: mazed-splash-fallback 5000ms forwards;
 }
+/* Low-quality-image-placeholder layer: paints with the FIRST HTML byte
+   because the base64 is part of the inline style. By the time the real
+   /loading.webp is decoded, the user has already seen the brand colors
+   instead of a black void. The 24-px source is intentionally
+   pixelated; the heavy CSS blur turns it into a smooth backdrop. */
+#mazed-splash::before {
+  content: "";
+  position: absolute;
+  inset: -8%;
+  background-image: var(--splash-lqip);
+  background-size: cover;
+  background-position: center;
+  filter: blur(24px) saturate(1.1);
+  transform: scale(1.05);
+  transition: opacity 240ms ease-out 60ms;
+}
+#mazed-splash[data-img-loaded="true"]::before {
+  opacity: 0;
+}
 #mazed-splash[data-hidden="true"] {
   opacity: 0;
   pointer-events: none;
