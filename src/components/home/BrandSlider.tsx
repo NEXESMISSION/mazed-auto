@@ -66,19 +66,29 @@ export function BrandSlider({ pool, brands }: Props) {
                 aria-hidden={i >= tiles.length ? true : undefined}
                 className="group relative w-[120px] h-[120px] shrink-0 snap-center overflow-hidden rounded-2xl ring-1 ring-[var(--border)] bg-black hover:ring-[var(--gold-soft)]/50 transition-shadow"
               >
+                {/* Initials fallback — sits BEHIND the <img>. If the logo
+                    loads it covers this; if the request fails or hasn't
+                    landed yet, the user still sees the brand mark instead
+                    of a blank black square. */}
+                <span
+                  aria-hidden
+                  className="absolute inset-0 flex items-center justify-center text-[28px] font-black tracking-tight text-[var(--gold)] opacity-40"
+                >
+                  {t.name.slice(0, 2).toUpperCase()}
+                </span>
                 {t.image ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={thumb(t.image, { width: 240, quality: 70 })}
                     alt={t.name}
-                    loading="lazy"
+                    /* Eager + high priority — only ~10 thumbnails at ~3KB
+                       each, lazy-loading them was hiding the rail entirely
+                       on slow connections / cached service workers. */
+                    loading="eager"
+                    fetchPriority="high"
                     decoding="async"
                     /* object-contain + black tile bg + zero padding so
-                       the source image fills the tile edge-to-edge.
-                       Square source + square tile = no letterbox.
-                       Padding was making the logo look smaller than it
-                       had to (its own black canvas already provides
-                       breathing room). */
+                       the source image fills the tile edge-to-edge. */
                     className="absolute inset-0 h-full w-full object-contain"
                     draggable={false}
                   />
@@ -110,12 +120,21 @@ export function BrandSlider({ pool, brands }: Props) {
             href={`/auctions?brand=${encodeURIComponent(t.name)}`}
             className="group relative aspect-square overflow-hidden rounded-2xl ring-1 ring-[var(--border)] bg-black hover:ring-[var(--gold)] transition-all"
           >
+            {/* Initials fallback behind the logo — same approach as the
+                mobile rail. Always visible if the <img> fails or stalls. */}
+            <span
+              aria-hidden
+              className="absolute inset-0 flex items-center justify-center text-[52px] font-black tracking-tight text-[var(--gold)] opacity-40"
+            >
+              {t.name.slice(0, 2).toUpperCase()}
+            </span>
             {t.image ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={thumb(t.image, { width: 480, quality: 75 })}
                 alt={t.name}
-                loading="lazy"
+                loading="eager"
+                fetchPriority="high"
                 decoding="async"
                 className="absolute inset-0 h-full w-full object-contain p-1"
                 draggable={false}
