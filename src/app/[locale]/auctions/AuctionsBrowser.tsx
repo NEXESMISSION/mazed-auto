@@ -596,7 +596,11 @@ function ModernBrowser({
           ))}
         </div>
       ) : viewMode === "list" ? (
-        <div className="mt-3 px-4 space-y-2 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
+        // 2-per-row on mobile too (user preference: every view of the
+        // listings grid stays 2-up). The list-view row component is
+        // tighter than the grid card so a 2-col layout reads fine even
+        // on a 360px viewport.
+        <div className="mt-3 px-4 grid grid-cols-2 gap-2 lg:grid-cols-2 lg:gap-3">
           {filteredAuctions.map((auction) => (
             <AuctionRow
               key={auction.id}
@@ -606,7 +610,10 @@ function ModernBrowser({
           ))}
         </div>
       ) : (
-        <div className="mt-3 px-4 space-y-3 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
+        // Large view — same 2-up rule on mobile. LargeAuctionCard's
+        // 16:9 aspect ratio still works at half-width on a phone;
+        // the hero treatment just becomes a "feature pair" row.
+        <div className="mt-3 px-4 grid grid-cols-2 gap-2 lg:grid-cols-2 lg:gap-4">
           {filteredAuctions.map((auction) => (
             <LargeAuctionCard
               key={auction.id}
