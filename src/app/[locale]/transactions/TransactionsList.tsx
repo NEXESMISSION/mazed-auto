@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Download, ArrowDownLeft, ArrowUpRight } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Download, ArrowDownLeft, ArrowUpRight, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import type { TransactionRow } from "@/lib/db";
@@ -16,9 +16,24 @@ const typeLabels: Record<string, string> = {
   payout: "Virement",
 };
 
+/** Incremental render chunk. We keep the SSR payload at 200 rows for CSV
+ *  export but only commit 25 to the DOM at a time so phones don't
+ *  block the main thread on mount. */
+const PAGE_SIZE = 25;
+
 export function TransactionsList({ txs }: { txs: TransactionRow[] }) {
   const [filter, setFilter] = useState<string>("all");
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const filtered = filter === "all" ? txs : txs.filter((t) => t.type === filter);
+
+  // Reset visible window when the user flips filters so we don't end up
+  // showing only "n of 0" for an empty type.
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [filter]);
+
+  const visible = filtered.slice(0, visibleCount);
+  const hasMore = visibleCount < filtered.length;
 
   function exportCsv() {
     const rows = [
@@ -105,7 +120,7 @@ export function TransactionsList({ txs }: { txs: TransactionRow[] }) {
         </div>
       ) : (
         <div className="rounded-[var(--radius-md)] lg:rounded-2xl bg-[var(--surface)] border border-[var(--border)] lg:ring-1 lg:ring-[var(--border)] lg:border-0 divide-y divide-[var(--border)]">
-          {filtered.map((t) => {
+          {visible.map((t) => {
             const isIn = t.direction === "in";
             return (
               <div
@@ -156,6 +171,22 @@ export function TransactionsList({ txs }: { txs: TransactionRow[] }) {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {hasMore && (
+        <div className="flex justify-center">
+          <Button
+            size="md"
+            variant="secondary"
+            onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+          >
+            <ChevronDown className="h-4 w-4" />
+            Afficher {Math.min(PAGE_SIZE, filtered.length - visibleCount)} de plus
+            <span className="text-[var(--foreground-muted)] tabular-nums ms-1">
+              ({visibleCount}/{filtered.length})
+            </span>
+          </Button>
         </div>
       )}
     </>
