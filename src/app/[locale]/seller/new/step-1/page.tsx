@@ -199,7 +199,11 @@ export default function Step1Page() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-5">
+        {/* Mobile lays out 2 fields per row so the form scans faster on a
+            phone (was grid-cols-1 — every field on its own line made the
+            wizard feel endless on a 6" screen). Numeric/select inputs
+            comfortably fit at half-width on a 360px viewport. */}
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-5">
           <Field label={tWiz("field.make")} name="make">
             <select
               className="select-field"
@@ -298,7 +302,11 @@ export default function Step1Page() {
           </Field>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-5">
+        {/* Mobile lays out 2 fields per row so the form scans faster on a
+            phone (was grid-cols-1 — every field on its own line made the
+            wizard feel endless on a 6" screen). Numeric/select inputs
+            comfortably fit at half-width on a 360px viewport. */}
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-5">
           <Field label={tWiz("field.condition")} name="condition">
             <select
               className="select-field"
