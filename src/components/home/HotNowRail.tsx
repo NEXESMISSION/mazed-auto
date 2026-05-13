@@ -64,11 +64,17 @@ export function HotNowRail({ items, trustedSellerIds }: Props) {
       {/* Mobile scroller */}
       <div className="lg:hidden">
         <ScrollableRow trackClassName="flex gap-3 px-4 pb-1">
-          {interesting.map((auction) => (
+          {interesting.map((auction, i) => (
             <div key={auction.id} className="relative w-[230px] shrink-0">
               <AuctionCard
               auction={auction}
               isTrustedSeller={trustedSellerIds?.has(auction.seller.id) ?? false}
+              /* First 3 thumbnails are above-the-fold on every phone
+                 we ship to (rail starts at the top of the home feed
+                 on the mobile layout). Eager-load them so the user
+                 sees real photos on first paint instead of a wave
+                 of placeholders that resolve over a couple seconds. */
+              priority={i < 3}
             />
               <span className="pointer-events-none absolute top-2.5 end-2.5 z-10 inline-flex items-center gap-1 px-2 h-6 rounded-full bg-[#ff4d2a] text-white text-[10px] font-extrabold uppercase tracking-wider shadow-[0_0_18px_rgba(255,77,42,0.55)]">
                 <Flame className="h-3 w-3" />
@@ -93,6 +99,8 @@ export function HotNowRail({ items, trustedSellerIds }: Props) {
             <AuctionCard
               auction={auction}
               isTrustedSeller={trustedSellerIds?.has(auction.seller.id) ?? false}
+              /* All 4 desktop slots are above-the-fold; eager-load. */
+              priority
             />
             <span className="pointer-events-none absolute top-3 end-3 z-10 inline-flex items-center gap-1 px-2.5 h-7 rounded-full bg-[#ff4d2a] text-white text-[11px] font-extrabold uppercase tracking-wider shadow-[0_0_22px_rgba(255,77,42,0.55)]">
               <Flame className="h-3.5 w-3.5" />

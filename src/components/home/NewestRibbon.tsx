@@ -79,6 +79,11 @@ export function NewestRibbon({ items }: Props) {
               key={`${a.id}-${i}`}
               auction={a}
               ariaHidden={i >= items.length}
+              /* First 3 tiles are the only ones the user sees on
+                 mount before the marquee animates — eager-load so
+                 the page paints with photos in the new-arrivals
+                 ribbon instead of grey placeholders. */
+              priority={i < 3}
             />
           ))}
         </div>
@@ -96,6 +101,9 @@ export function NewestRibbon({ items }: Props) {
               key={`${a.id}-${i}-desk`}
               auction={a}
               ariaHidden={i >= items.length}
+              /* Desktop slider shows 4-5 tiles before scroll —
+                 eager-load the first 5 to cover all visible slots. */
+              priority={i < 5}
             />
           ))}
         </DesktopArrowSlider>
@@ -107,9 +115,14 @@ export function NewestRibbon({ items }: Props) {
 function Tile({
   auction,
   ariaHidden,
+  priority = false,
 }: {
   auction: Auction;
   ariaHidden?: boolean;
+  /** Eager-load + fetchPriority=high — used by the caller for the
+   *  first few visible tiles so the marquee/slider starts populated
+   *  on first paint instead of after IntersectionObserver fires. */
+  priority?: boolean;
 }) {
   const { vehicle, currentPrice } = auction;
   return (
@@ -122,9 +135,10 @@ function Tile({
       <div className="relative h-[180px] lg:h-[220px]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={thumb(vehicle.imageUrls[0], { width: 640, quality: 65 })}
+          src={thumb(vehicle.imageUrls[0], { width: 640, quality: 60 })}
           alt={`${vehicle.make} ${vehicle.model}`}
-          loading="lazy"
+          loading={priority ? "eager" : "lazy"}
+          fetchPriority={priority ? "high" : "auto"}
           decoding="async"
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.05]"
           draggable={false}
