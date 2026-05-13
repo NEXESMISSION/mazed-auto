@@ -178,15 +178,28 @@ export default async function DepositsPage() {
                       <Wallet className="h-4 w-4" />
                     </span>
                     <div className="min-w-0">
+                      {/* Label is the auction-specific descriptor we set
+                          when the deposit was placed. When it's missing
+                          (older admin-inserted rows, manual top-ups, etc.)
+                          fall back to a generic title so users never see
+                          "TX-abc123" as the only signal of what this row
+                          is. The ref shows in the meta line below either
+                          way for support traceability. */}
                       <div className="font-bold text-sm line-clamp-1">
-                        {d.label || d.ref}
+                        {d.label || "Caution d'enchère"}
                       </div>
-                      <div className="text-[11px] text-[var(--foreground-muted)] mt-0.5 tabular-nums">
-                        {new Date(d.created_at).toLocaleDateString("fr-TN", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                        })}
+                      <div className="text-[11px] text-[var(--foreground-muted)] mt-0.5 tabular-nums inline-flex items-center gap-1.5">
+                        <span>
+                          {new Date(d.created_at).toLocaleDateString("fr-TN", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </span>
+                        <span className="text-[var(--foreground-subtle)]">·</span>
+                        <span className="font-mono text-[var(--foreground-subtle)] truncate">
+                          {d.ref}
+                        </span>
                       </div>
                     </div>
                   </div>
