@@ -93,6 +93,12 @@ export default function KYCStatusPage() {
   }
 
   if (status === "verified") {
+    // Role-aware success copy. Sellers see "publish your first ad",
+    // buyers see "go bid". Default to buyer for safety — the seller
+    // path implies the user actively chose to publish, while every
+    // verified account is implicitly able to bid.
+    const role = (user?.role ?? "buyer") as "buyer" | "seller" | "admin";
+    const isSeller = role === "seller";
     return (
       <KYCShell current={3}>
         <div className="space-y-6 py-6 text-center">
@@ -115,7 +121,7 @@ export default function KYCStatusPage() {
           <div>
             <h2 className="text-2xl font-extrabold">{t("verifiedTitle")}</h2>
             <p className="text-sm text-[var(--foreground-muted)] mt-2 leading-relaxed">
-              {t("verifiedBody")}
+              {isSeller ? t("verifiedBodySeller") : t("verifiedBodyBuyer")}
             </p>
           </div>
 
@@ -125,21 +131,40 @@ export default function KYCStatusPage() {
               {t("verifiedBadge")}
             </div>
             <div className="text-xs text-[var(--foreground-muted)]">
-              {t("verifiedBadgeHint")}
+              {isSeller
+                ? t("verifiedBadgeHintSeller")
+                : t("verifiedBadgeHintBuyer")}
             </div>
           </div>
 
           <div className="space-y-2">
-            <Link href="/seller/dashboard">
-              <Button size="lg" fullWidth>
-                {t("startSellerCta")}
-              </Button>
-            </Link>
-            <Link href="/auctions">
-              <Button size="lg" variant="ghost" fullWidth>
-                {t("browseAuctionsCta")}
-              </Button>
-            </Link>
+            {isSeller ? (
+              <>
+                <Link href="/seller/new/step-1">
+                  <Button size="lg" fullWidth>
+                    {t("startSellerCta")}
+                  </Button>
+                </Link>
+                <Link href="/auctions">
+                  <Button size="lg" variant="ghost" fullWidth>
+                    {t("browseAuctionsCta")}
+                  </Button>
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link href="/auctions">
+                  <Button size="lg" fullWidth>
+                    {t("startBidderCta")}
+                  </Button>
+                </Link>
+                <Link href="/profile">
+                  <Button size="lg" variant="ghost" fullWidth>
+                    {t("browseAuctionsCta")}
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </KYCShell>

@@ -7,6 +7,7 @@ import {
   Sun,
   CreditCard,
   ArrowRight,
+  Lock,
 } from "lucide-react";
 import { KYCShell } from "@/components/layout/KYCShell";
 import { Button } from "@/components/ui/Button";
@@ -61,12 +62,46 @@ export default function KYCStartPage() {
           </ol>
         </div>
 
+        {/* Privacy + legal-basis reassurance. Tunisian users need to see
+            the explicit reference to law n°2004-63 (personal data
+            protection) before they upload their CIN — it's the legal
+            basis for KYC processing in Tunisia. */}
+        <div className="rounded-[var(--radius-md)] bg-[var(--surface)] border border-[var(--gold-soft)]/30 p-4">
+          <div className="flex items-start gap-3">
+            <div className="shrink-0 h-9 w-9 rounded-full bg-[var(--gold-faint)] text-[var(--gold)] flex items-center justify-center">
+              <Lock className="h-4 w-4" />
+            </div>
+            <div className="flex-1 min-w-0 space-y-1.5">
+              <div className="text-[11px] uppercase tracking-[0.2em] font-bold text-[var(--gold)]">
+                Sécurité &amp; confidentialité
+              </div>
+              <p className="text-xs text-[var(--foreground-muted)] leading-relaxed">
+                Vos documents sont chiffrés et conservés selon la{" "}
+                <span className="font-semibold text-foreground">
+                  loi tunisienne n°2004-63
+                </span>{" "}
+                relative à la protection des données personnelles. Seule
+                l&apos;équipe de vérification de Mazed Auto peut les
+                consulter, uniquement le temps nécessaire à la validation
+                de votre identité.
+              </p>
+            </div>
+          </div>
+        </div>
+
         <Link href="/kyc/id-front" className="block">
           <Button size="xl" fullWidth>
             {t("cta")}
             <ArrowRight className="h-5 w-5" />
           </Button>
         </Link>
+
+        <p className="text-[10px] text-[var(--foreground-subtle)] text-center leading-relaxed">
+          En continuant, vous acceptez la collecte et le traitement de
+          vos données d&apos;identité par Mazed Auto à des fins de
+          vérification (KYC). Vous pouvez demander la suppression de vos
+          données à tout moment via le support.
+        </p>
       </div>
     </KYCShell>
   );
