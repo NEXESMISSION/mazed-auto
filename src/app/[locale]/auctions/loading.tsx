@@ -55,7 +55,7 @@ export default function Loading() {
               (sm:2 / md:3 / lg:4 / xl:5). 12 cards is enough to fill
               the viewport on every breakpoint. */}
           <div className="mt-4 lg:mt-5 px-4 lg:max-w-[var(--max-w-wide)] lg:mx-auto lg:px-8">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-3 lg:gap-5">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 lg:gap-5">
               {Array.from({ length: 8 }).map((_, i) => (
                 <div key={i} className="space-y-2">
                   <div className="aspect-[4/5] rounded-2xl skeleton" />

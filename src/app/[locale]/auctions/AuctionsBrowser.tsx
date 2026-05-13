@@ -578,22 +578,20 @@ function ModernBrowser({
           )}
         </div>
       ) : viewMode === "grid" ? (
-        // Mobile starts at 1-col so cards are big enough to scan without
-        // collisions between countdown / badges / favorite (was 2-col +
-        // cramped — every card was ~170 CSS px wide on a 375 viewport,
-        // which made the title clamp and the badge stack collide).
-        // Tablets and up keep the dense grid because there's room.
-        // Gap also bumps from 3 → 4 on phones so the cards breathe.
-        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-3 px-4">
+        // 2-per-row on mobile (user preference) — denser feed, more
+        // cars visible per scroll. The badge / countdown collision
+        // risk is accepted in exchange for density. Larger viewports
+        // still scale up to 5-col on xl.
+        <div className="mt-3 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 lg:gap-4 px-4">
           {filteredAuctions.map((auction, i) => (
             <AuctionCard
               key={auction.id}
               auction={auction}
               isTrustedSeller={trustedSellers.has(auction.seller.id)}
-              /* First 2 results in the grid are above-the-fold on
-                 every viewport — eager-load them so the page paints
-                 with real photos instead of skeleton-into-shimmer. */
-              priority={i < 2}
+              /* First 4 results in the grid are above-the-fold on
+                 every viewport with 2-col mobile (2 rows visible) —
+                 eager-load them so the page paints with real photos. */
+              priority={i < 4}
             />
           ))}
         </div>
