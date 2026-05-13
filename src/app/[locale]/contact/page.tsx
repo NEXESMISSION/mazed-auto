@@ -175,7 +175,21 @@ export default function ContactPage() {
               </div>
             )}
 
-            <Button type="submit" size="md" disabled={submitting} fullWidth>
+            <Button
+              type="submit"
+              size="md"
+              // Block submit until all required fields have content so
+              // the user gets visual feedback that the form is incomplete
+              // (rather than clicking and seeing the "Veuillez remplir..."
+              // error appear under the form).
+              disabled={
+                submitting ||
+                !name.trim() ||
+                !email.trim() ||
+                !message.trim()
+              }
+              fullWidth
+            >
               {submitting ? (
                 "Envoi en cours..."
               ) : (

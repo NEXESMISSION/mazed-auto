@@ -17,20 +17,27 @@ export default async function SellerAuctionsPage() {
   } = await supabase.auth.getUser();
 
   if (!user) {
+    // Drop the "+ Nouvelle enchère" CTA here on purpose — clicking it
+    // when logged out used to send guests through the seller wizard
+    // and then bounce them at the first save (confusing). Keep the
+    // empty state focused on a single action: log in.
     return (
       <AppShell>
         <div className="max-w-[var(--max-w)] lg:max-w-[var(--max-w-app)] mx-auto px-4 py-5 space-y-5">
-          <div className="flex items-center justify-between gap-3">
-            <h1 className="text-2xl font-extrabold">Mes enchères</h1>
-            <Link href="/seller/new/step-1">
-              <Button size="sm">
-                <Plus className="h-4 w-4" />
-                Nouvelle enchère
-              </Button>
-            </Link>
-          </div>
-          <div className="text-center py-16 space-y-3">
-            <div className="font-bold">Connectez-vous pour gérer vos enchères</div>
+          <h1 className="text-2xl font-extrabold">Mes enchères</h1>
+          <div className="text-center py-16 space-y-4">
+            <div className="mx-auto h-14 w-14 rounded-full bg-[var(--gold-faint)] text-[var(--gold)] flex items-center justify-center">
+              <Gavel className="h-6 w-6" />
+            </div>
+            <div className="space-y-1">
+              <div className="font-bold text-base">
+                Connectez-vous pour gérer vos enchères
+              </div>
+              <div className="text-sm text-[var(--foreground-muted)]">
+                Suivez vos annonces, recevez les offres et publiez de
+                nouvelles ventes depuis un seul espace.
+              </div>
+            </div>
             <Link href="/login">
               <Button size="md">Connexion</Button>
             </Link>
