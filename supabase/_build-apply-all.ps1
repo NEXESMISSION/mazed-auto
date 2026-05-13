@@ -78,7 +78,8 @@ $order = @(
   "migrate-search-path-hardening.sql",    # round 25 — SECURITY DEFINER search_path + auto-bid log
   "migrate-perf-indexes-2.sql",           # round 25 — notifications/tx/messages/kyc FK idx
   "migrate-rls-recursion-fix.sql",        # round 26 — break auctions↔bids RLS cycle
-  "migrate-cms-brand-logos.sql"           # round 27 — brand logo upload bucket
+  "migrate-cms-brand-logos.sql",          # round 27 — brand logo upload bucket
+  "migrate-manual-payments.sql"           # round 28 — bank-transfer / D17 + admin verify
 )
 
 $out = Join-Path $base "_apply-all.sql"

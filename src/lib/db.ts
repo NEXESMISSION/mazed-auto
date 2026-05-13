@@ -588,8 +588,21 @@ export interface TransactionRow {
   direction: "in" | "out";
   amount: number | string;
   label: string | null;
-  status: "pending" | "processing" | "completed" | "failed";
+  status:
+    | "pending"
+    | "processing"
+    | "completed"
+    | "failed"
+    | "pending_verification";
   created_at: string;
+  /** Manual-payment columns — populated when status starts as
+   *  pending_verification (bank transfer / D17 lane). Null on
+   *  card / RPC-driven transactions. */
+  manual_method?: "bank_transfer" | "d17" | null;
+  receipt_url?: string | null;
+  verified_by?: string | null;
+  verified_at?: string | null;
+  verification_notes?: string | null;
 }
 
 export async function listTransactions(

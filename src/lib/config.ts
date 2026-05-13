@@ -240,3 +240,35 @@ export const getKycValidityDays = () =>
   getSetting<number>("kyc.validity_days", 365);
 export const getKycExpiryWarningDays = () =>
   getSetting<number>("kyc.expiry_warning_days", 30);
+
+// ---------- Manual payment recipients (bank transfer + D17) ----------
+// Shown to users at /payment/checkout when they pick the bank-transfer
+// or D17 lane. Editable from /admin/settings without redeploying.
+export const getBankInfo = async (): Promise<{
+  beneficiary: string;
+  bankName: string;
+  rib: string;
+  swift: string;
+}> => {
+  const [beneficiary, bankName, rib, swift] = await Promise.all([
+    getSetting<string>("payment.bank.beneficiary", "Mazed Auto SARL"),
+    getSetting<string>(
+      "payment.bank.bank_name",
+      "BIAT — Banque Internationale Arabe de Tunisie",
+    ),
+    getSetting<string>("payment.bank.rib", "08 100 0123456789 12"),
+    getSetting<string>("payment.bank.swift", "BIATTNTT"),
+  ]);
+  return { beneficiary, bankName, rib, swift };
+};
+
+export const getD17Info = async (): Promise<{
+  phone: string;
+  recipientName: string;
+}> => {
+  const [phone, recipientName] = await Promise.all([
+    getSetting<string>("payment.d17.phone", "+216 20 123 456"),
+    getSetting<string>("payment.d17.recipient_name", "Mazed Auto"),
+  ]);
+  return { phone, recipientName };
+};
