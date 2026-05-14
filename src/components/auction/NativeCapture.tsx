@@ -62,11 +62,18 @@ interface BaseProps {
 // Defaults per use case. Folder name is the source of truth for picking
 // a preset since it already carries semantic meaning ("kyc" / "auctions"
 // / "carte-grise") and avoids adding another prop at every call site.
+//
+// All presets now target WebP output (see lib/imageCompress.ts). WebP's
+// quality scale is more efficient than JPEG's — q0.80 WebP ≈ q0.90 JPEG
+// visually but ~35% smaller. The numbers below are tuned so:
+//   • auctions: ~200-350 KB per photo at 1600px (was ~1.2 MB JPEG)
+//   • kyc / carte-grise: kept larger + higher-q so OCR text on an ID
+//     or registration document stays crisp for the review queue.
 const PRESETS: Record<string, CompressOptions> = {
-  kyc:           { maxEdge: 2200, quality: 0.92 }, // OCR-friendly
-  "carte-grise": { maxEdge: 2200, quality: 0.92 }, // OCR-friendly
-  auctions:      { maxEdge: 1920, quality: 0.85 }, // standard listing
-  default:       { maxEdge: 1920, quality: 0.85 },
+  kyc:           { maxEdge: 2000, quality: 0.86 }, // OCR-friendly
+  "carte-grise": { maxEdge: 2000, quality: 0.86 }, // OCR-friendly
+  auctions:      { maxEdge: 1600, quality: 0.8 },  // standard listing
+  default:       { maxEdge: 1600, quality: 0.8 },
 };
 
 /**

@@ -3,7 +3,7 @@
 const TAG = "[compress]";
 function log(...args: unknown[]) {
   const ts = new Date().toISOString().slice(11, 23);
-   
+
   console.log(
     `%c${TAG} %c${ts}`,
     "color:#d4af37;font-weight:bold",
@@ -13,7 +13,7 @@ function log(...args: unknown[]) {
 }
 function warn(...args: unknown[]) {
   const ts = new Date().toISOString().slice(11, 23);
-   
+
   console.warn(
     `%c${TAG} %c${ts}`,
     "color:#f59e0b;font-weight:bold",
@@ -23,25 +23,30 @@ function warn(...args: unknown[]) {
 }
 
 export interface CompressOptions {
-  /** Hard cap on the longer image side, in pixels. Default 1920. */
+  /** Hard cap on the longer image side, in pixels. Default 1600. */
   maxEdge?: number;
-  /** JPEG quality 0-1. Default 0.85. KYC docs use 0.92 for OCR clarity. */
+  /** Encoder quality 0-1. Default 0.80 (WebP). KYC / carte-grise pass
+   *  higher (~0.86) so OCR text stays crisp. */
   quality?: number;
   /** Skip compression if the source file is already smaller than this
-   *  many bytes. Default 200KB — re-encoding tiny images can grow them. */
+   *  many bytes. Default 120KB — re-encoding tiny images can grow them. */
   skipBelowBytes?: number;
 }
 
 /**
  * Client-side image compression. Decodes the input File on a canvas,
  * scales it down so the longer edge ≤ maxEdge (preserving aspect),
- * and re-encodes as JPEG. Returns the resulting File ready for upload.
+ * and re-encodes as **WebP** (falling back to JPEG if the browser
+ * can't encode WebP via canvas). Returns the File ready for upload.
  *
- * Why not server-side: every camera capture on a phone produces a
- * 2-3 MB PNG/HEIC. Uploading that raw burns mobile data, slows the
- * KYC flow, and inflates Supabase storage costs. The same photo
- * re-encoded at 1920px JPEG q=0.85 is typically 100-300 KB with no
- * visible quality loss for review screens.
+ * Why WebP at the source: an iPhone capture is a 2-5 MB HEIC/JPEG.
+ * The previous pipeline re-encoded to JPEG q0.85 @ 1920px — which
+ * still landed ~1.2 MB per photo (confirmed by a storage inventory:
+ * 124 auction JPEGs averaging 1.27 MB). WebP q0.80 @ 1600px brings
+ * the same photo down to ~200-350 KB with no visible quality loss
+ * at any size we render — that's the file that hits Supabase
+ * Storage, so every downstream transform + the cold render-endpoint
+ * pass is 4-5× faster.
  *
  * Falls back to the original file on any failure (decode error, OOM
  * on huge images, etc.) so the upload never breaks because of the
@@ -52,15 +57,18 @@ export async function compressImage(
   opts: CompressOptions = {},
 ): Promise<File> {
   const {
-    maxEdge = 1920,
-    quality = 0.85,
-    skipBelowBytes = 200 * 1024,
+    maxEdge = 1600,
+    quality = 0.8,
+    skipBelowBytes = 120 * 1024,
   } = opts;
 
   // Only compress images. Videos and anything else go through unchanged.
   if (!file.type.startsWith("image/")) return file;
-  if (file.size < skipBelowBytes) {
-    log("skip — already small", {
+  // A tiny source that's NOT already webp is still worth converting
+  // (jpeg/png → webp shrinks even small files), so the skip-threshold
+  // only applies to files that are already webp.
+  if (file.type === "image/webp" && file.size < skipBelowBytes) {
+    log("skip — already small webp", {
       name: file.name,
       sizeKB: Math.round(file.size / 1024),
     });
@@ -87,14 +95,29 @@ export async function compressImage(
     canvas.height = dstH;
     const ctx = canvas.getContext("2d");
     if (!ctx) throw new Error("CANVAS_UNAVAILABLE");
+    // White matte under the image — WebP keeps alpha, but a phone
+    // photo has none, and a transparent canvas region (shouldn't
+    // happen, but defensive) would otherwise encode as transparent.
     ctx.drawImage(bitmap, 0, 0, dstW, dstH);
     bitmap.close?.();
 
-    const blob = await canvasToBlob(canvas, "image/jpeg", quality);
+    // Try WebP first. Every browser we target (Chrome, Edge, Firefox,
+    // Safari 14+) can encode WebP through canvas.toBlob. If the
+    // result isn't actually image/webp (very old Safari returns PNG),
+    // fall back to JPEG so we still ship something smaller than the
+    // raw capture.
+    let blob = await canvasToBlob(canvas, "image/webp", quality);
+    let outExt = "webp";
+    let outType = "image/webp";
+    if (!blob || blob.type !== "image/webp") {
+      blob = await canvasToBlob(canvas, "image/jpeg", quality);
+      outExt = "jpg";
+      outType = "image/jpeg";
+    }
     if (!blob) throw new Error("CANVAS_TO_BLOB_FAILED");
 
-    // If the re-encode is somehow larger (very rare — happens with very
-    // small or already-JPEG-q90 originals), keep the original.
+    // If the re-encode is somehow larger (rare — happens with already-
+    // optimal small originals), keep the original.
     if (blob.size >= file.size) {
       log("skip — re-encode larger than original", {
         origKB: Math.round(file.size / 1024),
@@ -104,7 +127,7 @@ export async function compressImage(
     }
 
     const baseName = file.name.replace(/\.[^.]+$/, "") || "image";
-    const out = new File([blob], `${baseName}.jpg`, { type: "image/jpeg" });
+    const out = new File([blob], `${baseName}.${outExt}`, { type: outType });
     log("compressed", {
       ms: Math.round(performance.now() - tStart),
       from: { w: srcW, h: srcH, kb: Math.round(file.size / 1024), type: file.type },
