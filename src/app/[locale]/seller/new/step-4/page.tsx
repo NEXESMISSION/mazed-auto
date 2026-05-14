@@ -126,21 +126,6 @@ export default function Step4Page() {
           </p>
         </div>
 
-        {/* Back-to-review banner — only when ?from=review (the user
-            tapped Modifier on /review). Lets them bail out without
-            walking through every subsequent step. */}
-        {fromReview && (
-          <Button
-            variant="secondary"
-            size="md"
-            fullWidth
-            onClick={() => router.push("/seller/new/review")}
-          >
-            <Undo2 className="h-4 w-4" />
-            {tCommon("backToReview") ?? "Retour à la révision"}
-          </Button>
-        )}
-
         <div className="grid grid-cols-2 gap-3">
           <NativeCapture
             kind="photo"
@@ -290,12 +275,21 @@ export default function Step4Page() {
 
         <div className="pt-4 flex flex-col-reverse sm:flex-row gap-2">
           <Button
-            variant="ghost"
+            variant={fromReview ? "secondary" : "ghost"}
             size="lg"
             fullWidth
-            onClick={() => router.back()}
+            onClick={() =>
+              fromReview ? router.push("/seller/new/review") : router.back()
+            }
           >
-            {tCommon("back")}
+            {fromReview ? (
+              <>
+                <Undo2 className="h-4 w-4" />
+                {tCommon("backToReview") ?? "Retour à la révision"}
+              </>
+            ) : (
+              tCommon("back")
+            )}
           </Button>
           <Button size="lg" fullWidth disabled={!canContinue} onClick={commit}>
             {fromReview

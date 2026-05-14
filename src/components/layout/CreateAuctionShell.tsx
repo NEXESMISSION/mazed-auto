@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
+import { useSearchParams } from "next/navigation";
 import {
   ChevronLeft,
   X,
@@ -12,6 +13,7 @@ import {
   ShieldCheck,
   Tag,
   ShieldAlert,
+  Undo2,
 } from "lucide-react";
 import { Stepper } from "./Stepper";
 import type { LucideIcon } from "lucide-react";
@@ -32,6 +34,20 @@ interface Props {
 export function CreateAuctionShell({ current, children }: Props) {
   const router = useRouter();
   const tCommon = useTranslations("common");
+  const searchParams = useSearchParams();
+  // When the user opened this step via the /review "Modifier" link, the
+  // header back-arrow must take them straight back to /review — NOT
+  // `router.back()`, which is brittle (breaks on hard refresh / deep
+  // link / mid-flow camera round-trips) and would otherwise drop them
+  // on the wrong step.
+  const fromReview = searchParams.get("from") === "review";
+  const goBack = () => {
+    if (fromReview) {
+      router.push("/seller/new/review");
+    } else {
+      router.back();
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -39,18 +55,24 @@ export function CreateAuctionShell({ current, children }: Props) {
           MOBILE header — original chrome, untouched.
           ============================================================ */}
       <header className="lg:hidden flex items-center justify-between px-4 pt-4 pb-3">
-        {current > 0 ? (
+        {current > 0 || fromReview ? (
           <button
-            onClick={() => router.back()}
-            aria-label={tCommon("back")}
+            onClick={goBack}
+            aria-label={fromReview ? tCommon("backToReview") : tCommon("back")}
             className="h-12 w-12 rounded-full bg-[var(--surface)] border-2 border-[var(--gold-soft)] text-[var(--gold)] flex items-center justify-center shadow-[var(--shadow-md)] hover:bg-[var(--gold-faint)] hover:border-[var(--gold)] active:scale-95 transition-all"
           >
-            <ChevronLeft className="h-6 w-6" strokeWidth={2.5} />
+            {fromReview ? (
+              <Undo2 className="h-5 w-5" strokeWidth={2.5} />
+            ) : (
+              <ChevronLeft className="h-6 w-6" strokeWidth={2.5} />
+            )}
           </button>
         ) : (
           <span className="h-12 w-12 shrink-0" aria-hidden />
         )}
-        <div className="font-bold text-sm">Créer une nouvelle enchère</div>
+        <div className="font-bold text-sm">
+          {fromReview ? "Modifier l'enchère" : "Créer une nouvelle enchère"}
+        </div>
         <button
           onClick={() => router.push("/profile")}
           aria-label={tCommon("cancel")}
@@ -84,13 +106,17 @@ export function CreateAuctionShell({ current, children }: Props) {
       <div className="hidden lg:flex lg:flex-col lg:min-h-screen">
         <header className="sticky top-0 z-40 bg-[#0a0a0a]/90 backdrop-blur-xl border-b border-[var(--border)]">
           <div className="max-w-[var(--max-w-wide)] mx-auto px-8 h-16 flex items-center gap-6">
-            {current > 0 && (
+            {(current > 0 || fromReview) && (
               <button
-                onClick={() => router.back()}
-                aria-label={tCommon("back")}
+                onClick={goBack}
+                aria-label={fromReview ? tCommon("backToReview") : tCommon("back")}
                 className="h-10 w-10 shrink-0 rounded-full bg-[var(--surface)] border border-[var(--gold-soft)] text-[var(--gold)] flex items-center justify-center hover:bg-[var(--gold-faint)] hover:border-[var(--gold)] active:scale-95 transition-all"
               >
-                <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
+                {fromReview ? (
+                  <Undo2 className="h-5 w-5" strokeWidth={2.5} />
+                ) : (
+                  <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
+                )}
               </button>
             )}
             <Link href="/" className="flex items-center gap-2.5 shrink-0">
@@ -112,7 +138,9 @@ export function CreateAuctionShell({ current, children }: Props) {
                 Vendeur
               </div>
               <div className="mt-0.5 text-base font-black tracking-tight">
-                Créer une nouvelle enchère
+                {fromReview
+                  ? "Modifier l'enchère"
+                  : "Créer une nouvelle enchère"}
               </div>
             </div>
             <button
