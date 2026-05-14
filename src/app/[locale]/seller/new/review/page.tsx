@@ -290,16 +290,21 @@ export default function ReviewPage() {
         reserve_met: false,
         // Paid visibility add-ons. is_featured is the canonical "appears on
         // home page" flag (the AdminAuctionControls toggle reads/writes
-        // this), is_vip is the VIP-rail flag. top_of_search is consumed by
-        // the search ranking — falls back gracefully if the column doesn't
-        // exist yet.
+        // this), is_vip is the VIP-rail flag, top_of_search pins the
+        // listing to the top of search results for 24h. All three are
+        // set from the step-5 wizard toggles.
         is_featured: Boolean(draft.boostFeatured),
         is_vip: Boolean(draft.boostVip),
+        top_of_search: Boolean(draft.boostTopOfSearch),
         // Golden-Lock metadata — captured here so /admin/ownership-review
         // can surface exceptional cases instead of letting them mix into
-        // the regular queue with no signal.
+        // the regular queue with no signal. The carte grise photo URLs
+        // give the admin the actual document to verify against the
+        // owner name.
         ownership_exception: draft.ownershipException ?? null,
         carte_grise_owner_name: draft.ownerName ?? null,
+        carte_grise_front_url: draft.cartegriseFrontUrl ?? null,
+        carte_grise_back_url: draft.cartegriseBackUrl ?? null,
       })
       .select("id")
       .single();
