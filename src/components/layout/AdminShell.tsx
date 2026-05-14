@@ -60,6 +60,7 @@ const GROUPS: NavGroup[] = [
     label: "Modération",
     items: [
       { href: "/admin/auctions-queue", label: "Enchères à modérer", icon: Gavel },
+      { href: "/admin/auctions", label: "Toutes les enchères", icon: Gavel },
       { href: "/admin/kyc-queue", label: "File KYC", icon: ShieldCheck },
       { href: "/admin/ownership-review", label: "Vérif. propriété", icon: ShieldCheck },
       { href: "/admin/reports", label: "Signalements", icon: AlertTriangle },

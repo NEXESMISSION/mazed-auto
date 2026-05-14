@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Check, X, ImageIcon, Video as VideoIcon, Layers, CheckSquare, Square } from "lucide-react";
+import { Link } from "@/i18n/navigation";
+import { Check, X, ImageIcon, Video as VideoIcon, Layers, CheckSquare, Square, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { useToast } from "@/components/ui/Toast";
@@ -25,15 +26,31 @@ export interface KycSubmission {
   status: "pending" | "approved" | "rejected";
   rejection_reason: string | null;
   submitted_at: string;
+  reviewed_at: string | null;
 }
 
-export function KycQueueList({ items: initial }: { items: KycSubmission[] }) {
+/** Which archive view this list is rendering. "pending" is the live
+ *  work queue (bulk actions + approve/reject buttons); the other
+ *  views are read-only history — no action buttons, just the record
+ *  + the decision that was made. */
+type KycView = "pending" | "approved" | "rejected" | "all";
+
+export function KycQueueList({
+  items: initial,
+  view = "pending",
+}: {
+  items: KycSubmission[];
+  view?: KycView;
+}) {
   const { toast } = useToast();
   const t = useTranslations("admin.kycQueue");
   const [items, setItems] = useState(initial);
   const [busy, setBusy] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
+  // Bulk + per-row actions only make sense on the live work queue.
+  // The archive views are read-only.
+  const actionable = view === "pending";
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -141,7 +158,7 @@ export function KycQueueList({ items: initial }: { items: KycSubmission[] }) {
 
   return (
     <div className="space-y-4">
-      {items.length > 0 && (
+      {actionable && items.length > 0 && (
         <div className="sticky top-2 z-10 flex items-center gap-2 flex-wrap rounded-[var(--radius-md)] bg-[var(--surface)] border border-[var(--border)] px-3 py-2 backdrop-blur">
           <button
             type="button"
@@ -196,34 +213,64 @@ export function KycQueueList({ items: initial }: { items: KycSubmission[] }) {
         >
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-3">
-              <button
-                type="button"
-                onClick={() => toggle(item.id)}
-                className="shrink-0 mt-1 text-[var(--foreground-muted)] hover:text-[var(--gold)]"
-                aria-label={t("selectAria")}
-              >
-                {selected.has(item.id) ? (
-                  <CheckSquare className="h-5 w-5 text-[var(--gold)]" />
-                ) : (
-                  <Square className="h-5 w-5" />
-                )}
-              </button>
+              {actionable && (
+                <button
+                  type="button"
+                  onClick={() => toggle(item.id)}
+                  className="shrink-0 mt-1 text-[var(--foreground-muted)] hover:text-[var(--gold)]"
+                  aria-label={t("selectAria")}
+                >
+                  {selected.has(item.id) ? (
+                    <CheckSquare className="h-5 w-5 text-[var(--gold)]" />
+                  ) : (
+                    <Square className="h-5 w-5" />
+                  )}
+                </button>
+              )}
               <div>
                 <div className="font-bold">
                   {item.full_name || t("unnamed")}
                 </div>
-                <div className="text-xs text-[var(--foreground-muted)] mt-0.5 font-mono">
-                  {t("userIdPrefix")} {item.user_id.slice(0, 8)}…
-                </div>
+                {/* Link straight to the user's admin page so the
+                    reviewer can cross-check email / phone / history
+                    against the document. */}
+                <Link
+                  href={`/admin/users/${item.user_id}`}
+                  className="text-xs text-[var(--gold)] hover:underline mt-0.5 inline-flex items-center gap-1 font-mono"
+                >
+                  {item.user_id.slice(0, 8)}…
+                  <ExternalLink className="h-3 w-3" />
+                </Link>
                 <div className="text-[10px] text-[var(--foreground-subtle)] mt-0.5">
                   {t("submittedAt", {
                     date: new Date(item.submitted_at).toLocaleString("fr-FR"),
                   })}
+                  {item.reviewed_at && (
+                    <>
+                      {" · revu le "}
+                      {new Date(item.reviewed_at).toLocaleString("fr-FR")}
+                    </>
+                  )}
                 </div>
               </div>
             </div>
-            <Badge variant="warning" size="sm">
-              {t("pending")}
+            {/* Real status badge — was hardcoded "pending". The archive
+                views need to show what actually happened. */}
+            <Badge
+              variant={
+                item.status === "approved"
+                  ? "success"
+                  : item.status === "rejected"
+                    ? "danger"
+                    : "warning"
+              }
+              size="sm"
+            >
+              {item.status === "approved"
+                ? "Approuvé"
+                : item.status === "rejected"
+                  ? "Rejeté"
+                  : t("pending")}
             </Badge>
           </div>
 
@@ -272,29 +319,42 @@ export function KycQueueList({ items: initial }: { items: KycSubmission[] }) {
             )}
           </div>
 
-          <div className="text-xs text-[var(--foreground-muted)] leading-relaxed">
-            {t("verifyHint")}
-          </div>
+          {/* Rejected submissions surface the reason the admin gave —
+              essential context in the archive view. */}
+          {item.status === "rejected" && item.rejection_reason && (
+            <div className="rounded-[var(--radius)] bg-red-500/10 border border-red-500/30 p-3 text-sm">
+              <span className="font-bold text-red-300">Motif du rejet :</span>{" "}
+              {item.rejection_reason}
+            </div>
+          )}
 
-          <div className="flex flex-wrap gap-2">
-            <Button
-              size="sm"
-              onClick={() => decide(item, "approved")}
-              disabled={busy === item.id}
-            >
-              <Check className="h-4 w-4" />
-              {t("approve")}
-            </Button>
-            <Button
-              size="sm"
-              variant="danger"
-              onClick={() => reject(item)}
-              disabled={busy === item.id}
-            >
-              <X className="h-4 w-4" />
-              {t("reject")}
-            </Button>
-          </div>
+          {actionable ? (
+            <>
+              <div className="text-xs text-[var(--foreground-muted)] leading-relaxed">
+                {t("verifyHint")}
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => decide(item, "approved")}
+                  disabled={busy === item.id}
+                >
+                  <Check className="h-4 w-4" />
+                  {t("approve")}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="danger"
+                  onClick={() => reject(item)}
+                  disabled={busy === item.id}
+                >
+                  <X className="h-4 w-4" />
+                  {t("reject")}
+                </Button>
+              </div>
+            </>
+          ) : null}
         </div>
       ))}
     </div>

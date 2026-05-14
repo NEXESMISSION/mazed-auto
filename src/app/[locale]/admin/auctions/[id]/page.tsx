@@ -48,12 +48,24 @@ export default async function AdminAuctionDetailPage({ params }: Props) {
       supabase
         .from("auctions")
         .select(
-          "make, model, year, mileage, color, description, city, region, starting_price, reserve_price, buy_now_price, bid_increment, category, fuel_type, transmission, condition, start_time, end_time",
+          "make, model, year, mileage, color, description, city, region, starting_price, reserve_price, buy_now_price, bid_increment, category, fuel_type, transmission, condition, start_time, end_time, image_urls, video_url, features, vin, registration, carte_grise_owner_name, carte_grise_front_url, carte_grise_back_url, ownership_exception, participation_deposit",
         )
         .eq("id", id)
         .maybeSingle(),
       getAuctionBlackoutConfig(),
     ]);
+
+  // Prefer the raw row for the full media/spec render — getAuctionById's
+  // hydrated Auction only carries imageUrls[0]-ish convenience fields in
+  // some paths, and the carte grise columns aren't on the Auction type
+  // at all (admin-only metadata).
+  const row = fullRow.data;
+  const allPhotos: string[] =
+    (row?.image_urls as string[] | null)?.filter(Boolean) ??
+    auction.vehicle.imageUrls ??
+    [];
+  const videoUrl = (row?.video_url as string | null) ?? auction.vehicle.videoUrl ?? null;
+  const features: string[] = (row?.features as string[] | null) ?? auction.vehicle.features ?? [];
 
   return (
     <AdminShell>
@@ -136,6 +148,154 @@ export default async function AdminAuctionDetailPage({ params }: Props) {
             </div>
           </div>
         </div>
+
+        {/* ── Full photo set — admins moderate against ALL 12 photos,
+            not just the hero. Lazy-loaded grid, click opens the raw
+            file in a new tab for a pixel-level look. ── */}
+        <Section title={`Photos (${allPhotos.length})`}>
+          {allPhotos.length === 0 ? (
+            <p className="text-sm text-[var(--foreground-muted)]">
+              Aucune photo.
+            </p>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+              {allPhotos.map((src, i) => (
+                <a
+                  key={`${src}-${i}`}
+                  href={src}
+                  target="_blank"
+                  rel="noopener"
+                  className="block aspect-[4/3] rounded-[var(--radius-sm)] overflow-hidden bg-black ring-1 ring-[var(--border)] hover:ring-[var(--gold)] transition-colors"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={thumb(src, { width: 360, quality: 62 })}
+                    alt={`Photo ${i + 1}`}
+                    loading="lazy"
+                    decoding="async"
+                    className="h-full w-full object-cover"
+                  />
+                </a>
+              ))}
+            </div>
+          )}
+        </Section>
+
+        {/* ── Walkaround video — the 60s tour the seller filmed. ── */}
+        {videoUrl && (
+          <Section title="Vidéo de présentation">
+            <video
+              src={videoUrl}
+              controls
+              playsInline
+              className="w-full max-h-[420px] rounded-[var(--radius-sm)] bg-black"
+            />
+          </Section>
+        )}
+
+        {/* ── Ownership / carte grise — the Golden-Lock verification
+            material. Admins need the actual document images + the
+            declared owner name + any exception reason to clear an
+            auction. ── */}
+        <Section title="Propriété — carte grise">
+          <div className="space-y-3">
+            <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
+              <span className="text-[var(--foreground-muted)]">
+                Nom sur la carte grise :{" "}
+                <span className="text-foreground font-semibold">
+                  {row?.carte_grise_owner_name || "—"}
+                </span>
+              </span>
+              <span className="text-[var(--foreground-muted)]">
+                VIN :{" "}
+                <span className="text-foreground font-mono">
+                  {row?.vin || "—"}
+                </span>
+              </span>
+              <span className="text-[var(--foreground-muted)]">
+                Immatriculation :{" "}
+                <span className="text-foreground font-mono">
+                  {row?.registration || "—"}
+                </span>
+              </span>
+            </div>
+            {row?.ownership_exception ? (
+              <div className="rounded-[var(--radius)] bg-amber-500/10 border border-amber-500/30 p-3 text-sm">
+                <span className="font-bold text-amber-300">
+                  Exception de propriété :
+                </span>{" "}
+                {row.ownership_exception}
+              </div>
+            ) : null}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <DocCard label="Carte grise — recto" url={row?.carte_grise_front_url ?? null} />
+              <DocCard label="Carte grise — verso" url={row?.carte_grise_back_url ?? null} />
+            </div>
+          </div>
+        </Section>
+
+        {/* ── Vehicle spec sheet + feature checklist. ── */}
+        <Section title="Fiche technique">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2 text-sm">
+            <Spec k="Marque" v={auction.vehicle.make} />
+            <Spec k="Modèle" v={auction.vehicle.model} />
+            <Spec k="Année" v={String(auction.vehicle.year)} />
+            <Spec
+              k="Kilométrage"
+              v={`${(row?.mileage ?? auction.vehicle.mileage).toLocaleString("fr-FR")} km`}
+            />
+            <Spec k="Carburant" v={row?.fuel_type ?? auction.vehicle.fuelType} />
+            <Spec k="Boîte" v={row?.transmission ?? auction.vehicle.transmission} />
+            <Spec k="Couleur" v={row?.color ?? auction.vehicle.color} />
+            <Spec k="État" v={row?.condition ?? auction.vehicle.condition} />
+            <Spec k="Catégorie" v={row?.category ?? auction.vehicle.category} />
+            <Spec
+              k="Ville"
+              v={`${row?.city ?? auction.vehicle.city}, ${row?.region ?? auction.vehicle.region}`}
+            />
+            <Spec
+              k="Caution"
+              v={formatPrice(
+                Number(row?.participation_deposit ?? auction.participationDeposit),
+              )}
+            />
+            <Spec
+              k="Achat immédiat"
+              v={
+                row?.buy_now_price
+                  ? formatPrice(Number(row.buy_now_price))
+                  : "—"
+              }
+            />
+          </div>
+          {(row?.description ?? auction.vehicle.description) && (
+            <div className="mt-4">
+              <div className="text-xs font-bold text-[var(--foreground-muted)] mb-1">
+                Description
+              </div>
+              <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                {row?.description ?? auction.vehicle.description}
+              </p>
+            </div>
+          )}
+          {features.length > 0 && (
+            <div className="mt-4">
+              <div className="text-xs font-bold text-[var(--foreground-muted)] mb-1.5">
+                Équipements ({features.length})
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {features.map((f) => (
+                  <span
+                    key={f}
+                    className="px-2 py-0.5 rounded-full bg-[var(--surface-2)] border border-[var(--border)] text-xs"
+                  >
+                    {f}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </Section>
 
         <AdminAuctionControls
           auctionId={auction.id}
@@ -294,6 +454,52 @@ function Section({
     <div className="rounded-[var(--radius-md)] bg-[var(--surface)] border border-[var(--border)] p-5">
       <h2 className="text-base font-bold mb-3">{title}</h2>
       {children}
+    </div>
+  );
+}
+
+/** A single labelled spec cell for the vehicle fiche technique. */
+function Spec({ k, v }: { k: string; v: string }) {
+  return (
+    <div>
+      <div className="text-[10px] uppercase tracking-wider text-[var(--foreground-subtle)]">
+        {k}
+      </div>
+      <div className="text-sm font-semibold capitalize">{v || "—"}</div>
+    </div>
+  );
+}
+
+/** A document thumbnail (carte grise recto/verso). Renders a dashed
+ *  placeholder when the URL is missing so the admin can see at a
+ *  glance that the seller didn't supply that side. */
+function DocCard({ label, url }: { label: string; url: string | null }) {
+  return (
+    <div className="space-y-1.5">
+      <div className="text-xs font-bold text-[var(--foreground-muted)]">
+        {label}
+      </div>
+      {url ? (
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener"
+          className="block aspect-[4/3] rounded-[var(--radius)] overflow-hidden bg-black ring-1 ring-[var(--border)] hover:ring-[var(--gold)] transition-colors"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={url}
+            alt={label}
+            loading="lazy"
+            decoding="async"
+            className="h-full w-full object-contain"
+          />
+        </a>
+      ) : (
+        <div className="aspect-[4/3] rounded-[var(--radius)] border border-dashed border-[var(--border)] flex items-center justify-center text-xs text-[var(--foreground-muted)]">
+          Non fourni
+        </div>
+      )}
     </div>
   );
 }
