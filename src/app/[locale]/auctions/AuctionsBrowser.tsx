@@ -250,21 +250,10 @@ function ModernBrowser({
       if (brand && a.vehicle.make !== brand) return false;
       if (body && a.vehicle.category !== body) return false;
 
-      // Direct listings park end_time 100y out, so the endTime guard
-      // would always read them as "live" — gate them on status only.
       const isFinished =
-        a.listingType === "direct"
-          ? FINAL_STATUSES.has(a.status)
-          : FINAL_STATUSES.has(a.status) || a.endTime.getTime() <= now;
+        FINAL_STATUSES.has(a.status) || a.endTime.getTime() <= now;
       if (filters.status === "live" && isFinished) return false;
       if (filters.status === "finished" && !isFinished) return false;
-
-      // Listing type — "any" passes both, otherwise pin to one.
-      if (
-        filters.listingType !== "any" &&
-        a.listingType !== filters.listingType
-      )
-        return false;
 
       if (filters.fuel !== "any" && a.vehicle.fuelType !== filters.fuel)
         return false;
@@ -329,13 +318,6 @@ function ModernBrowser({
         key: "status",
         label: filters.status === "finished" ? "Terminées" : "Toutes",
         clear: () => setFilters((f) => ({ ...f, status: "live" })),
-      });
-    if (filters.listingType !== "any")
-      chips.push({
-        key: "listingType",
-        label:
-          filters.listingType === "direct" ? "Vente directe" : "Enchères",
-        clear: () => setFilters((f) => ({ ...f, listingType: "any" })),
       });
     if (filters.fuel !== "any")
       chips.push({
