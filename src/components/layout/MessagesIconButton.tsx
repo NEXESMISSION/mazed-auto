@@ -3,7 +3,7 @@
 import { useEffect, useId, useState } from "react";
 import { Link } from "@/i18n/navigation";
 import { MessageSquare } from "lucide-react";
-import { Modal } from "@/components/ui/Modal";
+import { HeaderPopover } from "./HeaderPopover";
 import { MessagesPopupList } from "./MessagesPopupList";
 import { createClient } from "@/lib/supabase/client";
 
@@ -16,13 +16,12 @@ interface Props {
 }
 
 /**
- * Messages icon — opens a popover with the conversations list on desktop
- * (lg+) instead of routing to /messages, mirroring NotificationBell. On
- * mobile (<lg), it falls back to a Link so the existing page-based UX
- * stays untouched.
+ * Messages icon — opens a header-anchored popover on desktop (lg+) with
+ * the conversations list, mirroring NotificationBell. On mobile (<lg),
+ * routes to /messages so the existing dedicated page UX is preserved.
  *
- * The /messages page still exists as the canonical inbox — direct links
- * (push, email) keep working unchanged.
+ * The /messages page is still the canonical inbox — direct links (push,
+ * email) keep working unchanged.
  */
 export function MessagesIconButton({ userId, ghost, compact }: Props) {
   const [open, setOpen] = useState(false);
@@ -40,7 +39,6 @@ export function MessagesIconButton({ userId, ghost, compact }: Props) {
     const supabase = createClient();
 
     async function refresh() {
-      // Conversations the user is in.
       const { data: convs } = await supabase
         .from("conversations")
         .select("id")
@@ -61,7 +59,6 @@ export function MessagesIconButton({ userId, ghost, compact }: Props) {
 
     refresh();
 
-    // Realtime — refresh on any new message so the badge moves immediately.
     const channel = supabase
       .channel(`messages-unread:${userId}:${instanceId}`)
       .on(
@@ -91,10 +88,10 @@ export function MessagesIconButton({ userId, ghost, compact }: Props) {
 
   return (
     <>
-      {/* Desktop: opens the popover */}
+      {/* Desktop: toggles the popover */}
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={() => setOpen((v) => !v)}
         className={`hidden lg:flex ${base} ${skin}`}
         aria-label="Messages"
         aria-haspopup="dialog"
@@ -114,32 +111,17 @@ export function MessagesIconButton({ userId, ghost, compact }: Props) {
         {badge}
       </Link>
 
-      <Modal
+      <HeaderPopover
         open={open}
         onClose={() => setOpen(false)}
-        size="lg"
-        mobileSheet={false}
+        label="Messages"
       >
-        <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-[var(--border)]">
-          <h2 className="text-lg font-extrabold inline-flex items-center gap-2">
-            <MessageSquare className="h-4.5 w-4.5 text-[var(--gold)]" />
-            Messages
-            {unread !== null && unread > 0 && (
-              <span className="text-xs font-bold text-[var(--foreground-muted)]">
-                · {unread} non {unread === 1 ? "lu" : "lus"}
-              </span>
-            )}
-          </h2>
-          <Link
-            href="/messages"
-            onClick={() => setOpen(false)}
-            className="text-[12px] font-bold text-[var(--gold)] hover:underline"
-          >
-            Tout voir →
-          </Link>
-        </div>
-        <MessagesPopupList userId={userId} onSelect={() => setOpen(false)} />
-      </Modal>
+        <MessagesPopupList
+          userId={userId}
+          unread={unread}
+          onSelect={() => setOpen(false)}
+        />
+      </HeaderPopover>
     </>
   );
 }

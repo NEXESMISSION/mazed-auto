@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { Bell } from "lucide-react";
-import { Modal } from "@/components/ui/Modal";
-import { NotificationsList } from "@/app/[locale]/notifications/NotificationsList";
+import { HeaderPopover } from "./HeaderPopover";
+import { NotificationsPopupList } from "./NotificationsPopupList";
 import { useRealtimeNotifications } from "@/lib/realtime";
 
 interface Props {
@@ -15,12 +15,12 @@ interface Props {
 }
 
 /**
- * Bell icon with an unread badge that opens the notification feed in a
- * popover instead of navigating. Lets users skim alerts without losing
- * the page they were filling in (browse filters, sign-up form, etc.).
+ * Bell icon with an unread badge that opens a header-anchored popover
+ * instead of routing. Lets users skim alerts without losing the page
+ * they were filling in (browse filters, sign-up form, etc.).
  *
- * The /notifications page still exists as a fallback for direct links
- * from external places (email, push) — same rendering via NotificationsList.
+ * The /notifications page still exists as the canonical feed for direct
+ * links from email/push — same data via NotificationsList over there.
  */
 export function NotificationBell({ userId, ghost, compact }: Props) {
   const { unread } = useRealtimeNotifications(userId);
@@ -36,7 +36,7 @@ export function NotificationBell({ userId, ghost, compact }: Props) {
     <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={() => setOpen((v) => !v)}
         className={`${base} ${skin}`}
         aria-label="Notifications"
         aria-haspopup="dialog"
@@ -50,21 +50,13 @@ export function NotificationBell({ userId, ghost, compact }: Props) {
         )}
       </button>
 
-      <Modal
+      <HeaderPopover
         open={open}
         onClose={() => setOpen(false)}
-        size="lg"
-        // Centered modal everywhere, not a bottom-sheet. The popover is
-        // big enough that the page underneath is barely visible — that
-        // doubled with the tiny mobile sheet height made it look broken
-        // ("too short, not centred"). A centered card with min-height
-        // reads as a proper popover panel.
-        mobileSheet={false}
+        label="Notifications"
       >
-        <div className="min-h-[60vh]">
-          <NotificationsList userId={userId} initial={[]} />
-        </div>
-      </Modal>
+        <NotificationsPopupList userId={userId} onSelect={() => setOpen(false)} />
+      </HeaderPopover>
     </>
   );
 }
