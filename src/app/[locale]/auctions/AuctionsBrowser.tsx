@@ -250,10 +250,21 @@ function ModernBrowser({
       if (brand && a.vehicle.make !== brand) return false;
       if (body && a.vehicle.category !== body) return false;
 
+      // Direct listings park end_time 100y out, so the endTime guard
+      // would always read them as "live" — gate them on status only.
       const isFinished =
-        FINAL_STATUSES.has(a.status) || a.endTime.getTime() <= now;
+        a.listingType === "direct"
+          ? FINAL_STATUSES.has(a.status)
+          : FINAL_STATUSES.has(a.status) || a.endTime.getTime() <= now;
       if (filters.status === "live" && isFinished) return false;
       if (filters.status === "finished" && !isFinished) return false;
+
+      // Listing type — "any" passes both, otherwise pin to one.
+      if (
+        filters.listingType !== "any" &&
+        a.listingType !== filters.listingType
+      )
+        return false;
 
       if (filters.fuel !== "any" && a.vehicle.fuelType !== filters.fuel)
         return false;
@@ -318,6 +329,13 @@ function ModernBrowser({
         key: "status",
         label: filters.status === "finished" ? "Terminées" : "Toutes",
         clear: () => setFilters((f) => ({ ...f, status: "live" })),
+      });
+    if (filters.listingType !== "any")
+      chips.push({
+        key: "listingType",
+        label:
+          filters.listingType === "direct" ? "Vente directe" : "Enchères",
+        clear: () => setFilters((f) => ({ ...f, listingType: "any" })),
       });
     if (filters.fuel !== "any")
       chips.push({
@@ -909,34 +927,48 @@ function ClassicImageBox({
   onClick: () => void;
 }) {
   const isContain = fit === "contain";
+  // Brand logos (PNGs with transparent bg, often dark artwork) get a
+  // white tile — same treatment as the home grid — so dark logos read
+  // properly against our dark theme. Categories are full car photos
+  // and still need the dark surface so the bottom gradient label reads.
+  const labelOnWhite = isContain;
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
-      /* Brand tiles get a pure-black bg so logos (most have a black
-         canvas already) blend seamlessly with no visible seam.
-         Category tiles keep the standard surface bg + cover crop. */
       className={`relative aspect-square rounded-2xl overflow-hidden flex items-end transition-all disabled:opacity-40 disabled:cursor-not-allowed ring-1 ring-[var(--border)] hover:ring-2 hover:ring-[var(--gold-soft)] active:scale-[0.98] ${
-        isContain ? "bg-black" : "bg-[var(--surface-2)]"
+        isContain ? "bg-white" : "bg-[var(--surface-2)]"
       }`}
     >
       {image ? (
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={thumb(image, { width: 480, quality: 70 })}
+            src={thumb(image, { width: 480, quality: 85, format: isContain ? "origin" : "webp" })}
             alt=""
             className={`absolute inset-0 h-full w-full ${
-              isContain ? "object-contain" : "object-cover"
+              isContain ? "object-contain p-3 lg:p-4" : "object-cover"
             }`}
             loading="lazy"
             decoding="async"
           />
-          <span className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%] bg-gradient-to-t from-black via-black/70 to-transparent" />
+          {/* Gradient strip behind the label — white for logo tiles so
+              the dark text reads cleanly, black for category photos. */}
+          <span
+            className={`pointer-events-none absolute inset-x-0 bottom-0 h-[42%] ${
+              labelOnWhite
+                ? "bg-gradient-to-t from-white via-white/95 to-transparent"
+                : "bg-gradient-to-t from-black via-black/70 to-transparent"
+            }`}
+          />
         </>
       ) : (
-        <span className="absolute inset-0 bg-gradient-to-br from-[var(--surface)] to-[var(--surface-2)] flex items-center justify-center">
+        <span className={`absolute inset-0 flex items-center justify-center ${
+          labelOnWhite
+            ? "bg-white"
+            : "bg-gradient-to-br from-[var(--surface)] to-[var(--surface-2)]"
+        }`}>
           {fallbackInitials ? (
             <span className="text-2xl font-extrabold text-[var(--gold)] tracking-tight">
               {fallbackInitials}
@@ -944,14 +976,28 @@ function ClassicImageBox({
           ) : FallbackIcon ? (
             <FallbackIcon className="h-7 w-7 text-[var(--gold)]" />
           ) : null}
-          <span className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/70 to-transparent" />
+          <span
+            className={`absolute inset-x-0 bottom-0 h-1/2 ${
+              labelOnWhite
+                ? "bg-gradient-to-t from-white via-white/95 to-transparent"
+                : "bg-gradient-to-t from-black/70 to-transparent"
+            }`}
+          />
         </span>
       )}
       <div className="relative w-full p-2.5 text-start">
-        <div className="text-[12px] font-extrabold text-white truncate drop-shadow-sm">
+        <div
+          className={`text-[12px] font-extrabold truncate ${
+            labelOnWhite ? "text-gray-900" : "text-white drop-shadow-sm"
+          }`}
+        >
           {label}
         </div>
-        <div className="text-[10px] text-white/80 tabular-nums mt-0.5">
+        <div
+          className={`text-[10px] tabular-nums mt-0.5 ${
+            labelOnWhite ? "text-gray-500" : "text-white/80"
+          }`}
+        >
           {count} {count === 1 ? "voiture" : "voitures"}
         </div>
       </div>

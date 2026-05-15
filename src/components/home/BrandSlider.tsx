@@ -41,7 +41,7 @@ export function BrandSlider({ pool, brands }: Props) {
           Parcourir par marque
         </h2>
         <Link
-          href="/auctions"
+          href="/auctions?view=classic"
           className="text-[12px] font-semibold text-[var(--foreground-muted)] hover:text-[var(--gold)] inline-flex items-center gap-0.5 transition-colors"
         >
           Voir tout
@@ -49,14 +49,16 @@ export function BrandSlider({ pool, brands }: Props) {
         </Link>
       </div>
 
-      {/* Desktop header */}
+      {/* Desktop header — "see more" links land on the classic browse
+          hub so the user gets the full marque directory, not the
+          filter-bar list. */}
       <DesktopRailHeader
         eyebrow="Catalogue"
         title="Parcourir par"
         accent="marque"
         subtitle="Toutes les marques disponibles — cliquez pour filtrer"
         IconLeft={Car}
-        href="/auctions"
+        href="/auctions?view=classic"
         ctaLabel="Toutes les marques"
       />
 
