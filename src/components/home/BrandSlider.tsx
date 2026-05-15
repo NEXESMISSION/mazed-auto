@@ -1,12 +1,9 @@
 import { Link } from "@/i18n/navigation";
 import { ArrowUpRight, Car } from "lucide-react";
 import { thumb } from "@/lib/imageUrl";
-import { AutoPagingScroller } from "./AutoPagingScroller";
 import { DesktopRailHeader } from "./DesktopRailHeader";
 import type { Auction } from "@/lib/types";
 import type { CmsBrand } from "@/lib/cms";
-
-const TILE_LIMIT = 10;
 
 interface Tile {
   name: string;
@@ -17,13 +14,21 @@ interface Tile {
 interface Props {
   /** Pool of live auctions — used to count cars per brand. */
   pool: Auction[];
-  /** Admin-curated brand list. When non-empty, drives the slider entirely
-   *  (image + label + order). When empty, the slider falls back to
-   *  deriving tiles from the auction pool so a fresh DB still shows
-   *  something useful. */
+  /** Admin-curated brand list. When non-empty, drives the grid entirely
+   *  (image + label + order). When empty, falls back to deriving tiles
+   *  from the auction pool so a fresh DB still shows something useful. */
   brands?: CmsBrand[];
 }
 
+/**
+ * BrandGrid (legacy name BrandSlider) — full grid of all marques, 3
+ * tiles per row on mobile, scaling up on larger screens. Tiles use a
+ * white background so dark-on-transparent logos (BMW, Mercedes, etc.)
+ * render with proper contrast on our dark theme.
+ *
+ * Previously this section was a horizontal auto-paging slider; the
+ * grid surfaces every brand at once so users don't miss anything.
+ */
 export function BrandSlider({ pool, brands }: Props) {
   const tiles = buildTiles(pool, brands ?? []);
   if (tiles.length === 0) return null;
@@ -49,111 +54,56 @@ export function BrandSlider({ pool, brands }: Props) {
         eyebrow="Catalogue"
         title="Parcourir par"
         accent="marque"
-        subtitle="Trouvez votre constructeur préféré en un clic"
+        subtitle="Toutes les marques disponibles — cliquez pour filtrer"
         IconLeft={Car}
         href="/auctions"
         ctaLabel="Toutes les marques"
       />
 
-      {/* Mobile auto-paging scroller — keep tiles compact for phone */}
-      <div className="lg:hidden">
-        <AutoPagingScroller intervalMs={5500}>
-          <div className="flex gap-3 px-4 pb-1">
-            {[...tiles, ...tiles].map((t, i) => (
-              <Link
-                key={`${t.name}-${i}`}
-                href={`/auctions?brand=${encodeURIComponent(t.name)}`}
-                aria-hidden={i >= tiles.length ? true : undefined}
-                className="group relative w-[120px] h-[120px] shrink-0 snap-center overflow-hidden rounded-2xl ring-1 ring-[var(--border)] bg-black hover:ring-[var(--gold-soft)]/50 transition-shadow"
-              >
-                {/* Initials fallback — sits BEHIND the <img>. If the logo
-                    loads it covers this; if the request fails or hasn't
-                    landed yet, the user still sees the brand mark instead
-                    of a blank black square. */}
-                <span
-                  aria-hidden
-                  className="absolute inset-0 flex items-center justify-center text-[28px] font-black tracking-tight text-[var(--gold)] opacity-40"
-                >
-                  {t.name.slice(0, 2).toUpperCase()}
-                </span>
-                {t.image ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={thumb(t.image, { width: 240, quality: 70 })}
-                    alt={t.name}
-                    /* Eager + high priority — only ~10 thumbnails at ~3KB
-                       each, lazy-loading them was hiding the rail entirely
-                       on slow connections / cached service workers. */
-                    loading="eager"
-                    fetchPriority="high"
-                    decoding="async"
-                    /* object-contain + black tile bg + zero padding so
-                       the source image fills the tile edge-to-edge. */
-                    className="absolute inset-0 h-full w-full object-contain"
-                    draggable={false}
-                  />
-                ) : null}
-                {/* Gradient only behind the label so the logo on top
-                    is not dimmed. Was full-tile gradient. */}
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%] bg-gradient-to-t from-black via-black/70 to-transparent" />
-                <div className="absolute inset-x-0 bottom-0 px-3 pb-2.5">
-                  <div className="text-[13px] font-extrabold leading-tight text-white">
-                    {t.name}
-                  </div>
-                  <div className="text-[10px] tabular-nums text-white/70 mt-0.5">
-                    {t.count > 0
-                      ? `${t.count} ${t.count === 1 ? "voiture" : "voitures"}`
-                      : "Bientôt"}
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </AutoPagingScroller>
-      </div>
-
-      {/* Desktop grid — 5-col, bigger square tiles, hover lifts the photo */}
-      <div className="hidden lg:grid px-8 grid-cols-5 gap-5">
-        {tiles.slice(0, 10).map((t) => (
+      {/* Unified grid — 3-per-row on mobile (per spec), scaling up on
+          larger screens for desktop density. */}
+      <div className="px-4 lg:px-8 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3 lg:gap-4">
+        {tiles.map((t) => (
           <Link
             key={t.name}
             href={`/auctions?brand=${encodeURIComponent(t.name)}`}
-            className="group relative aspect-square overflow-hidden rounded-2xl ring-1 ring-[var(--border)] bg-black hover:ring-[var(--gold)] transition-all"
+            aria-label={`Voir les voitures ${t.name}`}
+            className="group relative aspect-square overflow-hidden rounded-xl ring-1 ring-[var(--border)] bg-white hover:ring-[var(--gold)] hover:shadow-[0_4px_20px_-4px_rgba(212,175,55,0.35)] transition-all"
           >
-            {/* Initials fallback behind the logo — same approach as the
-                mobile rail. Always visible if the <img> fails or stalls. */}
-            <span
-              aria-hidden
-              className="absolute inset-0 flex items-center justify-center text-[52px] font-black tracking-tight text-[var(--gold)] opacity-40"
-            >
-              {t.name.slice(0, 2).toUpperCase()}
-            </span>
+            {/* Logo fills tile with breathing room. White background +
+                object-contain ensures the logo (often dark on transparent
+                PNG) is always readable. */}
             {t.image ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={thumb(t.image, { width: 480, quality: 75 })}
+                src={thumb(t.image, { width: 320, quality: 85, format: "origin" })}
                 alt={t.name}
-                loading="eager"
-                fetchPriority="high"
+                loading="lazy"
                 decoding="async"
-                className="absolute inset-0 h-full w-full object-contain p-1"
+                className="absolute inset-0 h-full w-full object-contain p-3 lg:p-4 transition-transform duration-300 group-hover:scale-105"
                 draggable={false}
               />
-            ) : null}
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[40%] bg-gradient-to-t from-black via-black/70 to-transparent" />
-            {/* Hover hint */}
-            <span className="pointer-events-none absolute top-3 end-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/50 backdrop-blur-md ring-1 ring-white/10 text-white opacity-0 group-hover:opacity-100 group-hover:bg-[var(--gold)] group-hover:text-black transition-all">
-              <ArrowUpRight className="h-4 w-4" />
-            </span>
-            <div className="absolute inset-x-0 bottom-0 px-4 pb-4">
-              <div className="text-base font-extrabold leading-tight text-white">
+            ) : (
+              /* No-logo fallback — initials in gold on white. */
+              <span
+                aria-hidden
+                className="absolute inset-0 flex items-center justify-center text-[28px] lg:text-[40px] font-black tracking-tight text-[var(--gold)] opacity-70"
+              >
+                {t.name.slice(0, 2).toUpperCase()}
+              </span>
+            )}
+
+            {/* Label strip — slim white→transparent gradient at bottom,
+                brand name + count in dark text so it reads on white. */}
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-white via-white/95 to-transparent pt-4 pb-1.5 px-2">
+              <div className="text-[11px] lg:text-[12px] font-bold leading-tight text-gray-900 text-center truncate">
                 {t.name}
               </div>
-              <div className="text-[11px] tabular-nums text-white/70 mt-0.5">
-                {t.count > 0
-                  ? `${t.count} ${t.count === 1 ? "voiture" : "voitures"}`
-                  : "Bientôt"}
-              </div>
+              {t.count > 0 ? (
+                <div className="text-[9px] lg:text-[10px] tabular-nums text-gray-500 text-center mt-0.5">
+                  {t.count} {t.count === 1 ? "voiture" : "voitures"}
+                </div>
+              ) : null}
             </div>
           </Link>
         ))}
@@ -175,12 +125,11 @@ function buildTiles(pool: Auction[], brands: CmsBrand[]): Tile[] {
   }
 
   if (brands.length > 0) {
-    // Skip brands without a logo — they'd render as a broken-image icon
-    // (auction-photo fallback can point at dead URLs) and look unprofessional.
-    // Upload a logo via /admin/cms/brands to bring a brand back into the rail.
+    // Show every active brand with a logo. Brands without a logo are
+    // skipped so we don't render initials-only tiles next to real logos
+    // — upload a logo via /admin/cms/brands to bring a brand back in.
     return brands
       .filter((b) => Boolean(b.logoUrl))
-      .slice(0, TILE_LIMIT)
       .map((b) => ({
         name: b.displayName,
         image: b.logoUrl as string,
@@ -190,7 +139,6 @@ function buildTiles(pool: Auction[], brands: CmsBrand[]): Tile[] {
 
   return Array.from(countsByMake.entries())
     .sort((a, b) => b[1] - a[1])
-    .slice(0, TILE_LIMIT)
     .map(([name, count]) => ({
       name,
       image: firstPhotoByMake.get(name) ?? "",
