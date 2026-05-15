@@ -927,17 +927,20 @@ function ClassicImageBox({
   onClick: () => void;
 }) {
   const isContain = fit === "contain";
-  // Brand logos (PNGs with transparent bg, often dark artwork) get a
-  // white tile — same treatment as the home grid — so dark logos read
-  // properly against our dark theme. Categories are full car photos
-  // and still need the dark surface so the bottom gradient label reads.
-  const labelOnWhite = isContain;
+  // Brand logos (PNGs with transparent bg) get a clean white tile and
+  // render the logo alone — no overlay label or gradient — so the
+  // marque is the entire visual. aria-label keeps screen-reader nav
+  // intact. Category tiles (full car photos) still need the dark
+  // bottom strip so the label is readable on top of the photograph.
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`relative aspect-square rounded-2xl overflow-hidden flex items-end transition-all disabled:opacity-40 disabled:cursor-not-allowed ring-1 ring-[var(--border)] hover:ring-2 hover:ring-[var(--gold-soft)] active:scale-[0.98] ${
+      aria-label={isContain ? `${label} — ${count} ${count === 1 ? "voiture" : "voitures"}` : undefined}
+      className={`relative aspect-square rounded-2xl overflow-hidden ${
+        isContain ? "" : "flex items-end"
+      } transition-all disabled:opacity-40 disabled:cursor-not-allowed ring-1 ring-[var(--border)] hover:ring-2 hover:ring-[var(--gold-soft)] active:scale-[0.98] ${
         isContain ? "bg-white" : "bg-[var(--surface-2)]"
       }`}
     >
@@ -953,19 +956,15 @@ function ClassicImageBox({
             loading="lazy"
             decoding="async"
           />
-          {/* Gradient strip behind the label — white for logo tiles so
-              the dark text reads cleanly, black for category photos. */}
-          <span
-            className={`pointer-events-none absolute inset-x-0 bottom-0 h-[42%] ${
-              labelOnWhite
-                ? "bg-gradient-to-t from-white via-white/95 to-transparent"
-                : "bg-gradient-to-t from-black via-black/70 to-transparent"
-            }`}
-          />
+          {/* Bottom gradient + label only for category photos. Brand
+              tiles render the logo alone. */}
+          {!isContain && (
+            <span className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%] bg-gradient-to-t from-black via-black/70 to-transparent" />
+          )}
         </>
       ) : (
         <span className={`absolute inset-0 flex items-center justify-center ${
-          labelOnWhite
+          isContain
             ? "bg-white"
             : "bg-gradient-to-br from-[var(--surface)] to-[var(--surface-2)]"
         }`}>
@@ -976,31 +975,21 @@ function ClassicImageBox({
           ) : FallbackIcon ? (
             <FallbackIcon className="h-7 w-7 text-[var(--gold)]" />
           ) : null}
-          <span
-            className={`absolute inset-x-0 bottom-0 h-1/2 ${
-              labelOnWhite
-                ? "bg-gradient-to-t from-white via-white/95 to-transparent"
-                : "bg-gradient-to-t from-black/70 to-transparent"
-            }`}
-          />
+          {!isContain && (
+            <span className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/70 to-transparent" />
+          )}
         </span>
       )}
-      <div className="relative w-full p-2.5 text-start">
-        <div
-          className={`text-[12px] font-extrabold truncate ${
-            labelOnWhite ? "text-gray-900" : "text-white drop-shadow-sm"
-          }`}
-        >
-          {label}
+      {!isContain && (
+        <div className="relative w-full p-2.5 text-start">
+          <div className="text-[12px] font-extrabold truncate text-white drop-shadow-sm">
+            {label}
+          </div>
+          <div className="text-[10px] tabular-nums mt-0.5 text-white/80">
+            {count} {count === 1 ? "voiture" : "voitures"}
+          </div>
         </div>
-        <div
-          className={`text-[10px] tabular-nums mt-0.5 ${
-            labelOnWhite ? "text-gray-500" : "text-white/80"
-          }`}
-        >
-          {count} {count === 1 ? "voiture" : "voitures"}
-        </div>
-      </div>
+      )}
     </button>
   );
 }

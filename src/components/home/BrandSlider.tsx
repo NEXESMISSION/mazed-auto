@@ -72,9 +72,9 @@ export function BrandSlider({ pool, brands }: Props) {
             aria-label={`Voir les voitures ${t.name}`}
             className="group relative aspect-square overflow-hidden rounded-xl ring-1 ring-[var(--border)] bg-white hover:ring-[var(--gold)] hover:shadow-[0_4px_20px_-4px_rgba(212,175,55,0.35)] transition-all"
           >
-            {/* Logo fills tile with breathing room. White background +
-                object-contain ensures the logo (often dark on transparent
-                PNG) is always readable. */}
+            {/* Logo fills tile. Logo alone — no label overlay — so the
+                brand mark is the entire visual; aria-label on the <Link>
+                keeps screen-reader navigation working. */}
             {t.image ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -94,19 +94,6 @@ export function BrandSlider({ pool, brands }: Props) {
                 {t.name.slice(0, 2).toUpperCase()}
               </span>
             )}
-
-            {/* Label strip — slim white→transparent gradient at bottom,
-                brand name + count in dark text so it reads on white. */}
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-white via-white/95 to-transparent pt-4 pb-1.5 px-2">
-              <div className="text-[11px] lg:text-[12px] font-bold leading-tight text-gray-900 text-center truncate">
-                {t.name}
-              </div>
-              {t.count > 0 ? (
-                <div className="text-[9px] lg:text-[10px] tabular-nums text-gray-500 text-center mt-0.5">
-                  {t.count} {t.count === 1 ? "voiture" : "voitures"}
-                </div>
-              ) : null}
-            </div>
           </Link>
         ))}
       </div>
