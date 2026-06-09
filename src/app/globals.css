@@ -1,0 +1,893 @@
+@import "tailwindcss";
+
+/* ============================================
+   Batta.tn — Design Tokens
+   Theme: Light · Blue + Red accents · Clean modern.
+   Inspired by Linear / Stripe / Vercel — minimal
+   chrome, subtle borders, generous whitespace.
+   ============================================ */
+
+:root {
+  /* Surfaces — pure white canvas with a soft gray ladder for
+     elevated states. Cards sit on white with a 1px hairline
+     instead of a darker fill (the "Stripe" look). */
+  --background: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f4f4f5;
+  --surface-3: #e4e4e7;
+  --border: #e4e4e7;
+  --border-strong: #d4d4d8;
+
+  /* Text — zinc ladder so muted copy still reads at low contrast
+     instead of vanishing. */
+  --foreground: #18181b;
+  --foreground-muted: #52525b;
+  --foreground-subtle: #71717a;
+
+  /* Primary — DEEP NAVY BLUE. Sophisticated luxury feel (think
+     Hermès packaging blue, BNP Paribas, the navy of a banker's
+     suit). Replaces what was the "gold" accent across the
+     codebase — we keep the `--gold-*` variable names so every
+     existing `bg-gold` / `text-gold-bright` / `border-gold-soft`
+     class keeps working without a sweep, they just render navy now. */
+  --gold:        #1e3a8a;  /* blue-900 — primary fill, deep navy */
+  --gold-bright: #2563eb;  /* blue-600 — hover lift */
+  --gold-soft:   #c7d2fe;  /* indigo-200 — soft borders / tints */
+  --gold-deep:   #172554;  /* blue-950 — pressed, almost black */
+  --gold-faint:  rgba(30, 58, 138, 0.06);
+  --gold-glow:   rgba(30, 58, 138, 0.22);
+
+  /* Accent — RED. The second accent the user asked for. Used
+     sparingly: live-now pulse, sale badges, the "Live · X auctions"
+     count, error states, destructive actions. */
+  --accent:        #dc2626;  /* red-600 */
+  --accent-bright: #ef4444;  /* red-500 — hover */
+  --accent-soft:   #fecaca;  /* red-200 — soft borders */
+  --accent-deep:   #991b1b;  /* red-800 — pressed */
+  --accent-faint:  rgba(220, 38, 38, 0.06);
+
+  /* States — semantic. Kept distinct from accent so a "danger" red
+     toast doesn't get confused with the brand red. */
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger:  #dc2626;
+  --info:    #2563eb;
+
+  /* Sizing */
+  --radius-sm: 6px;
+  --radius:    8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* Shadows — very subtle, light-mode appropriate. Linear-style:
+     barely there, but enough to lift a card off the page. */
+  --shadow-sm:   0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-md:   0 4px 12px rgba(15, 23, 42, 0.06);
+  --shadow-lg:   0 16px 40px -8px rgba(15, 23, 42, 0.10);
+  --shadow-gold: 0 6px 20px -6px rgba(30, 58, 138, 0.20), 0 2px 6px rgba(30, 58, 138, 0.10);
+
+  /* Mobile-app shell. Unchanged — pure layout math. */
+  --topbar-h: 56px;
+  --bottombar-h: 80px;
+  /* Desktop (lg+) horizontal nav height. The mobile TopBar +
+     BottomTabBar are hidden at lg and this nav takes over; the shell's
+     top padding switches to this value in the lg media query below. */
+  --desktop-nav-h: 72px;
+  --max-w: 480px;
+  --max-w-content: 720px;
+  --max-w-app: 960px;
+  --max-w-wide: 1280px;
+
+  --batta-topbar-h: var(--topbar-h);
+  --batta-bottombar-h: var(--bottombar-h);
+  --batta-bottombar-total: calc(var(--bottombar-h) + 16px);
+  --batta-safe-top: env(safe-area-inset-top, 0px);
+  --batta-safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+
+  --color-foreground: var(--foreground);
+  --color-muted: var(--foreground-muted);
+  --color-subtle: var(--foreground-subtle);
+
+  /* Brand-primary (blue) — keep the `gold` names for back-compat. */
+  --color-gold: var(--gold);
+  --color-gold-bright: var(--gold-bright);
+  --color-gold-soft: var(--gold-soft);
+  --color-gold-deep: var(--gold-deep);
+  --color-gold-faint: var(--gold-faint);
+
+  --color-accent: var(--accent);
+  --color-accent-bright: var(--accent-bright);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-deep: var(--accent-deep);
+  --color-accent-faint: var(--accent-faint);
+
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+
+  /* Legacy `batta-*` aliases — every component that hard-coded
+     `bg-batta-surface` / `text-batta-cream` / `border-batta-gold/25`
+     keeps rendering. Mapped to the new light values. */
+  --color-batta-paper: var(--background);
+  --color-batta-paper-deep: #fafafa;
+  --color-batta-surface: var(--surface);
+  --color-batta-surface-2: var(--surface-2);
+  --color-batta-surface-3: var(--surface-3);
+
+  --color-batta-navy: var(--surface-2);
+  --color-batta-navy-deep: var(--surface);
+  --color-batta-blue: var(--gold);
+  --color-batta-blue-soft: var(--gold-soft);
+
+  --color-batta-cream: var(--foreground);
+  --color-batta-cream-soft: var(--foreground-muted);
+  --color-batta-ink: var(--foreground);
+  --color-batta-ivory: var(--surface);
+  --color-batta-ivory-warm: var(--surface-2);
+  --color-batta-muted: var(--foreground-muted);
+  --color-batta-line: var(--border);
+
+  --color-batta-gold: var(--gold);
+  --color-batta-gold-bright: var(--gold-bright);
+  --color-batta-gold-soft: var(--gold-soft);
+  --color-batta-gold-deep: var(--gold-deep);
+  --color-batta-gold-dark: var(--gold-deep);
+
+  --font-sans: var(--font-jakarta), "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-jakarta), "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-arabic: var(--font-cairo), system-ui, sans-serif;
+  --font-serif: var(--font-jakarta), system-ui, sans-serif;
+}
+
+/* ============================================
+   Base
+   ============================================ */
+
+* { -webkit-tap-highlight-color: transparent; }
+
+html {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overscroll-behavior-y: none;
+  scroll-behavior: smooth;
+}
+
+body {
+  /* Pure white. No gradient. The "weight" of the design comes from
+     content + cards, not background tinting. */
+  background: var(--background);
+  color: var(--foreground);
+  min-height: 100vh;
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01", "cv11", "kern", "liga", "lnum", "tnum";
+  font-variant-numeric: lining-nums tabular-nums;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior-y: none;
+}
+
+html[dir="rtl"] body { font-family: var(--font-arabic); }
+
+.batta-serif {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+html[dir="rtl"] .batta-serif { font-family: var(--font-arabic); }
+
+.tabular-nums,
+.batta-tabular {
+  font-variant-numeric: lining-nums tabular-nums;
+  font-feature-settings: "lnum" 1, "tnum" 1;
+}
+
+input, textarea, select { font-size: 16px; }
+
+/* Scrollbar — very subtle, light-mode. */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--foreground-subtle); }
+
+::selection { background: var(--gold-faint); color: var(--gold-deep); }
+
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+button, a {
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+/* ============================================
+   Container & shell
+   ============================================ */
+
+.container-batta {
+  width: 100%;
+  max-width: var(--max-w-wide);
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+}
+@media (min-width: 768px) {
+  .container-batta { padding-inline: 2rem; }
+}
+
+.pt-safe { padding-top: var(--batta-safe-top); }
+.pb-safe { padding-bottom: var(--batta-safe-bottom); }
+
+.batta-shell-main {
+  min-height: 100dvh;
+  padding-top: calc(var(--batta-topbar-h) + var(--batta-safe-top));
+  padding-bottom: calc(var(--batta-bottombar-total) + var(--batta-safe-bottom));
+}
+/* Desktop shell: the mobile TopBar + BottomTabBar are hidden at lg and
+   the DesktopNav (fixed, --desktop-nav-h tall) takes over. Clear the
+   nav at the top; drop the bottom-tab-bar reservation since there's no
+   bottom bar on desktop. Mobile values above are left untouched. */
+@media (min-width: 1024px) {
+  .batta-shell-main {
+    padding-top: var(--desktop-nav-h);
+    padding-bottom: 0;
+  }
+}
+
+.hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  /* Native momentum scrolling on iOS so the horizontal card rails glide
+     instead of stopping dead under the finger. */
+  -webkit-overflow-scrolling: touch;
+}
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+
+.snap-rail {
+  /* `proximity` (not `mandatory`) so a flick doesn't get yanked back to the
+     nearest card mid-gesture — smoother on touch while still snapping. */
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: 1.25rem;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tap-target { min-height: 44px; min-width: 44px; }
+html, body { overscroll-behavior-y: contain; }
+
+/* ============================================
+   Brand accents — blue (primary) + red (secondary)
+   ============================================ */
+
+/* The elegant 3-stop blue gradient — diagonal, from primary to
+   bright to deep. Used as the signature brand surface across
+   hero blocks, primary CTAs, monograms, and any "branded fill"
+   slot. The favorites empty-state pioneered this; everything
+   downstream pulls from this single utility so the look stays
+   consistent. */
+.batta-gradient-gold,
+.gradient-gold {
+  background-image: linear-gradient(
+    135deg,
+    var(--gold) 0%,
+    var(--gold-bright) 50%,
+    var(--gold-deep) 100%
+  );
+  background-color: var(--gold); /* fallback */
+}
+
+/* Gradient-clipped text — for the brand wordmark and headline
+   prices we want metallic weight without losing legibility. The
+   `-webkit-` prefix is needed for Safari/iOS support. */
+.gradient-gold-text,
+.batta-gold-text,
+.batta-gradient-gold-text {
+  background-image: linear-gradient(
+    135deg,
+    var(--gold) 0%,
+    var(--gold-bright) 50%,
+    var(--gold-deep) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: var(--gold-deep); /* fallback for browsers that can't clip */
+  letter-spacing: -0.01em;
+}
+
+/* Block-fill primary — for buttons / pills where we want the
+   gradient surface with white ink. */
+.batta-gold-fill {
+  background-image: linear-gradient(
+    135deg,
+    var(--gold) 0%,
+    var(--gold-bright) 50%,
+    var(--gold-deep) 100%
+  );
+  background-color: var(--gold);
+  color: #ffffff;
+}
+
+/* Decorative gradient halo — drop two of these inside a relative
+   container with `overflow-hidden` for the soft-bubble depth
+   effect from the favorites empty-state. Pair with `-translate`
+   classes to position them. */
+.batta-gradient-blob {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.15);
+  filter: blur(60px);
+  z-index: 0;
+}
+.batta-gradient-blob-sm { width: 14rem; height: 14rem; }
+.batta-gradient-blob-lg { width: 18rem; height: 18rem; background: rgba(255, 255, 255, 0.10); }
+
+/* Glass — translucent white over blurred content, for the BottomTabBar
+   and any chrome that hovers over the page. */
+.glass,
+.batta-glass {
+  background: rgba(255, 255, 255, 0.85);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--border);
+  color: var(--foreground);
+}
+
+.gold-shadow,
+.batta-shadow-luxe,
+.batta-shadow-chrome,
+.batta-shadow-elev {
+  box-shadow: var(--shadow-md);
+}
+
+/* Eyebrow — small uppercase label above section titles. Was gold;
+   now zinc-muted so it reads as a quiet category tag, not as a
+   competing accent. */
+.batta-eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--foreground-muted);
+}
+.batta-eyebrow-on-navy { color: var(--gold); }
+.batta-eyebrow-muted   { color: var(--foreground-subtle); letter-spacing: 0.16em; }
+
+/* Hairline rules — neutral; the old gold-rule keeps the name but
+   uses the blue accent for a subtle decorative dash. */
+.batta-hairline {
+  height: 1px;
+  background: var(--border);
+}
+.batta-gold-rule {
+  height: 1px;
+  background: var(--border);
+}
+.batta-gold-rule-short {
+  display: inline-block;
+  width: 24px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--gold);
+  vertical-align: middle;
+}
+
+/* Monogram dot — used as a small initial / step bullet. Now uses the
+   primary blue on a tinted background. */
+.batta-monogram {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  border: 1px solid var(--gold-soft);
+  color: var(--gold);
+  font-family: var(--font-sans);
+  font-weight: 700;
+  line-height: 1;
+  background: var(--gold-faint);
+}
+.batta-monogram-filled {
+  background-image: linear-gradient(
+    135deg,
+    var(--gold) 0%,
+    var(--gold-bright) 50%,
+    var(--gold-deep) 100%
+  );
+  background-color: var(--gold);
+  color: #ffffff;
+  border-color: var(--gold-deep);
+}
+
+/* ============================================
+   Cards & surfaces
+   ============================================ */
+
+/* Editorial frame — white card with a single neutral hairline. */
+.batta-frame {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  color: var(--foreground);
+}
+/* Form-field base — used by every admin form (settings, popups, etc.).
+   Matches the visual rhythm of FilterPanel / SettingsForm inputs so
+   form pages share the same control surface. */
+.batta-input {
+  width: 100%;
+  display: block;
+  padding: 0.625rem 0.875rem;
+  font-size: 13px;
+  line-height: 1.4;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--surface);
+  color: var(--foreground);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.batta-input:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px var(--gold-faint);
+}
+.batta-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+textarea.batta-input {
+  resize: vertical;
+  min-height: 80px;
+}
+/* `-gold` variant: the same white card with a subtle navy-tinted
+   border so it reads as a "branded" empty-state slot. No inset
+   pseudo-border (the old double-border was overdesigned). */
+.batta-frame-gold {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid rgba(30, 58, 138, 0.15);
+  border-radius: var(--radius-lg);
+  color: var(--foreground);
+}
+
+/* Was the dark gradient hero card. Now a clean white card with a
+   subtle blue tint shadow — the focal point on the home page. */
+.batta-surface-navy,
+.batta-surface-navy-luxe {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  color: var(--foreground);
+}
+
+.batta-surface-ivory {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--foreground);
+}
+
+/* Primary pill — small uppercase chip in blue. */
+.batta-pill-gold {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  border-radius: 9999px;
+  background: var(--gold-faint);
+  color: var(--gold-deep);
+  border: 1px solid rgba(37, 99, 235, 0.25);
+}
+.batta-pill-gold-on-navy { /* alias retained */ }
+
+/* ============================================
+   Buttons
+   ============================================ */
+
+/* Primary CTA — flat blue with subtle shadow + smooth hover.
+   Was the metallic gradient gold; now a clean solid in the
+   Linear / Stripe style. */
+.batta-btn-luxe {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background-image: linear-gradient(
+    135deg,
+    var(--gold) 0%,
+    var(--gold-bright) 50%,
+    var(--gold-deep) 100%
+  );
+  background-color: var(--gold);
+  background-size: 200% 200%;
+  background-position: 0% 0%;
+  color: #ffffff;
+  border: 1px solid var(--gold-deep);
+  font-weight: 600;
+  letter-spacing: 0;
+  border-radius: var(--radius);
+  transition: background-position 320ms ease, box-shadow 220ms ease, transform 160ms ease;
+  box-shadow: var(--shadow-gold);
+}
+.batta-btn-luxe:active {
+  transform: scale(0.985);
+  background-position: 100% 100%;
+}
+@media (hover: hover) {
+  .batta-btn-luxe:hover {
+    background-position: 100% 100%;
+    box-shadow: var(--shadow-md), var(--shadow-gold);
+  }
+}
+
+/* Ghost / outlined CTA — primary blue, transparent fill. */
+.batta-btn-ghost-gold {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: transparent;
+  color: var(--gold-deep);
+  border: 1px solid var(--gold-soft);
+  font-weight: 600;
+  border-radius: var(--radius);
+  transition: background 160ms ease, border-color 160ms ease;
+}
+.batta-btn-ghost-gold:active {
+  background: var(--gold-faint);
+  border-color: var(--gold);
+}
+@media (hover: hover) {
+  .batta-btn-ghost-gold:hover {
+    background: var(--gold-faint);
+    border-color: var(--gold);
+  }
+}
+
+/* Card lift — subtle hover transform for clickable cards. */
+.batta-card-lift,
+.batta-card-luxe {
+  transition:
+    transform 200ms cubic-bezier(0.2, 0.9, 0.3, 1),
+    box-shadow 220ms ease-out;
+}
+@media (hover: hover) {
+  .batta-card-lift:hover,
+  .batta-card-luxe:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+  }
+}
+.batta-card-lift:active,
+.batta-card-luxe:active { transform: scale(0.99); }
+
+.batta-section-head { display: flex; flex-direction: column; gap: 0.5rem; }
+.batta-section-head-center { align-items: center; text-align: center; }
+
+/* ============================================
+   Status tones — semantic colors over white
+   ============================================ */
+
+.batta-tone-ok {
+  background: rgba(16, 185, 129, 0.08);
+  color: #047857;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+.batta-tone-warn {
+  background: rgba(245, 158, 11, 0.10);
+  color: #b45309;
+  border: 1px solid rgba(245, 158, 11, 0.30);
+}
+.batta-tone-bad {
+  background: var(--accent-faint);
+  color: var(--accent-deep);
+  border: 1px solid rgba(220, 38, 38, 0.25);
+}
+
+/* Photo-card overlay — soft scrim so floating badges stay legible
+   on bright photos. Stronger bottom band where the title sits. */
+.batta-photo-overlay::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.32) 0%,
+    rgba(0, 0, 0, 0.08) 22%,
+    rgba(0, 0, 0, 0) 45%,
+    rgba(0, 0, 0, 0.35) 70%,
+    rgba(0, 0, 0, 0.78) 100%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ============================================
+   Animations
+   ============================================ */
+
+@keyframes batta-blob {
+  0%, 100% { transform: translate3d(0,0,0) scale(1); }
+  33%      { transform: translate3d(20px, -16px, 0) scale(1.08); }
+  66%      { transform: translate3d(-14px, 18px, 0) scale(0.94); }
+}
+@keyframes batta-marquee {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-50%, 0, 0); }
+}
+@keyframes batta-marquee-rtl {
+  from { transform: translate3d(-50%, 0, 0); }
+  to   { transform: translate3d(0, 0, 0); }
+}
+@keyframes batta-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes batta-pulse-ring {
+  0%   { transform: scale(0.85); opacity: 0.55; }
+  80%  { transform: scale(1.6);  opacity: 0; }
+  100% { transform: scale(1.6);  opacity: 0; }
+}
+@keyframes batta-float-up {
+  from { opacity: 0; transform: translate3d(0, 8px, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+@keyframes batta-marquee-y {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(0, -50%, 0); }
+}
+@keyframes batta-conic-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes batta-marquee-reverse {
+  from { transform: translate3d(-50%, 0, 0); }
+  to   { transform: translate3d(0, 0, 0); }
+}
+@keyframes pulse-gold {
+  0%, 100% { box-shadow: 0 0 0 0 var(--gold-glow); }
+  50%      { box-shadow: 0 0 0 8px transparent; }
+}
+
+/* Winner celebration — bounce the trophy in, then have a sparse
+   ring of small dots fan out around it once. Auto-stops after one
+   pass so the page settles instead of throbbing forever (the user
+   called this out: animations that "stay on the whole page"). */
+@keyframes batta-celebrate-pop {
+  0%   { transform: scale(0.6); opacity: 0; }
+  55%  { transform: scale(1.12); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.batta-celebrate-pop {
+  animation: batta-celebrate-pop 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes batta-celebrate-dot {
+  0%   { transform: translate(-50%, -50%) translate(0, 0) scale(0); opacity: 1; }
+  60%  { opacity: 1; }
+  100% { transform: translate(-50%, -50%) translate(var(--dx), var(--dy)) scale(1); opacity: 0; }
+}
+.batta-celebrate-burst {
+  /* No background — just hosts the absolutely-positioned dots below. */
+}
+.batta-celebrate-burst::before,
+.batta-celebrate-burst::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle, var(--gold) 0 2px, transparent 3px),
+    radial-gradient(circle, var(--gold) 0 1.5px, transparent 2.5px),
+    radial-gradient(circle, var(--gold-soft, var(--gold)) 0 1.5px, transparent 2.5px),
+    radial-gradient(circle, var(--gold) 0 1px, transparent 2px),
+    radial-gradient(circle, var(--gold-soft, var(--gold)) 0 1px, transparent 2px),
+    radial-gradient(circle, var(--gold) 0 2px, transparent 3px);
+  background-repeat: no-repeat;
+  background-position:
+    18% 22%, 80% 18%, 12% 70%, 88% 60%, 30% 88%, 70% 82%;
+  opacity: 0;
+  animation: batta-celebrate-fade 1.2s ease-out 0.1s both;
+}
+.batta-celebrate-burst::after {
+  background-position:
+    8% 40%, 92% 38%, 22% 12%, 78% 88%, 50% 8%, 50% 92%;
+  animation-delay: 0.35s;
+}
+@keyframes batta-celebrate-fade {
+  0%   { opacity: 0; transform: scale(0.8); }
+  40%  { opacity: 0.95; }
+  100% { opacity: 0; transform: scale(1.15); }
+}
+
+/* Splash-screen — pure-white wordmark filter and a thin progress
+   sliver that sweeps left → right under the logo. Cleaner than
+   bouncing dots and on-brand with the linear/stripe loader pattern. */
+.batta-splash-logo {
+  filter: brightness(0) invert(1)
+          drop-shadow(0 4px 16px rgba(0, 0, 0, 0.18));
+}
+@keyframes batta-splash-sweep {
+  0%   { transform: translate3d(-100%, 0, 0); }
+  100% { transform: translate3d(400%, 0, 0); }
+}
+.batta-splash-bar {
+  display: block;
+  width: 25%;
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.95) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  animation: batta-splash-sweep 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  will-change: transform;
+}
+
+.batta-blob {
+  animation: batta-blob 14s ease-in-out infinite;
+  will-change: transform;
+}
+.batta-blob-slow { animation-duration: 22s; }
+.batta-blob-delay { animation-delay: -7s; }
+
+.batta-marquee {
+  display: flex;
+  width: max-content;
+  animation: batta-marquee 40s linear infinite;
+  will-change: transform;
+}
+html[dir="rtl"] .batta-marquee { animation-name: batta-marquee-rtl; }
+.batta-marquee:hover, .batta-marquee:active { animation-play-state: paused; }
+
+.batta-shimmer-text {
+  color: var(--gold);
+}
+
+.batta-pulse-dot {
+  position: relative;
+  display: inline-block;
+}
+.batta-pulse-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: currentColor;
+  animation: batta-pulse-ring 1.6s ease-out infinite;
+}
+
+.batta-fade-up {
+  animation: batta-float-up 600ms ease-out both;
+}
+
+.batta-marquee-y {
+  display: flex;
+  flex-direction: column;
+  height: max-content;
+  animation: batta-marquee-y 22s linear infinite;
+  will-change: transform;
+}
+.batta-marquee-y:hover, .batta-marquee-y:active { animation-play-state: paused; }
+
+.batta-marquee-reverse {
+  display: flex;
+  width: max-content;
+  animation: batta-marquee-reverse 32s linear infinite;
+  will-change: transform;
+}
+html[dir="rtl"] .batta-marquee-reverse { animation-name: batta-marquee; }
+.batta-marquee-reverse:hover, .batta-marquee-reverse:active { animation-play-state: paused; }
+
+.batta-conic-spin {
+  animation: batta-conic-spin 28s linear infinite;
+  will-change: transform;
+}
+
+.pulse-gold {
+  animation: pulse-gold 2s ease-in-out infinite;
+}
+
+/* Slow cinematic zoom for featured-banner imagery (desktop hero). */
+@keyframes batta-kenburns {
+  from { transform: scale(1.05); }
+  to   { transform: scale(1.16); }
+}
+.batta-kenburns {
+  animation: batta-kenburns 18s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+/* Soft drifting glow behind the desktop hero — pure CSS, no image. */
+@keyframes batta-glow-drift {
+  0%   { transform: translate3d(-4%, -2%, 0) scale(1);    opacity: 0.65; }
+  50%  { transform: translate3d(4%, 3%, 0)  scale(1.08); opacity: 0.95; }
+  100% { transform: translate3d(-4%, -2%, 0) scale(1);    opacity: 0.65; }
+}
+.batta-hero-glow {
+  animation: batta-glow-drift 14s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+/* One-shot gold ring + soft glow for a row a notification points at —
+   FocusRowHighlight stamps this class on mount and removes it after the
+   keyframe finishes. Kept short so the row settles back into the list
+   instead of competing with other UI for attention. */
+@keyframes batta-focus-ring-pulse {
+  0%   { box-shadow: 0 0 0 0 var(--gold-glow), 0 0 0 0 rgba(30,58,138,0); }
+  35%  { box-shadow: 0 0 0 4px var(--gold-glow), 0 0 0 10px rgba(30,58,138,0.18); }
+  100% { box-shadow: 0 0 0 0 transparent, 0 0 0 0 transparent; }
+}
+.batta-focus-ring {
+  animation: batta-focus-ring-pulse 2.4s ease-out;
+  border-radius: var(--radius);
+}
+
+/* Skeleton — gentle pulse on the surface-2 tone. */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.55; }
+}
+.skeleton,
+.batta-skeleton,
+.batta-skeleton-luxe {
+  background: var(--surface-2);
+  border-radius: var(--radius);
+  animation: skeleton-pulse 1.6s ease-in-out infinite;
+}
+
+/* Desktop (lg+) shows a single centered spinner (DesktopLoadingSpinner)
+   over every loading screen instead of skeletons. Belt-and-suspenders:
+   kill the shimmer animation on desktop so no placeholder can ever pulse
+   behind/around the spinner — the loading state stays a clean single
+   circle. Mobile keeps its detailed animated skeletons. */
+@media (min-width: 1024px) {
+  .skeleton,
+  .batta-skeleton,
+  .batta-skeleton-luxe {
+    animation: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .batta-blob,
+  .batta-marquee,
+  .batta-marquee-y,
+  .batta-marquee-reverse,
+  .batta-shimmer-text,
+  .batta-pulse-dot::after,
+  .batta-fade-up,
+  .batta-conic-spin,
+  .batta-kenburns,
+  .batta-hero-glow,
+  .pulse-gold,
+  .batta-splash-bar,
+  .skeleton,
+  .batta-skeleton,
+  .batta-skeleton-luxe {
+    animation: none !important;
+  }
+}

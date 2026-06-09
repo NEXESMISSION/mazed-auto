@@ -1,0 +1,25 @@
+node_modules
+.next
+out
+build
+.env
+.env.local
+.env*.local
+.DS_Store
+*.tsbuildinfo
+next-env.d.ts
+.vercel
+
+# Local dev-only — Supabase CLI workspace + Claude Code preview launcher.
+supabase/.temp/
+.claude/launch.json
+
+# Cloudflare/wrangler experiment artifacts (never commit secrets/build output)
+.dev.vars
+.open-next/
+.wrangler/
+
+# Internal security audit (exploit detail) — keep local, never publish to the
+# public repo. Tracked once by mistake; untracked in this commit.
+DEEP-AUDIT-*.md
+verify-*.log
