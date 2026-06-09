@@ -36,17 +36,37 @@ The riskiest mistake here is touching **land's live Supabase DB**. Everything be
 makes the new app fully independent first.
 
 1. ☑ Copy land → `mazed auto v2` (excluded `node_modules`, `.next`, `.git`, `.env.local`).
-2. ☐ `pnpm install` to heal `node_modules` (pnpm symlinks don't survive a copy).
-3. ☐ Fresh `git init` + first commit (new history; land's repo stays the reference).
-4. ☐ **Provision a SEPARATE Supabase project for cars** — new project ref, new keys.
-   *Decision needed (see §9): do you create it, or do I create it via the Management
-   API token in memory?* Until this exists, do **not** run any migration/seed.
-5. ☐ Write `.env.local` pointing at the **new** Supabase project (copy shape from
-   `.env.example`).
-6. ☐ Apply land's 120 migrations to the new (empty) DB → clean schema, zero data.
-7. ☐ Gate: `pnpm typecheck`, `pnpm lint`, `pnpm dev` all green on the *unmodified*
-   land code before changing a single domain line. This proves the base runs in the
-   new environment; every later change is measured against this baseline.
+2. ☑ `pnpm install` (exit 0 — fresh `node_modules`, no symlink breakage since none copied).
+3. ☑ Fresh `git init -b main` + baseline commit `d57f1e0` (594 files; new history).
+4. ☑ Separate Supabase project for cars: `jxwsbmniubiuujeblwbt`
+   (saifelleuchi127@gmail.com org, region **eu-north-1**, pooler
+   `aws-1-eu-north-1.pooler.supabase.com:5432`, user `postgres.<ref>`).
+5. ☑ `.env.local` written (URL + anon + service-role + dev CRON_SECRET; gitignored).
+6. ☑ Applied all **120 migrations** to the fresh DB via `scripts/migrate-fresh.mjs`
+   (`pg` driver over the eu-north-1 session pooler) → clean schema, zero data.
+7. ☑ Gate PASSED: `pnpm typecheck` ✅ + `pnpm lint` ✅ (0 errors). `pnpm dev` boots,
+   `GET /fr → 200`, home data layer connected to the new DB (`live=0`, empty as
+   expected), API routes (`/api/watchlist`, `/api/notifications`, `/api/popups/match`)
+   return 200. Shell + nav render. **The unmodified base runs on the new car DB.**
+
+**✅ §1 COMPLETE.**
+
+**✅ Milestone 1a (car-branded home + demo data) — DONE & verified:**
+- migration `0121_cars_enum.sql`: extended `property_type` enum with vehicle
+  categories (sedan/suv/hatchback/pickup/van/coupe/convertible/wagon).
+- `scripts/seed-cars.mjs`: 4 demo users + 10 car auctions (7 live, 2 scheduled,
+  1 sold) with bids/deposits. Login pwd `Mazed!2026`.
+- home: car category pills + car price buckets + Car/Truck icons.
+- `PropertyCard`: car-icon placeholder (was 🏛️).
+- `messages/fr.json`: brand Batta→**Mazed Auto**, added car body-type labels.
+- Verified: typecheck/lint clean; `GET /fr` 200 with all 9 makes + Berline pill + prices.
+
+**Still TODO (next milestones):** real car photos (importer or local images);
+auction-detail + sell-wizard spec blocks (make/model/mileage…); seed car
+`property_attribute_kinds` + clean out real-estate ones; land-only features
+(inspectors→mechanics, legal docs→carte grise, drop sixth-offer); finish copy
+(remaining "Batta"/real-estate strings incl. the `· Batta` title suffix, AR file);
+re-skin /properties explore + admin labels.
 
 **Working convention:** this is Next.js **16.2.4** (App Router, React 19) — APIs differ
 from older Next. Consult `node_modules/next/dist/docs/` before writing framework code.

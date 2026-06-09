@@ -3,7 +3,7 @@ import { getTranslations, getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { formatTND, minBidIncrement } from "@/lib/utils";
 import type { AuctionWithProperty } from "@/lib/types";
-import { ArrowUpRight, Gavel, Users, Tag } from "lucide-react";
+import { ArrowUpRight, Gavel, Users, Tag, Car } from "lucide-react";
 import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
 import { IMAGE_BLUR_MAP } from "@/lib/imageBlurMap";
 import { WatchlistButton } from "@/components/watchlist/WatchlistButton";
@@ -112,8 +112,8 @@ export async function PropertyCard({
               );
             })()
           ) : (
-            <div className="flex h-full items-center justify-center text-5xl text-foreground/15">
-              🏛️
+            <div className="flex h-full items-center justify-center text-gold/20">
+              <Car className="size-14" strokeWidth={1.5} />
             </div>
           )}
 

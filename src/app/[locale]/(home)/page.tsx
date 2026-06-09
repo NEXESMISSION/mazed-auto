@@ -27,11 +27,8 @@ import {
   ArrowUpRight,
   ChevronRight,
   ChevronLeft,
-  Building2,
-  Home,
-  Trees,
-  Store,
-  Briefcase,
+  Car,
+  Truck,
   Gavel,
   MapPin,
   Search,
@@ -1049,12 +1046,12 @@ const PROPERTY_TYPES: {
   labelAr: string;
   Icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
 }[] = [
-  { key: "apartment",  labelEn: "Apartment",   labelAr: "شقة",       Icon: Building2 },
-  { key: "villa",      labelEn: "Villa",       labelAr: "فيلا",      Icon: Home },
-  { key: "house",      labelEn: "House",       labelAr: "منزل",      Icon: Home },
-  { key: "land",       labelEn: "Land",        labelAr: "أرض",       Icon: Trees },
-  { key: "commercial", labelEn: "Commercial",  labelAr: "محل تجاري", Icon: Store },
-  { key: "office",     labelEn: "Office",      labelAr: "مكتب",      Icon: Briefcase },
+  { key: "sedan",     labelEn: "Sedan",     labelAr: "برلين",       Icon: Car },
+  { key: "suv",       labelEn: "SUV",       labelAr: "دفع رباعي",   Icon: Car },
+  { key: "hatchback", labelEn: "Hatchback", labelAr: "سيارة صغيرة", Icon: Car },
+  { key: "pickup",    labelEn: "Pickup",    labelAr: "بيك أب",      Icon: Truck },
+  { key: "van",       labelEn: "Van",       labelAr: "نفعية",       Icon: Truck },
+  { key: "coupe",     labelEn: "Coupé",     labelAr: "كوبيه",       Icon: Car },
 ];
 
 const PRICE_BUCKETS: {
@@ -1064,10 +1061,10 @@ const PRICE_BUCKETS: {
   /** Maps to the params /properties actually reads (min_price/max_price). */
   query: string;
 }[] = [
-  { key: "under-100k",  labelEn: "Moins de 100k", labelAr: "أقل من 100 ألف",   query: "max_price=100000" },
-  { key: "100k-500k",   labelEn: "100k – 500k",   labelAr: "100 – 500 ألف",    query: "min_price=100000&max_price=500000" },
-  { key: "500k-1m",     labelEn: "500k – 1M",     labelAr: "500 ألف – 1 مليون", query: "min_price=500000&max_price=1000000" },
-  { key: "1m-plus",     labelEn: "1M+ TND",       labelAr: "أكثر من مليون",     query: "min_price=1000000" },
+  { key: "under-30k", labelEn: "Moins de 30k", labelAr: "أقل من 30 ألف",   query: "max_price=30000" },
+  { key: "30k-60k",   labelEn: "30k – 60k",    labelAr: "30 – 60 ألف",     query: "min_price=30000&max_price=60000" },
+  { key: "60k-120k",  labelEn: "60k – 120k",   labelAr: "60 – 120 ألف",    query: "min_price=60000&max_price=120000" },
+  { key: "120k-plus", labelEn: "120k+ TND",    labelAr: "أكثر من 120 ألف", query: "min_price=120000" },
 ];
 
 // HOW_IT_WORKS + TRUST_PILLARS used to live here at the bottom of

@@ -1,8 +1,8 @@
 {
   "brand": {
-    "name": "Batta",
-    "domain": "Batta.tn",
-    "tagline": "Première plateforme tunisienne dédiée aux enchères immobilières",
+    "name": "Mazed Auto",
+    "domain": "Mazed.tn",
+    "tagline": "La première plateforme tunisienne d'enchères automobiles",
     "slogan": "Transparence. Rapidité. Confiance."
   },
   "nav": {
@@ -247,7 +247,15 @@
       "commercial": "Local commercial",
       "office": "Bureau",
       "warehouse": "Entrepôt",
-      "farm": "Ferme agricole"
+      "farm": "Ferme agricole",
+      "sedan": "Berline",
+      "suv": "SUV / 4x4",
+      "hatchback": "Citadine",
+      "pickup": "Pick-up",
+      "van": "Utilitaire",
+      "coupe": "Coupé",
+      "convertible": "Cabriolet",
+      "wagon": "Break"
     }
   },
   "signup": {
