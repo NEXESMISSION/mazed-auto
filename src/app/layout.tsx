@@ -27,17 +27,17 @@ const SITE_URL =
 
 export const metadata: Metadata = {
   metadataBase: SITE_URL ? new URL(SITE_URL) : undefined,
-  applicationName: "Batta",
+  applicationName: "Mazed Auto",
   title: {
-    default: "Batta — Real Estate Auctions",
-    template: "%s · Batta",
+    default: "Mazed Auto — Enchères automobiles",
+    template: "%s · Mazed Auto",
   },
   description:
-    "Tunisia's first dedicated real-estate auction platform. Transparency. Speed. Trust.",
+    "Tunisia's first dedicated car auction platform. Transparency. Speed. Trust.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
-    title: "Batta",
+    title: "Mazed Auto",
     statusBarStyle: "default",
     startupImage: ["/logo-square.png"],
   },
@@ -47,24 +47,24 @@ export const metadata: Metadata = {
     shortcut: ["/logo-square.png"],
   },
   openGraph: {
-    title: "Batta — Real Estate Auctions",
+    title: "Mazed Auto — Enchères automobiles",
     description:
-      "Tunisia's first dedicated real-estate auction platform. Transparency. Speed. Trust.",
+      "Tunisia's first dedicated car auction platform. Transparency. Speed. Trust.",
     type: "website",
-    siteName: "Batta",
+    siteName: "Mazed Auto",
     images: [
       {
         url: "/logo-square.png",
         width: 1104,
         height: 1104,
-        alt: "Batta — Real Estate Auctions",
+        alt: "Mazed Auto — Enchères automobiles",
       },
     ],
   },
   twitter: {
     card: "summary",
-    title: "Batta — Real Estate Auctions",
-    description: "Tunisia's first dedicated real-estate auction platform.",
+    title: "Mazed Auto — Enchères automobiles",
+    description: "Tunisia's first dedicated car auction platform.",
     images: ["/logo-square.png"],
   },
   formatDetection: { telephone: false },

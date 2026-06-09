@@ -11,18 +11,17 @@
   /* Surfaces — pure white canvas with a soft gray ladder for
      elevated states. Cards sit on white with a 1px hairline
      instead of a darker fill (the "Stripe" look). */
-  --background: #ffffff;
-  --surface: #ffffff;
-  --surface-2: #f4f4f5;
-  --surface-3: #e4e4e7;
-  --border: #e4e4e7;
-  --border-strong: #d4d4d8;
+  --background: #0a0a0a;
+  --surface: #141414;
+  --surface-2: #1c1c1c;
+  --surface-3: #262626;
+  --border: #2a2a2a;
+  --border-strong: #3a3a3a;
 
-  /* Text — zinc ladder so muted copy still reads at low contrast
-     instead of vanishing. */
-  --foreground: #18181b;
-  --foreground-muted: #52525b;
-  --foreground-subtle: #71717a;
+  /* Text — near-white down to muted gray on the dark canvas. */
+  --foreground: #f5f5f5;
+  --foreground-muted: #a1a1a1;
+  --foreground-subtle: #707070;
 
   /* Primary — DEEP NAVY BLUE. Sophisticated luxury feel (think
      Hermès packaging blue, BNP Paribas, the navy of a banker's
@@ -30,28 +29,28 @@
      codebase — we keep the `--gold-*` variable names so every
      existing `bg-gold` / `text-gold-bright` / `border-gold-soft`
      class keeps working without a sweep, they just render navy now. */
-  --gold:        #1e3a8a;  /* blue-900 — primary fill, deep navy */
-  --gold-bright: #2563eb;  /* blue-600 — hover lift */
-  --gold-soft:   #c7d2fe;  /* indigo-200 — soft borders / tints */
-  --gold-deep:   #172554;  /* blue-950 — pressed, almost black */
-  --gold-faint:  rgba(30, 58, 138, 0.06);
-  --gold-glow:   rgba(30, 58, 138, 0.22);
+  --gold:        #d4af37;  /* metallic gold — primary accent */
+  --gold-bright: #e8c668;  /* lighter gold — hover lift */
+  --gold-soft:   #b8941f;  /* darker gold — soft borders / tints */
+  --gold-deep:   #8a6d18;  /* bronze — gradient end / pressed */
+  --gold-faint:  rgba(212, 175, 55, 0.12);
+  --gold-glow:   rgba(212, 175, 55, 0.35);
 
   /* Accent — RED. The second accent the user asked for. Used
      sparingly: live-now pulse, sale badges, the "Live · X auctions"
      count, error states, destructive actions. */
-  --accent:        #dc2626;  /* red-600 */
-  --accent-bright: #ef4444;  /* red-500 — hover */
-  --accent-soft:   #fecaca;  /* red-200 — soft borders */
-  --accent-deep:   #991b1b;  /* red-800 — pressed */
-  --accent-faint:  rgba(220, 38, 38, 0.06);
+  --accent:        #ef4444;  /* red-500 — live pulse / sale */
+  --accent-bright: #f87171;  /* red-400 — hover */
+  --accent-soft:   #7f1d1d;  /* red-900 — soft borders on dark */
+  --accent-deep:   #b91c1c;  /* red-700 — pressed */
+  --accent-faint:  rgba(239, 68, 68, 0.12);
 
   /* States — semantic. Kept distinct from accent so a "danger" red
      toast doesn't get confused with the brand red. */
-  --success: #10b981;
+  --success: #4ade80;
   --warning: #f59e0b;
-  --danger:  #dc2626;
-  --info:    #2563eb;
+  --danger:  #ef4444;
+  --info:    #60a5fa;
 
   /* Sizing */
   --radius-sm: 6px;
@@ -63,10 +62,10 @@
 
   /* Shadows — very subtle, light-mode appropriate. Linear-style:
      barely there, but enough to lift a card off the page. */
-  --shadow-sm:   0 1px 2px rgba(15, 23, 42, 0.04);
-  --shadow-md:   0 4px 12px rgba(15, 23, 42, 0.06);
-  --shadow-lg:   0 16px 40px -8px rgba(15, 23, 42, 0.10);
-  --shadow-gold: 0 6px 20px -6px rgba(30, 58, 138, 0.20), 0 2px 6px rgba(30, 58, 138, 0.10);
+  --shadow-sm:   0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md:   0 4px 12px rgba(0, 0, 0, 0.45);
+  --shadow-lg:   0 16px 40px -8px rgba(0, 0, 0, 0.6);
+  --shadow-gold: 0 6px 20px -4px rgba(212, 175, 55, 0.35), 0 2px 6px rgba(212, 175, 55, 0.2);
 
   /* Mobile-app shell. Unchanged — pure layout math. */
   --topbar-h: 56px;
@@ -121,7 +120,7 @@
      `bg-batta-surface` / `text-batta-cream` / `border-batta-gold/25`
      keeps rendering. Mapped to the new light values. */
   --color-batta-paper: var(--background);
-  --color-batta-paper-deep: #fafafa;
+  --color-batta-paper-deep: #0f0f0f;
   --color-batta-surface: var(--surface);
   --color-batta-surface-2: var(--surface-2);
   --color-batta-surface-3: var(--surface-3);
@@ -322,7 +321,7 @@ html, body { overscroll-behavior-y: contain; }
     var(--gold-deep) 100%
   );
   background-color: var(--gold);
-  color: #ffffff;
+  color: #0a0a0a;
 }
 
 /* Decorative gradient halo — drop two of these inside a relative
@@ -333,18 +332,18 @@ html, body { overscroll-behavior-y: contain; }
   position: absolute;
   pointer-events: none;
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(212, 175, 55, 0.18);
   filter: blur(60px);
   z-index: 0;
 }
 .batta-gradient-blob-sm { width: 14rem; height: 14rem; }
-.batta-gradient-blob-lg { width: 18rem; height: 18rem; background: rgba(255, 255, 255, 0.10); }
+.batta-gradient-blob-lg { width: 18rem; height: 18rem; background: rgba(212, 175, 55, 0.10); }
 
 /* Glass — translucent white over blurred content, for the BottomTabBar
    and any chrome that hovers over the page. */
 .glass,
 .batta-glass {
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(18, 18, 18, 0.72);
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
   border: 1px solid var(--border);
@@ -414,7 +413,7 @@ html, body { overscroll-behavior-y: contain; }
     var(--gold-deep) 100%
   );
   background-color: var(--gold);
-  color: #ffffff;
+  color: #0a0a0a;
   border-color: var(--gold-deep);
 }
 
@@ -463,7 +462,7 @@ textarea.batta-input {
 .batta-frame-gold {
   position: relative;
   background: var(--surface);
-  border: 1px solid rgba(30, 58, 138, 0.15);
+  border: 1px solid rgba(212, 175, 55, 0.22);
   border-radius: var(--radius-lg);
   color: var(--foreground);
 }
@@ -498,7 +497,7 @@ textarea.batta-input {
   border-radius: 9999px;
   background: var(--gold-faint);
   color: var(--gold-deep);
-  border: 1px solid rgba(37, 99, 235, 0.25);
+  border: 1px solid rgba(212, 175, 55, 0.25);
 }
 .batta-pill-gold-on-navy { /* alias retained */ }
 
@@ -523,7 +522,7 @@ textarea.batta-input {
   background-color: var(--gold);
   background-size: 200% 200%;
   background-position: 0% 0%;
-  color: #ffffff;
+  color: #0a0a0a;
   border: 1px solid var(--gold-deep);
   font-weight: 600;
   letter-spacing: 0;
@@ -592,7 +591,7 @@ textarea.batta-input {
 
 .batta-tone-ok {
   background: rgba(16, 185, 129, 0.08);
-  color: #047857;
+  color: #34d399;
   border: 1px solid rgba(16, 185, 129, 0.25);
 }
 .batta-tone-warn {
