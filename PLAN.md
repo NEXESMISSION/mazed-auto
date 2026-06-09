@@ -61,12 +61,37 @@ makes the new app fully independent first.
 - `messages/fr.json`: brand Batta→**Mazed Auto**, added car body-type labels.
 - Verified: typecheck/lint clean; `GET /fr` 200 with all 9 makes + Berline pill + prices.
 
-**Still TODO (next milestones):** real car photos (importer or local images);
-auction-detail + sell-wizard spec blocks (make/model/mileage…); seed car
-`property_attribute_kinds` + clean out real-estate ones; land-only features
-(inspectors→mechanics, legal docs→carte grise, drop sixth-offer); finish copy
-(remaining "Batta"/real-estate strings incl. the `· Batta` title suffix, AR file);
-re-skin /properties explore + admin labels.
+**✅ Milestone 1b (real cars + photos) — DONE & verified:**
+- `scripts/import-cars-from-old.mjs`: pulled **60 real car listings** (make/model/
+  year/specs + photo galleries) from the OLD auto Supabase (`erosazbplfhelvxweeyz`)
+  into v2's properties + property_photos + auctions, owned by demo dealer sellers,
+  all live with light bidding. Photos hotlink from the old Supabase storage (allowed
+  by v2's `*.supabase.co` image config — no re-upload).
+- Replaced the M1a placeholder cars. 442 photos, 25 bids.
+- Verified: `GET /fr` 200, 1355 next/image refs, 1420 photo refs, 228 prices.
+- NOTE: the headless preview browser stays on the route's streaming loading-fallback
+  (a dev/Turbopack streaming quirk — server render is complete & correct via `fetch`).
+  View live in a real browser at http://localhost:<port>/fr.
+
+**✅ Milestone 1c (old users + data hygiene) — DONE:**
+- `scripts/import-users-from-old.mjs`: imported all **10 real user accounts** from
+  the old project (metadata → v2 profiles). All accounts use pwd `Mazed!2026`.
+- `scripts/state.mjs`: DB-state overview (users/vehicles/auctions/photos/bids).
+- Found + fixed a real bug: `profiles.role/kyc_status/trust_score` are protected by
+  the `_guard_profile_self_update` trigger — plain service-role updates are REJECTED,
+  so every seed/import profile patch had silently failed (all users individual, none
+  KYC-verified). `scripts/fix-roles.mjs` sets them over the pooler inside a tx with
+  `set_config('app.bypass_profile_guard','on',true)`. Now: admin 1, agency 3,
+  individual 13, **all 17 KYC-verified**.
+- ⚠️ Follow-up: fold the guard-bypass into seed-cars/import-cars/import-users so future
+  runs set role/kyc correctly without a separate fix pass.
+
+**Still TODO (next milestones):** auction-detail + sell-wizard spec blocks
+(make/model/mileage…); seed car `property_attribute_kinds` + clean out real-estate
+ones; land-only features (inspectors→mechanics, legal docs→carte grise, drop
+sixth-offer); finish copy (remaining "Batta"/real-estate strings incl. the `· Batta`
+title suffix, AR file); re-skin /properties explore + admin labels; optionally import
+more cars (old project has 322) + add a few sold/scheduled for the home rails.
 
 **Working convention:** this is Next.js **16.2.4** (App Router, React 19) — APIs differ
 from older Next. Consult `node_modules/next/dist/docs/` before writing framework code.
