@@ -106,7 +106,7 @@ export function AuctionCalendarMenu({
     // NEXT_PUBLIC_SITE_URL so the link points at the production domain
     // (or whatever public URL the app is deployed under) — that URL
     // matches the PWA manifest's "/" scope, so Android opens the
-    // installed Batta PWA directly instead of bouncing through a browser
+    // installed Mazed Auto PWA directly instead of bouncing through a browser
     // tab. Fallback to window.location.origin keeps dev tinkering sane.
     const origin =
       (process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? "") ||

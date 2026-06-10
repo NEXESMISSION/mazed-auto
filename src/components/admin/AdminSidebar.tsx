@@ -69,7 +69,7 @@ function BrandMark() {
       </span>
       <span className="flex flex-col leading-tight">
         <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-muted">
-          Batta
+          Mazed Auto
         </span>
         <span className="gradient-gold-text text-[15px] font-extrabold">Console</span>
       </span>

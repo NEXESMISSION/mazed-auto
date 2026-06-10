@@ -87,7 +87,7 @@ export async function GET(
   // Closing event — the urgency moment. Always emitted.
   events.push(
     buildEvent({
-      uid: `auction-${a.id}-close@batta.tn`,
+      uid: `auction-${a.id}-close@mazed.tn`,
       summary: `Enchère: ${a.property.title}`,
       description: describe(`Clôture de l'enchère: ${a.property.title}`),
       url: auctionUrl,
@@ -106,7 +106,7 @@ export async function GET(
       const openEnd = new Date(startMs + 15 * 60 * 1000);
       events.push(
         buildEvent({
-          uid: `auction-${a.id}-open@batta.tn`,
+          uid: `auction-${a.id}-open@mazed.tn`,
           summary: `Ouverture des enchères: ${a.property.title}`,
           description: describe(`Ouverture des enchères: ${a.property.title}`),
           url: auctionUrl,
@@ -122,7 +122,7 @@ export async function GET(
   const body = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Batta//Auction Reminder//FR",
+    "PRODID:-//Mazed Auto//Auction Reminder//FR",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     ...events,

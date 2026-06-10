@@ -96,7 +96,7 @@ export function KYCNudgeModal() {
       description={
         isRejected
           ? "Votre dossier précédent a été refusé. Reprenez la vérification pour pouvoir enchérir et publier."
-          : "Pour enchérir, vendre ou publier sur Batta, votre identité doit être vérifiée. Ça prend environ 2 minutes."
+          : "Pour enchérir, vendre ou publier sur Mazed Auto, votre identité doit être vérifiée. Ça prend environ 2 minutes."
       }
     >
       <div className="space-y-4">
@@ -108,7 +108,7 @@ export function KYCNudgeModal() {
             <p className="font-bold text-foreground">Cadre légal tunisien</p>
             <p className="mt-0.5 text-muted">
               Vos données sont chiffrées et traitées conformément à la loi n°2004-63.
-              Seuls les administrateurs Batta y accèdent.
+              Seuls les administrateurs Mazed Auto y accèdent.
             </p>
           </div>
         </div>
@@ -129,7 +129,7 @@ export function KYCNudgeModal() {
           <Benefit
             Icon={Home}
             label="Vendre votre bien"
-            sub="Publiez une annonce ou organisez une enchère sur Batta."
+            sub="Publiez une annonce ou organisez une enchère sur Mazed Auto."
           />
           <Benefit
             Icon={BadgeCheck}

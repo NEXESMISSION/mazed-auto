@@ -28,7 +28,7 @@ type Outcome =
   | { kind: "sixth_offer_window"; winningPrice: number; deadline: string }
   | { kind: "cancelled" };
 
-// Final-state set for Batta. `sixth_offer_window` is final from the
+// Final-state set for Mazed Auto. `sixth_offer_window` is final from the
 // composer's POV — the user can't place a regular bid anymore; they'd
 // need the dedicated 1/6 form on the detail page.
 const FINAL_STATES = new Set([

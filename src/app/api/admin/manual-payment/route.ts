@@ -220,7 +220,7 @@ export async function POST(req: NextRequest) {
     p_user_id: userId,
     p_kind: "payment_accepted",
     p_title: `${KIND_LABEL[kind]} a été enregistrée`,
-    p_body: `Un paiement de ${insertAmount.toFixed(2)} TND (${method === "cash" ? "espèces" : method}) a été enregistré par l'équipe Batta.`,
+    p_body: `Un paiement de ${insertAmount.toFixed(2)} TND (${method === "cash" ? "espèces" : method}) a été enregistré par l'équipe Mazed Auto.`,
     p_link: kind === "deposit_lock" ? `/auctions/${auctionId}/bid` : `/auctions/${auctionId}`,
   });
 

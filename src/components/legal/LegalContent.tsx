@@ -3,7 +3,7 @@
  * AND inside the signup modal, so there's a single source of truth. Plain
  * presentational components (no client hooks) usable from server or client.
  *
- * This is general informational copy for the Batta.tn marketplace, not a
+ * This is general informational copy for the Mazed Auto marketplace, not a
  * substitute for legal review before launch.
  */
 
@@ -24,8 +24,8 @@ export function TermsContent() {
       <Section title="1. Objet">
         <p>
           Les présentes conditions générales régissent l&apos;utilisation de la
-          plateforme Batta.tn, place de marché d&apos;enchères et de ventes
-          immobilières en Tunisie. En créant un compte, vous acceptez ces
+          plateforme Mazed Auto, place de marché d&apos;enchères et de ventes
+          automobiles en Tunisie. En créant un compte, vous acceptez ces
           conditions dans leur intégralité.
         </p>
       </Section>
@@ -55,7 +55,7 @@ export function TermsContent() {
       </Section>
       <Section title="5. Responsabilités">
         <p>
-          Batta agit en tant qu&apos;intermédiaire. La conformité juridique des
+          Mazed Auto agit en tant qu&apos;intermédiaire. La conformité juridique des
           biens, l&apos;exactitude des informations fournies par les vendeurs et
           le bon déroulement des transactions relèvent de la responsabilité des
           parties. Nous recommandons une expertise indépendante avant

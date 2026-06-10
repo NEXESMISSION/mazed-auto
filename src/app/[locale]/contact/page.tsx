@@ -3,14 +3,14 @@ import { LegalPage } from "@/components/legal/LegalPage";
 import { Mail, Phone, MapPin, Clock } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Contact — Batta.tn",
+  title: "Contact — Mazed Auto",
 };
 
 // Pure static content — prerender at build and serve from the edge CDN.
 export const dynamic = "force-static";
 
 const ITEMS = [
-  { Icon: Mail, label: "E-mail", value: "contact@batta.tn", href: "mailto:contact@batta.tn" },
+  { Icon: Mail, label: "E-mail", value: "contact@mazed.tn", href: "mailto:contact@mazed.tn" },
   { Icon: Phone, label: "Téléphone", value: "+216 70 000 000", href: "tel:+21670000000" },
   { Icon: MapPin, label: "Adresse", value: "Sfax, Tunisie", href: null },
   { Icon: Clock, label: "Horaires", value: "Lun – Ven, 9h – 17h", href: null },

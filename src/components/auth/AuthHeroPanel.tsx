@@ -36,7 +36,7 @@ export function AuthHeroPanel() {
         {/* Top — one brand pill */}
         <span className="inline-flex w-fit items-center gap-2.5 rounded-full bg-surface/40 px-4 py-2 text-[12.5px] font-bold text-white ring-1 ring-gold/20 backdrop-blur">
           <ShieldCheck className="size-4 shrink-0" strokeWidth={2} />
-          La maison des enchères immobilières tunisiennes
+          La maison des enchères automobiles tunisiennes
         </span>
 
         {/* Bottom — headline + trust points + social proof */}

@@ -305,7 +305,7 @@ export default async function SellLandingPage({
             </div>
             <p className="mt-2 text-[11.5px] text-muted">
               En attente : <span className="batta-tabular font-semibold text-foreground/70">{formatTND(balance.pending_payout, locale)} {t("common.tnd")}</span>
-              {" · "}Commission Batta {Math.round(balance.commission_rate * 100)}% déjà déduite.
+              {" · "}Commission Mazed Auto {Math.round(balance.commission_rate * 100)}% déjà déduite.
             </p>
           </div>
           {balance.available > 0 && (

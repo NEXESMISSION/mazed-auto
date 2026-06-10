@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 const SHOWN_KEY = "batta:splash-shown";
 
 /**
- * First-load splash — centered Batta wordmark on the brand gradient
+ * First-load splash — centered Mazed Auto wordmark on the brand gradient
  * with a soft loading-dots animation underneath. Plays once per
  * browser session (sessionStorage flag); in-app navigation never
  * re-triggers it.
@@ -76,7 +76,7 @@ export function SplashScreen() {
         <source srcSet="/logo.webp" type="image/webp" />
         <img
           src="/logo.png"
-          alt="Batta"
+          alt="Mazed Auto"
           width={528}
           height={164}
           decoding="async"

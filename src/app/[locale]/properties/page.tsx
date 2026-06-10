@@ -7,12 +7,12 @@ import type { ExploreFilter } from "@/components/explore/types";
 import { stripAccents } from "@/lib/search";
 
 export const metadata: Metadata = {
-  title: "Biens immobiliers aux enchères",
+  title: "Biens automobiles aux enchères",
   description:
-    "Parcourez les biens immobiliers en vente aux enchères et en vente directe partout en Tunisie — appartements, maisons, villas, terrains et locaux. Mises à prix transparentes sur Batta.tn.",
+    "Parcourez les voitures en vente aux enchères et en vente directe partout en Tunisie — appartements, maisons, villas, terrains et locaux. Mises à prix transparentes sur Mazed Auto.",
   alternates: { canonical: "/fr/properties" },
   openGraph: {
-    title: "Biens immobiliers aux enchères — Batta.tn",
+    title: "Biens automobiles aux enchères — Mazed Auto",
     description:
       "Tous les biens en vente aux enchères et en vente directe en Tunisie, en un seul endroit.",
     type: "website",

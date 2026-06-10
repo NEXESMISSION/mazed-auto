@@ -73,10 +73,10 @@ export function DesktopNav() {
       <div className="mx-auto flex h-full w-full max-w-[var(--max-w-wide)] items-center gap-6 px-8">
         {/* ── Left zone: brand + primary links ── */}
         <div className="flex shrink-0 items-center gap-7">
-          <Link href="/" className="flex shrink-0 items-center" aria-label="Batta">
+          <Link href="/" className="flex shrink-0 items-center" aria-label="Mazed Auto">
             <Image
               src="/logo.png"
-              alt="Batta"
+              alt="Mazed Auto"
               width={257}
               height={80}
               priority

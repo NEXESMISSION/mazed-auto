@@ -39,7 +39,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
       p_user_id: id,
       p_kind: "inspector_approved",
       p_title: "Vous êtes approuvé comme inspecteur",
-      p_body: "Votre compte inspecteur a été validé. Vous pouvez désormais accepter des missions sur Batta.tn.",
+      p_body: "Votre compte inspecteur a été validé. Vous pouvez désormais accepter des missions sur Mazed Auto.",
       p_link: "/inspector",
     });
   }

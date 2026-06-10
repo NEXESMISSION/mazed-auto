@@ -7,7 +7,7 @@
   },
   "nav": {
     "home": "Accueil",
-    "properties": "Biens",
+    "properties": "Voitures",
     "auctions": "Enchères en cours",
     "inspectors": "Réseau d'experts",
     "howItWorks": "Comment ça marche",
@@ -31,7 +31,7 @@
       "account": "Compte"
     },
     "pageTitles": {
-      "properties": "Biens",
+      "properties": "Voitures",
       "auctions": "Enchères",
       "inspectors": "Experts",
       "watchlist": "Favoris",
@@ -47,12 +47,12 @@
   },
   "watchlistPage": {
     "title": "Votre liste",
-    "empty": "Aucun bien enregistré",
+    "empty": "Aucune voiture enregistrée",
     "emptyBody": "Ajoutez des favoris pour suivre les enchères.",
-    "browseCta": "Explorer les biens"
+    "browseCta": "Explorer les voitures"
   },
   "accountPage": {
-    "guestTitle": "Bienvenue sur Batta",
+    "guestTitle": "Bienvenue sur Mazed Auto",
     "guestBody": "Connectez-vous pour continuer.",
     "login": "Se connecter",
     "signup": "Créer un compte",
@@ -68,8 +68,8 @@
   },
   "landing": {
     "heroBadge": "Lancement Mai 2026",
-    "heroTitle": "Vendez et achetez l'immobilier en toute transparence",
-    "heroSubtitle": "L'immobilier aux enchères, 100% en ligne et vérifié.",
+    "heroTitle": "Vendez et achetez l'automobile en toute transparence",
+    "heroSubtitle": "L'automobile aux enchères, 100% en ligne et vérifié.",
     "heroCta": "Rejoindre la liste d'attente",
     "heroSecondary": "Découvrir le fonctionnement",
     "trustBar": "Banques, huissiers et agences agréés",
@@ -84,7 +84,7 @@
     },
     "howItWorksTitle": "Comment ça marche ?",
     "steps": {
-      "s1Title": "1. Déposez votre bien",
+      "s1Title": "1. Listez votre voiture",
       "s1Body": "Documents et photos vérifiés sous 48h.",
       "s2Title": "2. Choisissez le type d'enchère",
       "s2Body": "Anglaise, cachetée ou hollandaise.",
@@ -93,7 +93,7 @@
       "s4Title": "4. Vente conclue légalement",
       "s4Body": "Notaire agréé et inscription foncière."
     },
-    "auctionTypesTitle": "Trois types d'enchères pour chaque bien",
+    "auctionTypesTitle": "Trois types d'enchères pour chaque voiture",
     "auctionTypes": {
       "englishTitle": "Enchère anglaise",
       "englishBody": "Le prix monte. Transparent.",
@@ -103,12 +103,12 @@
       "dutchBody": "Le prix descend jusqu'à l'achat."
     },
     "inspectorTitle": "Un réseau d'experts dans chaque gouvernorat",
-    "inspectorBody": "Un expert vérifie chaque bien avant l'enchère.",
+    "inspectorBody": "Un expert vérifie chaque voiture avant l'enchère.",
     "inspectorCta": "Rejoindre comme expert agréé",
-    "audienceTitle": "À qui s'adresse Batta ?",
+    "audienceTitle": "À qui s'adresse Mazed Auto ?",
     "audience": {
       "buyersTitle": "Aux acheteurs",
-      "buyersBody": "Des biens sous le marché, depuis votre mobile.",
+      "buyersBody": "Des voitures sous le prix du marché, depuis votre mobile.",
       "sellersTitle": "Aux particuliers vendeurs",
       "sellersBody": "Vendez plus vite. 3% de commission.",
       "banksTitle": "Aux banques et institutions",
@@ -121,7 +121,7 @@
     "emailPlaceholder": "Votre email",
     "phonePlaceholder": "Téléphone (optionnel)",
     "joinWaitlist": "Je m'inscris",
-    "footerLegal": "© 2026 Batta. Tous droits réservés.",
+    "footerLegal": "© 2026 Mazed Auto. Tous droits réservés.",
     "footerLinks": {
       "terms": "Conditions d'utilisation",
       "privacy": "Politique de confidentialité",
@@ -189,7 +189,7 @@
     "heroLive": "En direct",
     "heroBidCta": "Enchérir",
     "heroBrowseCta": "Explorer",
-    "heroBrandTitle": "La maison des enchères immobilières tunisiennes",
+    "heroBrandTitle": "La maison des enchères automobiles tunisiennes",
     "heroBrandEyebrow": "En direct · {count} enchères",
     "soldChip": "Vendu",
     "howItWorksEyebrow": "Le parcours",
@@ -203,7 +203,7 @@
     "step3Eyebrow": "Enchérir",
     "step3Title": "Verrouillez la caution puis enchérissez",
     "step3Body": "Caution remboursable, déduite si vous gagnez.",
-    "trustEyebrow": "Pourquoi Batta",
+    "trustEyebrow": "Pourquoi Mazed Auto",
     "trustTitle": "Une enchère pensée pour vous protéger",
     "trustEscrowTitle": "Paiements sécurisés",
     "trustEscrowBody": "Votre argent ne bouge qu'au transfert.",
@@ -215,7 +215,7 @@
     "trustLegalBody": "Délais légaux et signature notariée."
   },
   "search": {
-    "placeholder": "Rechercher un bien…",
+    "placeholder": "Rechercher une voiture…",
     "submit": "Rechercher",
     "governorate": "Gouvernorat",
     "allWilayas": "Tous les gouvernorats",
@@ -274,7 +274,7 @@
     "language": "Langue",
     "signOut": "Déconnexion",
     "myListings": "Mes annonces",
-    "myListingsBody": "Vos biens en vente.",
+    "myListingsBody": "Vos voitures en vente.",
     "myBids": "Mes enchères",
     "myBidsBody": "Vos enchères en cours.",
     "myWins": "Mes adjudications",

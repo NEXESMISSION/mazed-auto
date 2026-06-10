@@ -42,7 +42,7 @@ export default async function PartnersLanding() {
             isRTL ? "font-arabic" : ""
           }`}
         >
-          Trois façons de travailler avec Batta
+          Trois façons de travailler avec Mazed Auto
         </h2>
 
         <div className="mt-4 grid gap-3 lg:grid-cols-3 lg:gap-5">
@@ -64,7 +64,7 @@ export default async function PartnersLanding() {
           <PartnerCard
             Icon={Building2}
             kicker="Agences"
-            title="Agences immobilières"
+            title="Concessionnaires"
             body="Abonnements de 99 à 799 TND/mois. Badge agence vérifiée. Annonces mises en avant."
             cta="Voir les offres"
             ctaHref="/contact?segment=agency"
@@ -102,7 +102,7 @@ export default async function PartnersLanding() {
                 isRTL ? "font-arabic" : ""
               }`}
             >
-              Pourquoi Batta surpasse les annonces papier
+              Pourquoi Mazed Auto surpasse les annonces papier
             </h3>
             <div className="mt-4 grid grid-cols-3 divide-x divide-border">
               <CompareStat label="Gain de prix" value="+12%" />

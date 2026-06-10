@@ -21,7 +21,7 @@ const PRESETS = [
   },
   {
     label: "Compte / RIB incorrect",
-    text: "Le virement n'a pas été effectué vers le compte officiel de Batta. Merci de refaire le virement avec les coordonnées affichées sur la page de paiement et de téléverser le nouveau reçu.",
+    text: "Le virement n'a pas été effectué vers le compte officiel de Mazed Auto. Merci de refaire le virement avec les coordonnées affichées sur la page de paiement et de téléverser le nouveau reçu.",
   },
   {
     label: "Référence manquante",

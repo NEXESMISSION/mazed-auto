@@ -80,8 +80,8 @@ export async function generateMetadata({
     : `${p.title}${where}`;
   const description =
     (p.description?.trim().slice(0, 200)) ||
-    `${isDirect ? "Vente directe" : "Enchère immobilière"}${where} sur Batta.tn — ${
-      priceLabel ? `${isDirect ? "prix" : "mise à prix"} ${priceLabel}.` : "la plateforme tunisienne des enchères immobilières."
+    `${isDirect ? "Vente directe" : "Enchère automobile"}${where} sur Mazed Auto — ${
+      priceLabel ? `${isDirect ? "prix" : "mise à prix"} ${priceLabel}.` : "la plateforme tunisienne des enchères automobiles."
     }`;
   const photo = (p.photos ?? []).slice().sort((x, y) => x.sort_order - y.sort_order)[0];
   const ogImage = photo ? propertyPhotoUrl(photo.storage_path, { transform: { width: 1200, quality: 80 } }) : undefined;
@@ -394,7 +394,7 @@ export default async function AuctionDetail({
     .map((ph) => propertyPhotoUrl(ph.storage_path, { transform: { width: 1200, quality: 80 } }));
   const seoSiteUrl = (
     process.env.NEXT_PUBLIC_SITE_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://batta.tn")
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://mazed.tn")
   ).replace(/\/$/, "");
   const jsonLd = {
     "@context": "https://schema.org",
@@ -402,9 +402,9 @@ export default async function AuctionDetail({
     name: property.title,
     description:
       (property.description ?? "").trim().slice(0, 500) ||
-      `${auction.listing_type === "direct" ? "Vente directe" : "Enchère immobilière"} sur Batta.tn`,
+      `${auction.listing_type === "direct" ? "Vente directe" : "Enchère automobile"} sur Mazed Auto`,
     ...(seoImages.length ? { image: seoImages } : {}),
-    category: "Immobilier",
+    category: "Automobile",
     ...(property.governorate ? { areaServed: property.governorate } : {}),
     offers: {
       "@type": "Offer",

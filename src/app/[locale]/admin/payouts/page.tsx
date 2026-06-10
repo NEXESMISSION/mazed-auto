@@ -117,7 +117,7 @@ export default async function AdminPayoutsPage({
       <AdminPageHeader
         eyebrow="Argent · Vendeurs"
         title="Paiements vendeurs"
-        description="Approuver, traiter et confirmer les retraits demandés par les vendeurs. Les montants déjà déduits de la commission Batta (5%)."
+        description="Approuver, traiter et confirmer les retraits demandés par les vendeurs. Les montants déjà déduits de la commission Mazed Auto (5%)."
         actions={
           <StatusBadge tone={status === "requested" ? "warn" : "neutral"}>{total}</StatusBadge>
         }
