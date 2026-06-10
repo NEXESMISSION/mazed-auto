@@ -12,6 +12,7 @@ import { HomeDesktop } from "@/components/landing/HomeDesktop";
 import { HomeSectionDivider } from "@/components/landing/HomeSectionDivider";
 import { BrandRail } from "@/components/landing/BrandRail";
 import { StatsBar } from "@/components/landing/StatsBar";
+import { CarRail } from "@/components/landing/CarRail";
 import { PropertyCard } from "@/components/property/PropertyCard";
 import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
 import { formatTND } from "@/lib/utils";
@@ -275,6 +276,13 @@ export default async function LandingPage({
     .sort((a, b) => b.count - a.count)
     .slice(0, 12);
 
+  // "Les plus disputées" — live lots ranked by bid count (HotNow signal,
+  // distinct from `trending` which sorts by ends_at + paid placement).
+  const hotNow = [...trending]
+    .filter((a) => (a.bid_count ?? 0) > 0)
+    .sort((x, y) => (y.bid_count ?? 0) - (x.bid_count ?? 0))
+    .slice(0, 8);
+
   // Built once, shared by the mobile HeroBanner and the desktop tree
   // (which now reuses the same auto-sliding carousel).
   const heroSlides = buildHeroSlides(trending, locale, liveCount, {
@@ -406,6 +414,22 @@ export default async function LandingPage({
       {/* ─── "Offres directes" rail — fixed-price (buy-now) listings, kept
           separate from the bidding lots so buyers can browse them on their
           own. Only shown when there's direct stock. */}
+      {hotNow.length > 0 && (
+        <section className="mt-7">
+          <RailHeader
+            eyebrow="🔥 Chaud"
+            title="Les plus disputées"
+            countLabel={hotNow.length}
+            ctaHref="/properties"
+            ChevronEnd={ChevronEnd}
+            isRTL={isRTL}
+            seeAllLabel={t("home.seeAll")}
+            flush
+          />
+          <CarRail items={hotNow} savedIds={savedIds} loggedIn={loggedIn} />
+        </section>
+      )}
+
       {offers.length > 0 && (
         <section className="mt-7">
           <RailHeader
