@@ -11,6 +11,7 @@ import { HeroBanner, type HeroSlide } from "@/components/landing/HeroBanner";
 import { HomeDesktop } from "@/components/landing/HomeDesktop";
 import { HomeSectionDivider } from "@/components/landing/HomeSectionDivider";
 import { BrandRail } from "@/components/landing/BrandRail";
+import { StatsBar } from "@/components/landing/StatsBar";
 import { PropertyCard } from "@/components/property/PropertyCard";
 import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
 import { formatTND } from "@/lib/utils";
@@ -340,6 +341,8 @@ export default async function LandingPage({
           ══════════════════════════════════════════════════════════════ */}
 
       {/* Trending rail — horizontal scroller of the top 8 hottest auctions. */}
+      <StatsBar live={liveCount} sold={soldThisMonthCount} makes={topMakes.length} govs={coverageGovs} />
+
       <HomeSectionDivider
         tone="live"
         eyebrow="En ce moment"
