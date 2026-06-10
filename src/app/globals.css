@@ -724,8 +724,7 @@ textarea.batta-input {
    sliver that sweeps left → right under the logo. Cleaner than
    bouncing dots and on-brand with the linear/stripe loader pattern. */
 .batta-splash-logo {
-  filter: brightness(0) invert(1)
-          drop-shadow(0 4px 16px rgba(0, 0, 0, 0.18));
+  filter: drop-shadow(0 8px 24px rgba(212, 175, 55, 0.25));
 }
 @keyframes batta-splash-sweep {
   0%   { transform: translate3d(-100%, 0, 0); }

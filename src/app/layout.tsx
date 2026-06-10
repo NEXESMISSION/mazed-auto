@@ -71,12 +71,12 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#ffffff",
+  themeColor: "#0a0a0a",
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
   viewportFit: "cover",
-  colorScheme: "light",
+  colorScheme: "dark",
 };
 
 export default async function RootLayout({
@@ -100,7 +100,7 @@ export default async function RootLayout({
       className={`${jakarta.variable} h-full antialiased`}
       // Inline bg paints with the first HTML byte, before globals.css
       // resolves — keeps the initial paint on-brand.
-      style={{ background: "#ffffff" }}
+      style={{ background: "#0a0a0a" }}
     >
       <head>
         {/*
@@ -142,7 +142,7 @@ export default async function RootLayout({
       </head>
       <body
         className="min-h-full bg-background text-foreground font-sans"
-        style={{ background: "#ffffff" }}
+        style={{ background: "#0a0a0a" }}
       >
         {/* Skip link — first focusable element; lets keyboard/screen-reader
             users jump past the nav straight to the page content. */}

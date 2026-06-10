@@ -56,7 +56,7 @@ export function SplashScreen() {
       aria-hidden
       className={cn(
         "fixed inset-0 z-[200] flex flex-col items-center justify-center overflow-hidden",
-        "batta-gradient-gold",
+        "bg-background",
         "transition-opacity duration-200 ease-out",
         fadeOut ? "opacity-0 pointer-events-none" : "opacity-100",
       )}
