@@ -10,6 +10,7 @@ import { EndingSoonBanner } from "@/components/landing/EndingSoonBanner";
 import { HeroBanner, type HeroSlide } from "@/components/landing/HeroBanner";
 import { HomeDesktop } from "@/components/landing/HomeDesktop";
 import { HomeSectionDivider } from "@/components/landing/HomeSectionDivider";
+import { BrandRail } from "@/components/landing/BrandRail";
 import { PropertyCard } from "@/components/property/PropertyCard";
 import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
 import { formatTND } from "@/lib/utils";
@@ -256,6 +257,22 @@ export default async function LandingPage({
   } finally {
     endData();
   }
+
+  // "Parcourir par marque" — distinct makes across the loaded surfaces,
+  // ranked by lot count. Derived from each title's leading token (titles
+  // are "Make Model Year"), so no extra query or brand-logo assets needed.
+  const _seenIds = new Set<string>();
+  const _makeCount = new Map<string, number>();
+  for (const a of [...trending, ...nouveautes, ...offers, ...recent]) {
+    if (_seenIds.has(a.id)) continue;
+    _seenIds.add(a.id);
+    const mk = String(a.property?.title ?? "").trim().split(/\s+/)[0];
+    if (mk) _makeCount.set(mk, (_makeCount.get(mk) ?? 0) + 1);
+  }
+  const topMakes = [..._makeCount.entries()]
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 12);
 
   // Built once, shared by the mobile HeroBanner and the desktop tree
   // (which now reuses the same auto-sliding carousel).
@@ -641,6 +658,8 @@ export default async function LandingPage({
               surface (properties / kyc / payment checkout). Horizontal
               snap-rail on phones; 3-up grid from lg+ so the strip
               reads at a glance on desktop. */}
+      <BrandRail makes={topMakes} title="Parcourir par marque" />
+
       <section className="mt-10">
         <div className="px-4">
           <span className="batta-eyebrow">{t("home.howItWorksEyebrow")}</span>
