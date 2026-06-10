@@ -9,6 +9,7 @@ import { CoverageStrip } from "@/components/landing/CoverageStrip";
 import { EndingSoonBanner } from "@/components/landing/EndingSoonBanner";
 import { HeroBanner, type HeroSlide } from "@/components/landing/HeroBanner";
 import { HomeDesktop } from "@/components/landing/HomeDesktop";
+import { HomeSectionDivider } from "@/components/landing/HomeSectionDivider";
 import { PropertyCard } from "@/components/property/PropertyCard";
 import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
 import { formatTND } from "@/lib/utils";
@@ -322,6 +323,12 @@ export default async function LandingPage({
           ══════════════════════════════════════════════════════════════ */}
 
       {/* Trending rail — horizontal scroller of the top 8 hottest auctions. */}
+      <HomeSectionDivider
+        tone="live"
+        eyebrow="En ce moment"
+        title="Enchères en direct"
+        subtitle="Voitures vérifiées · enchères transparentes"
+      />
       <section className="mt-7">
         <RailHeader
           eyebrow={t("home.trendingEyebrow")}
@@ -582,6 +589,14 @@ export default async function LandingPage({
           12 cards scroll). No padded placeholders: a "Coming soon"
           tile alongside a real sold listing reads as filler and makes
           the page feel emptier than just hiding the section would. */}
+      {hammered.length > 0 && (
+        <HomeSectionDivider
+          tone="sold"
+          eyebrow="Historique"
+          title="Récemment adjugées"
+          subtitle="Prix réels obtenus aux enchères"
+        />
+      )}
       {hammered.length > 0 && (
         <section className="mt-10">
           <div className="flex items-baseline justify-between px-4">
