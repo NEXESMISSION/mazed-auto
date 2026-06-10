@@ -287,7 +287,7 @@ export function ExploreGrid({
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Rechercher par titre, ville, adresse…"
               aria-label="Rechercher une annonce"
-              className="h-11 w-full rounded-full border border-border bg-white ps-10 pe-10 text-[13.5px] text-foreground placeholder:text-[var(--foreground-subtle)] transition focus:border-[var(--gold)] focus:outline-none focus:ring-2 focus:ring-[var(--gold-faint)]"
+              className="h-11 w-full rounded-full border border-border bg-surface ps-10 pe-10 text-[13.5px] text-foreground placeholder:text-[var(--foreground-subtle)] transition focus:border-[var(--gold)] focus:outline-none focus:ring-2 focus:ring-[var(--gold-faint)]"
             />
             {search && (
               <button
@@ -442,7 +442,7 @@ function GridPill({
       className={`inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-4 text-[12.5px] font-semibold transition-colors disabled:opacity-50 ${
         active
           ? "border-[var(--gold)] bg-[var(--gold)] text-white"
-          : "border-[var(--border)] bg-white text-[var(--foreground-muted)] hover:border-[var(--gold-soft)] hover:text-[var(--gold)]"
+          : "border-[var(--border)] bg-surface text-[var(--foreground-muted)] hover:border-[var(--gold-soft)] hover:text-[var(--gold)]"
       }`}
     >
       {icon}
@@ -625,7 +625,7 @@ function FilterButton({
       className={`inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3 text-[12px] font-semibold transition-colors ${
         active || count > 0
           ? "border-[var(--gold)] bg-[var(--gold-faint)] text-[var(--gold)]"
-          : "border-[var(--border)] bg-white text-[var(--foreground-muted)] hover:border-[var(--gold-soft)] hover:text-[var(--gold)]"
+          : "border-[var(--border)] bg-surface text-[var(--foreground-muted)] hover:border-[var(--gold-soft)] hover:text-[var(--gold)]"
       }`}
     >
       <SlidersHorizontal className="size-3.5" strokeWidth={2.2} />
@@ -698,7 +698,7 @@ function FilterPanel({
   };
 
   return (
-    <div className={sidebar ? "rounded-2xl border border-border bg-white p-4" : "border-b border-border bg-white px-4 py-4 lg:px-6"}>
+    <div className={sidebar ? "rounded-2xl border border-border bg-surface p-4" : "border-b border-border bg-surface px-4 py-4 lg:px-6"}>
       {sidebar && (
         <div className="mb-3 flex items-center gap-2">
           <SlidersHorizontal className="size-4 text-[var(--gold)]" strokeWidth={2.2} />
@@ -721,7 +721,7 @@ function FilterPanel({
                 className={`rounded-lg border px-2 py-1.5 text-[11.5px] font-bold transition-colors disabled:opacity-50 ${
                   segment === s.key
                     ? "border-[var(--gold)] bg-[var(--gold)] text-white"
-                    : "border-[var(--border)] bg-white text-[var(--foreground-muted)] hover:border-[var(--gold-soft)] hover:text-[var(--gold)]"
+                    : "border-[var(--border)] bg-surface text-[var(--foreground-muted)] hover:border-[var(--gold-soft)] hover:text-[var(--gold)]"
                 }`}
               >
                 {s.label}
@@ -747,7 +747,7 @@ function FilterPanel({
                   className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
                     active
                       ? "border-[var(--gold)] bg-[var(--gold)] text-white"
-                      : "border-[var(--border)] bg-white text-[var(--foreground-muted)] hover:border-[var(--gold-soft)] hover:text-[var(--gold)]"
+                      : "border-[var(--border)] bg-surface text-[var(--foreground-muted)] hover:border-[var(--gold-soft)] hover:text-[var(--gold)]"
                   }`}
                 >
                   {p.label}
@@ -775,7 +775,7 @@ function FilterPanel({
           onChange={(v) => setGov(v || null)}
           options={GOV_OPTIONS}
           ariaLabel="Gouvernorat"
-          triggerClassName="flex w-full items-center gap-2 rounded-xl border border-border bg-white px-3 py-2.5 text-[13px] font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-gold/40"
+          triggerClassName="flex w-full items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2.5 text-[13px] font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-gold/40"
         />
         <input
           type="number"
@@ -785,7 +785,7 @@ function FilterPanel({
           aria-label="Prix minimum (TND)"
           value={draft.minPrice ?? ""}
           onChange={(e) => setNum("minPrice")(e.target.value)}
-          className="w-full rounded-xl border border-border bg-white px-3 py-2.5 text-[13px] tabular-nums"
+          className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-[13px] tabular-nums"
         />
         <input
           type="number"
@@ -795,7 +795,7 @@ function FilterPanel({
           aria-label="Prix maximum (TND)"
           value={draft.maxPrice ?? ""}
           onChange={(e) => setNum("maxPrice")(e.target.value)}
-          className="w-full rounded-xl border border-border bg-white px-3 py-2.5 text-[13px] tabular-nums"
+          className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-[13px] tabular-nums"
         />
       </div>
 
@@ -804,7 +804,7 @@ function FilterPanel({
         <button
           type="button"
           onClick={onReset}
-          className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-full border border-red-200 bg-white px-4 py-2.5 text-[12.5px] font-bold text-red-600 transition hover:bg-red-50"
+          className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-full border border-red-200 bg-surface px-4 py-2.5 text-[12.5px] font-bold text-red-600 transition hover:bg-red-50"
         >
           <X className="size-3.5" strokeWidth={2.6} />
           Réinitialiser

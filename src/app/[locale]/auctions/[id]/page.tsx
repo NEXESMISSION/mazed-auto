@@ -482,7 +482,7 @@ export default async function AuctionDetail({
           <div className="flex flex-wrap items-center gap-2">
             {isLive && (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-red-500 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-white shadow-[0_0_18px_rgba(239,68,68,0.55)]">
-                <span className="batta-pulse-dot size-1.5 rounded-full bg-white text-white/40" />
+                <span className="batta-pulse-dot size-1.5 rounded-full bg-gold text-gold/40" />
                 {t("auction.live")}
               </span>
             )}
@@ -574,7 +574,7 @@ export default async function AuctionDetail({
 
       {/* ─── HEADLINE PRICE + COUNTDOWN — auctions only ─── */}
       {!isDirect && (
-      <section className="relative mx-4 mt-5 overflow-hidden rounded-2xl border border-black/[0.07] bg-white">
+      <section className="relative mx-4 mt-5 overflow-hidden rounded-2xl border border-border bg-surface">
         <div className="relative p-6">
           <div className="flex items-baseline justify-between gap-3">
             <span className="batta-eyebrow inline-flex items-center gap-2">
@@ -982,7 +982,7 @@ export default async function AuctionDetail({
                   // buy-now flow). Login/KYC checks happen on the
                   // checkout page itself.
                   href={`/payment/checkout?type=buy_now&auction=${auction.id}` as never}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-black/55 px-3 py-1 text-[11.5px] text-white/85 ring-1 ring-white/15 backdrop-blur-sm transition hover:bg-black/70 hover:text-white"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-black/55 px-3 py-1 text-[11.5px] text-white/85 ring-1 ring-gold/20 backdrop-blur-sm transition hover:bg-black/70 hover:text-white"
                 >
                   {t("auction.buyNowFor")}{" "}
                   <span className="font-bold text-white">
@@ -1030,7 +1030,7 @@ function Spec({
   value: string;
 }) {
   return (
-    <div className="flex items-center gap-2 rounded-xl border border-black/[0.07] bg-white p-3">
+    <div className="flex items-center gap-2 rounded-xl border border-border bg-surface p-3">
       <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg bg-[var(--gold-faint)] text-gold">
         <Icon className="size-4" strokeWidth={2} />
       </span>

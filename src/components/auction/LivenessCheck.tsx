@@ -700,7 +700,7 @@ export function LivenessCheck({ onComplete, onCancel }: Props) {
               <div className="text-[11px] text-white/85 text-center">
                 {livePoseHint}
               </div>
-              <div className="h-1.5 rounded-full bg-white/15 overflow-hidden">
+              <div className="h-1.5 rounded-full bg-surface/40 overflow-hidden">
                 <div
                   className="h-full bg-[var(--gold)] transition-[width] duration-100"
                   style={{ width: `${Math.round(progress * 100)}%` }}

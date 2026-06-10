@@ -16,7 +16,7 @@ const FEATURES = [
 
 export function AuthHeroPanel() {
   return (
-    <div className="relative h-full w-full overflow-hidden bg-[#0d1b3d]">
+    <div className="relative h-full w-full overflow-hidden bg-[#141414]">
       <picture>
         <source srcSet="/auth-hero.avif" type="image/avif" />
         <source srcSet="/auth-hero.webp" type="image/webp" />
@@ -34,7 +34,7 @@ export function AuthHeroPanel() {
 
       <div className="relative flex h-full flex-col justify-between p-12">
         {/* Top — one brand pill */}
-        <span className="inline-flex w-fit items-center gap-2.5 rounded-full bg-white/10 px-4 py-2 text-[12.5px] font-bold text-white ring-1 ring-white/20 backdrop-blur">
+        <span className="inline-flex w-fit items-center gap-2.5 rounded-full bg-surface/40 px-4 py-2 text-[12.5px] font-bold text-white ring-1 ring-gold/20 backdrop-blur">
           <ShieldCheck className="size-4 shrink-0" strokeWidth={2} />
           La maison des enchères immobilières tunisiennes
         </span>
@@ -48,7 +48,7 @@ export function AuthHeroPanel() {
           <div className="mt-7 space-y-4">
             {FEATURES.map((f) => (
               <div key={f.title} className="flex items-center gap-3.5 text-white">
-                <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-white/12 ring-1 ring-white/20">
+                <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-surface/40 ring-1 ring-gold/20">
                   <f.Icon className="size-5" strokeWidth={2} />
                 </span>
                 <div>
@@ -61,11 +61,11 @@ export function AuthHeroPanel() {
 
           <div className="mt-8 flex items-center gap-3">
             <div className="flex -space-x-2.5">
-              {["#3b82f6", "#6366f1", "#0ea5e9", "#8b5cf6"].map((c, i) => (
+              {["#d4af37", "#b8941f", "#e8c668", "#8a6d18"].map((c, i) => (
                 <span
                   key={i}
                   aria-hidden
-                  className="size-8 rounded-full ring-2 ring-[#0d1b3d]"
+                  className="size-8 rounded-full ring-2 ring-[#141414]"
                   style={{ background: c }}
                 />
               ))}

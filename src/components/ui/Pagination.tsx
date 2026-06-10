@@ -126,7 +126,7 @@ function PageButton({
         aria-label={`Aller à la page ${page}`}
         onClick={onClick}
         disabled={disabled}
-        className="tap-target inline-flex h-9 min-w-9 items-center justify-center rounded-full px-3 text-[13px] font-bold text-white/80 transition-colors hover:bg-white/10 disabled:opacity-50"
+        className="tap-target inline-flex h-9 min-w-9 items-center justify-center rounded-full px-3 text-[13px] font-bold text-white/80 transition-colors hover:bg-surface/40 disabled:opacity-50"
       >
         {page}
       </button>
@@ -138,7 +138,7 @@ function PageButton({
       aria-label={`Aller à la page ${page}`}
       onClick={onClick}
       disabled={disabled}
-      className="tap-target inline-flex h-9 min-w-9 items-center justify-center rounded-full border border-[var(--border)] bg-white px-3 text-[13px] font-bold text-[var(--foreground-muted)] transition-colors hover:border-[var(--gold-soft)] hover:text-[var(--gold)] disabled:opacity-50"
+      className="tap-target inline-flex h-9 min-w-9 items-center justify-center rounded-full border border-[var(--border)] bg-surface px-3 text-[13px] font-bold text-[var(--foreground-muted)] transition-colors hover:border-[var(--gold-soft)] hover:text-[var(--gold)] disabled:opacity-50"
     >
       {page}
     </button>
@@ -177,7 +177,7 @@ function ArrowButton({
       onClick={onClick}
       disabled={disabled}
       aria-label={label}
-      className="tap-target inline-flex size-9 items-center justify-center rounded-full border border-[var(--border)] bg-white text-[var(--foreground-muted)] transition hover:border-[var(--gold-soft)] hover:text-[var(--gold)] disabled:opacity-30"
+      className="tap-target inline-flex size-9 items-center justify-center rounded-full border border-[var(--border)] bg-surface text-[var(--foreground-muted)] transition hover:border-[var(--gold-soft)] hover:text-[var(--gold)] disabled:opacity-30"
     >
       {children}
     </button>

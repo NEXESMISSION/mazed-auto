@@ -60,11 +60,11 @@ export function LiveCountdown({
       className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-bold tabular-nums ${
         urgent
           ? "bg-red-500 text-white"
-          : "bg-batta-surface-2 text-batta-gold ring-1 ring-batta-gold/30"
+          : "bg-surface-2 text-gold ring-1 ring-batta-gold/30"
       } ${compact ? "text-[10px]" : "text-xs"}`}
     >
       {urgent && (
-        <span className="batta-pulse-dot inline-flex size-1.5 rounded-full bg-white text-white/40" />
+        <span className="batta-pulse-dot inline-flex size-1.5 rounded-full bg-gold text-gold/40" />
       )}
       {label}
     </span>

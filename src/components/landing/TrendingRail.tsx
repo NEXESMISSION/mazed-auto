@@ -117,7 +117,7 @@ export function TrendingRail({
         type="button"
         aria-label="Précédent"
         onClick={() => scrollByDir(-1)}
-        className="absolute top-1/2 hidden size-10 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-white/90 text-foreground shadow-[0_8px_24px_-10px_rgba(15,23,42,0.4)] backdrop-blur transition hover:border-gold-soft hover:text-gold active:scale-95 lg:flex ltr:left-1 rtl:right-1"
+        className="absolute top-1/2 hidden size-10 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-surface/80 text-foreground shadow-[0_8px_24px_-10px_rgba(15,23,42,0.4)] backdrop-blur transition hover:border-gold-soft hover:text-gold active:scale-95 lg:flex ltr:left-1 rtl:right-1"
       >
         <ChevronLeft className="size-5 rtl:hidden" strokeWidth={2.4} />
         <ChevronRight className="hidden size-5 rtl:block" strokeWidth={2.4} />
@@ -126,7 +126,7 @@ export function TrendingRail({
         type="button"
         aria-label="Suivant"
         onClick={() => scrollByDir(1)}
-        className="absolute top-1/2 hidden size-10 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-white/90 text-foreground shadow-[0_8px_24px_-10px_rgba(15,23,42,0.4)] backdrop-blur transition hover:border-gold-soft hover:text-gold active:scale-95 lg:flex ltr:right-1 rtl:left-1"
+        className="absolute top-1/2 hidden size-10 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-surface/80 text-foreground shadow-[0_8px_24px_-10px_rgba(15,23,42,0.4)] backdrop-blur transition hover:border-gold-soft hover:text-gold active:scale-95 lg:flex ltr:right-1 rtl:left-1"
       >
         <ChevronRight className="size-5 rtl:hidden" strokeWidth={2.4} />
         <ChevronLeft className="hidden size-5 rtl:block" strokeWidth={2.4} />

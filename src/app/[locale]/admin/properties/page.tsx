@@ -259,7 +259,7 @@ export default async function AdminProperties({
                 <span
                   className={`batta-tabular inline-flex min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-extrabold ${
                     active
-                      ? "bg-white/25 text-white"
+                      ? "bg-surface/40 text-white"
                       : "bg-surface-2 text-foreground/85"
                   }`}
                 >

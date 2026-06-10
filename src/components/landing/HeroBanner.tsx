@@ -216,7 +216,7 @@ export function HeroBanner({
               aria-label="Précédent"
               onPointerDown={(e) => e.stopPropagation()}
               onClick={() => jumpTo(isRTL ? index + 1 : index - 1)}
-              className="absolute start-4 top-1/2 z-10 hidden size-10 -translate-y-1/2 place-items-center rounded-full bg-black/45 text-white ring-1 ring-white/15 backdrop-blur-sm transition hover:bg-black/70 lg:grid"
+              className="absolute start-4 top-1/2 z-10 hidden size-10 -translate-y-1/2 place-items-center rounded-full bg-black/45 text-white ring-1 ring-gold/20 backdrop-blur-sm transition hover:bg-black/70 lg:grid"
             >
               <ChevronLeft className="size-5" strokeWidth={2.5} />
             </button>
@@ -225,7 +225,7 @@ export function HeroBanner({
               aria-label="Suivant"
               onPointerDown={(e) => e.stopPropagation()}
               onClick={() => jumpTo(isRTL ? index - 1 : index + 1)}
-              className="absolute end-4 top-1/2 z-10 hidden size-10 -translate-y-1/2 place-items-center rounded-full bg-black/45 text-white ring-1 ring-white/15 backdrop-blur-sm transition hover:bg-black/70 lg:grid"
+              className="absolute end-4 top-1/2 z-10 hidden size-10 -translate-y-1/2 place-items-center rounded-full bg-black/45 text-white ring-1 ring-gold/20 backdrop-blur-sm transition hover:bg-black/70 lg:grid"
             >
               <ChevronRight className="size-5" strokeWidth={2.5} />
             </button>
@@ -245,7 +245,7 @@ export function HeroBanner({
                 className={`pointer-events-auto h-1.5 rounded-full transition-all duration-300 ${
                   i === index
                     ? "w-6 bg-gold shadow-[0_0_6px_rgba(30,58,138,0.35)]"
-                    : "w-1.5 bg-white/40 hover:bg-white/60"
+                    : "w-1.5 bg-surface/40 hover:bg-surface/40"
                 }`}
               />
             ))}
@@ -393,7 +393,7 @@ function BrandSlide({
         className="absolute inset-0"
         style={{
           background:
-            "radial-gradient(70% 60% at 50% 20%, rgba(212, 175, 55, 0.22) 0%, rgba(30, 58, 138, 0.0) 60%), linear-gradient(180deg, #0d1b3d 0%, #08122a 100%)",
+            "radial-gradient(70% 60% at 50% 20%, rgba(212, 175, 55, 0.22) 0%, rgba(30, 58, 138, 0.0) 60%), linear-gradient(180deg, #141414 0%, #08122a 100%)",
         }}
       />
       {/* Concentric gold arcs behind the headline — pure CSS, no asset. */}

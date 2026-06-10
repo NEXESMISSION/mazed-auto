@@ -116,7 +116,7 @@ function Slide({ item }: { item: EndingSoonItem }) {
       href={`/auctions/${item.id}` as `/auctions/${string}`}
       className="flex items-center gap-3 rounded-2xl bg-gradient-to-r from-red-600 to-red-500 p-3 text-white active:scale-[0.99] transition"
     >
-      <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/15">
+      <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-surface/40">
         <Flame className="size-4" />
       </span>
       <div className="min-w-0 flex-1">

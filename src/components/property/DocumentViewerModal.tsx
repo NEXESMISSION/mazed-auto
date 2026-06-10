@@ -64,7 +64,7 @@ export function DocumentViewerModal({
           download
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex h-9 w-9 items-center justify-center rounded-full text-white/85 transition hover:bg-white/10 active:scale-95"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-full text-white/85 transition hover:bg-surface/40 active:scale-95"
           aria-label="Télécharger le document"
           title="Télécharger"
         >
@@ -73,7 +73,7 @@ export function DocumentViewerModal({
         <button
           type="button"
           onClick={onClose}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-full text-white transition hover:bg-white/10 active:scale-95"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-full text-white transition hover:bg-surface/40 active:scale-95"
           aria-label="Fermer"
           autoFocus
         >
@@ -83,7 +83,7 @@ export function DocumentViewerModal({
       <iframe
         src={src}
         title={title}
-        className="w-full flex-1 border-0 bg-white"
+        className="w-full flex-1 border-0 bg-surface"
       />
     </div>,
     document.body,

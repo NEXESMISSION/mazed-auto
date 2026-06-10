@@ -26,7 +26,7 @@ type AttrKind = {
 };
 
 // Minimal skin — white surfaces, hairline borders, no heavy shadows.
-const CARD = "rounded-2xl border border-black/[0.07] bg-white";
+const CARD = "rounded-2xl border border-border bg-surface";
 
 /**
  * Desktop (lg+) auction detail — minimal & clean, photos-first.
@@ -152,7 +152,7 @@ export async function AuctionDesktop(props: {
             </span>
             {isLive && (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-red-500 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-white">
-                <span className="batta-pulse-dot size-1.5 rounded-full bg-white text-white/40" />
+                <span className="batta-pulse-dot size-1.5 rounded-full bg-gold text-gold/40" />
                 {t("auction.live")}
               </span>
             )}
@@ -185,12 +185,12 @@ export async function AuctionDesktop(props: {
       {/* Hero row — big gallery (left) + sticky action card (right) */}
       <div className="mt-5 grid grid-cols-12 items-start gap-8">
         <div className="col-span-7 min-w-0">
-          <div className="overflow-hidden rounded-2xl border border-black/[0.07]">
+          <div className="overflow-hidden rounded-2xl border border-border">
             <HeroCarousel photos={photos} alt={property.title}>
               <div className="pointer-events-none absolute inset-x-0 top-3 z-10 flex items-start justify-between gap-2 px-4">
                 {isLive && (
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-red-500 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-white">
-                    <span className="batta-pulse-dot size-1.5 rounded-full bg-white text-white/40" />
+                    <span className="batta-pulse-dot size-1.5 rounded-full bg-gold text-gold/40" />
                     {t("auction.live")}
                   </span>
                 )}
@@ -283,7 +283,7 @@ export async function AuctionDesktop(props: {
                       </Link>
                     )}
                     {hasBuyNow && !isOwner && (
-                      <Link href={`/payment/checkout?type=buy_now&auction=${auction.id}` as never} className="mt-2.5 inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-black/[0.08] px-4 py-2.5 text-[12.5px] font-bold text-foreground transition hover:border-gold/40">
+                      <Link href={`/payment/checkout?type=buy_now&auction=${auction.id}` as never} className="mt-2.5 inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-border px-4 py-2.5 text-[12.5px] font-bold text-foreground transition hover:border-gold/40">
                         {t("auction.buyNowFor")}{" "}
                         <span className="font-extrabold text-gold-bright">{formatTND(Number(auction.buy_now_price), locale)} {tnd}</span>
                       </Link>
@@ -314,7 +314,7 @@ export async function AuctionDesktop(props: {
                 )}
 
                 {!isEnded && (
-                  <div className="mt-4 flex items-center justify-between gap-2 border-t border-black/[0.06] pt-3.5">
+                  <div className="mt-4 flex items-center justify-between gap-2 border-t border-border pt-3.5">
                     <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted">
                       <ShieldCheck className="size-3.5 text-gold" strokeWidth={2} />
                       {depositRequired ? "Caution remboursable · séquestre" : "Sans caution"}
@@ -371,7 +371,7 @@ export async function AuctionDesktop(props: {
             </h2>
             <div className="mt-4 grid grid-cols-2 gap-x-8 gap-y-px sm:grid-cols-3">
               {specs.map((s) => (
-                <div key={s.key} className="flex items-center justify-between gap-3 border-b border-black/[0.05] py-2.5">
+                <div key={s.key} className="flex items-center justify-between gap-3 border-b border-border py-2.5">
                   <span className="inline-flex items-center gap-2 text-[12.5px] text-muted">
                     <Spec_Icon Icon={specIcon(s.key)} /> {s.label}
                   </span>
@@ -455,7 +455,7 @@ export async function AuctionDesktop(props: {
 
           {/* Map */}
           {property.lat != null && property.lng != null && (
-            <div className="overflow-hidden rounded-2xl border border-black/[0.07] [&>section]:!m-0 [&>section]:!rounded-2xl [&>section]:!border-0 [&>section]:!ring-0 [&_iframe]:!aspect-[4/3]">
+            <div className="overflow-hidden rounded-2xl border border-border [&>section]:!m-0 [&>section]:!rounded-2xl [&>section]:!border-0 [&>section]:!ring-0 [&_iframe]:!aspect-[4/3]">
               <PropertyMap lat={Number(property.lat)} lng={Number(property.lng)} address={property.address ?? property.governorate} />
             </div>
           )}

@@ -64,7 +64,7 @@ function SegmentChip({
       className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-2xl border border-batta-gold/20 bg-batta-surface px-3 py-2 ltr:me-2.5 rtl:ms-2.5"
       aria-hidden={ariaHidden}
     >
-      <span className="inline-flex size-7 items-center justify-center rounded-lg border border-batta-gold/30 bg-batta-surface-2 text-batta-gold">
+      <span className="inline-flex size-7 items-center justify-center rounded-lg border border-batta-gold/30 bg-surface-2 text-gold">
         <Icon className="size-3.5" />
       </span>
       <span className="text-xs font-semibold text-batta-cream">{label}</span>

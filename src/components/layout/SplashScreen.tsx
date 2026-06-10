@@ -89,7 +89,7 @@ export function SplashScreen() {
           under the logo. Cleaner than bouncing dots and on-brand with
           the linear/stripe-style premium loaders. */}
       <div
-        className="relative mt-10 h-[2px] w-40 overflow-hidden rounded-full bg-white/20"
+        className="relative mt-10 h-[2px] w-40 overflow-hidden rounded-full bg-surface/40"
         role="status"
         aria-label="Chargement"
       >

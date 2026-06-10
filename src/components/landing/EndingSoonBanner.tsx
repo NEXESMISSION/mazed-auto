@@ -83,7 +83,7 @@ export async function EndingSoonBanner() {
           href={`/auctions/${next.id}` as `/auctions/${string}`}
           className="batta-fade-up flex items-center gap-3 rounded-2xl bg-gradient-to-r from-red-600 to-red-500 p-3 text-white shadow-lg shadow-red-500/25 active:scale-[0.99] transition"
         >
-          <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/15">
+          <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-surface/40">
             <Flame className="size-4" />
           </span>
           <div className="min-w-0 flex-1">

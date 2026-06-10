@@ -1103,7 +1103,7 @@ export function SellForm({
                     return next;
                   })
                 }
-                className="absolute right-1.5 top-1.5 inline-flex size-7 items-center justify-center rounded-full bg-white/95 text-red-500 shadow-sm transition active:scale-90"
+                className="absolute right-1.5 top-1.5 inline-flex size-7 items-center justify-center rounded-full bg-surface/80 text-red-500 shadow-sm transition active:scale-90"
                 aria-label="Supprimer la photo"
               >
                 <Trash2 className="size-3.5" strokeWidth={2.2} />
@@ -1152,7 +1152,7 @@ export function SellForm({
                 onClick={() =>
                   setPhotos((p) => p.filter((_, idx) => idx !== i))
                 }
-                className="absolute right-1.5 top-1.5 inline-flex size-7 items-center justify-center rounded-full bg-white/95 text-red-500 shadow-sm transition active:scale-90"
+                className="absolute right-1.5 top-1.5 inline-flex size-7 items-center justify-center rounded-full bg-surface/80 text-red-500 shadow-sm transition active:scale-90"
                 aria-label="Supprimer la photo"
               >
                 <Trash2 className="size-3.5" strokeWidth={2.2} />
@@ -1452,7 +1452,7 @@ function StepBubble({
       ? "batta-gradient-gold text-white shadow-[var(--shadow-gold)]"
       : state === "done"
         ? "bg-[var(--gold-faint)] text-[var(--gold)] ring-1 ring-[var(--gold-soft)]"
-        : "bg-white text-[var(--foreground-muted)] ring-1 ring-[var(--border)]";
+        : "bg-surface text-[var(--foreground-muted)] ring-1 ring-[var(--border)]";
   const labelCls =
     state === "active"
       ? "text-[var(--gold)]"
@@ -1575,7 +1575,7 @@ function ListingTypeOption({
         "relative flex h-full flex-col rounded-2xl border p-4 text-start transition " +
         (active
           ? "border-[var(--gold)] bg-[var(--gold-faint)] shadow-[0_0_0_3px_var(--gold-faint),0_8px_20px_-12px_var(--gold-glow)]"
-          : "border-[var(--border)] bg-white hover:border-[var(--gold-soft)] hover:shadow-sm")
+          : "border-[var(--border)] bg-surface hover:border-[var(--gold-soft)] hover:shadow-sm")
       }
     >
       {/* Selected indicator — gold check pip in the top-right corner */}
@@ -1585,7 +1585,7 @@ function ListingTypeOption({
           "absolute right-3 top-3 inline-flex size-5 items-center justify-center rounded-full transition " +
           (active
             ? "batta-gradient-gold text-white shadow-[var(--shadow-gold)]"
-            : "border border-[var(--border)] bg-white")
+            : "border border-[var(--border)] bg-surface")
         }
       >
         {active && <Check className="size-3" strokeWidth={3} />}
@@ -1616,7 +1616,7 @@ function ListingTypeOption({
         className={
           "batta-tabular mt-3 inline-flex w-fit items-baseline gap-1 rounded-full px-2.5 py-1 text-[11px] font-extrabold " +
           (active
-            ? "bg-white text-[var(--gold)]"
+            ? "bg-surface text-[var(--gold)]"
             : "bg-[var(--gold-faint)] text-[var(--gold)]")
         }
       >
@@ -1629,7 +1629,7 @@ function ListingTypeOption({
 // ─── Form primitives — light theme to match the rest of the app ────────
 
 const FIELD_BASE =
-  "mt-1.5 w-full rounded-xl border border-[var(--border)] bg-white px-3.5 py-3 text-[14px] text-foreground placeholder:text-[var(--foreground-subtle)] transition focus:border-[var(--gold)] focus:outline-none focus:ring-2 focus:ring-[var(--gold-faint)]";
+  "mt-1.5 w-full rounded-xl border border-[var(--border)] bg-surface px-3.5 py-3 text-[14px] text-foreground placeholder:text-[var(--foreground-subtle)] transition focus:border-[var(--gold)] focus:outline-none focus:ring-2 focus:ring-[var(--gold-faint)]";
 
 function Field({
   label, type = "text", value, onChange, required, placeholder, dir,
@@ -1791,7 +1791,7 @@ function AttributeFields({
                   "inline-flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-[12.5px] font-semibold transition " +
                   (checked
                     ? "border-[var(--gold)] bg-[var(--gold-faint)] text-foreground"
-                    : "border-[var(--border)] bg-white text-[var(--foreground-muted)]")
+                    : "border-[var(--border)] bg-surface text-[var(--foreground-muted)]")
                 }
               >
                 <input
@@ -1839,10 +1839,10 @@ function Section({
   return (
     <section
       id={id}
-      className={`rounded-2xl border bg-white p-5 transition sm:p-6 ${
+      className={`rounded-2xl border bg-surface p-5 transition sm:p-6 ${
         highlight
           ? "border-[var(--gold)] ring-2 ring-[var(--gold)]/30"
-          : "border-black/[0.07]"
+          : "border-border"
       }`}
     >
       <header className="mb-3.5">
@@ -1882,7 +1882,7 @@ function DocKindRow({
   return (
     <div
       className={
-        "rounded-xl border bg-white p-3.5 transition " +
+        "rounded-xl border bg-surface p-3.5 transition " +
         (filled
           ? "border-emerald-300 bg-emerald-50/30"
           : "border-dashed border-[var(--border)]")
@@ -1929,7 +1929,7 @@ function DocKindRow({
       </div>
 
       {filled ? (
-        <div className="mt-3 flex items-center gap-2 rounded-lg border border-[var(--border)] bg-white px-3 py-2">
+        <div className="mt-3 flex items-center gap-2 rounded-lg border border-[var(--border)] bg-surface px-3 py-2">
           <FileText className="size-4 shrink-0 text-[var(--gold)]" strokeWidth={2} />
           <span className="batta-tabular flex-1 truncate text-[12px] font-semibold text-foreground">
             {file!.name}

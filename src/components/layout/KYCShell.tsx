@@ -73,7 +73,7 @@ export function KYCShell({
       )}
 
       {/* ── DESKTOP header (lg+) ── */}
-      <header className="hidden lg:block sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-[var(--border)]">
+      <header className="hidden lg:block sticky top-0 z-40 bg-surface/80 backdrop-blur-xl border-b border-[var(--border)]">
         <div className="max-w-[var(--max-w-content)] mx-auto px-8 h-16 flex items-center gap-6">
           {showNav && (
             <Link

@@ -75,7 +75,7 @@ export function PreBidGate({
   return (
     <div className="mx-auto w-full max-w-[560px]">
       <div
-        className={`relative overflow-hidden rounded-3xl border ${palette.ring} bg-white p-6 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.4)] lg:p-8`}
+        className={`relative overflow-hidden rounded-3xl border ${palette.ring} bg-surface p-6 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.4)] lg:p-8`}
       >
         {tone === "gold" && (
           <div
@@ -144,7 +144,7 @@ export function PreBidGate({
             className={cn(
               "group mt-6 inline-flex h-14 w-full items-center justify-center gap-2 rounded-full text-[14.5px] font-extrabold transition active:scale-[0.99]",
               tone === "warning"
-                ? "bg-amber-400 text-black shadow-[0_8px_24px_-6px_rgba(245,158,11,0.5)]"
+                ? "bg-amber-400 text-foreground shadow-[0_8px_24px_-6px_rgba(245,158,11,0.5)]"
                 : "batta-gradient-gold text-white shadow-[var(--shadow-gold)]",
             )}
           >

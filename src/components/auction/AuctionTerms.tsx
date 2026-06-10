@@ -70,7 +70,7 @@ export async function AuctionTerms({
   rows.push({ label: "Offres reçues", value: String(totalBids) });
 
   return (
-    <section className={`rounded-2xl border border-black/[0.07] bg-white p-6 ${className}`}>
+    <section className={`rounded-2xl border border-border bg-surface p-6 ${className}`}>
       <h2 className="batta-eyebrow flex items-center gap-2">
         <span aria-hidden className="batta-gold-rule-short" />
         Détails de l&apos;enchère
@@ -78,7 +78,7 @@ export async function AuctionTerms({
 
       {/* Caution — the headline figure, kept prominent */}
       <div className="mt-4 flex items-center gap-3 rounded-2xl bg-[var(--gold-faint)] p-4">
-        <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-2xl bg-white text-gold ring-1 ring-[var(--gold)]/25">
+        <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-2xl bg-surface text-gold ring-1 ring-[var(--gold)]/25">
           <Wallet className="size-5" strokeWidth={2} />
         </span>
         <div className="min-w-0">
@@ -90,7 +90,7 @@ export async function AuctionTerms({
           </div>
         </div>
         {depositRequired && (
-          <span className="ms-auto shrink-0 rounded-full bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--gold)] ring-1 ring-[var(--gold)]/25">
+          <span className="ms-auto shrink-0 rounded-full bg-surface px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--gold)] ring-1 ring-[var(--gold)]/25">
             Remboursable
           </span>
         )}

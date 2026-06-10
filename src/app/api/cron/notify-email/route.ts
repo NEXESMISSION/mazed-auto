@@ -78,11 +78,11 @@ function escapeHtml(s: string): string {
 
 function renderHtml(title: string, body: string, href: string | null): string {
   const cta = href
-    ? `<a href="${href}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#c9a227;color:#111;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px">Voir sur Batta.tn</a>`
+    ? `<a href="${href}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#d4af37;color:#111;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px">Voir sur Batta.tn</a>`
     : "";
   return `<!doctype html><html lang="fr"><body style="margin:0;background:#0e0e10;padding:24px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
     <div style="max-width:520px;margin:0 auto;background:#17171b;border:1px solid #2a2a30;border-radius:16px;padding:28px">
-      <div style="font-size:18px;font-weight:800;color:#c9a227;letter-spacing:.5px">Batta.tn</div>
+      <div style="font-size:18px;font-weight:800;color:#d4af37;letter-spacing:.5px">Batta.tn</div>
       <h1 style="font-size:18px;color:#f5f5f5;margin:18px 0 8px">${escapeHtml(title)}</h1>
       <p style="font-size:14px;line-height:1.6;color:#c8c8cc;margin:0">${escapeHtml(body)}</p>
       ${cta}

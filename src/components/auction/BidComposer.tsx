@@ -1045,7 +1045,7 @@ function ActiveComposer({
         className={cn(
           "space-y-2.5",
           "sticky bottom-0 z-30 -mx-4 px-4 py-3",
-          "bg-white/95 backdrop-blur-xl",
+          "bg-surface/80 backdrop-blur-xl",
           "border-t border-[var(--border)]",
           "pb-[calc(0.75rem+env(safe-area-inset-bottom))]",
           "lg:static lg:bottom-auto lg:mx-0 lg:px-0 lg:py-0",
@@ -1330,7 +1330,7 @@ function AmountInput({
                 "h-11 lg:h-9 px-3 lg:px-4 rounded-full text-[11px] lg:text-[12px] font-bold batta-tabular transition-colors",
                 amount === p.amount
                   ? "bg-[var(--gold)] text-white shadow-[var(--shadow-gold)]"
-                  : "bg-white border border-[var(--border-strong)] text-foreground hover:border-[var(--gold)] hover:text-[var(--gold)]",
+                  : "bg-surface border border-[var(--border-strong)] text-foreground hover:border-[var(--gold)] hover:text-[var(--gold)]",
               )}
             >
               {p.label}

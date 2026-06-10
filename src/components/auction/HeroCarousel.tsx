@@ -166,7 +166,7 @@ export function HeroCarousel({
               type="button"
               aria-label={t("gallery.prev")}
               onClick={() => go(-1)}
-              className="absolute top-1/2 z-20 -translate-y-1/2 inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-md ring-1 ring-white/20 hover:bg-black/75 active:scale-95 transition-all ltr:left-3 rtl:right-3"
+              className="absolute top-1/2 z-20 -translate-y-1/2 inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-md ring-1 ring-gold/20 hover:bg-black/75 active:scale-95 transition-all ltr:left-3 rtl:right-3"
             >
               <ChevronLeft className="h-5 w-5 ltr:block rtl:hidden" strokeWidth={2.5} />
               <ChevronRight className="h-5 w-5 ltr:hidden rtl:block" strokeWidth={2.5} />
@@ -175,13 +175,13 @@ export function HeroCarousel({
               type="button"
               aria-label={t("gallery.next")}
               onClick={() => go(1)}
-              className="absolute top-1/2 z-20 -translate-y-1/2 inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-md ring-1 ring-white/20 hover:bg-black/75 active:scale-95 transition-all ltr:right-3 rtl:left-3"
+              className="absolute top-1/2 z-20 -translate-y-1/2 inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-md ring-1 ring-gold/20 hover:bg-black/75 active:scale-95 transition-all ltr:right-3 rtl:left-3"
             >
               <ChevronRight className="h-5 w-5 ltr:block rtl:hidden" strokeWidth={2.5} />
               <ChevronLeft className="h-5 w-5 ltr:hidden rtl:block" strokeWidth={2.5} />
             </button>
 
-            <div className="absolute bottom-2 left-1/2 z-20 -translate-x-1/2 inline-flex items-center gap-1.5 rounded-full bg-black/45 px-2.5 py-1.5 backdrop-blur-md ring-1 ring-white/15">
+            <div className="absolute bottom-2 left-1/2 z-20 -translate-x-1/2 inline-flex items-center gap-1.5 rounded-full bg-black/45 px-2.5 py-1.5 backdrop-blur-md ring-1 ring-gold/20">
               {photos.map((p, i) => (
                 <button
                   key={p.id}
@@ -190,8 +190,8 @@ export function HeroCarousel({
                   onClick={() => jumpTo(i)}
                   className={`block h-1.5 rounded-full transition-all ${
                     i === activeDot
-                      ? "w-5 bg-white"
-                      : "w-1.5 bg-white/55 hover:bg-white/85"
+                      ? "w-5 bg-surface"
+                      : "w-1.5 bg-surface/40 hover:bg-surface/80"
                   }`}
                 />
               ))}

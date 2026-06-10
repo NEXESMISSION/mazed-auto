@@ -168,7 +168,7 @@ export default async function PaymentSuccess({
             </p>
             <Link
               href={safeReturn as `/${string}`}
-              className="mt-3 inline-flex items-center justify-center gap-2 w-full h-12 rounded-[var(--radius)] bg-gradient-to-b from-[var(--gold-bright)] to-[var(--gold)] text-black font-bold text-[14px] shadow-[var(--shadow-gold)] active:scale-[0.99] transition-all"
+              className="mt-3 inline-flex items-center justify-center gap-2 w-full h-12 rounded-[var(--radius)] bg-gradient-to-b from-[var(--gold-bright)] to-[var(--gold)] text-foreground font-bold text-[14px] shadow-[var(--shadow-gold)] active:scale-[0.99] transition-all"
             >
               Continuer
               <ArrowRight className="h-4 w-4" />

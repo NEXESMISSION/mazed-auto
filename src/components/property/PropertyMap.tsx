@@ -40,7 +40,7 @@ export function PropertyMap({
         className="aspect-[16/10] w-full border-0"
         referrerPolicy="no-referrer"
       />
-      <div className="flex items-center gap-3 border-t border-black/[0.07] bg-white px-3.5 py-2.5">
+      <div className="flex items-center gap-3 border-t border-border bg-surface px-3.5 py-2.5">
         <span className="flex min-w-0 flex-1 items-center gap-1.5 text-[11.5px] text-muted">
           <MapPin className="size-3.5 shrink-0 text-gold" strokeWidth={2} />
           <span className="truncate">

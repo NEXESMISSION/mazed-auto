@@ -324,7 +324,7 @@ export function BidHistoryRealtime({
                     className={cn(
                       "h-7 w-7 lg:h-9 lg:w-9 rounded-full flex items-center justify-center text-[10px] lg:text-[12px] font-bold shrink-0 batta-tabular",
                       isLeader
-                        ? "bg-[var(--gold)] text-black shadow-[var(--shadow-gold)]"
+                        ? "bg-[var(--gold)] text-foreground shadow-[var(--shadow-gold)]"
                         : "bg-[var(--surface-2)] text-[var(--foreground-muted)]",
                     )}
                   >

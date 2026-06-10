@@ -282,7 +282,7 @@ export function CheckoutClient({
                       ? `/${locale}/sell`
                       : `/${locale}/auctions/${auction.id}`
                   }
-                  className="inline-flex h-11 items-center justify-center rounded-[var(--radius)] bg-white border border-red-200 text-red-900 px-5 text-[13px] font-bold hover:border-red-400"
+                  className="inline-flex h-11 items-center justify-center rounded-[var(--radius)] bg-surface border border-red-200 text-red-900 px-5 text-[13px] font-bold hover:border-red-400"
                 >
                   {kind === "listing_fee" ? "Voir mes annonces" : "Retour à l'annonce"}
                 </a>

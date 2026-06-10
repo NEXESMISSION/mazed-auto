@@ -98,7 +98,7 @@ export function HeroShowcase({
             type="button"
             aria-label="Bien précédent"
             onClick={() => setIndex((i) => (i - 1 + total) % total)}
-            className="absolute start-3 top-1/2 z-20 grid size-9 -translate-y-1/2 place-items-center rounded-full bg-black/45 text-white ring-1 ring-white/15 backdrop-blur-sm transition hover:bg-black/70"
+            className="absolute start-3 top-1/2 z-20 grid size-9 -translate-y-1/2 place-items-center rounded-full bg-black/45 text-white ring-1 ring-gold/20 backdrop-blur-sm transition hover:bg-black/70"
           >
             <ChevronLeft className="size-5" strokeWidth={2.5} />
           </button>
@@ -106,7 +106,7 @@ export function HeroShowcase({
             type="button"
             aria-label="Bien suivant"
             onClick={() => setIndex((i) => (i + 1) % total)}
-            className="absolute end-3 top-1/2 z-20 grid size-9 -translate-y-1/2 place-items-center rounded-full bg-black/45 text-white ring-1 ring-white/15 backdrop-blur-sm transition hover:bg-black/70"
+            className="absolute end-3 top-1/2 z-20 grid size-9 -translate-y-1/2 place-items-center rounded-full bg-black/45 text-white ring-1 ring-gold/20 backdrop-blur-sm transition hover:bg-black/70"
           >
             <ChevronRight className="size-5" strokeWidth={2.5} />
           </button>
@@ -125,8 +125,8 @@ export function HeroShowcase({
               onClick={() => setIndex(i)}
               className={`h-1.5 rounded-full transition-all duration-300 ${
                 i === safeIndex
-                  ? "w-6 bg-white shadow-[0_0_8px_rgba(255,255,255,0.5)]"
-                  : "w-1.5 bg-white/45 hover:bg-white/70"
+                  ? "w-6 bg-surface shadow-[0_0_8px_rgba(255,255,255,0.5)]"
+                  : "w-1.5 bg-surface/40 hover:bg-surface/80"
               }`}
             />
           ))}
@@ -153,7 +153,7 @@ function SlideBody({
   return (
     <>
       {/* Base wash so a missing / broken photo still reads as a brand tile. */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#0d1b3d] to-[#08122a]" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[#141414] to-[#08122a]" />
 
       {showImage && (
         <Image
@@ -242,7 +242,7 @@ function BrandPanel({
       className="relative flex aspect-[4/3] w-full flex-col items-center justify-center overflow-hidden rounded-3xl p-8 text-center ring-1 ring-gold/25 shadow-[0_28px_60px_-26px_rgba(15,23,42,0.45)]"
       style={{
         background:
-          "radial-gradient(70% 60% at 50% 25%, rgba(30,58,138,0.30) 0%, rgba(8,18,42,0) 60%), linear-gradient(180deg, #0d1b3d 0%, #08122a 100%)",
+          "radial-gradient(70% 60% at 50% 25%, rgba(30,58,138,0.30) 0%, rgba(8,18,42,0) 60%), linear-gradient(180deg, #141414 0%, #08122a 100%)",
       }}
     >
       <h3

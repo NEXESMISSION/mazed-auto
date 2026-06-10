@@ -133,7 +133,7 @@ export async function PropertyCard({
           <div className="absolute top-2.5 start-2.5">
             {isEnded ? (
               <span className="inline-flex h-7 items-center gap-1.5 rounded-full bg-red-500 px-2.5 text-[10px] font-extrabold uppercase tracking-wider text-white shadow-[0_0_18px_rgba(239,68,68,0.55)]">
-                <span className="size-1.5 rounded-full bg-white" />
+                <span className="size-1.5 rounded-full bg-surface" />
                 {auction.status === "ended_sold" ? t("auction.sold") : t("auction.ended")}
               </span>
             ) : isLive ? (

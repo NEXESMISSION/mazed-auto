@@ -193,7 +193,7 @@ function Viewer({ src, alt, onClose }: { src: string; alt: string; onClose: () =
         className="max-h-[92vh] max-w-[94vw] select-none object-contain"
       />
 
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-white/10 px-3 py-1 text-[11px] font-medium text-white/70">
+      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-surface/40 px-3 py-1 text-[11px] font-medium text-white/70">
         Molette / pincer pour zoomer · glisser pour déplacer
       </div>
     </div>
@@ -215,7 +215,7 @@ function ControlButton({
         e.stopPropagation();
         onClick();
       }}
-      className="inline-flex size-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur transition hover:bg-white/20"
+      className="inline-flex size-10 items-center justify-center rounded-full bg-surface/40 text-white backdrop-blur transition hover:bg-surface/40"
     >
       {children}
     </button>

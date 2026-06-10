@@ -288,7 +288,7 @@ export default async function SellLandingPage({
 
       {/* ─── Earnings — the lead. Big available balance, the withdraw action
           right beside it, pending + commission as a quiet subline. ─── */}
-      <section className="mt-6 rounded-2xl border border-black/[0.07] bg-white p-6">
+      <section className="mt-6 rounded-2xl border border-border bg-surface p-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="min-w-0">
             <div className="batta-eyebrow flex items-center gap-1.5">
@@ -463,7 +463,7 @@ export default async function SellLandingPage({
             return (
               <li
                 key={p.id}
-                className="rounded-2xl border border-black/[0.07] bg-white p-4 transition hover:border-gold/30"
+                className="rounded-2xl border border-border bg-surface p-4 transition hover:border-gold/30"
               >
                 <Link
                   href={detailHref}
@@ -596,7 +596,7 @@ export default async function SellLandingPage({
               return (
                 <li
                   key={p.id}
-                  className="rounded-2xl border border-black/[0.07] bg-white p-3.5 flex items-center justify-between gap-3"
+                  className="rounded-2xl border border-border bg-surface p-3.5 flex items-center justify-between gap-3"
                 >
                   <div className="min-w-0">
                     <div className="batta-tabular text-[14px] font-bold text-foreground">
@@ -650,7 +650,7 @@ function Stat({
   highlight?: boolean;
 }) {
   return (
-    <div className="rounded-2xl border border-black/[0.07] bg-white px-2 py-4 text-center">
+    <div className="rounded-2xl border border-border bg-surface px-2 py-4 text-center">
       <div
         className={`batta-tabular text-[26px] font-extrabold leading-none ${
           highlight ? "gradient-gold-text" : "text-foreground"
@@ -764,7 +764,7 @@ function NewListingView({
 
         {/* Form — single column on mobile, framed card on desktop */}
         <div className="mt-5 lg:mt-0 lg:col-span-8">
-          <div className="lg:rounded-2xl lg:border lg:border-black/[0.07] lg:bg-white lg:p-8 lg:[&>form]:!mt-0">
+          <div className="lg:rounded-2xl lg:border lg:border-border lg:bg-surface lg:p-8 lg:[&>form]:!mt-0">
             <SellForm pricing={pricing} />
           </div>
         </div>

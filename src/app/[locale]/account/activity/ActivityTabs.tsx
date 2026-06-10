@@ -349,7 +349,7 @@ export function ActivityTabs({
               {count > 0 && (
                 <span
                   className={`batta-tabular ml-0.5 rounded-full px-1.5 text-[10px] font-extrabold ${
-                    on ? "bg-white/25" : "bg-surface text-foreground/70"
+                    on ? "bg-surface/40" : "bg-surface text-foreground/70"
                   }`}
                 >
                   {count}
