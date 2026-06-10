@@ -7,14 +7,14 @@ import type { ExploreFilter } from "@/components/explore/types";
 import { stripAccents } from "@/lib/search";
 
 export const metadata: Metadata = {
-  title: "Biens automobiles aux enchères",
+  title: "Voitures aux enchères",
   description:
-    "Parcourez les voitures en vente aux enchères et en vente directe partout en Tunisie — appartements, maisons, villas, terrains et locaux. Mises à prix transparentes sur Mazed Auto.",
+    "Parcourez les voitures en vente aux enchères et en vente directe partout en Tunisie — berlines, SUV, citadines, pick-ups et utilitaires. Mises à prix transparentes sur Mazed Auto.",
   alternates: { canonical: "/fr/properties" },
   openGraph: {
-    title: "Biens automobiles aux enchères — Mazed Auto",
+    title: "Voitures aux enchères — Mazed Auto",
     description:
-      "Tous les biens en vente aux enchères et en vente directe en Tunisie, en un seul endroit.",
+      "Toutes les voitures en vente aux enchères et en vente directe en Tunisie, en un seul endroit.",
     type: "website",
     url: "/fr/properties",
   },

@@ -178,7 +178,7 @@ export async function POST(
   // notification on approval.
   const admin = getServiceSupabase();
   if (admin) {
-    const titleClause = a.property.title ? `« ${a.property.title} »` : "ce bien";
+    const titleClause = a.property.title ? `« ${a.property.title} »` : "ce véhicule";
     await admin.rpc("enqueue_notification", {
       p_user_id: user.id,
       p_kind: "buy_now_initiated",

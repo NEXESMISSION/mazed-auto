@@ -87,7 +87,7 @@ export default async function KYCStatusPage({
             <h2 className="text-2xl font-extrabold">Identité vérifiée</h2>
             <p className="text-sm text-[var(--foreground-muted)] mt-2 leading-relaxed">
               {isPartner
-                ? "Vous pouvez publier vos biens et enchérir."
+                ? "Vous pouvez publier vos voitures et enchérir."
                 : "Vous pouvez enchérir et finaliser vos achats."}
             </p>
           </div>
@@ -108,7 +108,7 @@ export default async function KYCStatusPage({
             {isPartner ? (
               <>
                 <Link href="/sell">
-                  <Button size="lg" fullWidth>Publier un bien</Button>
+                  <Button size="lg" fullWidth>Publier une voiture</Button>
                 </Link>
                 <Link href="/properties">
                   <Button size="lg" variant="ghost" fullWidth>Voir les enchères</Button>

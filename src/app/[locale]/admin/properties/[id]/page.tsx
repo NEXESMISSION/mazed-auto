@@ -17,8 +17,8 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const KIND_TO_FR: Record<string, string> = {
-  apartment: "Appartement", house: "Maison", villa: "Villa", land: "Terrain",
-  commercial: "Local commercial", office: "Bureau", warehouse: "Entrepôt", farm: "Ferme",
+  sedan: "Berline", suv: "SUV / 4x4", hatchback: "Citadine", pickup: "Pick-up",
+  van: "Utilitaire", coupe: "Coupé", convertible: "Cabriolet", wagon: "Break",
 };
 
 const PAY_STATUS: Record<string, { label: string; tone: string }> = {

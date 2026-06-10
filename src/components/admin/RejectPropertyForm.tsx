@@ -34,7 +34,7 @@ const PRESETS: { label: string; text: string; category: RejectionCategory }[] = 
   {
     label: "Documents manquants",
     category: "documents",
-    text: "Des documents juridiques essentiels (titre foncier, certificat de propriété, permis de bâtir si villa) sont manquants. Merci de les joindre.",
+    text: "Des documents essentiels (carte grise, quitus fiscal, visite technique) sont manquants. Merci de les joindre.",
   },
   {
     label: "Adresse incomplète",

@@ -18,7 +18,7 @@ const ITEMS: Item[] = [
   { href: "/account/watchlist", label: "Favoris", Icon: Heart },
   { href: "/account/inspections", label: "Inspections", Icon: ClipboardCheck },
   { href: "/kyc/status", label: "Vérification (KYC)", Icon: ShieldCheck },
-  { href: "/sell", label: "Vendre un bien", Icon: Plus },
+  { href: "/sell", label: "Vendre une voiture", Icon: Plus },
 ];
 
 /**

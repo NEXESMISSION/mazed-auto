@@ -123,7 +123,7 @@ export function KYCNudgeModal() {
         <ul className="space-y-2.5 text-[12.5px]">
           <Benefit
             Icon={Gavel}
-            label="Enchérir sur les biens"
+            label="Enchérir sur les voitures"
             sub="Placez des offres en temps réel sur les ventes en cours."
           />
           <Benefit

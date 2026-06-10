@@ -129,7 +129,7 @@ export async function HomeDesktop({
   const fmt = (n: number) => n.toLocaleString("fr-FR");
   const secondStat =
     soldThisMonthCount > 0
-      ? { display: fmt(soldThisMonthCount), label: "Vendues ce mois-ci", sub: "Biens attribués", Icon: CheckCircle2, live: false }
+      ? { display: fmt(soldThisMonthCount), label: "Vendues ce mois-ci", sub: "Voitures attribuées", Icon: CheckCircle2, live: false }
       : scheduledCount > 0
         ? { display: fmt(scheduledCount), label: "Enchères à venir", sub: "Bientôt en ligne", Icon: CalendarClock, live: false }
         : { display: "100%", label: "Transactions vérifiées", sub: "KYC + caution", Icon: ShieldCheck, live: false };
@@ -228,7 +228,7 @@ export async function HomeDesktop({
                 href="/sell"
                 className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-6 py-3.5 text-[13px] font-bold text-foreground transition hover:border-gold-soft/60 hover:bg-gold-faint"
               >
-                Vendre un bien
+                Vendre une voiture
               </Link>
             </div>
 

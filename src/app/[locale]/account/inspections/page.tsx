@@ -99,7 +99,7 @@ export default async function MyInspectionsPage({
             href="/properties"
             className="batta-btn-luxe tap-target mt-5 inline-flex px-5 py-2.5 text-[12.5px]"
           >
-            Parcourir les biens
+            Parcourir les voitures
           </Link>
         </div>
       ) : (
