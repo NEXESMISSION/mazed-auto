@@ -102,23 +102,25 @@ export async function HomeDesktop({
   const isRTL = locale === "ar";
   const ChevronEnd = isRTL ? ChevronLeft : ChevronRight;
 
-  // The magazine hero draws its featured lot + runners from the richest
-  // pool we have (trending leads — it's already paid-placement + ends_at
-  // sorted), falling back through the other surfaces so the spread is
-  // always full even on a thin catalogue.
-  const heroPool: AuctionWithProperty[] = [
-    ...trending,
-    ...offers,
-    ...nouveautes,
-    ...recent,
-  ];
-
   // "Les plus disputées" — live lots ranked by bid count (distinct from
   // `trending`, which sorts by ends_at + paid placement).
   const hotNow = [...trending]
     .filter((a) => (a.bid_count ?? 0) > 0)
     .sort((x, y) => (y.bid_count ?? 0) - (x.bid_count ?? 0))
     .slice(0, 8);
+
+  // The magazine hero draws its featured lot + runners from the richest
+  // pool we have. Lead with the hottest lots so the "La plus disputée"
+  // badge is accurate (like v1's hot[0]); fall back through trending and
+  // the other surfaces so the spread is always full on a thin catalogue.
+  // DesktopHero dedupes by id, so the overlap with `trending` is harmless.
+  const heroPool: AuctionWithProperty[] = [
+    ...hotNow,
+    ...trending,
+    ...offers,
+    ...nouveautes,
+    ...recent,
+  ];
 
   // "Parcourir par marque" — distinct makes across the loaded surfaces,
   // ranked by lot count. Titles are "Make Model Year", so the leading
