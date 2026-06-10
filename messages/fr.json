@@ -72,7 +72,7 @@
     "heroSubtitle": "L'automobile aux enchères, 100% en ligne et vérifié.",
     "heroCta": "Rejoindre la liste d'attente",
     "heroSecondary": "Découvrir le fonctionnement",
-    "trustBar": "Banques, huissiers et agences agréés",
+    "trustBar": "Concessionnaires, experts et banques agréés",
     "valuesTitle": "Trois valeurs non négociables",
     "values": {
       "transparencyTitle": "Transparence",
@@ -91,7 +91,7 @@
       "s3Title": "3. Enchérisseurs vérifiés",
       "s3Body": "Vérifiés, avec 10% de garantie.",
       "s4Title": "4. Vente conclue légalement",
-      "s4Body": "Notaire agréé et inscription foncière."
+      "s4Body": "Transfert de carte grise officiel et sécurisé."
     },
     "auctionTypesTitle": "Trois types d'enchères pour chaque voiture",
     "auctionTypes": {
@@ -340,7 +340,7 @@
     "endsOn": "Fenêtre fermée {date}",
     "wonAt": "Remporté le {date}",
     "nextSteps": "Prochaines étapes",
-    "nextStepsBody": "Signature chez un notaire agréé. Commission 1% + solde dus avant signature.",
+    "nextStepsBody": "Transfert de carte grise officiel. Commission 1% + solde dus avant le transfert.",
     "viewAuction": "Voir l'enchère"
   },
   "watchlistApi": {

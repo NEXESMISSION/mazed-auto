@@ -79,7 +79,7 @@ export default async function InspectorsIndex() {
                 isRTL ? "font-arabic" : ""
               }`}
             >
-              Inspecteurs agréés
+              Mécaniciens & experts agréés
             </h2>
           </div>
           {inspectors && inspectors.length > 0 && (

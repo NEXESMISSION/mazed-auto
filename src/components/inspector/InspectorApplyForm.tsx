@@ -14,15 +14,15 @@ const GOVS = [
 ];
 
 const SPECIALITIES = [
-  { value: "architect", label: "Architect" },
-  { value: "civil_engineer", label: "Civil engineer" },
-  { value: "real_estate_expert", label: "Real-estate expert" },
-  { value: "property_lawyer", label: "Property lawyer" },
+  { value: "mechanic", label: "Mécanicien" },
+  { value: "diagnostic_center", label: "Centre de diagnostic" },
+  { value: "appraiser", label: "Expert automobile" },
+  { value: "body_shop", label: "Carrossier" },
 ];
 
 export function InspectorApplyForm() {
   const router = useRouter();
-  const [speciality, setSpeciality] = useState("architect");
+  const [speciality, setSpeciality] = useState("mechanic");
   const [govs, setGovs] = useState<string[]>([]);
   const [bio, setBio] = useState("");
   const [diploma, setDiploma] = useState<File | null>(null);

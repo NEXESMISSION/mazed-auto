@@ -58,37 +58,37 @@ export default async function PartnersLanding() {
               "Commission préférentielle 2%",
               "Gestionnaire dédié",
               "Calendrier d'enchères",
-              "Clôture juridique",
+              "Transfert de carte grise",
             ]}
           />
           <PartnerCard
             Icon={Building2}
-            kicker="Agences"
+            kicker="Concessionnaires"
             title="Concessionnaires"
-            body="Abonnements de 99 à 799 TND/mois. Badge agence vérifiée. Annonces mises en avant."
+            body="Abonnements de 99 à 799 TND/mois. Badge concessionnaire vérifié. Annonces mises en avant."
             cta="Voir les offres"
             ctaHref="/contact?segment=agency"
             isRTL={isRTL}
             perks={[
               "Annonces illimitées",
-              "Badge agence vérifiée",
+              "Badge concessionnaire vérifié",
               "Mises en avant mensuelles",
               "Jusqu'à 1% de remise",
             ]}
           />
           <PartnerCard
             Icon={Briefcase}
-            kicker="Huissiers"
-            title="Huissiers de justice"
-            body="Digitalisez les ventes judiciaires. 3 à 5× plus d'enchérisseurs, dans le cadre légal."
+            kicker="Crédit & flottes"
+            title="Organismes de crédit & flottes"
+            body="Reprises, fins de leasing et flottes : écoulez vos véhicules 3 à 5× plus vite, au meilleur prix."
             cta="Demander l'accréditation"
-            ctaHref="/contact?segment=bailiff"
+            ctaHref="/contact?segment=fleet"
             isRTL={isRTL}
             perks={[
               "3 premières enchères offertes",
-              "Avis auto-formatés",
-              "Fenêtre +1/6 sur 8 jours",
-              "Procès-verbaux numériques",
+              "Mise en ligne groupée",
+              "Reporting mensuel",
+              "Gestionnaire dédié",
             ]}
           />
         </div>

@@ -8,10 +8,10 @@ import { formatTND } from "@/lib/utils";
 type Inspector = { id: string; speciality: string; rating_avg: number; full_name: string };
 
 const KIND_FEES = {
-  // Plan §7 inspector pricing — TND
-  standard: { label: "Inspection standard (appartement / petite maison)", min: 200, max: 300 },
-  full: { label: "Inspection complète (villa, commercial, terrain)", min: 500, max: 800 },
-  virtual_live: { label: "Visite virtuelle en direct (pour la diaspora)", min: 300, max: 500 },
+  // Car diagnostic pricing — TND
+  standard: { label: "Diagnostic standard (visuel + scan OBD)", min: 120, max: 200 },
+  full: { label: "Diagnostic complet (mécanique, électrique, carrosserie)", min: 300, max: 500 },
+  virtual_live: { label: "Inspection vidéo en direct (pour la diaspora)", min: 150, max: 300 },
 } as const;
 
 type Kind = keyof typeof KIND_FEES;
