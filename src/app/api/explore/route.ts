@@ -15,11 +15,23 @@ type ExploreParams = {
   term: string;
   minPrice: number | null;
   maxPrice: number | null;
-  minArea: number | null;
-  minRooms: number | null;
+  // Car-spec filters (stored in properties.attributes jsonb).
+  fuel: string | null;
+  condition: string | null;
+  minYear: number | null;
+  maxYear: number | null;
+  maxKm: number | null;
   from: number;
   to: number;
 };
+
+const FUEL_VALUES = ["gasoline", "diesel", "hybrid", "electric"] as const;
+const CONDITION_VALUES = ["new", "excellent", "good", "fair", "damaged"] as const;
+
+function cleanEnum(v: string | null, allowed: readonly string[]): string | null {
+  const s = (v ?? "").trim().toLowerCase();
+  return allowed.includes(s) ? s : null;
+}
 
 // The explore feed is PUBLIC data only (browseable auctions on ready
 // properties — no per-user rows), so it's identical for everyone and safe to
@@ -55,8 +67,15 @@ const fetchExplore = unstable_cache(
     if (p.types.length > 0) q = q.in("property.type", p.types);
     if (p.gov) q = q.eq("property.governorate", p.gov);
     if (p.term) q = q.ilike("property.search_text", `%${stripAccents(p.term)}%`);
-    if (p.minArea !== null) q = q.gte("property.area_sqm", p.minArea);
-    if (p.minRooms !== null) q = q.gte("property.rooms", p.minRooms);
+    // Car-spec filters live in properties.attributes (jsonb). fuel +
+    // condition are exact text matches (->>). year + mileage MUST use the
+    // single-arrow (->) numeric form so the comparison is numeric — the
+    // text form would order "150000" before "50000" and break km/year.
+    if (p.fuel) q = q.eq("property.attributes->>fuel", p.fuel);
+    if (p.condition) q = q.eq("property.attributes->>condition", p.condition);
+    if (p.minYear !== null) q = q.gte("property.attributes->year", p.minYear);
+    if (p.maxYear !== null) q = q.lte("property.attributes->year", p.maxYear);
+    if (p.maxKm !== null) q = q.lte("property.attributes->mileage", p.maxKm);
     // Single coalesced, indexed effective price (0119) — the price actually
     // shown on the card. Replaces the old or(current,sale,opening) which both
     // defeated indexes and wrongly matched a bid-up lot via its low opening.
@@ -87,8 +106,11 @@ const fetchExplore = unstable_cache(
  *   gov        = governorate exact match (e.g. "Tunis")
  *   min_price  = numeric; filtered against current/sale/opening price
  *   max_price  = numeric
- *   min_area   = numeric m²
- *   min_rooms  = numeric
+ *   fuel       = gasoline | diesel | hybrid | electric
+ *   condition  = new | excellent | good | fair | damaged
+ *   min_year   = numeric (model year)
+ *   max_year   = numeric
+ *   max_km     = numeric (max mileage)
  *   page       = 1-based page number (default 1)
  *   limit      = 1..24  (default 12)
  *
@@ -136,8 +158,11 @@ export const GET = withRouteLogger(async (req: NextRequest) => {
   const term = (sp.get("q") ?? "").trim().slice(0, 60).replace(/[,()*%]/g, " ").trim();
   const minPrice = numOrNull(sp.get("min_price"));
   const maxPrice = numOrNull(sp.get("max_price"));
-  const minArea = numOrNull(sp.get("min_area"));
-  const minRooms = numOrNull(sp.get("min_rooms"));
+  const fuel = cleanEnum(sp.get("fuel"), FUEL_VALUES);
+  const condition = cleanEnum(sp.get("condition"), CONDITION_VALUES);
+  const minYear = numOrNull(sp.get("min_year"));
+  const maxYear = numOrNull(sp.get("max_year"));
+  const maxKm = numOrNull(sp.get("max_km"));
 
   const page = clamp(Number(sp.get("page") ?? 1), 1, 9999);
   const limit = clamp(Number(sp.get("limit") ?? 12), 1, 24);
@@ -146,7 +171,8 @@ export const GET = withRouteLogger(async (req: NextRequest) => {
 
   const stopTimer = xLog.time("explore.select");
   const { items, count, error } = await fetchExplore({
-    filter, types, gov, term, minPrice, maxPrice, minArea, minRooms, from, to,
+    filter, types, gov, term, minPrice, maxPrice,
+    fuel, condition, minYear, maxYear, maxKm, from, to,
   });
   stopTimer();
 

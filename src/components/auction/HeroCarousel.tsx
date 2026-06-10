@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Car } from "lucide-react";
 import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
 import { IMAGE_BLUR_MAP } from "@/lib/imageBlurMap";
 
@@ -150,8 +150,8 @@ export function HeroCarousel({
               })}
             </div>
           ) : (
-            <div className="flex h-full items-center justify-center text-7xl text-foreground/15">
-              🏛️
+            <div className="flex h-full items-center justify-center text-gold/15">
+              <Car className="size-24" strokeWidth={1.25} />
             </div>
           )}
         </div>

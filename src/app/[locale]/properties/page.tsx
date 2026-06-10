@@ -27,6 +27,14 @@ const VALID_TYPES: PropertyType[] = [
   "van", "coupe", "convertible", "wagon",
 ];
 
+const FUEL_VALUES = ["gasoline", "diesel", "hybrid", "electric"] as const;
+const CONDITION_VALUES = ["new", "excellent", "good", "fair", "damaged"] as const;
+
+function cleanEnum(v: string | null | undefined, allowed: readonly string[]): string | null {
+  const s = (v ?? "").trim().toLowerCase();
+  return allowed.includes(s) ? s : null;
+}
+
 type ExploreQueryParams = {
   filter: ExploreFilter;
   types: PropertyType[];
@@ -34,8 +42,12 @@ type ExploreQueryParams = {
   term: string;
   minPrice: number | null;
   maxPrice: number | null;
-  minArea: number | null;
-  minRooms: number | null;
+  // Car-spec filters (properties.attributes jsonb).
+  fuel: string | null;
+  condition: string | null;
+  minYear: number | null;
+  maxYear: number | null;
+  maxKm: number | null;
   from: number;
   to: number;
 };
@@ -85,8 +97,14 @@ const getExploreFeed = unstable_cache(
       // column (migration 0062) — diacritic-insensitive, trigram-indexed.
       q = q.ilike("property.search_text", `%${stripAccents(p.term)}%`);
     }
-    if (p.minArea !== null) q = q.gte("property.area_sqm", p.minArea);
-    if (p.minRooms !== null) q = q.gte("property.rooms", p.minRooms);
+    // Car-spec filters in properties.attributes (jsonb). fuel/condition are
+    // exact text (->>). year/mileage use single-arrow (->) numeric form so
+    // the comparison is numeric, not lexicographic — see the explore route.
+    if (p.fuel) q = q.eq("property.attributes->>fuel", p.fuel);
+    if (p.condition) q = q.eq("property.attributes->>condition", p.condition);
+    if (p.minYear !== null) q = q.gte("property.attributes->year", p.minYear);
+    if (p.maxYear !== null) q = q.lte("property.attributes->year", p.maxYear);
+    if (p.maxKm !== null) q = q.lte("property.attributes->mileage", p.maxKm);
     // Single coalesced, indexed effective price (0119) — see the explore route.
     if (p.minPrice !== null) q = q.gte("effective_price", p.minPrice);
     if (p.maxPrice !== null) q = q.lte("effective_price", p.maxPrice);
@@ -122,8 +140,11 @@ export default async function ExplorePage({
     q?: string;
     min_price?: string;
     max_price?: string;
-    min_area?: string;
-    min_rooms?: string;
+    fuel?: string;
+    condition?: string;
+    min_year?: string;
+    max_year?: string;
+    max_km?: string;
     page?: string;
   }>;
 }) {
@@ -141,8 +162,11 @@ export default async function ExplorePage({
   const term = (sp.q ?? "").trim().slice(0, 60).replace(/[,()*%]/g, " ").trim();
   const minPrice = numOrNull(sp.min_price);
   const maxPrice = numOrNull(sp.max_price);
-  const minArea = numOrNull(sp.min_area);
-  const minRooms = numOrNull(sp.min_rooms);
+  const fuel = cleanEnum(sp.fuel, FUEL_VALUES);
+  const condition = cleanEnum(sp.condition, CONDITION_VALUES);
+  const minYear = numOrNull(sp.min_year);
+  const maxYear = numOrNull(sp.max_year);
+  const maxKm = numOrNull(sp.max_km);
   const initialPage = clamp(Number(sp.page ?? 1), 1, 9999);
   const from = (initialPage - 1) * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
@@ -161,8 +185,11 @@ export default async function ExplorePage({
       term,
       minPrice,
       maxPrice,
-      minArea,
-      minRooms,
+      fuel,
+      condition,
+      minYear,
+      maxYear,
+      maxKm,
       from,
       to,
     });
@@ -195,8 +222,11 @@ export default async function ExplorePage({
         gov,
         minPrice,
         maxPrice,
-        minArea,
-        minRooms,
+        fuel,
+        condition,
+        minYear,
+        maxYear,
+        maxKm,
       }}
     />
   );

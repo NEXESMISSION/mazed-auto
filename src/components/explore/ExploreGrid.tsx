@@ -28,6 +28,7 @@ import {
   Search,
   X,
   Clock,
+  Car,
 } from "lucide-react";
 import type { ExploreFilter } from "./types";
 import type { PropertyType } from "@/lib/types";
@@ -57,8 +58,12 @@ export type ExtraFilters = {
   gov: string | null;
   minPrice: number | null;
   maxPrice: number | null;
-  minArea: number | null;
-  minRooms: number | null;
+  // Car-spec filters (properties.attributes jsonb).
+  fuel: string | null;
+  condition: string | null;
+  minYear: number | null;
+  maxYear: number | null;
+  maxKm: number | null;
 };
 
 const EMPTY_FILTERS: ExtraFilters = {
@@ -66,8 +71,11 @@ const EMPTY_FILTERS: ExtraFilters = {
   gov: null,
   minPrice: null,
   maxPrice: null,
-  minArea: null,
-  minRooms: null,
+  fuel: null,
+  condition: null,
+  minYear: null,
+  maxYear: null,
+  maxKm: null,
 };
 
 function activeCount(f: ExtraFilters) {
@@ -76,10 +84,28 @@ function activeCount(f: ExtraFilters) {
   if (f.gov) n++;
   if (f.minPrice !== null) n++;
   if (f.maxPrice !== null) n++;
-  if (f.minArea !== null) n++;
-  if (f.minRooms !== null) n++;
+  if (f.fuel) n++;
+  if (f.condition) n++;
+  if (f.minYear !== null) n++;
+  if (f.maxYear !== null) n++;
+  if (f.maxKm !== null) n++;
   return n;
 }
+
+const FUELS: { v: string; l: string }[] = [
+  { v: "gasoline", l: "Essence" },
+  { v: "diesel", l: "Diesel" },
+  { v: "hybrid", l: "Hybride" },
+  { v: "electric", l: "Électrique" },
+];
+
+const CONDITIONS: { v: string; l: string }[] = [
+  { v: "new", l: "Neuf" },
+  { v: "excellent", l: "Excellent" },
+  { v: "good", l: "Bon" },
+  { v: "fair", l: "Acceptable" },
+  { v: "damaged", l: "Endommagé" },
+];
 
 const GRID_PAGE_SIZE = 12;
 
@@ -99,8 +125,11 @@ function buildQuery(
   if (extra.gov) p.set("gov", extra.gov);
   if (extra.minPrice !== null) p.set("min_price", String(extra.minPrice));
   if (extra.maxPrice !== null) p.set("max_price", String(extra.maxPrice));
-  if (extra.minArea !== null) p.set("min_area", String(extra.minArea));
-  if (extra.minRooms !== null) p.set("min_rooms", String(extra.minRooms));
+  if (extra.fuel) p.set("fuel", extra.fuel);
+  if (extra.condition) p.set("condition", extra.condition);
+  if (extra.minYear !== null) p.set("min_year", String(extra.minYear));
+  if (extra.maxYear !== null) p.set("max_year", String(extra.maxYear));
+  if (extra.maxKm !== null) p.set("max_km", String(extra.maxKm));
   return p.toString();
 }
 
@@ -441,7 +470,7 @@ function GridPill({
       aria-pressed={active}
       className={`inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-4 text-[12.5px] font-semibold transition-colors disabled:opacity-50 ${
         active
-          ? "border-[var(--gold)] bg-[var(--gold)] text-white"
+          ? "border-[var(--gold)] bg-[var(--gold)] text-black"
           : "border-[var(--border)] bg-surface text-[var(--foreground-muted)] hover:border-[var(--gold-soft)] hover:text-[var(--gold)]"
       }`}
     >
@@ -499,23 +528,39 @@ function GridCard({
               const src = propertyPhotoUrl(heroPhoto.storage_path);
               const blur = IMAGE_BLUR_MAP[heroPhoto.storage_path];
               const unoptimized = isStaticSeedPath(src);
+              const sizes =
+                "(min-width: 1024px) 240px, (min-width: 640px) 33vw, 50vw";
               return (
-                <Image
-                  src={src}
-                  alt={property.title}
-                  fill
-                  sizes="(min-width: 1024px) 240px, (min-width: 640px) 33vw, 50vw"
-                  priority={priority}
-                  placeholder={blur ? "blur" : "empty"}
-                  blurDataURL={blur}
-                  unoptimized={unoptimized}
-                  className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-                />
+                <>
+                  {/* Blurred fill behind an object-contain photo so the whole
+                      car shows and is never cropped — matches the home cards. */}
+                  <Image
+                    src={src}
+                    alt=""
+                    aria-hidden
+                    fill
+                    sizes={sizes}
+                    unoptimized={unoptimized}
+                    className="scale-125 object-cover blur-2xl"
+                  />
+                  <div className="pointer-events-none absolute inset-0 bg-black/15" />
+                  <Image
+                    src={src}
+                    alt={property.title}
+                    fill
+                    sizes={sizes}
+                    priority={priority}
+                    placeholder={blur ? "blur" : "empty"}
+                    blurDataURL={blur}
+                    unoptimized={unoptimized}
+                    className="relative object-contain transition-transform duration-500 group-hover:scale-[1.03]"
+                  />
+                </>
               );
             })()
           ) : (
-            <div className="flex h-full items-center justify-center text-5xl text-foreground/15">
-              🏛️
+            <div className="flex h-full items-center justify-center text-gold/20">
+              <Car className="size-14" strokeWidth={1.5} />
             </div>
           )}
 
@@ -653,6 +698,41 @@ function FilterLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** Single-select chip row (fuel / condition) — clicking the active chip
+ *  clears it back to null. Same chip styling as the type filters. */
+function SinglePills({
+  options,
+  value,
+  onPick,
+}: {
+  options: { v: string; l: string }[];
+  value: string | null;
+  onPick: (v: string) => void;
+}) {
+  return (
+    <div className="mt-1.5 flex flex-wrap gap-1.5">
+      {options.map((o) => {
+        const active = value === o.v;
+        return (
+          <button
+            key={o.v}
+            type="button"
+            onClick={() => onPick(o.v)}
+            aria-pressed={active}
+            className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+              active
+                ? "border-[var(--gold)] bg-[var(--gold)] text-black"
+                : "border-[var(--border)] bg-surface text-[var(--foreground-muted)] hover:border-[var(--gold-soft)] hover:text-[var(--gold)]"
+            }`}
+          >
+            {o.l}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function FilterPanel({
   initial,
   onApply,
@@ -697,6 +777,10 @@ function FilterPanel({
     }));
   };
 
+  // Single-select chips (fuel / condition): clicking the active one clears it.
+  const setStr = (key: "fuel" | "condition") => (val: string) =>
+    setDraft((d) => ({ ...d, [key]: d[key] === val ? null : val }));
+
   return (
     <div className={sidebar ? "rounded-2xl border border-border bg-surface p-4" : "border-b border-border bg-surface px-4 py-4 lg:px-6"}>
       {sidebar && (
@@ -720,7 +804,7 @@ function FilterPanel({
                 aria-pressed={segment === s.key}
                 className={`rounded-lg border px-2 py-1.5 text-[11.5px] font-bold transition-colors disabled:opacity-50 ${
                   segment === s.key
-                    ? "border-[var(--gold)] bg-[var(--gold)] text-white"
+                    ? "border-[var(--gold)] bg-[var(--gold)] text-black"
                     : "border-[var(--border)] bg-surface text-[var(--foreground-muted)] hover:border-[var(--gold-soft)] hover:text-[var(--gold)]"
                 }`}
               >
@@ -746,7 +830,7 @@ function FilterPanel({
                   aria-pressed={active}
                   className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
                     active
-                      ? "border-[var(--gold)] bg-[var(--gold)] text-white"
+                      ? "border-[var(--gold)] bg-[var(--gold)] text-black"
                       : "border-[var(--border)] bg-surface text-[var(--foreground-muted)] hover:border-[var(--gold-soft)] hover:text-[var(--gold)]"
                   }`}
                 >
@@ -796,6 +880,52 @@ function FilterPanel({
           value={draft.maxPrice ?? ""}
           onChange={(e) => setNum("maxPrice")(e.target.value)}
           className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-[13px] tabular-nums"
+        />
+      </div>
+
+      {/* Carburant */}
+      <div className="mt-4">
+        <FilterLabel>Carburant</FilterLabel>
+        <SinglePills options={FUELS} value={draft.fuel} onPick={setStr("fuel")} />
+      </div>
+
+      {/* État */}
+      <div className="mt-4">
+        <FilterLabel>État</FilterLabel>
+        <SinglePills options={CONDITIONS} value={draft.condition} onPick={setStr("condition")} />
+      </div>
+
+      {/* Année + kilométrage */}
+      <div className={`mt-3 grid grid-cols-1 gap-2 ${sidebar ? "grid-cols-2" : "sm:grid-cols-3"}`}>
+        <input
+          type="number"
+          inputMode="numeric"
+          min={0}
+          placeholder="Année min"
+          aria-label="Année minimum"
+          value={draft.minYear ?? ""}
+          onChange={(e) => setNum("minYear")(e.target.value)}
+          className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-[13px] tabular-nums"
+        />
+        <input
+          type="number"
+          inputMode="numeric"
+          min={0}
+          placeholder="Année max"
+          aria-label="Année maximum"
+          value={draft.maxYear ?? ""}
+          onChange={(e) => setNum("maxYear")(e.target.value)}
+          className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-[13px] tabular-nums"
+        />
+        <input
+          type="number"
+          inputMode="numeric"
+          min={0}
+          placeholder="Km max"
+          aria-label="Kilométrage maximum"
+          value={draft.maxKm ?? ""}
+          onChange={(e) => setNum("maxKm")(e.target.value)}
+          className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-[13px] tabular-nums sm:col-span-1"
         />
       </div>
 
