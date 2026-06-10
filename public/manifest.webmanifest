@@ -1,16 +1,16 @@
 {
-  "name": "Batta — Tunisia Real Estate Auctions",
-  "short_name": "Batta",
-  "description": "Tunisia's first dedicated real-estate auction platform. Transparency. Speed. Trust.",
+  "name": "Mazed Auto — Enchères automobiles",
+  "short_name": "Mazed Auto",
+  "description": "La première plateforme tunisienne d'enchères automobiles. Transparence. Rapidité. Confiance.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#ffffff",
-  "theme_color": "#ffffff",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
   "lang": "fr",
   "dir": "ltr",
-  "categories": ["finance", "business", "shopping"],
+  "categories": ["automotive", "finance", "business", "shopping"],
   "icons": [
     {
       "src": "/logo-square.png",
@@ -39,14 +39,14 @@
   ],
   "shortcuts": [
     {
-      "name": "Browse properties",
-      "short_name": "Browse",
+      "name": "Parcourir les voitures",
+      "short_name": "Parcourir",
       "url": "/properties",
       "icons": [{ "src": "/logo-square.png", "sizes": "any", "type": "image/png" }]
     },
     {
-      "name": "My activity",
-      "short_name": "Activity",
+      "name": "Mon activité",
+      "short_name": "Activité",
       "url": "/account/activity",
       "icons": [{ "src": "/logo-square.png", "sizes": "any", "type": "image/png" }]
     }

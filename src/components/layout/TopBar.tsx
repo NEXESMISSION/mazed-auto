@@ -109,16 +109,24 @@ function BrandMark() {
   // also `<link rel="preload">`-ed in the root layout, so by the
   // time this paints it's already in cache.
   return (
-    <Link href="/" className="flex items-center" aria-label={t("name")}>
-      <Image
-        src="/logo.png"
-        alt={t("name")}
-        width={257}
-        height={80}
-        priority
-        sizes="116px"
-        className="h-8 w-auto shrink-0 lg:h-9"
-      />
+    <Link href="/" className="flex items-center gap-2" aria-label={t("name")}>
+      {/* Round MA monogram avatar + gold wordmark — matches v1. The
+          square logo is shown in a round, object-cover box so it is
+          never stretched. */}
+      <span className="size-9 shrink-0 overflow-hidden rounded-full ring-1 ring-[var(--gold-soft)]/60">
+        <Image
+          src="/logo.png"
+          alt=""
+          width={72}
+          height={72}
+          priority
+          sizes="36px"
+          className="h-full w-full object-cover"
+        />
+      </span>
+      <span className="text-[17px] font-extrabold tracking-tight gradient-gold-text">
+        {t("name")}
+      </span>
     </Link>
   );
 }

@@ -8,7 +8,7 @@
 //   - Other GETs     : stale-while-revalidate into RUNTIME_CACHE.
 //   - Cross-origin & non-GET: passthrough, never cached.
 
-const VERSION = "mazed-auto-v5";
+const VERSION = "mazed-auto-v6";
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 const ASSET_CACHE = `${VERSION}-assets`;
 const IMAGE_CACHE = `${VERSION}-images`;

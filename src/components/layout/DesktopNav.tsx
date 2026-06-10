@@ -73,16 +73,28 @@ export function DesktopNav() {
       <div className="mx-auto flex h-full w-full max-w-[var(--max-w-wide)] items-center gap-6 px-8">
         {/* ── Left zone: brand + primary links ── */}
         <div className="flex shrink-0 items-center gap-7">
-          <Link href="/" className="flex shrink-0 items-center" aria-label="Mazed Auto">
-            <Image
-              src="/logo.png"
-              alt="Mazed Auto"
-              width={257}
-              height={80}
-              priority
-              sizes="128px"
-              className="h-9 w-auto"
-            />
+          <Link
+            href="/"
+            className="flex shrink-0 items-center gap-2.5"
+            aria-label="Mazed Auto"
+          >
+            {/* Round MA monogram avatar + gold wordmark — matches v1's
+                desktop header (the square logo must NOT be stretched into a
+                wide box, which distorted the monogram). */}
+            <span className="size-9 shrink-0 overflow-hidden rounded-full ring-1 ring-[var(--gold-soft)]/60">
+              <Image
+                src="/logo.png"
+                alt=""
+                width={72}
+                height={72}
+                priority
+                sizes="36px"
+                className="h-full w-full object-cover"
+              />
+            </span>
+            <span className="text-lg font-extrabold tracking-tight gradient-gold-text">
+              Mazed Auto
+            </span>
           </Link>
 
           <nav className="flex items-center gap-1" aria-label="Navigation principale">
