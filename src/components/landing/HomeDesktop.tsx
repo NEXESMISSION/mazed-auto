@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Suspense } from "react";
 import { getTranslations, getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
@@ -6,27 +7,31 @@ import { TrendingRail } from "@/components/landing/TrendingRail";
 import { EndingSoonBanner } from "@/components/landing/EndingSoonBanner";
 import { HeroBanner, type HeroSlide } from "@/components/landing/HeroBanner";
 import { DesktopHero } from "@/components/landing/DesktopHero";
+import { BrandRail } from "@/components/landing/BrandRail";
 import { PropertyCard } from "@/components/property/PropertyCard";
+import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
+import { formatTND, cn } from "@/lib/utils";
 import type { AuctionWithProperty } from "@/lib/types";
 import {
   ArrowUpRight,
   ChevronRight,
   ChevronLeft,
-  ShieldCheck,
-  ClipboardCheck,
-  Scale,
-  Lock,
   Car,
   Truck,
+  Gavel,
+  Trophy,
+  MapPin,
+  Tag,
 } from "lucide-react";
 
 /**
  * Desktop (lg+) home surface. The signature piece is the cinematic
  * MAGAZINE HERO at the top — 1 large featured lot + 3 stacked runner
  * cards over a blurred-photo backdrop — ported from the original
- * mazed-auto home (see DesktopHero.tsx). Below it, every listing
- * surface is an AUTO-SLIDING carousel (TrendingRail), then editorial
- * bands (browse, trust, footer) close the page.
+ * mazed-auto home (see DesktopHero.tsx). Below it the feed is grouped
+ * by editorial SECTION DIVIDERS ("Enchères en direct" vs "Récemment
+ * vendues") just like v1, each listing surface is an AUTO-SLIDING
+ * carousel, and the page closes on the twin-pillar buyers/sellers CTA.
  *
  * Kept in its own file so the mobile tree in the route's page.tsx is
  * never touched; rendered behind `hidden lg:block`, so it costs nothing
@@ -45,8 +50,6 @@ type HammeredRow = {
   };
 };
 
-// Labels come from i18n (`property.types.<key>`); the tile art is a
-// pre-optimized illustration at /icons/<key>.{avif,webp}.
 const PROPERTY_TYPES: { key: string }[] = [
   { key: "sedan" },
   { key: "suv" },
@@ -63,23 +66,12 @@ const PRICE_BUCKETS: { key: string; label: string; query: string }[] = [
   { key: "120k-plus", label: "120k+ TND",    query: "min_price=120000" },
 ];
 
-const TRUST_PILLARS: {
-  key: string;
-  titleKey: string;
-  bodyKey: string;
-  Icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
-}[] = [
-  { key: "escrow",     titleKey: "home.trustEscrowTitle",     bodyKey: "home.trustEscrowBody",     Icon: Lock },
-  { key: "kyc",        titleKey: "home.trustKycTitle",        bodyKey: "home.trustKycBody",        Icon: ShieldCheck },
-  { key: "inspection", titleKey: "home.trustInspectionTitle", bodyKey: "home.trustInspectionBody", Icon: ClipboardCheck },
-  { key: "legal",      titleKey: "home.trustLegalTitle",      bodyKey: "home.trustLegalBody",      Icon: Scale },
-];
-
 export async function HomeDesktop({
   trending,
   offers,
   nouveautes,
   recent,
+  hammered,
   savedIds,
   loggedIn,
   liveCount,
@@ -121,6 +113,29 @@ export async function HomeDesktop({
     ...recent,
   ];
 
+  // "Les plus disputées" — live lots ranked by bid count (distinct from
+  // `trending`, which sorts by ends_at + paid placement).
+  const hotNow = [...trending]
+    .filter((a) => (a.bid_count ?? 0) > 0)
+    .sort((x, y) => (y.bid_count ?? 0) - (x.bid_count ?? 0))
+    .slice(0, 8);
+
+  // "Parcourir par marque" — distinct makes across the loaded surfaces,
+  // ranked by lot count. Titles are "Make Model Year", so the leading
+  // token is the make — no extra query or brand-logo assets needed.
+  const seenIds = new Set<string>();
+  const makeCount = new Map<string, number>();
+  for (const a of [...trending, ...nouveautes, ...offers, ...recent]) {
+    if (seenIds.has(a.id)) continue;
+    seenIds.add(a.id);
+    const mk = String(a.property?.title ?? "").trim().split(/\s+/)[0];
+    if (mk) makeCount.set(mk, (makeCount.get(mk) ?? 0) + 1);
+  }
+  const topMakes = [...makeCount.entries()]
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 12);
+
   return (
     <div className={alwaysVisible ? "block" : "hidden lg:block"}>
       {/* ─── CINEMATIC MAGAZINE HERO — full-bleed, 1 featured + 3 runners ─── */}
@@ -135,9 +150,19 @@ export async function HomeDesktop({
           </Suspense>
         </section>
 
+        {/* ════════════════════════════════════════════════════════════
+            SECTION · ENCHÈRES EN DIRECT — everything biddable now.
+            ════════════════════════════════════════════════════════════ */}
+        <SectionDivider
+          tone="live"
+          eyebrow="Enchères en direct"
+          title="Les voitures à miser"
+          subtitle="Les plus suivies, les plus disputées et les nouveautés — toutes vérifiées, toutes biddables maintenant."
+        />
+
         {/* TRENDING — auto-sliding carousel */}
         {trending.length > 0 && (
-          <section className="mt-12">
+          <section className="mt-10">
             <RailHeader
               eyebrow={t("home.trendingEyebrow")}
               title={t("home.trendingTitle")}
@@ -152,6 +177,21 @@ export async function HomeDesktop({
               loggedIn={loggedIn}
               priorityCount={4}
             />
+          </section>
+        )}
+
+        {/* LES PLUS DISPUTÉES — hottest by bid count */}
+        {hotNow.length > 0 && (
+          <section className="mt-12">
+            <RailHeader
+              eyebrow="🔥 Chaud"
+              title="Les plus disputées"
+              countLabel={hotNow.length}
+              ChevronEnd={ChevronEnd}
+              isRTL={isRTL}
+              seeAllLabel={t("home.seeAll")}
+            />
+            <CardSlider items={hotNow} savedIds={savedIds} loggedIn={loggedIn} />
           </section>
         )}
 
@@ -266,53 +306,59 @@ export async function HomeDesktop({
           </section>
         )}
 
-        {/* ─── POURQUOI MAZED — one consolidated trust + CTA band ─── */}
-        <section className="mt-16">
-          <div className="overflow-hidden rounded-3xl ring-1 ring-gold/25">
-            <div className="grid grid-cols-12">
-              {/* Value prop + CTA */}
-              <div className="batta-surface-navy-luxe relative col-span-5 flex flex-col justify-center p-10">
-                <span className="batta-eyebrow">{t("home.trustEyebrow")}</span>
-                <h2 className="mt-3 text-[28px] font-extrabold leading-[1.12] tracking-tight">
-                  {t("home.trustTitle")}
-                </h2>
-                <p className="mt-4 max-w-sm text-[13.5px] leading-relaxed text-muted">
-                  {t("home.trustEscrowBody")}
-                </p>
-                <div className="mt-7 flex items-center gap-3">
-                  <Link
-                    href="/properties"
-                    className="batta-gold-fill inline-flex items-center gap-2 rounded-full px-5 py-3 text-[12.5px] font-extrabold uppercase tracking-[0.14em] shadow-[var(--shadow-gold)] transition active:scale-[0.99]"
-                  >
-                    {t("home.heroBrowseCta")}
-                    <ArrowUpRight className="size-4" strokeWidth={2.5} />
-                  </Link>
-                  <Link
-                    href="/sell"
-                    className="inline-flex items-center gap-2 rounded-full border border-gold/30 px-5 py-3 text-[12.5px] font-bold text-foreground transition hover:border-gold-soft/60 hover:bg-gold-faint"
-                  >
-                    Vendre
-                  </Link>
-                </div>
-              </div>
-
-              {/* Four trust pillars — 2×2, hairline-divided. */}
-              <div className="col-span-7 grid grid-cols-2 gap-px bg-border">
-                {TRUST_PILLARS.map((p) => (
-                  <div key={p.key} className="flex flex-col gap-2.5 bg-surface p-7">
-                    <span className="batta-monogram batta-monogram-filled size-11 text-gold">
-                      <p.Icon className="size-4" strokeWidth={2.2} />
-                    </span>
-                    <div className="text-[14.5px] font-bold leading-tight text-foreground">
-                      {t(p.titleKey)}
-                    </div>
-                    <p className="text-[12px] leading-relaxed text-muted">
-                      {t(p.bodyKey)}
-                    </p>
-                  </div>
+        {/* ════════════════════════════════════════════════════════════
+            SECTION · RÉCEMMENT VENDUES — social proof / history.
+            ════════════════════════════════════════════════════════════ */}
+        {hammered.length > 0 && (
+          <>
+            <SectionDivider
+              tone="sold"
+              eyebrow="Récemment vendues"
+              title="La preuve qu'on vend"
+              subtitle="Voitures attribuées récemment — prix réels obtenus aux enchères."
+            />
+            <section className="mt-8">
+              <div className="grid grid-cols-4 gap-5">
+                {hammered.slice(0, 8).map((h) => (
+                  <HammeredCard
+                    key={h.id}
+                    row={h}
+                    locale={locale}
+                    soldLabel={t("home.soldChip")}
+                    tnd={t("common.tnd")}
+                  />
                 ))}
               </div>
-            </div>
+            </section>
+          </>
+        )}
+
+        {/* PARCOURIR PAR MARQUE — make chips */}
+        {topMakes.length > 0 && (
+          <BrandRail makes={topMakes} title="Parcourir par marque" />
+        )}
+
+        {/* ─── CLOSING CTA — twin pillars (buyers / sellers) ─── */}
+        <section className="mt-16">
+          <div className="grid grid-cols-2 gap-6">
+            <CtaPillar
+              href="/properties"
+              Icon={Gavel}
+              eyebrow="Acheteurs"
+              title="Trouvez votre prochaine voiture"
+              text="Des enchères vérifiées chaque jour, partout en Tunisie — KYC, carte grise et dépôt contrôlés."
+              cta="Parcourir tout"
+              tone="gold"
+            />
+            <CtaPillar
+              href="/sell"
+              Icon={Tag}
+              eyebrow="Vendeurs"
+              title="Vendez votre voiture en toute confiance"
+              text="Votre annonce vérifiée et publiée rapidement. Paiement sécurisé à la vente."
+              cta="Commencer à vendre"
+              tone="dark"
+            />
           </div>
         </section>
 
@@ -336,6 +382,67 @@ export async function HomeDesktop({
         </section>
       </div>
     </div>
+  );
+}
+
+/** Editorial section divider — gradient hairline → icon chip → eyebrow
+ *  (live = emerald pulse / sold = muted) → big title → subtitle. Ported
+ *  from v1's desktop HomeSectionDivider. */
+function SectionDivider({
+  tone,
+  eyebrow,
+  title,
+  subtitle,
+}: {
+  tone: "live" | "sold";
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+}) {
+  const Icon = tone === "live" ? Gavel : Trophy;
+  return (
+    <section className="mt-16" aria-label={title}>
+      <div
+        className={cn(
+          "h-px w-full",
+          tone === "live"
+            ? "bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent"
+            : "bg-gradient-to-r from-transparent via-border-strong to-transparent",
+        )}
+      />
+      <div className="mt-7 flex items-center gap-4">
+        <span
+          className={cn(
+            "flex size-12 shrink-0 items-center justify-center rounded-2xl",
+            tone === "live"
+              ? "bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-500/40"
+              : "bg-surface-2 text-muted ring-1 ring-border",
+          )}
+        >
+          <Icon className="size-5" />
+        </span>
+        <div className="min-w-0">
+          <div
+            className={cn(
+              "inline-flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.22em]",
+              tone === "live" ? "text-emerald-300" : "text-muted",
+            )}
+          >
+            {tone === "live" && (
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inset-0 animate-ping rounded-full bg-emerald-400 opacity-60" />
+                <span className="relative h-2 w-2 rounded-full bg-emerald-400" />
+              </span>
+            )}
+            {eyebrow}
+          </div>
+          <h2 className="mt-1 text-3xl font-black leading-tight tracking-tight xl:text-4xl">
+            {title}
+          </h2>
+          <p className="mt-1.5 max-w-2xl text-sm text-muted">{subtitle}</p>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -415,14 +522,137 @@ function CardSlider({
   );
 }
 
-/** Inline car-category glyph for the "Parcourir" tiles. The old desktop
- *  tiles pointed at /icons/<key>.{avif,webp}, but those were real-estate
- *  art (apartment/house/land/…) and the car keys (sedan/suv/…) have no
- *  raster, so the tiles 404'd. Mobile already uses lucide glyphs; we do
- *  the same here so the row is consistent + asset-free. */
+/** Compact "sold for X" card for the Récemment vendues grid. */
+function HammeredCard({
+  row,
+  locale,
+  soldLabel,
+  tnd,
+}: {
+  row: HammeredRow;
+  locale: string;
+  soldLabel: string;
+  tnd: string;
+}) {
+  const photo = row.property.photos
+    ?.slice()
+    .sort((a, b) => a.sort_order - b.sort_order)[0];
+  const price = Number(row.winner_amount ?? 0);
+  return (
+    <Link
+      href={`/auctions/${row.id}`}
+      className="group flex flex-col overflow-hidden rounded-2xl bg-surface-2 ring-1 ring-border transition hover:ring-gold-soft/50"
+    >
+      <div className="relative aspect-[4/3] overflow-hidden bg-surface-2">
+        {photo ? (
+          (() => {
+            const src = propertyPhotoUrl(photo.storage_path);
+            return (
+              <Image
+                src={src}
+                alt=""
+                fill
+                sizes="(min-width: 1024px) 280px, 50vw"
+                unoptimized={isStaticSeedPath(src)}
+                className="object-cover transition duration-500 group-hover:scale-105"
+              />
+            );
+          })()
+        ) : (
+          <div className="flex h-full items-center justify-center text-gold/20">
+            <Car className="size-10" strokeWidth={1.5} />
+          </div>
+        )}
+        <span className="batta-gold-fill absolute top-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9.5px] font-extrabold uppercase tracking-[0.14em] ltr:left-2 rtl:right-2">
+          <Gavel className="size-2.5" strokeWidth={2.5} />
+          {soldLabel}
+        </span>
+      </div>
+      <div className="p-3">
+        <div className="batta-tabular gradient-gold-text text-[18px] font-extrabold leading-none">
+          {formatTND(price, locale)}
+          <span className="ms-1 text-[9px] font-bold uppercase tracking-[0.14em] text-muted">
+            {tnd}
+          </span>
+        </div>
+        <div className="mt-1.5 line-clamp-1 text-[12px] font-bold text-foreground">
+          {row.property.title}
+        </div>
+        <div className="mt-0.5 flex items-center gap-1 text-[10px] text-muted">
+          <MapPin className="size-2.5" strokeWidth={2} />
+          <span className="truncate">{row.property.governorate}</span>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+/** Closing twin-pillar CTA card (buyers / sellers). Ported from v1's
+ *  DesktopFinalCta. */
+function CtaPillar({
+  href,
+  Icon,
+  eyebrow,
+  title,
+  text,
+  cta,
+  tone,
+}: {
+  href: "/properties" | "/sell";
+  Icon: React.ComponentType<{ className?: string }>;
+  eyebrow: string;
+  title: string;
+  text: string;
+  cta: string;
+  tone: "gold" | "dark";
+}) {
+  return (
+    <Link
+      href={href}
+      className={`group relative flex min-h-[260px] flex-col justify-between overflow-hidden rounded-[28px] p-9 ring-1 transition-all xl:p-10 ${
+        tone === "gold"
+          ? "bg-gradient-to-br from-[#1a1409] via-[#0a0a0a] to-black ring-gold/30 hover:ring-gold"
+          : "bg-surface ring-border hover:ring-gold"
+      }`}
+    >
+      <div
+        aria-hidden
+        className={`pointer-events-none absolute -top-20 -end-20 h-64 w-64 rounded-full opacity-30 blur-3xl transition-opacity group-hover:opacity-50 ${
+          tone === "gold" ? "bg-gold" : "bg-white/15"
+        }`}
+      />
+      <div className="relative">
+        <div
+          className={`inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.22em] ${
+            tone === "gold" ? "text-gold" : "text-muted"
+          }`}
+        >
+          <Icon className="h-3.5 w-3.5" />
+          {eyebrow}
+        </div>
+        <h3 className="mt-3 max-w-md text-3xl font-black leading-tight tracking-tight xl:text-[34px]">
+          {title}
+        </h3>
+        <p className="mt-3 max-w-md text-[15px] leading-relaxed text-muted">{text}</p>
+      </div>
+      <div className="relative mt-8">
+        <span
+          className={`inline-flex h-12 items-center gap-2 rounded-full px-6 text-sm font-extrabold transition-transform group-hover:scale-[1.03] active:scale-[0.99] ${
+            tone === "gold"
+              ? "bg-gold text-black shadow-[var(--shadow-gold)]"
+              : "bg-foreground text-black"
+          }`}
+        >
+          {cta}
+          <ArrowUpRight className="h-4 w-4" />
+        </span>
+      </div>
+    </Link>
+  );
+}
+
+/** Inline car-category glyph for the "Parcourir" tiles. */
 function CarTypeIcon({ typeKey }: { typeKey: string }) {
-  // Pickup + van read better as a truck silhouette; everything else is a
-  // car. (lucide's set has no per-body-style car glyphs.)
   const truckish = typeKey === "pickup" || typeKey === "van";
   return truckish ? (
     <Truck className="size-6" strokeWidth={1.8} />

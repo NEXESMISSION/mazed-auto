@@ -97,18 +97,38 @@ export async function PropertyCard({
               // small webps and the optimizer's cold-function round-trip
               // dwarfs the file fetch itself.
               const unoptimized = isStaticSeedPath(src);
+              const sizes =
+                "(min-width: 1024px) 240px, (min-width: 640px) 33vw, 50vw";
               return (
-                <Image
-                  src={src}
-                  alt={property.title}
-                  fill
-                  sizes="(min-width: 1024px) 240px, (min-width: 640px) 33vw, 50vw"
-                  priority={priority}
-                  placeholder={blur ? "blur" : "empty"}
-                  blurDataURL={blur}
-                  unoptimized={unoptimized}
-                  className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-                />
+                <>
+                  {/* Blurred fill — an over-scaled, blurred copy of the same
+                      photo paints behind so the 4:5 box is always full, while
+                      the real photo on top shows the WHOLE car (object-contain)
+                      and is never cropped. Same src + sizes as the main image,
+                      so the browser fetches one optimized variant and renders
+                      it twice. Matches the original mazed-auto card. */}
+                  <Image
+                    src={src}
+                    alt=""
+                    aria-hidden
+                    fill
+                    sizes={sizes}
+                    unoptimized={unoptimized}
+                    className="scale-125 object-cover blur-2xl"
+                  />
+                  <div className="pointer-events-none absolute inset-0 bg-black/15" />
+                  <Image
+                    src={src}
+                    alt={property.title}
+                    fill
+                    sizes={sizes}
+                    priority={priority}
+                    placeholder={blur ? "blur" : "empty"}
+                    blurDataURL={blur}
+                    unoptimized={unoptimized}
+                    className="relative object-contain transition-transform duration-500 group-hover:scale-[1.03]"
+                  />
+                </>
               );
             })()
           ) : (
