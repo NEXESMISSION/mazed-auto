@@ -23,8 +23,8 @@ export const metadata: Metadata = {
 const PAGE_SIZE = 12;
 
 const VALID_TYPES: PropertyType[] = [
-  "apartment", "house", "villa", "land",
-  "commercial", "office", "warehouse", "farm",
+  "sedan", "suv", "hatchback", "pickup",
+  "van", "coupe", "convertible", "wagon",
 ];
 
 type ExploreQueryParams = {

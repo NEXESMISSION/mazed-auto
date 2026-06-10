@@ -23,19 +23,19 @@ type DraftRow = {
 };
 
 const PROPERTY_TYPES: PropertyType[] = [
-  "apartment", "house", "villa", "land",
-  "commercial", "office", "warehouse", "farm",
+  "sedan", "suv", "hatchback", "pickup",
+  "van", "coupe", "convertible", "wagon",
 ];
 
 const TYPE_LABELS_FR: Record<PropertyType, string> = {
-  apartment: "Appartement",
-  house: "Maison",
-  villa: "Villa",
-  land: "Terrain",
-  commercial: "Local commercial",
-  office: "Bureau",
-  warehouse: "Entrepôt",
-  farm: "Ferme",
+  sedan: "Berline",
+  suv: "SUV / 4x4",
+  hatchback: "Citadine",
+  pickup: "Pick-up",
+  van: "Utilitaire",
+  coupe: "Coupé",
+  convertible: "Cabriolet",
+  wagon: "Break",
 };
 
 const DATA_TYPE_LABELS: Record<AttributeDataType, string> = {
@@ -80,7 +80,7 @@ export function CharacteristicsEditor({
 }) {
   const router = useRouter();
   const { toast } = useToast();
-  const [activeType, setActiveType] = useState<PropertyType>("apartment");
+  const [activeType, setActiveType] = useState<PropertyType>("sedan");
   const [drafts, setDrafts] = useState<Record<PropertyType, DraftRow[]>>(() =>
     Object.fromEntries(
       PROPERTY_TYPES.map((t) => [t, initial[t].map(rowToDraft)]),

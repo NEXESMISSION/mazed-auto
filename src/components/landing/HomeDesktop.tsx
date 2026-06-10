@@ -57,19 +57,19 @@ type HammeredRow = {
 // Labels come from i18n (`property.types.<key>`); the tile art is a
 // pre-optimized illustration at /icons/<key>.{avif,webp}.
 const PROPERTY_TYPES: { key: string }[] = [
-  { key: "apartment" },
-  { key: "villa" },
-  { key: "house" },
-  { key: "land" },
-  { key: "commercial" },
-  { key: "office" },
+  { key: "sedan" },
+  { key: "suv" },
+  { key: "hatchback" },
+  { key: "pickup" },
+  { key: "coupe" },
+  { key: "van" },
 ];
 
 const PRICE_BUCKETS: { key: string; label: string; query: string }[] = [
-  { key: "under-100k", label: "Moins de 100k", query: "max_price=100000" },
-  { key: "100k-500k",  label: "100k – 500k",   query: "min_price=100000&max_price=500000" },
-  { key: "500k-1m",    label: "500k – 1M",     query: "min_price=500000&max_price=1000000" },
-  { key: "1m-plus",    label: "1M+ TND",       query: "min_price=1000000" },
+  { key: "under-30k", label: "Moins de 30k", query: "max_price=30000" },
+  { key: "30k-60k",   label: "30k – 60k",    query: "min_price=30000&max_price=60000" },
+  { key: "60k-120k",  label: "60k – 120k",   query: "min_price=60000&max_price=120000" },
+  { key: "120k-plus", label: "120k+ TND",    query: "min_price=120000" },
 ];
 
 const TRUST_PILLARS: {

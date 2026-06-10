@@ -111,8 +111,8 @@ const fetchExplore = unstable_cache(
  * fields are null (scheduled auctions with no bids yet).
  */
 const VALID_TYPES: PropertyType[] = [
-  "apartment", "house", "villa", "land",
-  "commercial", "office", "warehouse", "farm",
+  "sedan", "suv", "hatchback", "pickup",
+  "van", "coupe", "convertible", "wagon",
 ];
 
 export const GET = withRouteLogger(async (req: NextRequest) => {

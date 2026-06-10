@@ -7,8 +7,8 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const PROPERTY_TYPES: PropertyType[] = [
-  "apartment", "house", "villa", "land",
-  "commercial", "office", "warehouse", "farm",
+  "sedan", "suv", "hatchback", "pickup",
+  "van", "coupe", "convertible", "wagon",
 ];
 
 export default async function AdminCharacteristicsPage() {

@@ -13,7 +13,7 @@ const GOVERNORATES = TUNISIAN_GOVERNORATES;
 
 // Type keys are stable; labels come from `property.types.<key>` so each
 // locale (ar/fr/en) gets its own translation through the same i18n file.
-const TYPE_KEYS = ["apartment", "villa", "house", "land", "commercial", "office"] as const;
+const TYPE_KEYS = ["sedan", "hatchback", "suv", "pickup", "van", "coupe"] as const;
 
 /**
  * Home search — keyword + governorate + type, submits to /properties.

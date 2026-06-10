@@ -6,8 +6,8 @@ import { fail } from "@/lib/http/errors";
 import type { PropertyType, AttributeDataType } from "@/lib/types";
 
 const PROPERTY_TYPES: PropertyType[] = [
-  "apartment", "house", "villa", "land",
-  "commercial", "office", "warehouse", "farm",
+  "sedan", "suv", "hatchback", "pickup",
+  "van", "coupe", "convertible", "wagon",
 ];
 
 const DATA_TYPES: AttributeDataType[] = ["number", "text", "boolean", "select"];

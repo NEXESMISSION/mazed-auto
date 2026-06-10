@@ -14,7 +14,7 @@ import { PropertyDocumentOpenButton } from "@/components/property/PropertyDocume
 import {
   MapPin, Ruler, BedDouble, Bath, Building2, Calendar, ChevronRight,
   ClipboardCheck, FileText, Lock, Gavel, Download, Clock, Hourglass,
-  ShieldCheck, Trophy, Wallet,
+  ShieldCheck, Trophy, Wallet, Car, Gauge, Fuel, Cog,
 } from "lucide-react";
 
 type AttrKind = {
@@ -104,13 +104,15 @@ export async function AuctionDesktop(props: {
     specs.push({ key: k.field_key, label: k.label, value });
   }
 
+  const FUEL_FR: Record<string, string> = { gasoline: "Essence", diesel: "Diesel", hybrid: "Hybride", electric: "Électrique" };
+  const TRANS_FR: Record<string, string> = { manual: "Manuelle", automatic: "Automatique" };
   const facts: { Icon: typeof Ruler; label: string; value: string }[] = [
-    { Icon: Building2, label: t("property.type"), value: t(`property.types.${property.type}`) },
+    { Icon: Car, label: t("property.type"), value: t(`property.types.${property.type}`) },
   ];
-  const area = attrs.area_sqm ?? attrs.land_area_sqm;
-  if (area != null && area !== "") facts.push({ Icon: Ruler, label: "Surface", value: `${area} m²` });
-  if (attrs.rooms != null && attrs.rooms !== "") facts.push({ Icon: BedDouble, label: "Pièces", value: String(attrs.rooms) });
-  if (attrs.bathrooms != null && attrs.bathrooms !== "") facts.push({ Icon: Bath, label: "SdB", value: String(attrs.bathrooms) });
+  if (attrs.year != null && attrs.year !== "") facts.push({ Icon: Calendar, label: "Année", value: String(attrs.year) });
+  if (attrs.mileage != null && attrs.mileage !== "") facts.push({ Icon: Gauge, label: "Kilométrage", value: `${Number(attrs.mileage).toLocaleString("fr-FR")} km` });
+  if (attrs.fuel) facts.push({ Icon: Fuel, label: "Carburant", value: FUEL_FR[String(attrs.fuel)] ?? String(attrs.fuel) });
+  if (attrs.transmission) facts.push({ Icon: Cog, label: "Boîte", value: TRANS_FR[String(attrs.transmission)] ?? String(attrs.transmission) });
 
   return (
     <div className="hidden lg:block mx-auto w-full max-w-[1180px] px-6 pb-24">
@@ -469,19 +471,17 @@ function specIcon(
   key: string,
 ): React.ComponentType<{ className?: string; strokeWidth?: number }> {
   switch (key) {
-    case "area_sqm":
-    case "land_area_sqm":
-    case "frontage_m":
-    case "ceiling_height_m":
-      return Ruler;
-    case "rooms":
-      return BedDouble;
-    case "bathrooms":
-      return Bath;
+    case "mileage":
+      return Gauge;
+    case "fuel":
+      return Fuel;
+    case "transmission":
+      return Cog;
+    case "year":
     case "year_built":
       return Calendar;
     default:
-      return Building2;
+      return Car;
   }
 }
 

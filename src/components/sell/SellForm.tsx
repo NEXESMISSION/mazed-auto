@@ -32,7 +32,7 @@ import {
 
 export type ListingType = "auction" | "direct";
 
-const TYPES: PropertyType[] = ["apartment", "house", "villa", "land", "commercial", "office", "warehouse", "farm"];
+const TYPES: PropertyType[] = ["sedan", "suv", "hatchback", "pickup", "van", "coupe", "convertible", "wagon"];
 
 // Canonical keys that mirror out to dedicated `properties` columns so the
 // explore filters and listing cards (which query these columns directly)
@@ -197,7 +197,7 @@ export function SellForm({
   // ─── Field state ─────────────────────────────────────────────────────
   const [title, setTitle] = useState(initial?.title ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
-  const [type, setType] = useState<PropertyType>(initial?.type ?? "apartment");
+  const [type, setType] = useState<PropertyType>(initial?.type ?? "sedan");
 
   // Per-type characteristics — the field catalog is admin-controlled and
   // fetched from property_attribute_kinds whenever `type` changes (see the

@@ -11,14 +11,14 @@ export type UserRole =
 export type KycStatus = "none" | "submitted" | "pending" | "verified" | "rejected";
 
 export type PropertyType =
-  | "apartment"
-  | "house"
-  | "villa"
-  | "land"
-  | "commercial"
-  | "office"
-  | "warehouse"
-  | "farm";
+  | "sedan"
+  | "suv"
+  | "hatchback"
+  | "pickup"
+  | "van"
+  | "coupe"
+  | "convertible"
+  | "wagon";
 
 export type PropertyStatus =
   | "draft"

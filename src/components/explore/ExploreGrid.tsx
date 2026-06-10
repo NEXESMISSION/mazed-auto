@@ -34,14 +34,14 @@ import type { PropertyType } from "@/lib/types";
 import { TUNISIAN_GOVERNORATES } from "@/lib/tunisia";
 
 const PROPERTY_TYPES: { key: PropertyType; label: string }[] = [
-  { key: "apartment", label: "Appartement" },
-  { key: "villa", label: "Villa" },
-  { key: "house", label: "Maison" },
-  { key: "land", label: "Terrain" },
-  { key: "commercial", label: "Commerce" },
-  { key: "office", label: "Bureau" },
-  { key: "warehouse", label: "Dépôt" },
-  { key: "farm", label: "Ferme" },
+  { key: "sedan", label: "Berline" },
+  { key: "suv", label: "SUV / 4x4" },
+  { key: "hatchback", label: "Citadine" },
+  { key: "pickup", label: "Pick-up" },
+  { key: "van", label: "Utilitaire" },
+  { key: "coupe", label: "Coupé" },
+  { key: "convertible", label: "Cabriolet" },
+  { key: "wagon", label: "Break" },
 ];
 
 // Canonical 24-wilaya list (was a truncated 16 here, so users in 8
