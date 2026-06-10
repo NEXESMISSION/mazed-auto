@@ -283,6 +283,11 @@ export default async function LandingPage({
     .sort((x, y) => (y.bid_count ?? 0) - (x.bid_count ?? 0))
     .slice(0, 8);
 
+  // "Sélection VIP" — paid/featured placements (promo_home_featured).
+  const vip = trending
+    .filter((a) => ((a.property ?? {}) as { promo_home_featured?: boolean }).promo_home_featured)
+    .slice(0, 8);
+
   // Built once, shared by the mobile HeroBanner and the desktop tree
   // (which now reuses the same auto-sliding carousel).
   const heroSlides = buildHeroSlides(trending, locale, liveCount, {
@@ -357,6 +362,22 @@ export default async function LandingPage({
         title="Enchères en direct"
         subtitle="Voitures vérifiées · enchères transparentes"
       />
+      {vip.length > 0 && (
+        <section className="mt-6">
+          <RailHeader
+            eyebrow="Sélection"
+            title="Sélection VIP"
+            countLabel={vip.length}
+            ctaHref="/properties"
+            ChevronEnd={ChevronEnd}
+            isRTL={isRTL}
+            seeAllLabel={t("home.seeAll")}
+            flush
+          />
+          <CarRail items={vip} savedIds={savedIds} loggedIn={loggedIn} />
+        </section>
+      )}
+
       <section className="mt-7">
         <RailHeader
           eyebrow={t("home.trendingEyebrow")}
