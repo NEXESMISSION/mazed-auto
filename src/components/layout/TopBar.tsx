@@ -115,7 +115,7 @@ function BrandMark() {
           never stretched. */}
       <span className="size-9 shrink-0 overflow-hidden rounded-full ring-1 ring-[var(--gold-soft)]/60">
         <Image
-          src="/logo.png"
+          src="/logo.webp"
           alt=""
           width={72}
           height={72}

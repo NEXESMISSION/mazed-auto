@@ -41,11 +41,10 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     startupImage: ["/logo-square.png"],
   },
-  icons: {
-    icon: [{ url: "/logo-square.png", type: "image/png" }],
-    apple: [{ url: "/logo-square.png", sizes: "180x180", type: "image/png" }],
-    shortcut: ["/logo-square.png"],
-  },
+  // Browser-tab + PWA + apple-touch icons are provided by the file-based
+  // metadata convention (src/app/icon.png, apple-icon.png, favicon.ico) —
+  // copied straight from v1 so the gold "MA" shows everywhere, including the
+  // /favicon.ico path browsers request by default.
   openGraph: {
     title: "Mazed Auto — Enchères automobiles",
     description:
