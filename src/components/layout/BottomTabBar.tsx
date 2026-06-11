@@ -5,15 +5,15 @@ import { Link, usePathname } from "@/i18n/navigation";
 import { Home, Search, Plus, LayoutGrid, User } from "lucide-react";
 
 /**
- * Bottom tab bar — full-width, flush-bottom, clean white surface.
+ * Bottom tab bar — full-width, flush-bottom, frosted dark surface.
  *
- *   - Frosted white background that lets the page peek through subtly,
+ *   - Frosted dark background that lets the page peek through subtly,
  *     anchored to the bottom edge. A single hairline top border keeps
  *     it crisp without competing with content.
- *   - Five cells. Cell 3 is the navy "Sell" FAB — a saturated disc
- *     that lifts above the bar's top edge so it pops as the action.
- *   - Active tab: navy icon + label + small underline pip below the
- *     label. Inactive: muted zinc. Hover lightly darkens.
+ *   - Five cells. Cell 3 is the metallic gold "Sell" FAB — a saturated
+ *     disc that lifts above the bar's top edge so it pops as the action.
+ *   - Active tab: gold icon + label + v1's glowing gold pin hanging from
+ *     the bar's top edge. Inactive: muted. Hover lightly brightens.
  *   - Safe-area aware: the visible icon row is `--bottombar-h` tall;
  *     the bar background extends below it for the iPhone home indicator.
  */
@@ -106,11 +106,11 @@ export function BottomTabBar() {
               aria-current={active ? "page" : undefined}
             >
               <span
-                className={`batta-gradient-gold relative inline-flex h-14 w-14 -translate-y-5 items-center justify-center rounded-full text-white shadow-[var(--shadow-gold)] ring-4 ring-white transition-transform active:scale-95 ${
+                className={`relative inline-flex h-14 w-14 -translate-y-5 items-center justify-center rounded-full bg-gradient-to-b from-[#f7e07a] via-[var(--gold-bright)] to-[var(--gold-soft)] text-black shadow-[var(--shadow-gold),inset_0_1px_0_0_rgba(255,255,255,0.35),inset_0_-1px_0_0_rgba(0,0,0,0.15)] ring-4 ring-[var(--background)] transition-transform active:scale-95 ${
                   active ? "scale-105" : "hover:scale-[1.03]"
                 }`}
               >
-                <Plus className="size-6" strokeWidth={2.5} />
+                <Plus className="h-6 w-6" strokeWidth={2.5} />
               </span>
             </Link>
           );
@@ -129,17 +129,16 @@ export function BottomTabBar() {
             aria-current={active ? "page" : undefined}
           >
             <Icon
-              className={`size-5 transition-transform ${active ? "scale-110" : ""}`}
+              className={`h-6 w-6 transition-transform ${active ? "scale-110" : ""}`}
               strokeWidth={active ? 2.5 : 2}
             />
             <span className="max-w-full truncate text-[10px] font-semibold leading-tight">
               {t(tab.labelKey)}
             </span>
-            {/* Active indicator — a tiny navy dot below the label
-                instead of the old glowing top pin. Cleaner, doesn't
-                compete with the FAB above. */}
+            {/* Active indicator — v1's glowing gold pin hanging from the
+                bar's top edge. */}
             {active && (
-              <span className="absolute bottom-1.5 h-1 w-1 rounded-full bg-[var(--gold)]" />
+              <span className="absolute top-0 h-1 w-10 rounded-b-full bg-[var(--gold)] shadow-[0_0_12px_var(--gold-glow)]" />
             )}
           </Link>
         );

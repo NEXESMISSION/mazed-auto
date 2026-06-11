@@ -124,7 +124,7 @@ export default async function EditListingPage({
   return (
     <div className="mx-auto max-w-[var(--max-w)] px-4 pt-4 lg:max-w-[var(--max-w-content)]">
       <header>
-        <span className="batta-eyebrow">Consignment · edit</span>
+        <span className="batta-eyebrow">Annonce · Modification</span>
         <h1 className="mt-1.5 text-[24px] font-extrabold leading-tight tracking-tight">
           {t("sell.editTitle")}
         </h1>

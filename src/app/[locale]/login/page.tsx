@@ -3,7 +3,6 @@ import { getTranslations, getLocale } from "next-intl/server";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { AuthHeroPanel } from "@/components/auth/AuthHeroPanel";
 import { Link } from "@/i18n/navigation";
-import { Home } from "lucide-react";
 
 /**
  * Login surface.
@@ -77,16 +76,25 @@ export default async function LoginPage() {
             <div aria-hidden className="batta-gradient-gold absolute inset-x-0 top-0 h-[3px]" />
 
             <div className="flex flex-col items-center text-center">
-              <span className="flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--gold)] to-[var(--gold-bright)] text-white shadow-[0_14px_34px_-12px_rgba(30,58,138,0.65)]">
-                <Home className="size-8" strokeWidth={2} />
+              <span className="size-16 overflow-hidden rounded-full ring-1 ring-[var(--gold-soft)]/60 shadow-[var(--shadow-gold)]">
+                <Image
+                  src="/logo.webp"
+                  alt=""
+                  width={128}
+                  height={128}
+                  className="h-full w-full object-cover"
+                />
               </span>
               <h1
                 className={`mt-5 text-[28px] font-extrabold leading-[1.1] tracking-tight ${
                   isRTL ? "font-arabic" : ""
                 }`}
               >
-                Bienvenue sur <span className="gradient-gold-text">{t("brand.name")}</span>
+                Bon <span className="gradient-gold-text">retour</span>
               </h1>
+              <p className="mt-2 text-[13px] text-muted">
+                Connectez-vous pour continuer
+              </p>
             </div>
 
             <div className="mt-8">

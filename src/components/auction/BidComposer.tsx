@@ -1150,7 +1150,7 @@ function ActiveComposer({
       >
         <ul className="space-y-3 text-sm text-[var(--foreground-muted)] leading-relaxed">
           <li>
-            • <strong className="text-foreground">Caution :</strong> montant remboursable verrouillé par enchère, restitué après la clôture si vous ne gagnez pas.
+            • <strong className="text-foreground">Caution :</strong> un montant remboursable, calculé sur le prix d&apos;ouverture, est verrouillé une seule fois par enchère — restitué intégralement après la clôture si vous ne gagnez pas.
           </li>
           {isEnglish && (
             <li>

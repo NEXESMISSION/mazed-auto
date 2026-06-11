@@ -20,7 +20,7 @@ const KIND_LABEL: Record<string, string> = {
 const KIND_SUBLABEL: Record<string, string> = {
   deposit_lock: "Vous pouvez maintenant enchérir sur cette enchère.",
   buy_now: "L'enchère est clôturée — vous êtes l'adjudicataire.",
-  final_payment: "Le bien est à vous — signature notariale à venir.",
+  final_payment: "Le véhicule est à vous — remise des documents et des clés à venir.",
   inspection_fee: "L'inspecteur a été notifié.",
   commission: "Merci pour votre participation.",
   subscription: "Votre abonnement est actif.",
@@ -182,6 +182,14 @@ export default async function PaymentSuccess({
             Retour
           </Link>
         )}
+
+        {/* Support escape hatch — v1's checkout pattern. */}
+        <p className="mt-4 text-[11.5px] text-[var(--foreground-subtle)]">
+          Vous rencontrez un problème ?{" "}
+          <Link href="/contact" className="font-semibold text-[var(--gold)] hover:underline">
+            Contacter le support
+          </Link>
+        </p>
       </div>
     </div>
   );

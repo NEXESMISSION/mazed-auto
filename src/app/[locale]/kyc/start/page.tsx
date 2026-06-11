@@ -1,18 +1,17 @@
 "use client";
 
 import { Link } from "@/i18n/navigation";
-import { ShieldCheck, ArrowRight, Lock } from "lucide-react";
+import { ShieldCheck, ArrowRight, Lock, CreditCard, Sun } from "lucide-react";
 import { KYCShell } from "@/components/layout/KYCShell";
 
 /**
  * KYC entry / consent surface. One premium card, vertically centered
  * in the shell so the page doesn't slump to the top with empty space
- * beneath it. The "gold" CSS tokens in this codebase actually render
- * as deep navy (#1e3a8a) — naming is historical from a gold-themed
- * iteration — so the design leans into navy accents on a white card.
+ * beneath it — gold accents on the dark card.
  *
- * Layout: hairline-topped white card holding shield + headline +
- * info pill + CTA. A single legal line sits below the card.
+ * Layout: hairline-topped card holding shield + headline + info pill +
+ * prerequisites + 4-step preview + CTA (v1's structure). A single
+ * legal line sits below the card.
  */
 export default function KYCStartPage() {
   return (
@@ -45,15 +44,47 @@ export default function KYCStartPage() {
               Débloquez enchères et ventes.
             </p>
 
-            {/* Info pill — solid navy on white reads loud and clear. The
-                old gold-faint background was 6% navy → invisible. */}
-            <span className="batta-tabular mt-5 inline-flex items-center gap-1.5 rounded-full bg-[var(--gold)] px-3.5 py-1 text-[11px] font-extrabold uppercase tracking-[0.14em] text-white shadow-[0_6px_16px_-6px_rgba(30,58,138,0.45)]">
+            {/* Info pill — solid gold, black ink for contrast. */}
+            <span className="batta-tabular mt-5 inline-flex items-center gap-1.5 rounded-full bg-[var(--gold)] px-3.5 py-1 text-[11px] font-extrabold uppercase tracking-[0.14em] text-black shadow-[var(--shadow-gold)]">
               4 étapes · ~2 min
             </span>
 
+            {/* Prerequisites + step preview — v1's checklist so the user
+                knows what to grab before starting. */}
+            <div className="mt-6 w-full max-w-[320px] space-y-2 text-start">
+              <div className="flex items-center gap-2.5 rounded-xl bg-[var(--surface-2)] px-3.5 py-2.5 ring-1 ring-[var(--border)]">
+                <CreditCard className="size-4 shrink-0 text-[var(--gold)]" strokeWidth={2} />
+                <span className="text-[12px] text-[var(--foreground-muted)]">
+                  Votre carte d&apos;identité (CIN) à portée de main
+                </span>
+              </div>
+              <div className="flex items-center gap-2.5 rounded-xl bg-[var(--surface-2)] px-3.5 py-2.5 ring-1 ring-[var(--border)]">
+                <Sun className="size-4 shrink-0 text-[var(--gold)]" strokeWidth={2} />
+                <span className="text-[12px] text-[var(--foreground-muted)]">
+                  Un endroit bien éclairé pour les photos
+                </span>
+              </div>
+            </div>
+
+            <ol className="mt-4 w-full max-w-[320px] space-y-1.5 text-start">
+              {[
+                "Recto de la carte d'identité",
+                "Verso de la carte d'identité",
+                "Selfie de vérification",
+                "Confirmation",
+              ].map((step, i) => (
+                <li key={step} className="flex items-center gap-2.5 text-[12px] text-[var(--foreground-muted)]">
+                  <span className="batta-tabular inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-[var(--gold-faint)] text-[10px] font-extrabold text-[var(--gold)] ring-1 ring-[var(--gold)]/25">
+                    {i + 1}
+                  </span>
+                  {step}
+                </li>
+              ))}
+            </ol>
+
             <Link
               href="/kyc/id-front"
-              className="batta-gradient-gold mt-8 inline-flex h-12 w-full max-w-[280px] items-center justify-center gap-2 rounded-full text-[14px] font-extrabold uppercase tracking-[0.12em] text-white shadow-[var(--shadow-gold)] ring-1 ring-black/10 transition active:scale-[0.98]"
+              className="batta-gradient-gold mt-7 inline-flex h-12 w-full max-w-[280px] items-center justify-center gap-2 rounded-full text-[14px] font-extrabold uppercase tracking-[0.12em] text-black shadow-[var(--shadow-gold)] ring-1 ring-black/10 transition active:scale-[0.98]"
             >
               Commencer
               <ArrowRight className="size-4" strokeWidth={2.6} />

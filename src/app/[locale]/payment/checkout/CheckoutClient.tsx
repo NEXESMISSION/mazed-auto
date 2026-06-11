@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { Link } from "@/i18n/navigation";
 import { useMemo, useRef, useState } from "react";
 import {
   Building2,
@@ -599,6 +600,14 @@ export function CheckoutClient({
             {cancelling ? "Annulation…" : "Annuler ce paiement"}
           </button>
         )}
+
+        {/* Support escape hatch — v1's checkout pattern. */}
+        <p className="text-center text-[11.5px] text-[var(--foreground-subtle)]">
+          Vous rencontrez un problème ?{" "}
+          <Link href="/contact" className="font-semibold text-[var(--gold)] hover:underline">
+            Contacter le support
+          </Link>
+        </p>
         </div>
         </div>
       </main>
