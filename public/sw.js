@@ -8,7 +8,7 @@
 //   - Other GETs     : stale-while-revalidate into RUNTIME_CACHE.
 //   - Cross-origin & non-GET: passthrough, never cached.
 
-const VERSION = "mazed-auto-v7";
+const VERSION = "mazed-auto-v8";
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 const ASSET_CACHE = `${VERSION}-assets`;
 const IMAGE_CACHE = `${VERSION}-images`;
@@ -22,6 +22,7 @@ const MAX_IMAGE_ENTRIES = 400;
 const MAX_RUNTIME_ENTRIES = 80;
 
 const PRECACHE = [
+  "/fr/offline",
   "/icons/icon.svg",
   "/icons/icon-maskable.svg",
   "/icons/apple-touch-icon.svg",
@@ -100,6 +101,10 @@ self.addEventListener("fetch", (event) => {
         } catch {
           const cached = await caches.match(request);
           if (cached) return cached;
+          // Branded offline page (precached at install) before the generic
+          // shell fallback.
+          const offline = await caches.match("/fr/offline");
+          if (offline) return offline;
           // Last resort: any cached page so the shell still renders.
           const fallback = await caches.match("/");
           if (fallback) return fallback;

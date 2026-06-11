@@ -904,6 +904,18 @@ export default async function LandingPage({
           flagged it as text-heavy on a marketplace home. */}
       <section className="mt-10 px-4 pb-6">
         <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[10.5px] text-muted">
+          <Link href={"/how-it-works" as never} className="hover:text-gold-bright">
+            Comment ça marche
+          </Link>
+          <span className="text-subtle">·</span>
+          <Link href={"/help" as never} className="hover:text-gold-bright">
+            Aide
+          </Link>
+          <span className="text-subtle">·</span>
+          <Link href={"/about" as never} className="hover:text-gold-bright">
+            À propos
+          </Link>
+          <span className="text-subtle">·</span>
           <Link href="/terms" className="hover:text-gold-bright">
             {t("landing.footerLinks.terms")}
           </Link>
