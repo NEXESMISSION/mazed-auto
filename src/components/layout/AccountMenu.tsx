@@ -6,7 +6,7 @@ import { getBrowserSupabase } from "@/lib/supabase/client";
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import {
   User, Activity, Receipt, Heart, ClipboardCheck, ShieldCheck, Plus,
-  LogOut, Loader2,
+  Bell, Settings, LogOut, Loader2,
 } from "lucide-react";
 
 type Item = { href: string; label: string; sub?: string; Icon: typeof User };
@@ -17,7 +17,9 @@ const ITEMS: Item[] = [
   { href: "/account/payments", label: "Mes paiements", sub: "Cautions et reçus", Icon: Receipt },
   { href: "/account/watchlist", label: "Favoris", sub: "Vos voitures suivies", Icon: Heart },
   { href: "/account/inspections", label: "Inspections", sub: "Rapports d'expertise", Icon: ClipboardCheck },
+  { href: "/account/notifications", label: "Notifications", sub: "Alertes et activité", Icon: Bell },
   { href: "/kyc/status", label: "Vérification (KYC)", sub: "Statut d'identité", Icon: ShieldCheck },
+  { href: "/account/settings", label: "Paramètres", sub: "Mot de passe et compte", Icon: Settings },
   { href: "/sell", label: "Vendre une voiture", sub: "Créer une annonce", Icon: Plus },
 ];
 
