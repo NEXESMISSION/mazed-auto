@@ -7,7 +7,7 @@ import { useTranslations } from "next-intl";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { AccountMenu } from "./AccountMenu";
 import { normalizeSearchQuery } from "@/lib/search";
-import { Search, Plus } from "lucide-react";
+import { Search } from "lucide-react";
 
 // Lazy-loaded — see TopBar for rationale (heavy icon set + realtime socket +
 // mount fetch, none needed for first paint). Reserves the 36px slot.
@@ -35,10 +35,18 @@ const NotificationBell = dynamic(
  * to the same value at lg (see .batta-shell-main in globals.css).
  */
 
-const LINKS: { href: "/" | "/properties" | "/account/activity"; key: "home" | "browse" | "activity" }[] = [
-  { href: "/", key: "home" },
+// v1's DesktopHeader nav, adapted to v2's routes:
+//   Parcourir → /properties · Vendre votre voiture → /sell ·
+//   Mes enchères → /account/activity · Tarifs Pro → /pricing.
+// The logo itself links home, so no "Accueil" item (same as v1).
+const LINKS: {
+  href: "/properties" | "/sell" | "/account/activity" | "/pricing";
+  key: "browse" | "sellLong" | "myBids" | "pricing";
+}[] = [
   { href: "/properties", key: "browse" },
-  { href: "/account/activity", key: "activity" },
+  { href: "/sell", key: "sellLong" },
+  { href: "/account/activity", key: "myBids" },
+  { href: "/pricing", key: "pricing" },
 ];
 
 function isActive(pathname: string, href: string): boolean {
@@ -136,17 +144,11 @@ export function DesktopNav() {
           </div>
         </form>
 
-        {/* ── Right zone: notifications, account, sell CTA ── */}
+        {/* ── Right zone: notifications + account (v1 keeps the header
+            quiet on the right — selling lives in the nav links). ── */}
         <div className="flex shrink-0 items-center gap-2">
           <NotificationBell />
           <AccountMenu />
-          <Link
-            href="/sell"
-            className="batta-gold-fill inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-[13px] font-bold shadow-[var(--shadow-gold)] transition active:scale-[0.98]"
-          >
-            <Plus className="size-4" strokeWidth={2.5} />
-            {t("sell")}
-          </Link>
         </div>
       </div>
     </header>
