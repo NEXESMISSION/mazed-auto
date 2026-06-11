@@ -60,7 +60,12 @@ export async function PropertyCard({
     auction.status === "ended_sold" ||
     auction.status === "ended_unsold" ||
     auction.status === "cancelled";
-  const price = auction.current_price ?? auction.opening_price;
+  // Direct (fixed-price) listings price from sale_price — current_price is a
+  // bidding concept and stays null on them, and opening_price can be 0.
+  const price =
+    auction.listing_type === "direct"
+      ? (auction.sale_price ?? auction.current_price ?? auction.opening_price)
+      : (auction.current_price ?? auction.opening_price);
   const nextStep = minBidIncrement(price);
   const isEnglish = auction.type === "english";
   // Last 4 of the auction id, uppercase. Adds the "lot A2F4"
@@ -172,6 +177,16 @@ export async function PropertyCard({
             )}
           </div>
 
+          {/* "En vedette" promo pill — top-trailing, gold (v1 parity).
+              The status chip is top-leading so the two never collide. */}
+          {property.promo_home_featured && (
+            <div className="absolute top-2.5 end-2.5">
+              <span className="inline-flex h-6 items-center rounded-full bg-[var(--gold)] px-2 text-[10px] font-extrabold uppercase tracking-wider text-black shadow-[var(--shadow-gold)]">
+                En vedette
+              </span>
+            </div>
+          )}
+
           {/* Bottom-leading — watchlist heart. z-20 keeps it ABOVE the
               stretched card link (z-10) so its button still receives clicks. */}
           <div className="absolute bottom-2.5 start-2.5 z-20">
@@ -232,14 +247,31 @@ export async function PropertyCard({
               </span>
             </span>
             {isEnglish ? (
-              <span
-                dir="ltr"
-                className="batta-tabular inline-flex items-center gap-1 text-[11px] text-muted"
-                title="Bid step"
-              >
-                <Gavel className="size-3" strokeWidth={2} />
-                +{formatTND(nextStep, locale)}
-              </span>
+              isLive && auction.bid_count > 0 ? (
+                /* Live activity counter — v1 parity. Shows how many bids
+                   the lot has attracted; falls back to the bid-step hint
+                   below while the count is still zero. */
+                <span
+                  className="batta-tabular inline-flex items-center gap-1 text-[11px] text-muted"
+                  title={
+                    auction.bid_count === 1
+                      ? "1 enchère"
+                      : `${auction.bid_count} enchères`
+                  }
+                >
+                  <Gavel className="size-3" strokeWidth={2} />
+                  {auction.bid_count}
+                </span>
+              ) : (
+                <span
+                  dir="ltr"
+                  className="batta-tabular inline-flex items-center gap-1 text-[11px] text-muted"
+                  title="Bid step"
+                >
+                  <Gavel className="size-3" strokeWidth={2} />
+                  +{formatTND(nextStep, locale)}
+                </span>
+              )
             ) : (
               <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.12em] text-gold">
                 <Users className="size-3" strokeWidth={2} />

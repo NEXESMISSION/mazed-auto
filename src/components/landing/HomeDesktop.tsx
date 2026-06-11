@@ -109,6 +109,22 @@ export async function HomeDesktop({
     .sort((x, y) => (y.bid_count ?? 0) - (x.bid_count ?? 0))
     .slice(0, 8);
 
+  // "Dernière chance" — lots whose hammer falls within the hour. This is
+  // an async server component revalidated every 60s, so reading the clock
+  // at render keeps the window honest enough; the cards' own countdowns
+  // stay live client-side.
+  const nowMs = Date.now();
+  const lastCall = trending
+    .filter((a) => {
+      if (a.status !== "live" && a.status !== "extending") return false;
+      const remainingMs = new Date(a.ends_at).getTime() - nowMs;
+      return remainingMs > 0 && remainingMs < 60 * 60 * 1000;
+    })
+    .sort(
+      (x, y) => new Date(x.ends_at).getTime() - new Date(y.ends_at).getTime(),
+    )
+    .slice(0, 8);
+
   // The magazine hero draws its featured lot + runners from the richest
   // pool we have. Lead with the hottest lots so the "La plus disputée"
   // badge is accurate (like v1's hot[0]); fall back through trending and
@@ -194,6 +210,41 @@ export async function HomeDesktop({
               seeAllLabel={t("home.seeAll")}
             />
             <CardSlider items={hotNow} savedIds={savedIds} loggedIn={loggedIn} />
+          </section>
+        )}
+
+        {/* DERNIÈRE CHANCE — hammers falling within the hour (red urgency
+            tier, ported from v1's LastCallRail; inline header because the
+            red treatment diverges from the gold RailHeader). */}
+        {lastCall.length > 0 && (
+          <section className="mt-12">
+            <div className="flex items-end justify-between gap-3 px-4">
+              <div className="min-w-0">
+                <div className="mb-1.5 flex items-center gap-2">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inset-0 animate-ping rounded-full bg-red-500 opacity-60" />
+                    <span className="relative h-2 w-2 rounded-full bg-red-500" />
+                  </span>
+                  <span className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-red-400">
+                    Dernière chance
+                  </span>
+                </div>
+                <h3 className="inline-flex items-center gap-2 text-[20px] font-extrabold leading-tight tracking-tight">
+                  {"Se terminent dans moins d'une heure"}
+                  <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-red-500/15 px-2.5 text-[11px] font-extrabold tracking-wider text-red-300 ring-1 ring-red-500/40">
+                    {lastCall.length}
+                  </span>
+                </h3>
+              </div>
+              <Link
+                href="/properties"
+                className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border bg-surface px-3.5 py-1.5 text-[11.5px] font-semibold text-muted transition-colors hover:border-gold-soft/40 hover:text-gold"
+              >
+                {t("home.seeAll")}
+                <ChevronEnd className="size-3" />
+              </Link>
+            </div>
+            <CardSlider items={lastCall} savedIds={savedIds} loggedIn={loggedIn} />
           </section>
         )}
 

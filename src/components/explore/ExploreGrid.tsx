@@ -598,6 +598,16 @@ function GridCard({
             )}
           </div>
 
+          {/* "En vedette" promo pill — top-trailing, gold (v1 parity).
+              The status pill is top-leading so the two never collide. */}
+          {property.promo_home_featured && (
+            <div className="absolute top-2.5 end-2.5">
+              <span className="inline-flex h-6 items-center rounded-full bg-[var(--gold)] px-2 text-[10px] font-extrabold uppercase tracking-wider text-black shadow-[var(--shadow-gold)]">
+                En vedette
+              </span>
+            </div>
+          )}
+
           <div className="absolute bottom-2.5 start-2.5">
             <WatchlistButton
               auctionId={auction.id}

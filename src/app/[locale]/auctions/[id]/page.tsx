@@ -23,11 +23,13 @@ import { AuctionTerms } from "@/components/auction/AuctionTerms";
 import { PropertyMap } from "@/components/property/PropertyMap";
 import { PropertyDocumentOpenButton } from "@/components/property/PropertyDocumentOpenButton";
 import { WatchlistButton } from "@/components/watchlist/WatchlistButton";
+import { ShareButton } from "@/components/auction/ShareButton";
 import { Link } from "@/i18n/navigation";
 import {
-  MapPin, Ruler, BedDouble, Bath, Building2, Calendar,
+  MapPin, Ruler, BedDouble, Bath, Calendar,
   ClipboardCheck, FileText, Lock, Gavel, Download, Clock,
-  Hourglass,
+  Hourglass, Car, Gauge, Fuel, Cog, Palette, BadgeCheck,
+  Armchair, ListChecks,
 } from "lucide-react";
 
 // Lightweight SEO lookup — just the fields a search result / social card
@@ -510,13 +512,18 @@ export default async function AuctionDetail({
             <Gavel className="size-3" strokeWidth={2.5} />
             {t(`auction.types.${auction.type}`)}
           </span>
-          <h1
-            className={`mt-3 text-pretty text-[28px] font-extrabold leading-[1.05] tracking-tight text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)] ${
-              isRTL ? "font-arabic" : ""
-            }`}
-          >
-            {property.title}
-          </h1>
+          <div className="mt-3 flex items-end justify-between gap-3">
+            <h1
+              className={`min-w-0 text-pretty text-[28px] font-extrabold leading-[1.05] tracking-tight text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)] ${
+                isRTL ? "font-arabic" : ""
+              }`}
+            >
+              {property.title}
+            </h1>
+            <div className="pointer-events-auto shrink-0 pb-0.5">
+              <ShareButton title={property.title} />
+            </div>
+          </div>
           <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[12px] font-semibold text-white/95 drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]">
             <span className="inline-flex items-center gap-1">
               <MapPin className="size-3.5" strokeWidth={2} />
@@ -781,7 +788,7 @@ export default async function AuctionDetail({
           Caractéristiques
         </h2>
         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-          <Spec Icon={Building2} label={t("property.type")} value={t(`property.types.${property.type}`)} />
+          <Spec Icon={Car} label={t("property.type")} value={t(`property.types.${property.type}`)} />
           {attrKinds.map((k) => {
             const raw = attrs[k.field_key];
             // Skip empties and unchecked booleans (we only stored `true`).
@@ -999,13 +1006,38 @@ export default async function AuctionDetail({
   );
 }
 
-// Maps an attribute field_key to a fitting icon for its spec tile. Numeric
-// measures get a ruler, rooms a bed, etc.; everything else falls back to
-// the building glyph.
+// Maps an attribute field_key to a fitting icon for its spec tile —
+// car attributes first (mileage, fuel, transmission…), with the legacy
+// real-estate keys kept so stale rows still render something sensible.
+// Everything else falls back to the car glyph.
 function specIcon(
   key: string,
 ): React.ComponentType<{ className?: string; strokeWidth?: number }> {
   switch (key) {
+    case "mileage":
+      return Gauge;
+    case "fuel":
+      return Fuel;
+    case "transmission":
+      return Cog;
+    case "color":
+      return Palette;
+    case "year":
+    case "year_built":
+      return Calendar;
+    case "make":
+    case "model":
+      return Car;
+    case "condition":
+      return BadgeCheck;
+    case "region":
+      return MapPin;
+    case "seats":
+    case "doors":
+      return Armchair;
+    case "features":
+      return ListChecks;
+    // Legacy real-estate keys — stale rows created before the car pivot.
     case "area_sqm":
     case "land_area_sqm":
     case "frontage_m":
@@ -1015,10 +1047,8 @@ function specIcon(
       return BedDouble;
     case "bathrooms":
       return Bath;
-    case "year_built":
-      return Calendar;
     default:
-      return Building2;
+      return Car;
   }
 }
 

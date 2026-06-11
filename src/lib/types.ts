@@ -59,6 +59,11 @@ export type Property = {
   lat: number | null;
   lng: number | null;
   status: PropertyStatus;
+  // Paid promo flags (set by admin tooling in the DB) — drive the gold
+  // "En vedette" badge and placement boosts in the listing UIs.
+  promo_home_featured?: boolean;
+  promo_top_listed?: boolean;
+  promo_banner?: boolean;
   rejection_reason: string | null;
   created_at: string;
   updated_at: string;

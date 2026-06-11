@@ -29,7 +29,7 @@ export type HammeredRow = {
 // not the full auctions.*/properties.* rows. promo_* drive the paid-placement
 // sort.
 const HOME_AUCTION_SELECT = `
-  id, status, type, listing_type, opening_price, current_price, ends_at, created_at,
+  id, status, type, listing_type, opening_price, current_price, sale_price, bid_count, ends_at, created_at,
   property:properties!inner (
     id, title, governorate, status, promo_banner, promo_home_featured,
     photos:property_photos ( id, storage_path, sort_order )

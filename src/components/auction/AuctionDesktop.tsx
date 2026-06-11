@@ -7,12 +7,13 @@ import { AuctionCalendarMenu } from "@/components/auction/AuctionCalendarMenu";
 import { DirectSalePanel } from "@/components/auction/DirectSalePanel";
 import { HeroCarousel } from "@/components/auction/HeroCarousel";
 import { WatchlistButton } from "@/components/watchlist/WatchlistButton";
+import { ShareButton } from "@/components/auction/ShareButton";
 import { AuctionTerms } from "@/components/auction/AuctionTerms";
 import { SellerAuctionBanner } from "@/components/auction/SellerAuctionBanner";
 import { PropertyMap } from "@/components/property/PropertyMap";
 import { PropertyDocumentOpenButton } from "@/components/property/PropertyDocumentOpenButton";
 import {
-  MapPin, Ruler, BedDouble, Bath, Building2, Calendar, ChevronRight,
+  MapPin, Ruler, Calendar, ChevronRight,
   ClipboardCheck, FileText, Lock, Gavel, Download, Clock, Hourglass,
   ShieldCheck, Trophy, Wallet, Car, Gauge, Fuel, Cog,
 } from "lucide-react";
@@ -181,6 +182,9 @@ export async function AuctionDesktop(props: {
               </>
             )}
           </div>
+        </div>
+        <div className="mt-1 shrink-0">
+          <ShareButton title={property.title} />
         </div>
       </div>
 
