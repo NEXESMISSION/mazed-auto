@@ -22,6 +22,7 @@ import {
   Trophy,
   MapPin,
   Tag,
+  Crown,
 } from "lucide-react";
 
 /**
@@ -124,6 +125,17 @@ export async function HomeDesktop({
       (x, y) => new Date(x.ends_at).getTime() - new Date(y.ends_at).getTime(),
     )
     .slice(0, 8);
+
+  // "En vedette" — paid/featured placements (v1's VipRail). Drawn across
+  // all loaded surfaces so a featured direct listing shows too.
+  const vipSeen = new Set<string>();
+  const vip = [...trending, ...offers, ...nouveautes]
+    .filter((a) => {
+      if (vipSeen.has(a.id) || !a.property?.promo_home_featured) return false;
+      vipSeen.add(a.id);
+      return true;
+    })
+    .slice(0, 4);
 
   // The magazine hero draws its featured lot + runners from the richest
   // pool we have. Lead with the hottest lots so the "La plus disputée"
@@ -245,6 +257,52 @@ export async function HomeDesktop({
               </Link>
             </div>
             <CardSlider items={lastCall} savedIds={savedIds} loggedIn={loggedIn} />
+          </section>
+        )}
+
+        {/* EN VEDETTE — paid/featured placements (v1's VipRail: Crown header,
+            faint gold radial glow behind a 4-up grid so the premium tier
+            stands apart from the scrolling rails). */}
+        {vip.length > 0 && (
+          <section className="mt-12">
+            <div className="flex items-end justify-between gap-3 px-4">
+              <div className="min-w-0">
+                <div className="mb-1.5 flex items-center gap-2">
+                  <Crown className="size-3.5 text-gold" strokeWidth={2.2} />
+                  <span className="batta-eyebrow">Sélection premium</span>
+                </div>
+                <h3 className="text-[20px] font-extrabold leading-tight tracking-tight">
+                  En <span className="gradient-gold-text">vedette</span>
+                </h3>
+              </div>
+              <Link
+                href="/properties"
+                className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border bg-surface px-3.5 py-1.5 text-[11.5px] font-semibold text-muted transition-colors hover:border-gold-soft/40 hover:text-gold"
+              >
+                {t("home.seeAll")}
+                <ChevronEnd className="size-3" />
+              </Link>
+            </div>
+            <div className="relative mt-4 px-4">
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-x-4 top-1/2 h-1/2 -translate-y-1/2 rounded-[28px] opacity-[0.18]"
+                style={{
+                  background:
+                    "radial-gradient(ellipse at center, rgba(212,175,55,0.25), transparent 60%)",
+                }}
+              />
+              <div className="relative grid grid-cols-4 gap-6">
+                {vip.map((a) => (
+                  <PropertyCard
+                    key={a.id}
+                    auction={a}
+                    saved={savedIds.has(a.id)}
+                    loggedIn={loggedIn}
+                  />
+                ))}
+              </div>
+            </div>
           </section>
         )}
 
