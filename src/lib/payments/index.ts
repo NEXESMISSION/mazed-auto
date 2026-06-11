@@ -43,8 +43,13 @@ export type PayeeDetails = {
   d17: string;
 };
 
+// TEST PLACEHOLDERS ONLY — the real beneficiary name, bank, RIB, IBAN and
+// D17 number are admin-tunable and MUST be set in /admin/settings
+// (app_settings: payee_name / payee_bank / payee_rib / payee_iban /
+// payee_d17) before launch. These defaults only show when those settings
+// are empty.
 const DEFAULT_PAYEE: PayeeDetails = {
-  name: "Batta Tunisia SARL",
+  name: "Mazed Auto",
   bank: "Société Tunisienne de Banque (STB)",
   rib: "07 003 0001234567890 78",
   iban: "TN59 0700 3000 0123 4567 8907 8",
@@ -54,12 +59,12 @@ const DEFAULT_PAYEE: PayeeDetails = {
 /**
  * Build a short, human-readable reference the buyer types in the
  * "communication" / "motif" field of their transfer. We use the first
- * 8 chars of the payment UUID, uppercased, prefixed with BATTA. That
+ * 8 chars of the payment UUID, uppercased, prefixed with MAZED. That
  * gives admin a one-line search key to match a bank statement against a
  * payments row.
  */
 export function paymentReference(paymentId: string): string {
-  return `BATTA-${paymentId.slice(0, 8).toUpperCase()}`;
+  return `MAZED-${paymentId.slice(0, 8).toUpperCase()}`;
 }
 
 /**
@@ -108,9 +113,9 @@ export function paymentInstructions(opts: {
       label: "D17 · La Poste Tunisienne",
       shortLabel: "D17",
       description:
-        "Envoyez le montant depuis votre application D17 vers le numéro Batta, puis téléversez la confirmation reçue par SMS ou dans l'app.",
+        "Envoyez le montant depuis votre application D17 vers le numéro ci-dessous, puis téléversez la confirmation reçue par SMS ou dans l'app.",
       fields: [
-        { label: "Numéro D17 Batta", value: p.d17, copyable: true, mono: true },
+        { label: "Numéro D17", value: p.d17, copyable: true, mono: true },
         { label: "Bénéficiaire", value: p.name },
         { label: "Montant", value: `${amt} TND`, copyable: true, mono: true },
         { label: "Référence (libellé du transfert)", value: ref, copyable: true, mono: true },
