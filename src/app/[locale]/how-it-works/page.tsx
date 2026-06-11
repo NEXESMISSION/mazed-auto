@@ -103,7 +103,7 @@ export default function HowItWorksPage() {
           <FlowStep
             num={3}
             icon={<FileCheck className="size-5" />}
-            title="Justifiez la propriété"
+            title="Justifiez les documents du véhicule"
             text="Téléversez la carte grise et les documents demandés. Notre équipe vérifie chaque annonce avant publication."
           />
           <FlowStep

@@ -358,12 +358,12 @@ export default async function AdminPropertyReview({
                 />
               </ImageLightbox>
             ) : payRow.receipt_url ? (
-              <a
-                href={`/api/payments`}
+              <Link
+                href="/admin/payments"
                 className="text-[12px] text-gold-bright underline"
               >
                 Reçu disponible (ouvrir la file de paiements)
-              </a>
+              </Link>
             ) : (
               <p className="rounded-lg bg-surface-2 px-3 py-2 text-[12px] text-muted">
                 Le vendeur n&apos;a pas encore téléversé de reçu.
