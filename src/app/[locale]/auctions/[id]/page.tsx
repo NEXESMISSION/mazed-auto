@@ -11,7 +11,8 @@ import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { resolveDeposit } from "@/lib/pricing";
 import { getCachedMonetization } from "@/lib/settings";
 import { jsonLdSafe } from "@/lib/jsonld";
-import { getPublicAuctionDetail, AUCTION_DETAIL_SELECT } from "@/lib/auction/detail";
+import { getPublicAuctionDetail, getPublicSellerCard, AUCTION_DETAIL_SELECT } from "@/lib/auction/detail";
+import { SellerCard } from "@/components/auction/SellerCard";
 import { Countdown } from "@/components/auction/Countdown";
 import { AuctionCalendarMenu } from "@/components/auction/AuctionCalendarMenu";
 import { DirectSalePanel } from "@/components/auction/DirectSalePanel";
@@ -188,7 +189,7 @@ export default async function AuctionDetail({
   // which goes through the protected `property_documents` RLS.
   // Property docs + per-type characteristics catalog are independent of each
   // other (and of the user gates below) — fetch them in one parallel wave.
-  const [docsRes, attrKindRes] = await Promise.all([
+  const [docsRes, attrKindRes, sellerCard] = await Promise.all([
     supabase
       .from("property_document_kinds")
       .select("id, kind")
@@ -203,6 +204,9 @@ export default async function AuctionDetail({
       .eq("property_type", property.type)
       .order("sort_order")
       .order("label"),
+    // Anonymized seller trust card ("Vendeur" section) — cached 5 min per
+    // seller, derived server-side so no PII reaches the payload.
+    getPublicSellerCard(property.owner_id),
   ]);
   const documents = (docsRes.data ?? []) as Array<{ id: string; kind: string }>;
   const attrKinds = (attrKindRes.data ?? []) as Array<{
@@ -462,6 +466,7 @@ export default async function AuctionDetail({
         sellerFinalPayment={sellerFinalPayment}
         sellerActiveDeposits={sellerActiveDeposits}
         winnerBalance={winnerBalance}
+        sellerCard={sellerCard}
       />
 
       {/* ─── MOBILE / tablet (default, hidden on lg+) ─── */}
@@ -830,6 +835,9 @@ export default async function AuctionDetail({
           </p>
         </section>
       )}
+
+      {/* ─── SELLER TRUST CARD — anonymized "Vendeur" block ─── */}
+      {sellerCard && <SellerCard seller={sellerCard} className="mx-4 mt-5" />}
 
       {/* ─── MAP ─── */}
       {property.lat != null && property.lng != null && (

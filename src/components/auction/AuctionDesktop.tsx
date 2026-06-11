@@ -10,6 +10,8 @@ import { WatchlistButton } from "@/components/watchlist/WatchlistButton";
 import { ShareButton } from "@/components/auction/ShareButton";
 import { AuctionTerms } from "@/components/auction/AuctionTerms";
 import { SellerAuctionBanner } from "@/components/auction/SellerAuctionBanner";
+import { SellerCard } from "@/components/auction/SellerCard";
+import type { SellerCardData } from "@/lib/auction/detail";
 import { PropertyMap } from "@/components/property/PropertyMap";
 import { PropertyDocumentOpenButton } from "@/components/property/PropertyDocumentOpenButton";
 import {
@@ -58,13 +60,16 @@ export async function AuctionDesktop(props: {
   /** Balance the winner still owes (winner_amount − caution), or null when
    *  nothing is due / already paid. Drives the "Payer le solde" CTA. */
   winnerBalance: number | null;
+  /** Anonymized seller snapshot for the "Vendeur" trust card; null when
+   *  the profile couldn't be loaded (card is simply omitted). */
+  sellerCard: SellerCardData | null;
 }) {
   const {
     auction, totalBids, currentPrice, depositRequired, deposit,
     isLive, isDirect, hasBuyNow, isEnded, isOwner,
     kycVerified, hasActiveDeposit, depositUnderReview, userId,
     documents, attrKinds, attrs, myInspection,
-    sellerFinalPayment, sellerActiveDeposits, winnerBalance,
+    sellerFinalPayment, sellerActiveDeposits, winnerBalance, sellerCard,
   } = props;
 
   const t = await getTranslations();
@@ -399,6 +404,9 @@ export async function AuctionDesktop(props: {
               </p>
             </section>
           )}
+
+          {/* Vendeur — anonymized seller trust card */}
+          {sellerCard && <SellerCard seller={sellerCard} />}
         </div>
 
         {/* Side — trust + map */}

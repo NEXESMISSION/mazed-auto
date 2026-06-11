@@ -60,3 +60,76 @@ export const getPublicAuctionDetail = unstable_cache(
   ["auction-detail"],
   { revalidate: 15, tags: ["auction-detail"] },
 );
+
+/** Anonymized, buyer-safe seller snapshot for the detail page's
+ *  "Vendeur" trust card. Built server-side from the seller's profile —
+ *  the raw row (full name, phone, …) NEVER leaves this module: only the
+ *  derived fields below are returned, so nothing identifying can leak
+ *  into the page payload. */
+export type SellerCardData = {
+  /** First name + last initial ("Karim B."), or null when the profile
+   *  has no usable full_name — the card then shows the role label only. */
+  displayName: string | null;
+  /** true for agency/bank/bailiff accounts → "Vendeur professionnel". */
+  isPro: boolean;
+  kycVerified: boolean;
+  /** profiles.created_at (ISO) → "Membre depuis {mois année}". */
+  memberSince: string;
+  /** Public (status='ready') listings owned by this seller. */
+  lotCount: number;
+};
+
+// "Mohamed Ali Ben Salah" → "Mohamed B." — first given name + initial of
+// the LAST token only. Single-token names pass through as-is. Anything
+// blank → null (caller falls back to the role label).
+function anonDisplayName(fullName: string | null): string | null {
+  const parts = (fullName ?? "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return null;
+  if (parts.length === 1) return parts[0];
+  const initial = parts[parts.length - 1][0]?.toUpperCase();
+  return initial ? `${parts[0]} ${initial}.` : parts[0];
+}
+
+/**
+ * Seller trust-card data, cached 5 min per seller and shared across all
+ * their lots. Service-role client on purpose: profiles RLS only exposes
+ * rows to their owner / admins / pro roles, so an anonymous buyer could
+ * never read an individual seller's profile through the cookieless RLS
+ * path — and we WANT this derived, non-identifying subset to be public.
+ * Two cheap queries (profile row + head-count of ready listings), both
+ * absorbed by the cache on the hot path.
+ */
+export const getPublicSellerCard = unstable_cache(
+  async (ownerId: string): Promise<SellerCardData | null> => {
+    const sb = getServiceSupabase();
+    if (!sb) return null;
+    const [profileRes, countRes] = await Promise.all([
+      sb
+        .from("profiles")
+        .select("full_name, role, kyc_status, created_at")
+        .eq("id", ownerId)
+        .maybeSingle(),
+      sb
+        .from("properties")
+        .select("id", { count: "exact", head: true })
+        .eq("owner_id", ownerId)
+        .eq("status", "ready"),
+    ]);
+    const p = profileRes.data as {
+      full_name: string | null;
+      role: string;
+      kyc_status: string;
+      created_at: string;
+    } | null;
+    if (!p) return null;
+    return {
+      displayName: anonDisplayName(p.full_name),
+      isPro: ["agency", "bank", "bailiff"].includes(p.role),
+      kycVerified: p.kyc_status === "verified",
+      memberSince: p.created_at,
+      lotCount: countRes.count ?? 0,
+    };
+  },
+  ["seller-card"],
+  { revalidate: 300, tags: ["seller-card"] },
+);
