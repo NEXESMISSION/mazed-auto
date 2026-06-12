@@ -34,13 +34,13 @@ export default async function AdminCharacteristicsPage() {
     <div>
       <AdminPageHeader
         eyebrow="Caractéristiques"
-        title="Champs par type de bien"
+        title="Champs par type de véhicule"
         description={
           <>
             Définissez les caractéristiques que chaque vendeur renseigne selon le
-            type de bien (surface, pièces, type de titre, source d&apos;eau…). Les
+            type de véhicule (kilométrage, carburant, boîte, motorisation…). Les
             champs marqués <b>requis</b> bloquent l&apos;envoi du formulaire. Ces
-            informations apparaissent sur la fiche publique du bien.
+            informations apparaissent sur la fiche publique du véhicule.
           </>
         }
       />

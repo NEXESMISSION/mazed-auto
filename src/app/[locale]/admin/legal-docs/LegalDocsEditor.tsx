@@ -279,7 +279,7 @@ export function LegalDocsEditor({
                     <input
                       type="text"
                       value={row.label}
-                      placeholder="Titre du document (ex. Titre foncier)"
+                      placeholder="Titre du document (ex. Carte grise)"
                       onChange={(e) => update(i, { label: e.target.value })}
                       className="w-full rounded-lg border border-batta-gold/25 bg-batta-surface px-3 py-2 text-sm font-semibold text-batta-cream focus:border-batta-gold focus:outline-none focus:ring-1 focus:ring-batta-gold/40"
                     />

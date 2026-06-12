@@ -9,10 +9,11 @@ import type { AuctionWithProperty } from "@/lib/types";
 import { formatTND } from "@/lib/utils";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { resolveDeposit } from "@/lib/pricing";
-import { getCachedMonetization } from "@/lib/settings";
+import { getCachedMonetization, getCachedFinalPaymentDays } from "@/lib/settings";
 import { jsonLdSafe } from "@/lib/jsonld";
-import { getPublicAuctionDetail, getPublicSellerCard, AUCTION_DETAIL_SELECT } from "@/lib/auction/detail";
+import { getPublicAuctionDetail, getPublicSellerCard, getCachedAttributeKinds, AUCTION_DETAIL_SELECT } from "@/lib/auction/detail";
 import { SellerCard } from "@/components/auction/SellerCard";
+import { WinnerPaymentExplainer } from "@/components/auction/WinnerPaymentExplainer";
 import { Countdown } from "@/components/auction/Countdown";
 import { AuctionCalendarMenu } from "@/components/auction/AuctionCalendarMenu";
 import { DirectSalePanel } from "@/components/auction/DirectSalePanel";
@@ -127,7 +128,7 @@ export default async function AuctionDetail({
   const isRTL = locale === "ar";
   const supabase = await getServerSupabase();
 
-  const [cachedAuction, userRes, mon] = await Promise.all([
+  const [cachedAuction, userRes, mon, finalPaymentDays] = await Promise.all([
     // Public auction shell (auction + property + photos), cached 15s + shared
     // across all viewers — the hot path. Per-user bits below stay live.
     getPublicAuctionDetail(id),
@@ -136,6 +137,8 @@ export default async function AuctionDetail({
     // cached app_settings layer (no per-request DB round-trip), still in
     // this first parallel wave so a cache miss overlaps the other queries.
     getCachedMonetization(),
+    // Winner's payment window (admin-tunable) — same cached layer.
+    getCachedFinalPaymentDays(),
   ]);
 
   // The public cache excludes 'cancelled' lots (matches auctions_public_read).
@@ -189,33 +192,22 @@ export default async function AuctionDetail({
   // which goes through the protected `property_documents` RLS.
   // Property docs + per-type characteristics catalog are independent of each
   // other (and of the user gates below) — fetch them in one parallel wave.
-  const [docsRes, attrKindRes, sellerCard] = await Promise.all([
+  const [docsRes, attrKinds, sellerCard] = await Promise.all([
     supabase
       .from("property_document_kinds")
       .select("id, kind")
       .eq("property_id", property.id),
     // Per-type characteristics catalog → drives the Specifications tiles.
-    // The attributes JSONB is the source of truth; rows created before
-    // migration 0037 only have the legacy columns, so we backfill the
-    // canonical keys from those so old listings still show their specs.
-    supabase
-      .from("property_attribute_kinds")
-      .select("field_key, label, data_type, options, unit, sort_order")
-      .eq("property_type", property.type)
-      .order("sort_order")
-      .order("label"),
+    // Near-static + admin-controlled, so served from a 1h cached helper
+    // instead of a live DB read on every view (busted on admin edits). The
+    // attributes JSONB is the source of truth; rows created before migration
+    // 0037 only have the legacy columns, so we backfill the canonical keys.
+    getCachedAttributeKinds(property.type),
     // Anonymized seller trust card ("Vendeur" section) — cached 5 min per
     // seller, derived server-side so no PII reaches the payload.
     getPublicSellerCard(property.owner_id),
   ]);
   const documents = (docsRes.data ?? []) as Array<{ id: string; kind: string }>;
-  const attrKinds = (attrKindRes.data ?? []) as Array<{
-    field_key: string;
-    label: string;
-    data_type: string;
-    options: { value: string; label: string }[] | null;
-    unit: string | null;
-  }>;
   const attrs: Record<string, string | number | boolean> = {
     ...(property.attributes ?? {}),
   };
@@ -466,6 +458,7 @@ export default async function AuctionDetail({
         sellerFinalPayment={sellerFinalPayment}
         sellerActiveDeposits={sellerActiveDeposits}
         winnerBalance={winnerBalance}
+        finalPaymentDays={finalPaymentDays}
         sellerCard={sellerCard}
       />
 
@@ -730,6 +723,13 @@ export default async function AuctionDetail({
               >
                 Payer le solde
               </Link>
+              <WinnerPaymentExplainer
+                winnerAmount={Number(auction.winner_amount ?? currentPrice)}
+                winnerBalance={winnerBalance}
+                finalPaymentDueAt={auction.final_payment_due_at ?? null}
+                days={finalPaymentDays}
+                locale={locale}
+              />
             </div>
           ) : (
             <div className="flex items-center justify-between gap-3 rounded-xl bg-[var(--gold-faint)] px-4 py-3 ring-1 ring-[var(--gold-soft)]">
@@ -985,7 +985,11 @@ export default async function AuctionDetail({
                 className="batta-gradient-gold inline-flex h-12 w-full items-center justify-center gap-2 rounded-full text-[14px] font-extrabold uppercase tracking-[0.12em] text-white shadow-[var(--shadow-gold)] ring-1 ring-black/5 transition-all active:scale-[0.99]"
               >
                 <Gavel className="h-4 w-4" strokeWidth={2.5} />
-                {isLive ? t("auction.placeBid") : "Réserver ma place"}
+                {isLive
+                  ? t("auction.placeBid")
+                  : hasActiveDeposit
+                    ? "Inscrit ✓ · Voir le compte à rebours"
+                    : "Réserver ma place"}
               </Link>
             )}
             {hasBuyNow && !isOwner && (

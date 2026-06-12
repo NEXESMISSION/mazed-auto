@@ -74,11 +74,11 @@ function SegmentChip({
 
 const SEGMENTS: { Icon: React.ComponentType<{ className?: string }>; label: string }[] = [
   { Icon: Landmark,    label: "Banks" },
-  { Icon: Building2,   label: "Real-estate agencies" },
+  { Icon: Building2,   label: "Car dealerships" },
   { Icon: Scale,       label: "Court bailiffs" },
-  { Icon: Gavel,       label: "Notaries" },
+  { Icon: Gavel,       label: "Insurers" },
   { Icon: ShieldCheck, label: "Accredited inspectors" },
-  { Icon: Briefcase,   label: "Property lawyers" },
+  { Icon: Briefcase,   label: "Fleet managers" },
   { Icon: University,  label: "Public institutions" },
-  { Icon: HandCoins,   label: "Diaspora investors" },
+  { Icon: HandCoins,   label: "Diaspora buyers" },
 ];

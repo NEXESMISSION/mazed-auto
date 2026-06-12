@@ -61,7 +61,7 @@ export const REJECTION_CATEGORY_HINTS: Record<RejectionCategory, string> = {
   documents:   "Téléversez à nouveau vos documents légaux.",
   address:     "Complétez ou corrigez l'adresse de l'annonce.",
   price:       "Revoyez le prix de vente ou la mise à prix.",
-  description: "Étoffez la description : superficie, état, environnement.",
+  description: "Étoffez la description : kilométrage, état, entretien.",
   title:       "Reformulez le titre — soyez clair et descriptif.",
   general:     "Consultez le motif et corrigez l'annonce en conséquence.",
 };

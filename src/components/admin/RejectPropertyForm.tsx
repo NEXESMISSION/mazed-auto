@@ -27,9 +27,9 @@ const PRESETS: { label: string; text: string; category: RejectionCategory }[] = 
     text: "Les photos ne sont pas exploitables (flou, sombre, recadrage incorrect). Merci de reprendre des clichés nets en plein jour.",
   },
   {
-    label: "Titre foncier illisible",
+    label: "Carte grise illisible",
     category: "documents",
-    text: "Le titre foncier joint n'est pas lisible. Merci de le scanner ou de le re-photographier à plat avec un bon éclairage.",
+    text: "La carte grise jointe n'est pas lisible. Merci de la scanner ou de la re-photographier à plat avec un bon éclairage.",
   },
   {
     label: "Documents manquants",
@@ -44,12 +44,12 @@ const PRESETS: { label: string; text: string; category: RejectionCategory }[] = 
   {
     label: "Prix incohérent / hors marché",
     category: "price",
-    text: "Le prix indiqué semble incohérent avec le marché pour ce type de bien dans ce gouvernorat. Revoyez l'estimation ou joignez un justificatif.",
+    text: "Le prix indiqué semble incohérent avec le marché pour ce type de véhicule dans ce gouvernorat. Revoyez l'estimation ou joignez un justificatif.",
   },
   {
     label: "Description trop courte",
     category: "description",
-    text: "La description est insuffisante pour qu'un acheteur se projette. Détaillez la superficie, l'état général, l'environnement et les servitudes éventuelles.",
+    text: "La description est insuffisante pour qu'un acheteur se projette. Détaillez le kilométrage, l'état général, l'historique d'entretien et les options du véhicule.",
   },
 ];
 

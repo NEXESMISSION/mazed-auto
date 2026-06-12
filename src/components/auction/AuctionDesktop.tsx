@@ -11,6 +11,7 @@ import { ShareButton } from "@/components/auction/ShareButton";
 import { AuctionTerms } from "@/components/auction/AuctionTerms";
 import { SellerAuctionBanner } from "@/components/auction/SellerAuctionBanner";
 import { SellerCard } from "@/components/auction/SellerCard";
+import { WinnerPaymentExplainer } from "@/components/auction/WinnerPaymentExplainer";
 import type { SellerCardData } from "@/lib/auction/detail";
 import { PropertyMap } from "@/components/property/PropertyMap";
 import { PropertyDocumentOpenButton } from "@/components/property/PropertyDocumentOpenButton";
@@ -60,6 +61,8 @@ export async function AuctionDesktop(props: {
   /** Balance the winner still owes (winner_amount − caution), or null when
    *  nothing is due / already paid. Drives the "Payer le solde" CTA. */
   winnerBalance: number | null;
+  /** Admin-configured days the winner has to pay the balance (default 14). */
+  finalPaymentDays: number;
   /** Anonymized seller snapshot for the "Vendeur" trust card; null when
    *  the profile couldn't be loaded (card is simply omitted). */
   sellerCard: SellerCardData | null;
@@ -69,7 +72,7 @@ export async function AuctionDesktop(props: {
     isLive, isDirect, hasBuyNow, isEnded, isOwner,
     kycVerified, hasActiveDeposit, depositUnderReview, userId,
     documents, attrKinds, attrs, myInspection,
-    sellerFinalPayment, sellerActiveDeposits, winnerBalance, sellerCard,
+    sellerFinalPayment, sellerActiveDeposits, winnerBalance, finalPaymentDays, sellerCard,
   } = props;
 
   const t = await getTranslations();
@@ -290,7 +293,7 @@ export async function AuctionDesktop(props: {
                       </Link>
                     ) : (
                       <Link href={bidHref} className="batta-gradient-gold inline-flex h-14 w-full items-center justify-center gap-2 rounded-full text-[14.5px] font-extrabold uppercase tracking-[0.12em] text-white shadow-[var(--shadow-gold)] transition active:scale-[0.99]">
-                        <Gavel className="size-4" strokeWidth={2.5} /> {isLive ? t("auction.placeBid") : "Réserver ma place"}
+                        <Gavel className="size-4" strokeWidth={2.5} /> {isLive ? t("auction.placeBid") : hasActiveDeposit ? "Inscrit ✓ · Voir le compte à rebours" : "Réserver ma place"}
                       </Link>
                     )}
                     {hasBuyNow && !isOwner && (
@@ -316,6 +319,13 @@ export async function AuctionDesktop(props: {
                     >
                       <Trophy className="size-4" strokeWidth={2.4} /> Payer le solde
                     </Link>
+                    <WinnerPaymentExplainer
+                      winnerAmount={auction.winner_amount != null ? Number(auction.winner_amount) : currentPrice}
+                      winnerBalance={winnerBalance}
+                      finalPaymentDueAt={auction.final_payment_due_at ?? null}
+                      days={finalPaymentDays}
+                      locale={locale}
+                    />
                   </div>
                 )}
                 {!showBidCta && isWinner && winnerBalance == null && (

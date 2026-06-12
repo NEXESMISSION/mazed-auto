@@ -215,7 +215,7 @@
     "trustInspectionTitle": "Rapports d'inspection",
     "trustInspectionBody": "Un expert inspecte la voiture avant l'enchère.",
     "trustLegalTitle": "Conforme à la loi tunisienne",
-    "trustLegalBody": "Délais légaux et signature notariée."
+    "trustLegalBody": "Délais légaux et transfert de carte grise sécurisé."
   },
   "search": {
     "placeholder": "Rechercher une voiture…",
@@ -232,25 +232,12 @@
   },
   "property": {
     "type": "Type",
-    "area": "Surface",
-    "rooms": "Pièces",
-    "bathrooms": "Salles de bain",
-    "floor": "Étage",
-    "yearBuilt": "Année de construction",
     "location": "Emplacement",
     "documents": "Documents légaux",
     "inspectionReport": "Rapport d'expertise",
     "requestInspection": "Demander une expertise",
     "virtualTour": "Visite virtuelle",
     "types": {
-      "apartment": "Appartement",
-      "house": "Maison",
-      "villa": "Villa",
-      "land": "Terrain",
-      "commercial": "Local commercial",
-      "office": "Bureau",
-      "warehouse": "Entrepôt",
-      "farm": "Ferme agricole",
       "sedan": "Berline",
       "suv": "SUV / 4x4",
       "hatchback": "Citadine",

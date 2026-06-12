@@ -128,7 +128,7 @@ export function DirectSalePanel({
                 Acquis · vous êtes propriétaire
               </div>
               <div className="text-[11px] text-[var(--foreground-muted)] mt-0.5">
-                Signature de l&apos;acte chez le notaire à venir.
+                Transfert de la carte grise à votre nom à venir.
               </div>
             </div>
             <Link
@@ -142,7 +142,7 @@ export function DirectSalePanel({
 
         {isSold && !userBoughtIt && (
           <div className="text-center text-[12px] text-[var(--foreground-muted)] py-2">
-            Bien vendu — cette annonce n&apos;est plus disponible.
+            Véhicule vendu — cette annonce n&apos;est plus disponible.
           </div>
         )}
 
@@ -153,7 +153,7 @@ export function DirectSalePanel({
               href="/properties"
               className="text-[var(--gold)] font-semibold hover:underline"
             >
-              Voir d&apos;autres biens
+              Voir d&apos;autres voitures
             </Link>
           </div>
         )}
@@ -164,11 +164,11 @@ export function DirectSalePanel({
         <div className="mt-4 space-y-1.5 text-[11px] text-[var(--foreground-muted)] leading-snug">
           <p className="inline-flex items-start gap-1.5">
             <ShieldCheck className="h-3 w-3 text-[var(--gold)] mt-0.5 shrink-0" />
-            Vente confirmée au moment de la signature notariée.
+            Vente confirmée au transfert de la carte grise.
           </p>
           <p className="inline-flex items-start gap-1.5">
             <CheckCircle2 className="h-3 w-3 text-[var(--gold)] mt-0.5 shrink-0" />
-            Vendeur vérifié KYC · titre foncier contrôlé.
+            Vendeur vérifié KYC · carte grise contrôlée.
           </p>
         </div>
       )}
