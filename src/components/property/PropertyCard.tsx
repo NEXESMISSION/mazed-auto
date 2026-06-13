@@ -3,7 +3,7 @@ import { getTranslations, getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { formatTND, minBidIncrement } from "@/lib/utils";
 import type { AuctionWithProperty } from "@/lib/types";
-import { ArrowUpRight, Gavel, Users, Tag, Car } from "lucide-react";
+import { ArrowUpRight, Gavel, Users, Tag, Car, Flame } from "lucide-react";
 import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
 import { IMAGE_BLUR_MAP } from "@/lib/imageBlurMap";
 import { WatchlistButton } from "@/components/watchlist/WatchlistButton";
@@ -35,6 +35,7 @@ export async function PropertyCard({
   saved = false,
   loggedIn = false,
   priority = false,
+  hot = false,
 }: {
   auction: AuctionWithProperty;
   /** Pre-resolved watchlist membership for this user. Defaults false (anon). */
@@ -42,6 +43,12 @@ export async function PropertyCard({
   loggedIn?: boolean;
   /** Eager-load + high-priority fetch for above-the-fold cards. */
   priority?: boolean;
+  /**
+   * "Hot" rail flag — renders a glowing red FOMO pill with the live bid
+   * count (v1's HotNowRail treatment) and suppresses the gold "En vedette"
+   * pill so the two never collide top-trailing.
+   */
+  hot?: boolean;
   /**
    * Legacy prop — older callers pass `variant="classic"` from the
    * white-card auctions view. Dark mode only now, so we accept and
@@ -177,9 +184,22 @@ export async function PropertyCard({
             )}
           </div>
 
+          {/* Hot rail — glowing red FOMO pill, top-trailing. Mirrors v1's
+              HotNowRail overlay: the live bid count framed as urgency. Takes
+              precedence over the gold "En vedette" pill in the same corner. */}
+          {hot && isLive && auction.bid_count > 0 && (
+            <div className="absolute top-2.5 end-2.5">
+              <span className="inline-flex h-7 items-center gap-1 rounded-full bg-[#ff4d2a] px-2.5 text-[10px] font-extrabold uppercase tracking-wider text-white shadow-[0_0_18px_rgba(255,77,42,0.6)]">
+                <Flame className="size-3" strokeWidth={2.5} />
+                {auction.bid_count} {auction.bid_count === 1 ? "offre" : "offres"}
+              </span>
+            </div>
+          )}
+
           {/* "En vedette" promo pill — top-trailing, gold (v1 parity).
-              The status chip is top-leading so the two never collide. */}
-          {property.promo_home_featured && (
+              The status chip is top-leading so the two never collide.
+              Suppressed when the hot FOMO pill owns this corner. */}
+          {property.promo_home_featured && !hot && (
             <div className="absolute top-2.5 end-2.5">
               <span className="inline-flex h-6 items-center rounded-full bg-[var(--gold)] px-2 text-[10px] font-extrabold uppercase tracking-wider text-black shadow-[var(--shadow-gold)]">
                 En vedette

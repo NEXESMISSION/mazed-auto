@@ -819,6 +819,14 @@ html[dir="rtl"] .batta-marquee-reverse { animation-name: batta-marquee; }
   will-change: transform;
 }
 
+/* Auto-advance progress bar for the mobile promo hero (PromoHero) — sweeps
+   0→100% in sync with the slide interval, telegraphing the cadence. The
+   duration is passed inline so it always matches the JS timer. */
+@keyframes batta-promo-progress {
+  from { width: 0%; }
+  to   { width: 100%; }
+}
+
 /* Soft drifting glow behind the desktop hero — pure CSS, no image. */
 @keyframes batta-glow-drift {
   0%   { transform: translate3d(-4%, -2%, 0) scale(1);    opacity: 0.65; }

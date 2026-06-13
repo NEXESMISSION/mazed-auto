@@ -13,6 +13,7 @@ import { HomeSectionDivider } from "@/components/landing/HomeSectionDivider";
 import { BrandRail } from "@/components/landing/BrandRail";
 import { StatsBar } from "@/components/landing/StatsBar";
 import { CarRail } from "@/components/landing/CarRail";
+import { PromoHero } from "@/components/landing/PromoHero";
 import { PropertyCard } from "@/components/property/PropertyCard";
 import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
 import { formatTND } from "@/lib/utils";
@@ -288,18 +289,6 @@ export default async function LandingPage({
     .filter((a) => ((a.property ?? {}) as { promo_home_featured?: boolean }).promo_home_featured)
     .slice(0, 8);
 
-  // Built once, shared by the mobile HeroBanner and the desktop tree
-  // (which now reuses the same auto-sliding carousel).
-  const heroSlides = buildHeroSlides(trending, locale, liveCount, {
-    liveWord: t("home.heroLive"),
-    tnd: t("common.tnd"),
-    bidCta: t("home.heroBidCta"),
-    browseCta: t("home.heroBrowseCta"),
-    brandTitle: t("home.heroBrandTitle"),
-    brandSlogan: t("brand.slogan"),
-    brandEyebrow: t("home.heroBrandEyebrow", { count: liveCount }),
-  });
-
   // Second "ending soon" hero carousel — built once, shown on mobile AND
   // (now) desktop. Empty when there aren't enough trending lots to fill it.
   const endingSoonSlides =
@@ -323,13 +312,13 @@ export default async function LandingPage({
         page stays static (no server-side device detection); CSS picks one.
         ════════════════════════════════════════════════════════════════ */}
     <div className="lg:hidden mx-auto max-w-[var(--max-w)]">
-      {/* ───── HERO BANNER ─────
-          Auto-advancing image carousel sourced from the top trending
-          auctions. Each slide is a full-bleed property photo with the
-          listing's headline + price overlaid; tap goes straight to the
-          auction. Fallback brand slides kick in when the DB has nothing
-          live so the carousel never renders empty. */}
-      <HeroBanner slides={heroSlides} isRTL={isRTL} />
+      {/* ───── PROMO HERO ─────
+          The v1 mobile hero: an auto-cycling value-prop carousel (live
+          bidding, verified sellers, secured deposit, 3% commission, ratings)
+          laid over real live-auction photos, with gold accents + a top
+          progress bar. Replaces the brand/stat HeroBanner on phones — leads
+          with cars + trust, which reads sharper. */}
+      <PromoHero pool={trending} />
 
       {/* LIVE TICKER — streamed in its own Suspense boundary so the page
           shell + hero paint immediately instead of blocking on this query. */}
@@ -338,12 +327,6 @@ export default async function LandingPage({
           <LiveTicker />
         </Suspense>
       </section>
-
-      <div className="mt-4">
-        <Suspense fallback={null}>
-          <EndingSoonBanner />
-        </Suspense>
-      </div>
 
       {/* ══════════════════════════════════════════════════════════════
           BROWSE — the page's center of gravity. Trending rail on top
@@ -362,6 +345,34 @@ export default async function LandingPage({
         title="Enchères en direct"
         subtitle="Voitures vérifiées · enchères transparentes"
       />
+
+      {/* 🔥 Hottest signal — live lots ranked by bid count, each card
+          carrying the glowing red FOMO pill. Leads the live block (v1
+          rhythm: open with urgency). */}
+      {hotNow.length > 0 && (
+        <section className="mt-6">
+          <RailHeader
+            eyebrow="🔥 Chaud"
+            title="Les plus disputées"
+            countLabel={hotNow.length}
+            ctaHref="/properties"
+            ChevronEnd={ChevronEnd}
+            isRTL={isRTL}
+            seeAllLabel={t("home.seeAll")}
+            flush
+          />
+          <CarRail items={hotNow} savedIds={savedIds} loggedIn={loggedIn} hot />
+        </section>
+      )}
+
+      {/* Urgency band right after the hot rail (moved up from the top so the
+          live block reads hot → ending → curated). */}
+      <div className="mt-7">
+        <Suspense fallback={null}>
+          <EndingSoonBanner />
+        </Suspense>
+      </div>
+
       {vip.length > 0 && (
         <section className="mt-6">
           <RailHeader
@@ -435,22 +446,6 @@ export default async function LandingPage({
       {/* ─── "Offres directes" rail — fixed-price (buy-now) listings, kept
           separate from the bidding lots so buyers can browse them on their
           own. Only shown when there's direct stock. */}
-      {hotNow.length > 0 && (
-        <section className="mt-7">
-          <RailHeader
-            eyebrow="🔥 Chaud"
-            title="Les plus disputées"
-            countLabel={hotNow.length}
-            ctaHref="/properties"
-            ChevronEnd={ChevronEnd}
-            isRTL={isRTL}
-            seeAllLabel={t("home.seeAll")}
-            flush
-          />
-          <CarRail items={hotNow} savedIds={savedIds} loggedIn={loggedIn} />
-        </section>
-      )}
-
       {offers.length > 0 && (
         <section className="mt-7">
           <RailHeader
@@ -1031,71 +1026,6 @@ function RailHeader({
       )}
     </div>
   );
-}
-
-/**
- * Build the hero carousel's slide list from the top trending auctions.
- *
- * Each real slide uses the listing's first photo as the background, the
- * city as a chip on top, and the price + locale-formatted TND as the
- * headline. When `trending` is empty we fall through to brand-themed
- * fallback slides so the carousel never renders empty (fresh dev clone,
- * empty DB, etc.).
- */
-function buildHeroSlides(
-  trending: AuctionWithProperty[],
-  locale: string,
-  liveCount: number,
-  labels: {
-    liveWord: string;
-    tnd: string;
-    bidCta: string;
-    browseCta: string;
-    brandTitle: string;
-    brandSlogan: string;
-    /** "Live · {n}" — the server caller resolves the ICU placeholder. */
-    brandEyebrow: string;
-  },
-): HeroSlide[] {
-  const slides: HeroSlide[] = [];
-  for (const a of trending.slice(0, 5)) {
-    const property = a.property;
-    const photo = property.photos
-      ?.sort((p, q) => p.sort_order - q.sort_order)[0];
-    if (!photo) continue;
-    const price = a.current_price ?? a.opening_price;
-    const isLive = a.status === "live" || a.status === "extending";
-    slides.push({
-      id: a.id,
-      imageUrl: propertyPhotoUrl(photo.storage_path),
-      eyebrow: isLive
-        ? `${labels.liveWord} · ${property.governorate}`
-        : property.governorate,
-      title: property.title,
-      subtitle: `${formatTND(price, locale)} ${labels.tnd}`,
-      href: `/auctions/${a.id}`,
-      ctaLabel: labels.bidCta,
-    });
-  }
-
-  // Brand-pitch slide closes the carousel. Marked `kind: "brand"` so
-  // SlideCard renders the dedicated luxe composition (navy gradient,
-  // gold concentric arcs, live-count hero stat) instead of treating
-  // it as another photo overlay. `imageUrl` is null because the slide
-  // paints its own CSS background.
-  slides.push({
-    id: "brand-pitch",
-    imageUrl: null,
-    eyebrow: "",
-    title: labels.brandTitle,
-    subtitle: labels.brandSlogan,
-    href: "/properties",
-    ctaLabel: labels.browseCta,
-    kind: "brand",
-    liveCount,
-  });
-
-  return slides;
 }
 
 /**

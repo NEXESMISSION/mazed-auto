@@ -221,7 +221,7 @@ export async function HomeDesktop({
               isRTL={isRTL}
               seeAllLabel={t("home.seeAll")}
             />
-            <CardSlider items={hotNow} savedIds={savedIds} loggedIn={loggedIn} />
+            <CardSlider items={hotNow} savedIds={savedIds} loggedIn={loggedIn} hot />
           </section>
         )}
 
@@ -622,11 +622,14 @@ function CardSlider({
   savedIds,
   loggedIn,
   priorityCount = 0,
+  hot = false,
 }: {
   items: AuctionWithProperty[];
   savedIds: Set<string>;
   loggedIn: boolean;
   priorityCount?: number;
+  /** Render each card with the glowing red "hot" FOMO pill (bid count). */
+  hot?: boolean;
 }) {
   return (
     <TrendingRail arrows>
@@ -637,6 +640,7 @@ function CardSlider({
             saved={savedIds.has(a.id)}
             loggedIn={loggedIn}
             priority={i < priorityCount}
+            hot={hot}
           />
         </div>
       ))}
