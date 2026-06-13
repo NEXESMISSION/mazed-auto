@@ -69,7 +69,9 @@ export async function DesktopHero({
   // that also have a photo, so the spread is never half-empty.
   const withPhoto = pool.filter((a) => coverUrl(a) !== null);
   const featured = withPhoto[0];
-  if (!featured) return null;
+  // Low inventory / data timeout: no photographed lot to feature → render the
+  // brand fallback hero so the desktop page is never headless (audit #18).
+  if (!featured) return <FallbackHero liveCount={liveCount} />;
 
   const seen = new Set<string>([featured.id]);
   const runners: AuctionWithProperty[] = [];
@@ -79,7 +81,8 @@ export async function DesktopHero({
     runners.push(a);
     if (runners.length === 3) break;
   }
-  if (runners.length < 3) return null;
+  // Fewer than 3 runners is fine — we render however many we have (the featured
+  // card alone if none) instead of vanishing the whole hero on thin inventory.
 
   const backdrop = coverUrl(featured)!;
 
@@ -145,15 +148,21 @@ export async function DesktopHero({
           </div>
         </div>
 
-        {/* Magazine spread — featured (1.7fr) + 3 runners stacked (1fr) */}
-        <div className="grid grid-cols-[1.7fr_1fr] gap-6 xl:gap-7">
+        {/* Magazine spread — featured + the runners we have (0–3). With no
+            runners the featured card spans full width instead of leaving a gap. */}
+        <div className={runners.length > 0 ? "grid grid-cols-[1.7fr_1fr] gap-6 xl:gap-7" : ""}>
           <FeaturedCard auction={featured} locale={locale} />
 
-          <div className="grid grid-rows-3 gap-5 xl:gap-6">
-            {runners.map((a) => (
-              <RunnerCard key={a.id} auction={a} locale={locale} />
-            ))}
-          </div>
+          {runners.length > 0 && (
+            <div
+              className="grid gap-5 xl:gap-6"
+              style={{ gridTemplateRows: `repeat(${runners.length}, minmax(0, 1fr))` }}
+            >
+              {runners.map((a) => (
+                <RunnerCard key={a.id} auction={a} locale={locale} />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </section>
@@ -321,5 +330,57 @@ function RunnerCard({
         </div>
       </div>
     </Link>
+  );
+}
+
+/**
+ * Brand fallback hero — shown when there isn't a photographed lot to feature
+ * (fresh launch, thin inventory, or the data-phase timeout). Keeps the desktop
+ * page anchored with a headline + catalogue CTA instead of starting headless.
+ */
+function FallbackHero({ liveCount }: { liveCount: number }) {
+  return (
+    <section className="hidden lg:block relative isolate overflow-hidden">
+      <div className="absolute inset-0 -z-10" aria-hidden>
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0c0c0c] via-[#0a0a0a] to-background" />
+        <div
+          className="absolute inset-0 opacity-[0.14]"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 30% 20%, rgba(212,175,55,0.22), transparent 40%), radial-gradient(circle at 80% 80%, rgba(212,175,55,0.18), transparent 45%)",
+          }}
+        />
+      </div>
+      <div className="relative mx-auto max-w-[var(--max-w-wide)] px-8 pb-16 pt-14">
+        <div className="inline-flex h-9 items-center gap-2.5 rounded-full bg-emerald-500/10 px-3.5 ring-1 ring-emerald-500/30 backdrop-blur-md">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inset-0 animate-ping rounded-full bg-emerald-400 opacity-60" />
+            <span className="relative h-2 w-2 rounded-full bg-emerald-400" />
+          </span>
+          <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-300">
+            En direct · {liveCount} enchères en cours
+          </span>
+        </div>
+        <div className="mt-5 inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.24em] text-[var(--gold)]">
+          <Sparkles className="h-3.5 w-3.5" />
+          Mazed Auto · Sélection éditoriale
+        </div>
+        <h1 className="mt-3 max-w-[20ch] text-[44px] font-black leading-[1.02] tracking-tight xl:text-[56px]">
+          Les voitures qui font{" "}
+          <span className="gradient-gold-text">monter les enchères</span>
+        </h1>
+        <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-white/70 xl:text-base">
+          Une sélection vérifiée à la main — KYC humain, carte grise contrôlée,
+          dépôt sécurisé. Misez sereinement.
+        </p>
+        <Link
+          href="/properties"
+          className="mt-7 inline-flex h-12 items-center gap-2 rounded-full bg-[var(--gold)] px-6 text-sm font-extrabold text-black shadow-[var(--shadow-gold)] transition-transform hover:scale-[1.03]"
+        >
+          Parcourir le catalogue
+          <ArrowUpRight className="h-4 w-4" />
+        </Link>
+      </div>
+    </section>
   );
 }
