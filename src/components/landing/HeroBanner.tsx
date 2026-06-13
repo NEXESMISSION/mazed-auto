@@ -464,7 +464,7 @@ function BrandSlide({
 
           {/* Headline — gold for the last word so the eye lands. */}
           <h2 className="mt-3 max-w-[18ch] text-balance text-[20px] font-extrabold leading-[1.1] tracking-tight text-white md:text-[24px]">
-            La maison des enchères{" "}
+            Les enchères auto{" "}
             <span
               style={{
                 background:
