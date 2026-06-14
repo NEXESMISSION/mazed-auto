@@ -63,11 +63,13 @@ export function AuctionEndModal({ auction, userId, locale }: Props) {
 
       // Only pop for users who actually placed at least one bid. Spectators
       // who happened to load the page shouldn't see a "you lost" modal.
+      // "Did I bid?" via the gated view (is_mine) — bidder_id is no longer a
+      // client-readable column (audit #4).
       const { count } = await supabase
-        .from("bids")
+        .from("auction_bids_public")
         .select("id", { count: "exact", head: true })
         .eq("auction_id", auction.id)
-        .eq("bidder_id", userId);
+        .eq("is_mine", true);
       if ((count ?? 0) === 0) return;
       if (cancelled) return;
 
