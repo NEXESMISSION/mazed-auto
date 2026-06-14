@@ -61,7 +61,9 @@ export async function PropertyCard({
   const locale = await getLocale();
   const isRTL = locale === "ar";
   const property = auction.property;
-  const heroPhoto = property.photos?.sort((a, b) => a.sort_order - b.sort_order)[0];
+  // slice() before sort — sort mutates in place, and property.photos is shared
+  // across rails/cards for the same lot (audit #28).
+  const heroPhoto = property.photos?.slice().sort((a, b) => a.sort_order - b.sort_order)[0];
   const isLive = auction.status === "live" || auction.status === "extending";
   const isEnded =
     auction.status === "ended_sold" ||
