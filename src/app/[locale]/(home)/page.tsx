@@ -692,15 +692,8 @@ export default async function LandingPage({
         </section>
       )}
 
-      {/* ─── "Comment ça marche" — 3-step buyer journey strip ───
-              Sits below the social-proof hammered rail because that's
-              where the page momentum turns from "browse" to "act":
-              once a user has seen real sold prices, the next question
-              is "ok, how do I actually buy?". 3 numbered steps with
-              gold monogram tiles, each linking into the relevant
-              surface (properties / kyc / payment checkout). Horizontal
-              snap-rail on phones; 3-up grid from lg+ so the strip
-              reads at a glance on desktop. */}
+      {/* Brand wall — full logo grid of every make, each tile deep-linking into
+          Explore filtered by that brand (see BrandRail + src/lib/brands.ts). */}
       <BrandRail makes={topMakes} title="Parcourir par marque" />
 
       <section className="mt-10">
