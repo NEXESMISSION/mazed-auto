@@ -3,6 +3,7 @@ import { getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { DeleteAccountButton } from "@/components/account/DeleteAccountButton";
+import { SmsNotificationsToggle } from "@/components/account/SmsNotificationsToggle";
 import { PasswordSection } from "./PasswordSection";
 import {
   ChevronLeft,
@@ -39,6 +40,7 @@ export default async function SettingsPage() {
   let userId: string | null = null;
   let userEmail: string | null = null;
   let kycStatus = "none";
+  let smsEnabled = true;
   try {
     const supabase = await getServerSupabase();
     const {
@@ -49,10 +51,11 @@ export default async function SettingsPage() {
       userEmail = user.email ?? null;
       const { data: profile } = await supabase
         .from("profiles")
-        .select("kyc_status")
+        .select("kyc_status, sms_notifications_enabled")
         .eq("id", user.id)
         .single();
       kycStatus = profile?.kyc_status ?? "none";
+      smsEnabled = profile?.sms_notifications_enabled ?? true;
     }
   } catch {
     // env missing — fall through to guest UI.
@@ -164,6 +167,11 @@ export default async function SettingsPage() {
               <ChevronEnd className="size-3.5" />
             </Link>
           </div>
+        </Section>
+
+        {/* ── Notifications ────────────────────────────────────────── */}
+        <Section label="Notifications">
+          <SmsNotificationsToggle initial={smsEnabled} />
         </Section>
 
         {/* ── Compte ───────────────────────────────────────────────── */}
