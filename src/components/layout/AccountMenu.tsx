@@ -15,7 +15,7 @@ const ITEMS: Item[] = [
   { href: "/account", label: "Mon compte", sub: "Profil et vérification", Icon: User },
   { href: "/account/activity", label: "Mon activité", sub: "Enchères et achats", Icon: Activity },
   { href: "/account/payments", label: "Mes paiements", sub: "Cautions et reçus", Icon: Receipt },
-  { href: "/account/watchlist", label: "Favoris", sub: "Vos voitures suivies", Icon: Heart },
+  { href: "/watchlist", label: "Favoris", sub: "Vos voitures suivies", Icon: Heart },
   { href: "/account/inspections", label: "Inspections", sub: "Rapports d'expertise", Icon: ClipboardCheck },
   { href: "/account/notifications", label: "Notifications", sub: "Alertes et activité", Icon: Bell },
   { href: "/kyc/status", label: "Vérification (KYC)", sub: "Statut d'identité", Icon: ShieldCheck },
@@ -45,6 +45,7 @@ function toMenuUser(u: unknown): MenuUser | null {
  */
 export function AccountMenu() {
   const [authed, setAuthed] = useState<boolean | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [user, setUser] = useState<MenuUser | null>(null);
   const [open, setOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -56,17 +57,23 @@ export function AccountMenu() {
   useEffect(() => {
     const sb = getBrowserSupabase();
     let active = true;
-    sb.auth.getUser().then((res: { data: { user: unknown } }) => {
+    // Resolve auth + the admin flag (profile role 'admin' shows the admin
+    // shortcut, even if the JWT app_metadata claim lags a login behind).
+    async function resolve(u: unknown) {
       if (!active) return;
-      setAuthed(!!res.data.user);
-      setUser(toMenuUser(res.data.user));
-    });
+      setAuthed(!!u);
+      setUser(toMenuUser(u));
+      const id = (u as { id?: string } | null)?.id;
+      if (id) {
+        const { data: prof } = await sb.from("profiles").select("role").eq("id", id).single();
+        if (active) setIsAdmin(prof?.role === "admin");
+      } else if (active) {
+        setIsAdmin(false);
+      }
+    }
+    sb.auth.getUser().then((res: { data: { user: unknown } }) => resolve(res.data.user));
     const { data: sub } = sb.auth.onAuthStateChange(
-      (_event: AuthChangeEvent, session: Session | null) => {
-        if (!active) return;
-        setAuthed(!!session?.user);
-        setUser(toMenuUser(session?.user ?? null));
-      },
+      (_event: AuthChangeEvent, session: Session | null) => resolve(session?.user ?? null),
     );
     return () => { active = false; sub.subscription.unsubscribe(); };
   }, []);
@@ -201,6 +208,21 @@ export function AccountMenu() {
                 )}
               </span>
             </div>
+          )}
+
+          {isAdmin && (
+            <Link
+              href="/admin/home"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="mb-1 flex items-center gap-3 rounded-xl bg-gold-faint px-3 py-2 ring-1 ring-gold/30 transition-colors hover:bg-gold-faint/80"
+            >
+              <ShieldCheck className="size-4 shrink-0 text-gold" strokeWidth={2.2} />
+              <span className="min-w-0">
+                <span className="block text-[13px] font-bold leading-tight text-gold">Console admin</span>
+                <span className="block truncate text-[10.5px] leading-tight text-gold/70">Gérer la plateforme</span>
+              </span>
+            </Link>
           )}
 
           {ITEMS.map((it) => (
