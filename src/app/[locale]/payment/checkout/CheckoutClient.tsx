@@ -155,6 +155,34 @@ function cleanupOrphans(paymentId: string, paths: string[]): void {
   }).catch(() => {});
 }
 
+/**
+ * A signal that aborts when EITHER the user cancels or the deadline passes.
+ *
+ * `AbortSignal.any` (Chrome 116+, Safari 17.4+) and `AbortSignal.timeout`
+ * (Chrome 103+, Safari 16+) are both missing on phones that are very much
+ * still in use here. Calling them unguarded throws a TypeError in the middle
+ * of the submit, which surfaces as a meaningless error on exactly the
+ * devices least able to recover from it. Both fall back to a plain
+ * controller, preserving the TimeoutError reason so the caller can still
+ * tell a timeout from a cancel.
+ */
+function deadlineSignal(userAbort: AbortSignal, ms: number): AbortSignal {
+  const merged = new AbortController();
+  const timer = setTimeout(() => {
+    merged.abort(new DOMException(`timed out after ${ms}ms`, "TimeoutError"));
+  }, ms);
+  const stop = () => clearTimeout(timer);
+  merged.signal.addEventListener("abort", stop, { once: true });
+  if (userAbort.aborted) {
+    merged.abort(userAbort.reason);
+  } else {
+    userAbort.addEventListener("abort", () => merged.abort(userAbort.reason), {
+      once: true,
+    });
+  }
+  return merged.signal;
+}
+
 /** Thrown when the user taps "Annuler" mid-send. */
 class CancelledSend extends Error {
   constructor() {
@@ -317,6 +345,10 @@ export function CheckoutClient({
     cancelRef.current = false;
     setSubmitting(true);
     setPhase("Préparation…");
+    // Human name of the step in flight, so a timeout can say which hop was
+    // slow instead of a blanket "connexion trop lente" that tells nobody —
+    // us included — anything about where it actually stalled.
+    let step = "préparation";
     // Track every object we put in the bucket this attempt so we can clean them
     // ALL up if a later upload or the attach call fails (no orphans).
     const uploadedPaths: string[] = [];
@@ -377,6 +409,7 @@ export function CheckoutClient({
       // receipt never leaves the browser — no request, no error, just a
       // spinner until our own timeout fires. A signed URL is plain fetch.
       throwIfCancelled();
+      step = "préparation de l'envoi";
       setPhase("Préparation de l'envoi…");
       const urlRes = await fetch(`/api/payments/${paymentId}/receipt-url`, {
         method: "POST",
@@ -384,7 +417,7 @@ export function CheckoutClient({
         body: JSON.stringify({
           exts: prepared.map((f) => f.name.split(".").pop()?.toLowerCase() ?? "bin"),
         }),
-        signal: AbortSignal.any([ctrl.signal, AbortSignal.timeout(ATTACH_TIMEOUT_MS)]),
+        signal: deadlineSignal(ctrl.signal, ATTACH_TIMEOUT_MS),
       });
       if (!urlRes.ok) {
         const data = (await urlRes.json().catch(() => ({}))) as { error?: string };
@@ -408,6 +441,7 @@ export function CheckoutClient({
           toast("Réponse inattendue du serveur. Réessayez.", "error");
           return;
         }
+        step = total > 1 ? `envoi du reçu ${i + 1}/${total}` : "envoi du reçu";
         setPhase(total > 1 ? `Envoi ${i + 1}/${total}…` : "Envoi du reçu…");
         // One retry per file — mobile networks drop a request often enough
         // that a single blip used to throw the whole attempt away.
@@ -423,10 +457,7 @@ export function CheckoutClient({
             const put = await fetch(target.signedUrl, {
               method: "PUT",
               body: form,
-              signal: AbortSignal.any([
-                ctrl.signal,
-                AbortSignal.timeout(uploadTimeoutFor(file.size)),
-              ]),
+              signal: deadlineSignal(ctrl.signal, uploadTimeoutFor(file.size)),
             });
             if (put.ok) {
               uploadedPaths.push(target.path);
@@ -456,12 +487,13 @@ export function CheckoutClient({
       }
 
       throwIfCancelled();
+      step = "validation";
       setPhase("Finalisation…");
       const res = await fetch(`/api/payments/${paymentId}/receipt`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ receipt_paths: uploadedPaths, provider }),
-        signal: AbortSignal.any([ctrl.signal, AbortSignal.timeout(ATTACH_TIMEOUT_MS)]),
+        signal: deadlineSignal(ctrl.signal, ATTACH_TIMEOUT_MS),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -480,7 +512,7 @@ export function CheckoutClient({
       } else {
         toast(
           isTimeout(e)
-            ? "Connexion trop lente — le reçu n'a pas été envoyé. Réessayez."
+            ? `Connexion trop lente (${step}) — le reçu n'a pas été envoyé. Réessayez.`
             : e instanceof Error
               ? e.message
               : "Erreur réseau.",

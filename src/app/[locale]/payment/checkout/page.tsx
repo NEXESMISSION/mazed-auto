@@ -44,7 +44,15 @@ export default async function CheckoutEntry({
     redirect(`/${locale}/login?next=${encodeURIComponent(back)}`);
   }
 
-  const payee = await fetchPayeeDetails(supabase);
+  // SERVICE-ROLE read. `payee_name/bank/rib/iban/d17` are NOT in the
+  // app_settings public-read policy (0043), so under the buyer's own RLS the
+  // query returns nothing and fetchPayeeDetails falls back to its TEST
+  // PLACEHOLDER account — meaning every buyer was being told to wire their
+  // caution to a placeholder RIB, while an admin (who can read the table)
+  // saw the real one and assumed all was well. These are the numbers the
+  // user is asked to send money to: they must come from the admin settings,
+  // for everyone.
+  const payee = await fetchPayeeDetails(getServiceSupabase() ?? supabase);
 
   // ─── Re-upload mode ───
   if (paymentParam) {
