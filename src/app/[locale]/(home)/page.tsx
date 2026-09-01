@@ -35,6 +35,7 @@ import {
   ChevronLeft,
   Car,
   Truck,
+  Wrench,
   Gavel,
   MapPin,
   Search,
@@ -1081,6 +1082,9 @@ const PROPERTY_TYPES: {
   { key: "pickup",    labelEn: "Pickup",    labelAr: "بيك أب",      Icon: Truck },
   { key: "van",       labelEn: "Van",       labelAr: "نفعية",       Icon: Truck },
   { key: "coupe",     labelEn: "Coupé",     labelAr: "كوبيه",       Icon: Car },
+  // Not a body type — the parts category. Kept in the same row because it is
+  // what a buyer is choosing between: a car, or a part for the one they have.
+  { key: "spare_part", labelEn: "Pièces",    labelAr: "قطع غيار",   Icon: Wrench },
 ];
 
 const PRICE_BUCKETS: {

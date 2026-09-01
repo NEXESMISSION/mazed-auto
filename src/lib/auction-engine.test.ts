@@ -3,7 +3,6 @@ import type { Auction } from "./types";
 import {
   nextMinBid,
   nextEndsAtAfterBid,
-  dutchCurrentPrice,
   minSixthOffer,
   secondsRemaining,
 } from "./auction-engine";
@@ -46,30 +45,6 @@ describe("nextEndsAtAfterBid (anti-snipe)", () => {
   it("extends by extend_by_seconds when the bid lands inside the window", () => {
     const out = nextEndsAtAfterBid(a, new Date("2026-06-10T11:58:00Z"));
     expect(out?.toISOString()).toBe("2026-06-10T12:10:00.000Z");
-  });
-});
-
-describe("dutchCurrentPrice", () => {
-  const d = auction({
-    type: "dutch",
-    starts_at: "2026-06-01T00:00:00Z",
-    dutch_start_price: 200_000,
-    dutch_floor_price: 150_000,
-    dutch_decrement: 10_000,
-    dutch_tick_seconds: 60,
-  } as Partial<Auction>);
-  it("returns the start price at t=0", () => {
-    expect(dutchCurrentPrice(d, new Date("2026-06-01T00:00:00Z"))).toBe(200_000);
-  });
-  it("drops one decrement per tick", () => {
-    // 2.5 ticks → floor(2.5)=2 decrements → 200k - 20k
-    expect(dutchCurrentPrice(d, new Date("2026-06-01T00:02:30Z"))).toBe(180_000);
-  });
-  it("never falls below the floor", () => {
-    expect(dutchCurrentPrice(d, new Date("2026-06-02T00:00:00Z"))).toBe(150_000);
-  });
-  it("throws on a non-dutch auction", () => {
-    expect(() => dutchCurrentPrice(auction({ type: "english" }))).toThrow();
   });
 });
 

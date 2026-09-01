@@ -11,6 +11,7 @@ import { ShareButton } from "@/components/auction/ShareButton";
 import { AuctionTerms } from "@/components/auction/AuctionTerms";
 import { SellerAuctionBanner } from "@/components/auction/SellerAuctionBanner";
 import { SellerCard } from "@/components/auction/SellerCard";
+import { DiagnosticSheet } from "@/components/property/DiagnosticSheet";
 import { WinnerPaymentExplainer } from "@/components/auction/WinnerPaymentExplainer";
 import type { SellerCardData } from "@/lib/auction/detail";
 import { PropertyMap } from "@/components/property/PropertyMap";
@@ -47,6 +48,10 @@ export async function AuctionDesktop(props: {
   isLive: boolean;
   isDirect: boolean;
   hasBuyNow: boolean;
+  /** Buy-now is displayed (hasBuyNow) AND actually purchasable right now —
+   *  false before the lot goes live, where close_auction_on_purchase (0136)
+   *  refuses the capture. Renders the price as a note instead of a link. */
+  buyNowPurchasable: boolean;
   isEnded: boolean;
   isOwner: boolean;
   kycVerified: boolean;
@@ -70,7 +75,7 @@ export async function AuctionDesktop(props: {
 }) {
   const {
     auction, totalBids, currentPrice, depositRequired, deposit,
-    isLive, isDirect, hasBuyNow, isEnded, isOwner,
+    isLive, isDirect, hasBuyNow, buyNowPurchasable, isEnded, isOwner,
     kycVerified, hasActiveDeposit, depositUnderReview, userId,
     documents, attrKinds, attrs, myInspection,
     sellerFinalPayment, sellerActiveDeposits, winnerBalance, finalPaymentDays, sellerCard,
@@ -160,7 +165,7 @@ export async function AuctionDesktop(props: {
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--gold-faint)] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-[var(--gold)]">
               <Gavel className="size-3" strokeWidth={2.5} />
-              {t(`auction.types.${auction.type}`)}
+              {isDirect ? t("auction.directLabel") : t("auction.label")}
             </span>
             {isLive && (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-red-500 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-white">
@@ -215,7 +220,8 @@ export async function AuctionDesktop(props: {
                       {totalBids} · {t("auction.totalBids")}
                     </span>
                   )}
-                  {!isOwner && (
+                  {/* Dropped on a settled lot — see the mobile tree. */}
+                  {!isOwner && !isEnded && (
                     <WatchlistButton
                       auctionId={auction.id}
                       initialSaved={false}
@@ -298,10 +304,18 @@ export async function AuctionDesktop(props: {
                       </Link>
                     )}
                     {hasBuyNow && !isOwner && (
-                      <Link href={`/payment/checkout?type=buy_now&auction=${auction.id}` as never} className="mt-2.5 inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-border px-4 py-2.5 text-[12.5px] font-bold text-foreground transition hover:border-gold/40">
-                        {t("auction.buyNowFor")}{" "}
-                        <span className="font-extrabold text-gold-bright">{formatTND(Number(auction.buy_now_price), locale)} {tnd}</span>
-                      </Link>
+                      buyNowPurchasable ? (
+                        <Link href={`/payment/checkout?type=buy_now&auction=${auction.id}` as never} className="mt-2.5 inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-border px-4 py-2.5 text-[12.5px] font-bold text-foreground transition hover:border-gold/40">
+                          {t("auction.buyNowFor")}{" "}
+                          <span className="font-extrabold text-gold-bright">{formatTND(Number(auction.buy_now_price), locale)} {tnd}</span>
+                        </Link>
+                      ) : (
+                        // Announced but not yet buyable — the lot has not opened.
+                        <span className="mt-2.5 inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-dashed border-border px-4 py-2.5 text-[12.5px] font-semibold text-muted">
+                          {t("auction.buyNowAtOpening")}{" "}
+                          <span className="font-extrabold text-foreground">{formatTND(Number(auction.buy_now_price), locale)} {tnd}</span>
+                        </span>
+                      )
                     )}
                   </div>
                 )}
@@ -416,13 +430,20 @@ export async function AuctionDesktop(props: {
             </section>
           )}
 
+          {/* Diagnostic Mazed — our own inspection sheet; renders nothing
+              until we publish one for this listing. */}
+          <DiagnosticSheet propertyId={property.id} />
+
           {/* Vendeur — anonymized seller trust card */}
           {sellerCard && <SellerCard seller={sellerCard} />}
         </div>
 
         {/* Side — trust + map */}
         <aside className="col-span-5 space-y-5">
-          {/* Documents */}
+          {/* Documents — dropped once the auction is over for everyone
+              but the seller and the winner (see the mobile tree in
+              app/[locale]/auctions/[id]/page.tsx for the reasoning). */}
+          {(!isEnded || isOwner || isWinner) && (
           <section className={`${CARD} p-6`}>
             <h2 className="batta-eyebrow flex items-center gap-2">
               <span aria-hidden className="batta-gold-rule-short" />
@@ -456,8 +477,11 @@ export async function AuctionDesktop(props: {
               })}
             </ul>
           </section>
+          )}
 
-          {/* Inspection — hidden while the inspector network is off. */}
+          {/* Inspection — hidden while the inspector network is off, and
+              the "Réserver" CTA also goes once the auction has ended. A
+              report the viewer already paid for stays. */}
           {!INSPECTIONS_ENABLED ? null : myInspection ? (
             <section className={`${CARD} flex items-center gap-3 p-5`}>
               <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--gold-faint)] text-gold"><ClipboardCheck className="size-4" strokeWidth={2} /></span>
@@ -467,7 +491,7 @@ export async function AuctionDesktop(props: {
               </div>
               <a href={`/api/inspector/report/${myInspection.id}`} target="_blank" rel="noopener noreferrer" className="shrink-0 rounded-full bg-[var(--gold-faint)] px-4 py-2 text-[12px] font-bold text-[var(--gold)]">Ouvrir</a>
             </section>
-          ) : (
+          ) : isEnded ? null : (
             <section className={`${CARD} flex items-center gap-3 p-5`}>
               <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--gold-faint)] text-gold"><ClipboardCheck className="size-4" strokeWidth={2} /></span>
               <div className="min-w-0 flex-1">

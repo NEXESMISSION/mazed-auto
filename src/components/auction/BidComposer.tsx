@@ -24,7 +24,7 @@ import { Modal, ModalFooter } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { PreBidGate } from "./PreBidGate";
 import { Countdown } from "./Countdown";
-import { nextMinBid, dutchCurrentPrice } from "@/lib/auction-engine";
+import { nextMinBid } from "@/lib/auction-engine";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import { formatTND, minBidIncrement } from "@/lib/utils";
 import { cn } from "@/lib/utils";
@@ -43,10 +43,8 @@ const BID_ERROR_LABELS: Record<string, string> = {
   below_min_increment: "Votre offre est inférieure à l'incrément minimum.",
   below_current: "Votre nouvelle offre doit dépasser votre offre actuelle.",
   bid_too_fast: "Vous enchérissez trop vite — patientez quelques secondes.",
-  dutch_price_drifted: "Le prix a baissé entre-temps — réessayez.",
   invalid_amount: "Montant invalide.",
   already_highest: "Vous êtes déjà le meilleur enchérisseur.",
-  sealed_one_bid: "Vous avez déjà soumis une offre pour cette enchère.",
   auth: "Vous devez vous reconnecter pour enchérir.",
 };
 
@@ -211,7 +209,7 @@ export function BidComposer({
           tone="muted"
           icon={<Clock className="h-7 w-7" />}
           title="Vérification en cours"
-          body="Votre dossier est en cours d'examen — généralement sous 24 à 48 h ouvrées. Vous pourrez enchérir dès que notre équipe valide votre identité; un email vous préviendra."
+          body="Votre dossier est en cours d'examen — généralement sous 24 à 48 h ouvrées. Vous pourrez enchérir dès que notre équipe valide votre identité; un SMS et une notification vous préviendront."
           ctaLabel="Voir le statut"
           ctaIcon={<Eye className="h-4 w-4" />}
           onCta={() => router.push("/kyc/status")}
@@ -511,13 +509,7 @@ function ActiveComposer({
   const router = useRouter();
   const [, startTransition] = useTransition();
 
-  const isDutch = auction.type === "dutch";
-  const isSealed = auction.type === "sealed";
-  const isEnglish = auction.type === "english";
-  const typeLabel = isEnglish ? "Anglaise" : isSealed ? "Cachetée" : "Hollandaise";
-
-  // Live current price — for Dutch this ticks down every 10s; for
-  // English/sealed it tracks the server's current_price.
+  // Live current price — tracks the server's authoritative current_price.
   const [currentPrice, setCurrentPrice] = useState<number>(
     auction.current_price ?? auction.opening_price,
   );
@@ -539,10 +531,7 @@ function ActiveComposer({
   const minNext = nextMinBid(auction, currentPrice);
   const inc = minBidIncrement(currentPrice);
 
-  // English/sealed amount input. Sealed uses opening_price as the floor;
-  // English uses minNext.
-  const initialAmount = isSealed ? auction.opening_price : minNext;
-  const [amountStr, setAmountStr] = useState<string>(String(initialAmount));
+  const [amountStr, setAmountStr] = useState<string>(String(minNext));
   const amount = (() => {
     const n = Number(amountStr);
     return Number.isFinite(n) ? n : 0;
@@ -577,7 +566,14 @@ function ActiveComposer({
   // a buy_now_price. Direct-sale listings have their own DirectSalePanel
   // on the detail page and never reach this composer.
   const buyNowPrice = auction.buy_now_price != null ? Number(auction.buy_now_price) : null;
-  const showBuyNow = buyNowPrice != null && buyNowPrice > 0 && !isDutch;
+  // Buy-now stays available for the WHOLE live phase — it is only retired
+  // once the standing high bid meets or exceeds it, because closing then
+  // would displace (and force a refund on) the current leader. `currentPrice`
+  // is the live value, so the link disappears on the very tick that crosses
+  // the threshold, matching the 409 from /api/auctions/[id]/buy-now and the
+  // no-op in close_auction_on_purchase (0136).
+  const showBuyNow =
+    buyNowPrice != null && buyNowPrice > 0 && currentPrice < buyNowPrice;
 
   // ─── Realtime: single channel, two listeners ─────────────────────────
   // One Supabase channel carries every postgres_changes event we care
@@ -646,10 +642,9 @@ function ActiveComposer({
           // Mark this auction as "hot" — the adaptive safety-net poll
           // downstream stays on its tighter cadence for the next 30 s.
           lastActivityRef.current = Date.now();
-          // English / sealed: track the server's authoritative
-          // current_price (already reflects proxy resolution + sealed
-          // masking). Skip for Dutch — its ticker is the source of truth.
-          if (!isDutch && next.current_price != null) {
+          // Track the server's authoritative current_price (it already
+          // reflects proxy-bid resolution).
+          if (next.current_price != null) {
             setCurrentPrice(Number(next.current_price));
           }
           // Anti-snipe extension OR terminal status: pull the latest
@@ -698,7 +693,7 @@ function ActiveComposer({
       if (subTimeout) clearTimeout(subTimeout);
       supabase.removeChannel(channel);
     };
-  }, [auction.id, isDutch, router]);
+  }, [auction.id, router]);
 
   // Polling fallback — a SAFETY NET, not the live channel. Realtime
   // (the channel above) is the primary path: it pushes every price /
@@ -719,10 +714,8 @@ function ActiveComposer({
   // realtime handlers above also bump.
   //
   // Pauses while the tab is hidden so we don't spam the DB for users
-  // who tabbed away. Skipped for Dutch — its price is driven by the
-  // local ticker, not the bids stream.
+  // who tabbed away.
   useEffect(() => {
-    if (isDutch) return;
     const supabase = getBrowserSupabase();
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | null = null;
@@ -811,33 +804,18 @@ function ActiveComposer({
       if (timer) clearTimeout(timer);
       document.removeEventListener("visibilitychange", onVis);
     };
-  }, [auction.id, isDutch, router]);
+  }, [auction.id, router]);
 
-  // Dutch live ticker — recompute the asked price every 10s. Without
-  // this the price only refreshed on full page reload, and accepting a
-  // Dutch auction would lock in a stale value.
+  // Re-clamp the input upward when the live price overtakes it. Keyed on
+  // minNext ONLY — clamping on every render would fight the user as they
+  // type a partial number (the input's onBlur handles that case).
   useEffect(() => {
-    if (!isDutch) return;
-    function tick() {
-      const next = dutchCurrentPrice(auction);
-      setCurrentPrice(next);
-    }
-    tick();
-    const id = setInterval(tick, 10_000);
-    return () => clearInterval(id);
-  }, [auction, isDutch]);
-
-  // Re-clamp the input upward if the live price overtook it (English only).
-  useEffect(() => {
-    if (isEnglish) {
-      setAmount(amount < minNext ? minNext : amount);
-    }
+    setAmount(amount < minNext ? minNext : amount);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [minNext, isEnglish]);
+  }, [minNext]);
 
-  // English-only presets (Minimum / +5% / +10%).
+  // Quick-bid presets (Minimum / +5% / +10%).
   const presets = useMemo(() => {
-    if (!isEnglish) return [];
     const round = (n: number) => Math.round(n / inc) * inc;
     const five = Math.max(minNext, round(currentPrice * 1.05));
     const ten = Math.max(minNext, round(currentPrice * 1.1));
@@ -845,21 +823,13 @@ function ActiveComposer({
     if (five > minNext) out.push({ key: "5", label: "+5%", amount: five });
     if (ten > five) out.push({ key: "10", label: "+10%", amount: ten });
     return out;
-  }, [isEnglish, minNext, inc, currentPrice]);
+  }, [minNext, inc, currentPrice]);
 
-  // The amount we'll actually submit. Dutch posts the live asked price.
-  const submitAmount = isDutch ? currentPrice : amount;
+  const submitAmount = amount;
 
   function openConfirm() {
-    if (isEnglish && amount < minNext) {
+    if (amount < minNext) {
       toast(`Minimum : ${formatTND(minNext, locale)}`, "warning");
-      return;
-    }
-    if (isSealed && amount < auction.opening_price) {
-      toast(
-        `Minimum : ${formatTND(auction.opening_price, locale)} (prix d'ouverture)`,
-        "warning",
-      );
       return;
     }
     setShowConfirm(true);
@@ -953,7 +923,7 @@ function ActiveComposer({
             "below_opening",
             "bid_too_fast",
           ];
-          if (!isDutch && raceCodes.includes(code)) {
+          if (raceCodes.includes(code)) {
             setBidError({ code, attempted: bidAmount });
             setShowConfirm(false);
           } else {
@@ -967,27 +937,19 @@ function ActiveComposer({
           extended?: boolean;
         };
         // Authoritative price straight from the ack (0125). Fallback for an
-        // older engine: our own accepted English bid IS the new current
-        // price — update instantly instead of waiting for the realtime echo.
-        const newPrice = isSealed
-          ? currentPrice
-          : Number(data.current_price ?? (isEnglish ? bidAmount : currentPrice));
+        // older engine: our own accepted bid IS the new current price —
+        // update instantly instead of waiting for the realtime echo.
+        const newPrice = Number(data.current_price ?? bidAmount);
         setCurrentPrice(newPrice);
         setBidError(null);
-        if (isEnglish) setAmount(nextMinBid(auction, newPrice));
-        toast(
-          isDutch
-            ? `Adjugé à ${formatTND(bidAmount, locale)}`
-            : `Offre envoyée : ${formatTND(bidAmount, locale)}`,
-          "success",
-        );
+        setAmount(nextMinBid(auction, newPrice));
+        toast(`Offre envoyée : ${formatTND(bidAmount, locale)}`, "success");
         // No blanket router.refresh() here — it re-rendered the WHOLE server
         // page after every bid (auction + gates + history queries) and made
         // bidding feel slow. Realtime already streams the price, count and
-        // history rows. Refresh only when the page SHAPE changes: a Dutch
-        // hammer (auction just ended) or an anti-snipe extension (new
-        // ends_at for the countdown).
-        if (isDutch || data.extended === true) router.refresh();
+        // history rows. Refresh only when the page SHAPE changes: an
+        // anti-snipe extension (new ends_at for the countdown).
+        if (data.extended === true) router.refresh();
       } finally {
         setSubmitting(false);
         setShowConfirm(false);
@@ -1005,11 +967,7 @@ function ActiveComposer({
     );
   }
 
-  const ctaLabel = isDutch
-    ? `Accepter ${formatTND(currentPrice, locale)}`
-    : isSealed
-      ? `Soumettre ${formatTND(amount, locale)}`
-      : `Enchérir à ${formatTND(amount, locale)}`;
+  const ctaLabel = `Enchérir à ${formatTND(amount, locale)}`;
 
   return (
     <div className="space-y-3 lg:space-y-5">
@@ -1035,7 +993,7 @@ function ActiveComposer({
       {/* Price block */}
       <div>
         <div className="text-[10px] lg:text-[11px] uppercase tracking-[0.2em] lg:tracking-[0.22em] font-bold text-[var(--foreground-subtle)] lg:text-[var(--foreground-muted)] mb-1 lg:mb-1.5">
-          {isDutch ? "Prix demandé" : "Prix actuel"}
+          Prix actuel
         </div>
         <div className="text-3xl lg:text-[44px] xl:text-[52px] font-extrabold lg:font-black batta-tabular leading-none gradient-gold-text">
           <span key={currentPrice} className="inline-block">
@@ -1054,33 +1012,20 @@ function ActiveComposer({
             )}
             {bidsCount} {bidsCount === 1 ? "offre" : "offres"}
           </span>
-          {isDutch && (
-            <>
-              <span className="mx-1 text-[var(--border-strong)]">·</span>
-              <span>Baisse de {formatTND(auction.dutch_decrement ?? 0, locale)} toutes les {Math.round((auction.dutch_tick_seconds ?? 60) / 60)} min</span>
-            </>
-          )}
         </div>
       </div>
 
-      {/* Type-specific input section */}
-      {isDutch ? (
-        <DutchInfo auction={auction} locale={locale} />
-      ) : (
-        <AmountInput
-          isEnglish={isEnglish}
-          isSealed={isSealed}
-          amount={amount}
-          amountStr={amountStr}
-          setAmountStr={setAmountStr}
-          minBid={isSealed ? auction.opening_price : minNext}
-          increment={inc}
-          presets={presets}
-          onSetAmount={setAmount}
-          currentPrice={currentPrice}
-          locale={locale}
-        />
-      )}
+      <AmountInput
+        amount={amount}
+        amountStr={amountStr}
+        setAmountStr={setAmountStr}
+        minBid={minNext}
+        increment={inc}
+        presets={presets}
+        onSetAmount={setAmount}
+        currentPrice={currentPrice}
+        locale={locale}
+      />
 
       {/* Integrated bid-failure panel — sits right above the CTA where the
           user is looking, with live numbers and a one-tap re-bid. */}
@@ -1089,17 +1034,14 @@ function ActiveComposer({
           code={bidError.code}
           attempted={bidError.attempted}
           currentPrice={currentPrice}
-          minNext={isSealed ? Math.max(auction.opening_price, minNext) : minNext}
+          minNext={minNext}
           increment={inc}
           submitting={submitting}
           locale={locale}
           onRebid={() => {
-            const target = isSealed
-              ? Math.max(auction.opening_price, minNext)
-              : minNext;
-            setAmount(target);
+            setAmount(minNext);
             setBidError(null);
-            void placeBid(target);
+            void placeBid(minNext);
           }}
           onDismiss={() => setBidError(null)}
         />
@@ -1128,13 +1070,6 @@ function ActiveComposer({
           <Gavel className="h-4 w-4 lg:h-5 lg:w-5" />
           {ctaLabel}
         </Button>
-        {isSealed && (
-          <p className="text-center text-[11px] text-[var(--foreground-subtle)] inline-flex items-center justify-center gap-1.5 w-full">
-            <Eye className="h-3 w-3" />
-            Votre montant reste privé jusqu'à la clôture.
-          </p>
-        )}
-
         {/* Buy-now escape hatch — small text link, navigates to the
             unified checkout. */}
         {showBuyNow && (
@@ -1162,7 +1097,7 @@ function ActiveComposer({
             <div className="text-4xl font-extrabold gradient-gold-text batta-tabular leading-none">
               {formatTND(submitAmount, locale)}
             </div>
-            {isEnglish && submitAmount > currentPrice && (
+            {submitAmount > currentPrice && (
               <div className="mt-3 inline-flex items-center gap-2 text-[11px] text-[var(--foreground-muted)] batta-tabular">
                 <span className="line-through opacity-60">
                   {formatTND(currentPrice, locale)}
@@ -1179,21 +1114,12 @@ function ActiveComposer({
                 {auction.property.title}
               </span>
             </Row>
-            <Row label="Type">
-              <span className="font-bold ms-3">
-                {typeLabel}
-              </span>
-            </Row>
             <Row label="Restant">
               <Countdown endsAt={auction.ends_at} />
             </Row>
           </div>
           <p className="text-[11px] text-center text-[var(--foreground-subtle)] leading-relaxed">
-            {isDutch
-              ? "Le prix Dutch ne se renégocie pas — accepter adjuge immédiatement."
-              : isSealed
-                ? "Votre offre est confidentielle jusqu'à la clôture. Aucune annulation après envoi."
-                : "Votre offre est enregistrée immédiatement et visible par les autres enchérisseurs."}
+            Votre offre est enregistrée immédiatement et visible par les autres enchérisseurs.
           </p>
         </div>
         <ModalFooter>
@@ -1217,21 +1143,9 @@ function ActiveComposer({
           <li>
             • <strong className="text-foreground">Caution :</strong> un montant remboursable, calculé sur le prix d&apos;ouverture, est verrouillé une seule fois par enchère — restitué intégralement après la clôture si vous ne gagnez pas.
           </li>
-          {isEnglish && (
-            <li>
-              • <strong className="text-foreground">Anti-sniping :</strong> Toute offre dans les dernières minutes prolonge l'enchère.
-            </li>
-          )}
-          {isDutch && (
-            <li>
-              • <strong className="text-foreground">Dutch :</strong> Le prix baisse à intervalles fixes. La première personne qui accepte remporte l'enchère immédiatement.
-            </li>
-          )}
-          {isSealed && (
-            <li>
-              • <strong className="text-foreground">Sealed-bid :</strong> Une seule offre privée par participant. Les montants sont révélés à la clôture.
-            </li>
-          )}
+          <li>
+            • <strong className="text-foreground">Anti-sniping :</strong> Toute offre dans les dernières minutes prolonge l&apos;enchère.
+          </li>
           <li>
             • <strong className="text-foreground">Surenchère du 1/6 :</strong> Loi tunisienne — surenchère légale d'au moins 1/6 du prix adjugé, dans les 8 jours.
           </li>
@@ -1344,39 +1258,7 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   );
 }
 
-function DutchInfo({
-  auction,
-  locale,
-}: {
-  auction: AuctionWithProperty;
-  locale: string;
-}) {
-  const floor = auction.dutch_floor_price ?? auction.opening_price;
-  const start = auction.dutch_start_price ?? auction.opening_price;
-  return (
-    <div className="rounded-xl bg-[var(--surface-2)] border border-[var(--border)] p-4 space-y-2 text-[11px] text-[var(--foreground-muted)]">
-      <div className="flex justify-between">
-        <span>Prix de départ</span>
-        <span className="batta-tabular font-bold text-foreground">
-          {formatTND(start, locale)}
-        </span>
-      </div>
-      <div className="flex justify-between">
-        <span>Plancher (prix minimum)</span>
-        <span className="batta-tabular font-bold text-foreground">
-          {formatTND(floor, locale)}
-        </span>
-      </div>
-      <p className="pt-2 text-[10px] leading-relaxed">
-        Le prix baisse automatiquement. La première personne qui clique sur « Accepter » l'emporte immédiatement.
-      </p>
-    </div>
-  );
-}
-
 function AmountInput({
-  isEnglish,
-  isSealed,
   amount,
   amountStr,
   setAmountStr,
@@ -1387,8 +1269,6 @@ function AmountInput({
   currentPrice,
   locale,
 }: {
-  isEnglish: boolean;
-  isSealed: boolean;
   amount: number;
   amountStr: string;
   setAmountStr: (v: string) => void;
@@ -1403,7 +1283,7 @@ function AmountInput({
     <div className="space-y-2 lg:space-y-3">
       <div className="flex items-baseline justify-between">
         <span className="text-[10px] lg:text-[11px] uppercase tracking-[0.2em] lg:tracking-[0.22em] font-bold text-[var(--foreground-muted)]">
-          {isSealed ? "Votre offre privée" : "Votre offre"}
+          Votre offre
         </span>
         <span
           id="bid-amount-hint"
@@ -1418,11 +1298,9 @@ function AmountInput({
         >
           {amount < minBid
             ? `< ${formatTND(minBid, locale)}`
-            : isSealed
-              ? `Min ${formatTND(minBid, locale)}`
-              : amount === minBid
-                ? `Minimum · incrément ${formatTND(increment, locale)}`
-                : `+${formatTND(amount - currentPrice, locale)}`}
+            : amount === minBid
+              ? `Minimum · incrément ${formatTND(increment, locale)}`
+              : `+${formatTND(amount - currentPrice, locale)}`}
         </span>
       </div>
 
@@ -1434,16 +1312,14 @@ function AmountInput({
             : "border-[var(--border)] focus-within:border-[var(--gold)]",
         )}
       >
-        {isEnglish && (
-          <button
-            onClick={() => onSetAmount(Math.max(minBid, amount - increment))}
-            disabled={amount <= minBid}
-            aria-label="Réduire"
-            className="px-4 lg:px-6 bg-[var(--surface-2)] text-[var(--gold)] border-e border-[var(--border-strong)] hover:bg-[var(--gold-faint)] active:bg-[var(--gold-soft)]/40 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
-          >
-            <Minus className="h-4 w-4 lg:h-5 lg:w-5" strokeWidth={2.75} />
-          </button>
-        )}
+        <button
+          onClick={() => onSetAmount(Math.max(minBid, amount - increment))}
+          disabled={amount <= minBid}
+          aria-label="Réduire"
+          className="px-4 lg:px-6 bg-[var(--surface-2)] text-[var(--gold)] border-e border-[var(--border-strong)] hover:bg-[var(--gold-faint)] active:bg-[var(--gold-soft)]/40 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
+        >
+          <Minus className="h-4 w-4 lg:h-5 lg:w-5" strokeWidth={2.75} />
+        </button>
         <input
           type="text"
           inputMode="numeric"
@@ -1456,22 +1332,20 @@ function AmountInput({
             setAmountStr(String(clamped));
           }}
           className="flex-1 bg-transparent text-center text-xl lg:text-2xl xl:text-3xl font-extrabold batta-tabular focus:outline-none"
-          aria-label={isSealed ? "Votre offre privée" : "Votre offre"}
+          aria-label="Votre offre"
           aria-describedby="bid-amount-hint"
           aria-invalid={amount < minBid}
         />
-        {isEnglish && (
-          <button
-            onClick={() => onSetAmount(Math.max(minBid, amount) + increment)}
-            aria-label="Incrément"
-            className="px-4 lg:px-6 bg-[var(--surface-2)] text-[var(--gold)] border-s border-[var(--border-strong)] hover:bg-[var(--gold-faint)] active:bg-[var(--gold-soft)]/40 flex items-center justify-center transition-colors"
-          >
-            <Plus className="h-4 w-4 lg:h-5 lg:w-5" strokeWidth={2.75} />
-          </button>
-        )}
+        <button
+          onClick={() => onSetAmount(Math.max(minBid, amount) + increment)}
+          aria-label="Incrément"
+          className="px-4 lg:px-6 bg-[var(--surface-2)] text-[var(--gold)] border-s border-[var(--border-strong)] hover:bg-[var(--gold-faint)] active:bg-[var(--gold-soft)]/40 flex items-center justify-center transition-colors"
+        >
+          <Plus className="h-4 w-4 lg:h-5 lg:w-5" strokeWidth={2.75} />
+        </button>
       </div>
 
-      {isEnglish && presets.length > 0 && (
+      {presets.length > 0 && (
         <div className="flex items-center gap-1.5 lg:gap-2">
           {presets.map((p) => (
             <button

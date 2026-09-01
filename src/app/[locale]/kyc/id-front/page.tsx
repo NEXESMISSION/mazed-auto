@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { NativeCapture } from "@/components/auction/NativeCapture";
 import { updateKycDraft } from "@/lib/kycDraft";
+import { SelfieAssetsPrewarm } from "@/components/kyc/SelfieAssetsPrewarm";
 
 export default function KYCIdFrontPage() {
   const router = useRouter();
@@ -41,6 +42,9 @@ export default function KYCIdFrontPage() {
   return (
     <KYCShell current={0} backHref="/kyc/start">
       <div className="space-y-5">
+        {/* Pull the selfie step's camera assets down while the user
+            photographs their CIN — see SelfieAssetsPrewarm. */}
+        <SelfieAssetsPrewarm />
         <div className="text-center">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--gold-faint)] text-[10px] uppercase tracking-wider font-bold text-[var(--gold)] mb-3">
             Étape 1 / 4

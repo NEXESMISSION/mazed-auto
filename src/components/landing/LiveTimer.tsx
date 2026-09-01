@@ -108,7 +108,8 @@ function formatRemaining(secs: number): string {
   // hours/days away — seconds tick in the pill add visual noise but
   // no information at that range. Drop to minute + second precision
   // only when we're inside the urgent window.
-  if (d > 0) return `${d}d ${h}h`;
+  // "j" for jours — the UI is French; "d" read as an English leftover.
+  if (d > 0) return `${d}j ${h}h`;
   if (h > 0) return `${h}h ${pad(m)}m`;
   if (m > 0) return `${m}m ${pad(s)}s`;
   return `${pad(s)}s`;

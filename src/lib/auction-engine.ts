@@ -29,26 +29,6 @@ export function nextEndsAtAfterBid(
 }
 
 /**
- * Dutch auction price ticker. Given the auction config and the elapsed
- * time, returns the current asked price. Stops at the floor (which is
- * the plan's reserve / opening price).
- */
-export function dutchCurrentPrice(auction: Auction, now: Date = new Date()): number {
-  if (auction.type !== "dutch") {
-    throw new Error("dutchCurrentPrice called on non-dutch auction");
-  }
-  const start = auction.dutch_start_price ?? auction.opening_price;
-  const floor = auction.dutch_floor_price ?? auction.opening_price;
-  const decrement = auction.dutch_decrement ?? 0;
-  const tick = auction.dutch_tick_seconds ?? 60;
-  const startedAt = new Date(auction.starts_at).getTime();
-  const elapsedSec = Math.max(0, (now.getTime() - startedAt) / 1000);
-  const ticks = Math.floor(elapsedSec / tick);
-  const dropped = start - ticks * decrement;
-  return Math.max(floor, dropped);
-}
-
-/**
  * Sixth-offer rule (offre du sixième). Per the Tunisian rules baked into
  * the plan §5, a higher offer is admissible during the 8-day window only
  * if it exceeds the winning amount by at least 1/6 (16.67%). Returns the

@@ -89,8 +89,8 @@
     "steps": {
       "s1Title": "1. Listez votre voiture",
       "s1Body": "Documents et photos vérifiés sous 48h.",
-      "s2Title": "2. Choisissez le type d'enchère",
-      "s2Body": "Anglaise, cachetée ou hollandaise.",
+      "s2Title": "2. Programmez l'enchère",
+      "s2Body": "Mise à prix, date de début et de fin.",
       "s3Title": "3. Enchérisseurs vérifiés",
       "s3Body": "Vérifiés, avec 10% de garantie.",
       "s4Title": "4. Vente conclue légalement",
@@ -144,16 +144,13 @@
     "watchers": "abonnés",
     "verified": "Vérifié",
     "live": "En direct",
+    "label": "Enchère",
+    "directLabel": "Vente directe",
     "availableNow": "Disponible maintenant",
     "ended": "Terminé",
     "sold": "Vendu",
     "won": "Adjugé",
     "extending": "Enchère prolongée de 10 min (enchère dans les dernières 5 minutes)",
-    "types": {
-      "english": "Anglaise",
-      "sealed": "Cachetée",
-      "dutch": "Hollandaise"
-    },
     "loginToBid": "Connectez-vous pour enchérir",
     "kycRequired": "Vérification d'identité requise",
     "kycRequiredCta": "Vérifier l'identité",
@@ -165,6 +162,7 @@
     "depositInProgress": "Ouverture du paiement…",
     "placeBid": "Participer à l'enchère",
     "buyNowFor": "ou achat immédiat à",
+    "buyNowAtOpening": "achat immédiat dès l'ouverture :",
     "endedShort": "Enchère terminée",
     "wonByYou": "Adjugé · vous avez gagné",
     "myWins": "Mes acquisitions",
@@ -245,7 +243,8 @@
       "van": "Utilitaire",
       "coupe": "Coupé",
       "convertible": "Cabriolet",
-      "wagon": "Break"
+      "wagon": "Break",
+      "spare_part": "Pièce de rechange"
     }
   },
   "signup": {
@@ -481,20 +480,12 @@
   },
   "schedule": {
     "title": "Programmer l'enchère",
-    "subtitle": "Format, mise à prix et fenêtre. Annulable avant la première enchère.",
-    "format": "Format de l'enchère",
-    "english": "Anglaise (prix monte)",
-    "sealed": "Cachetée (offres privées)",
-    "dutch": "Hollandaise (prix descend)",
+    "subtitle": "Mise à prix et fenêtre. Annulable avant la première enchère.",
     "openingPrice": "Mise à prix (TND)",
     "reservePrice": "Prix de réserve (optionnel, TND)",
     "reserveHint": "Minimum caché en dessous duquel le véhicule ne sera pas vendu.",
     "startsAt": "Début",
     "endsAt": "Fin",
-    "dutchStart": "Prix de départ (TND)",
-    "dutchFloor": "Prix plancher (TND)",
-    "dutchDecrement": "Baisse par tick (TND)",
-    "dutchTick": "Intervalle du tick (secondes)",
     "submit": "Programmer l'enchère",
     "submitting": "Programmation…",
     "successTitle": "Enchère programmée",
@@ -511,9 +502,6 @@
       "endInPast": "La fin de l'enchère doit être dans le futur.",
       "tooShort": "L'enchère doit durer au moins 30 minutes.",
       "tooLong": "L'enchère ne peut pas durer plus de 60 jours.",
-      "dutchStartBelowFloor": "Le prix de départ doit être supérieur au prix plancher.",
-      "dutchDecrementInvalid": "La baisse par tick est invalide (positive et inférieure à l'écart départ-plancher).",
-      "dutchTickInvalid": "L'intervalle du tick doit être entre 30 s et 24 h.",
       "couldNotSchedule": "Impossible de programmer l'enchère. Réessayez."
     }
   }

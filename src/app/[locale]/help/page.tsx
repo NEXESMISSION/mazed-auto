@@ -108,12 +108,12 @@ const GROUPS: Group[] = [
         a: (
           <>
             La caution est un montant <strong>remboursable</strong> qui sécurise
-            l&apos;enchère : elle prouve le sérieux de chaque enchérisseur. Son
-            montant est calculé sur le <strong>prix d&apos;ouverture</strong> du
-            lot, selon les conditions fixées par la plateforme (elle peut être
-            offerte sur certaines périodes ou certains lots). Elle n&apos;est
-            bloquée qu&apos;<strong>une seule fois par enchère</strong>, quel que
-            soit le nombre d&apos;offres que vous placez ensuite.
+            l&apos;enchère : elle prouve le sérieux de chaque enchérisseur.
+            C&apos;est un <strong>montant unique, identique sur toutes les
+            enchères</strong> — il ne dépend ni du prix du véhicule ni de la
+            date. Elle n&apos;est bloquée qu&apos;<strong>une seule fois par
+            enchère</strong>, quel que soit le nombre d&apos;offres que vous
+            placez ensuite.
           </>
         ),
       },

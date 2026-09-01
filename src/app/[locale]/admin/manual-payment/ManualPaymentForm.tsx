@@ -58,7 +58,7 @@ export function ManualPaymentForm({ deposit }: { deposit: DepositConfig }) {
   const suggested = (() => {
     if (!selAuction) return null;
     if (kind === "deposit_lock") {
-      const r = resolveDeposit(deposit, selAuction.opening_price);
+      const r = resolveDeposit(deposit);
       return r.required ? r.amount : 0;
     }
     if (kind === "buy_now") return selAuction.buy_now_price ?? null;

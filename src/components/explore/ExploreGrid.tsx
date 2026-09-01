@@ -43,6 +43,7 @@ const PROPERTY_TYPES: { key: PropertyType; label: string }[] = [
   { key: "coupe", label: "Coupé" },
   { key: "convertible", label: "Cabriolet" },
   { key: "wagon", label: "Break" },
+  { key: "spare_part", label: "Pièce de rechange" },
 ];
 
 // Canonical 24-wilaya list (was a truncated 16 here, so users in 8
@@ -593,7 +594,7 @@ function GridCard({
             ) : (
               <span className="batta-gold-fill inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-[10px] font-extrabold uppercase tracking-wider shadow-[var(--shadow-gold)]">
                 <Gavel className="size-3" strokeWidth={2.5} />
-                {t(`auction.types.${auction.type}`)}
+                {t("auction.label")}
               </span>
             )}
           </div>
@@ -652,7 +653,7 @@ function GridCard({
             ) : (
               <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.12em] text-gold">
                 <Gavel className="size-3" strokeWidth={2} />
-                {t(`auction.types.${auction.type}`)}
+                {t("auction.label")}
               </span>
             )}
           </div>

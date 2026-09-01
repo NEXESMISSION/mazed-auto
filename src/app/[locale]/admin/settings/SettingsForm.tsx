@@ -13,9 +13,9 @@ export type SettingsValues = {
   promoHome: { enabled: boolean; value: number; duration_days: number };
   promoTop: { enabled: boolean; value: number; duration_days: number };
   promoBanner: { enabled: boolean; value: number; duration_days: number };
-  deposit: { mode: ListingMode; value: number; free_until: string };
+  /** One flat caution in TND for every lot; 0 = bidding is free. */
+  deposit: { amount: number };
   antiSnipe: { window_min: number; extend_min: number };
-  auctionTypes: { dutch_enabled: boolean; sealed_enabled: boolean };
   finalPaymentDays: number;
   payee_name: string;
   payee_bank: string;
@@ -45,9 +45,8 @@ export function SettingsForm({ initial }: { initial: SettingsValues }) {
         promo_home: v.promoHome,
         promo_top: v.promoTop,
         promo_banner: v.promoBanner,
-        deposit: { ...v.deposit, free_until: v.deposit.free_until || null },
+        deposit: { amount: v.deposit.amount },
         auction_antisnipe: v.antiSnipe,
-        auction_types: v.auctionTypes,
         final_payment_days: { days: v.finalPaymentDays },
         payee_name: v.payee_name,
         payee_bank: v.payee_bank,
@@ -107,69 +106,35 @@ export function SettingsForm({ initial }: { initial: SettingsValues }) {
         <PromoRow label="Bannière d'accueil" cfg={v.promoBanner} onChange={(c) => patch("promoBanner", c)} />
       </Section>
 
-      {/* ── Deposit ── */}
+      {/* ── Deposit ──
+          ONE number, applied to every lot. The old mode/percent/"free until"
+          trio meant the caution differed per listing and per date; a single
+          rule is what a bidder (and support) can actually state. */}
       <Section
         title="Caution pour enchérir"
-        hint="Ce qu'un participant verse avant d'enchérir. Pourcentage = % du prix d'ouverture."
+        hint="Un seul montant, identique sur toutes les enchères. Mettez 0 pour rendre les enchères gratuites."
       >
-        <FeeRow
-          label="Caution"
-          modes={["free", "fixed", "percent"]}
-          mode={v.deposit.mode}
-          value={v.deposit.value}
-          percentHint="% du prix d'ouverture"
-          onMode={(m) => patch("deposit", { ...v.deposit, mode: m })}
-          onValue={(n) => patch("deposit", { ...v.deposit, value: n })}
-        />
         <label className="block">
           <span className="text-[11px] font-semibold text-[var(--foreground-muted)]">
-            Gratuit jusqu&apos;au (optionnel)
+            Montant de la caution (TND)
           </span>
           <input
-            type="date"
-            value={v.deposit.free_until}
-            onChange={(e) => patch("deposit", { ...v.deposit, free_until: e.target.value })}
+            type="number"
+            min={0}
+            step="1"
+            inputMode="decimal"
+            value={v.deposit.amount}
+            onChange={(e) =>
+              patch("deposit", { amount: Math.max(0, Number(e.target.value) || 0) })
+            }
             className="mt-1 w-full rounded-xl border border-batta-gold/25 bg-batta-surface-2 px-3 py-2.5 text-sm text-batta-cream focus:border-batta-gold focus:outline-none focus:ring-1 focus:ring-batta-gold/40"
           />
           <span className="mt-1 block text-[10.5px] text-[var(--foreground-muted)]">
-            Pendant cette période, enchérir est gratuit pour tout le monde.
-            {v.deposit.free_until && (
-              <button
-                type="button"
-                onClick={() => patch("deposit", { ...v.deposit, free_until: "" })}
-                className="ms-1 font-bold text-batta-gold-bright underline"
-              >
-                Effacer
-              </button>
-            )}
+            {v.deposit.amount > 0
+              ? `Chaque participant verse ${v.deposit.amount} TND avant d'enchérir — remboursable s'il ne gagne pas.`
+              : "Caution désactivée : tout le monde peut enchérir sans rien verser."}
           </span>
         </label>
-      </Section>
-
-      {/* ── Auction formats available to sellers ── */}
-      <Section
-        title="Formats d'enchère proposés"
-        hint="Choisissez les formats que les vendeurs peuvent utiliser. L'enchère anglaise (le prix monte, la plus haute offre gagne) est toujours active — c'est le format standard."
-      >
-        <div className="flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3.5 py-3 opacity-80">
-          <div>
-            <div className="text-[13px] font-bold text-foreground">Anglaise <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--gold)]">· standard</span></div>
-            <div className="text-[11px] text-[var(--foreground-muted)]">Le prix monte à chaque offre. Toujours disponible.</div>
-          </div>
-          <span className="text-[11px] font-bold text-[var(--gold)]">Activée</span>
-        </div>
-        <FormatToggle
-          label="Dégressive (Dutch)"
-          sub="Le prix baisse avec le temps ; le premier à accepter gagne."
-          on={v.auctionTypes.dutch_enabled}
-          onChange={(b) => patch("auctionTypes", { ...v.auctionTypes, dutch_enabled: b })}
-        />
-        <FormatToggle
-          label="Cachetée (Sealed)"
-          sub="Offres secrètes, révélées à la clôture ; la plus élevée gagne."
-          on={v.auctionTypes.sealed_enabled}
-          onChange={(b) => patch("auctionTypes", { ...v.auctionTypes, sealed_enabled: b })}
-        />
       </Section>
 
       {/* ── Anti-sniping (auction time extension) ── */}
@@ -241,40 +206,6 @@ const MODE_LABEL: Record<ListingMode, string> = {
   fixed: "Montant fixe",
   percent: "Pourcentage",
 };
-
-function FormatToggle({
-  label, sub, on, onChange,
-}: {
-  label: string;
-  sub: string;
-  on: boolean;
-  onChange: (b: boolean) => void;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-[var(--border)] bg-surface px-3.5 py-3">
-      <div className="min-w-0">
-        <div className="text-[13px] font-bold text-foreground">{label}</div>
-        <div className="text-[11px] text-[var(--foreground-muted)]">{sub}</div>
-      </div>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={on}
-        aria-label={label}
-        onClick={() => onChange(!on)}
-        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
-          on ? "bg-[var(--gold)]" : "bg-[var(--surface-2)] ring-1 ring-[var(--border)]"
-        }`}
-      >
-        <span
-          className={`inline-block size-5 transform rounded-full bg-white shadow transition-transform ${
-            on ? "translate-x-[22px]" : "translate-x-0.5"
-          }`}
-        />
-      </button>
-    </div>
-  );
-}
 
 function FeeRow({
   label, modes, mode, value, percentHint, onMode, onValue,

@@ -25,6 +25,7 @@ import { AuctionTerms } from "@/components/auction/AuctionTerms";
 import { PropertyMap } from "@/components/property/PropertyMap";
 import { PropertyDocumentOpenButton } from "@/components/property/PropertyDocumentOpenButton";
 import { WatchlistButton } from "@/components/watchlist/WatchlistButton";
+import { DiagnosticSheet } from "@/components/property/DiagnosticSheet";
 import { ShareButton } from "@/components/auction/ShareButton";
 import { Link } from "@/i18n/navigation";
 import { INSPECTIONS_ENABLED } from "@/lib/features";
@@ -225,16 +226,31 @@ export default async function AuctionDetail({
 
   const userId = userRes.data.user?.id ?? null;
   const currentPrice = auction.current_price ?? auction.opening_price;
-  // Deposit is admin-configurable (free / fixed / percent + free window).
-  // Deposit config came back (cached) in the first parallel wave.
-  const { required: depositRequired, amount: deposit } = resolveDeposit(
-    mon.deposit, auction.opening_price,
-  );
+  // One flat, admin-set caution for every lot (0 = free). Config came back
+  // (cached) in the first parallel wave.
+  const { required: depositRequired, amount: deposit } = resolveDeposit(mon.deposit);
   const isLive = auction.status === "live" || auction.status === "extending";
   // listing_type='direct' → fixed-price sale, no bidding. DirectSalePanel
   // owns the price + CTA; we skip the auction price card and bid CTA below.
   const isDirect = auction.listing_type === "direct";
-  const hasBuyNow = !isDirect && auction.buy_now_price != null;
+  // ─── Buy-now lifecycle ───
+  // An auction lot's buy-now is a SHORTCUT past the bidding, not a
+  // pre-sale and not a fallback once bidding has caught up:
+  //   scheduled  → shown, but not purchasable yet. close_auction_on_purchase
+  //                (0136) refuses to close a pre-live lot, so a click here
+  //                would take money for a sale the DB will not honour. The
+  //                price stays on screen as an "at opening" note instead.
+  //   live       → purchasable, and it STAYS there for the whole live phase.
+  //   price >= buy-now → retired. The standing high bid already matches or
+  //                beats it; closing under the leader would displace them.
+  //                Mirrors the 409 in /api/auctions/[id]/buy-now and the
+  //                no-op in close_auction_on_purchase.
+  const buyNowPrice =
+    !isDirect && auction.buy_now_price != null ? Number(auction.buy_now_price) : null;
+  const buyNowRetired = buyNowPrice != null && currentPrice >= buyNowPrice;
+  const hasBuyNow = buyNowPrice != null && buyNowPrice > 0 && !buyNowRetired;
+  // Clickable only while the lot is actually open for a buy-now capture.
+  const buyNowPurchasable = hasBuyNow && isLive;
 
   // Pre-flight gates the bid panel needs to render the right CTA
   // without a client-side round-trip. KYC + active deposit are
@@ -446,6 +462,7 @@ export default async function AuctionDetail({
         isLive={isLive}
         isDirect={isDirect}
         hasBuyNow={hasBuyNow}
+        buyNowPurchasable={buyNowPurchasable}
         isEnded={isEnded}
         isOwner={isOwner}
         kycVerified={kycVerified}
@@ -494,7 +511,9 @@ export default async function AuctionDetail({
                 {totalBids} · {t("auction.totalBids")}
               </span>
             )}
-            {!isOwner && (
+            {/* Nothing left to watch once the lot is settled — following a
+                sold car only ever produces notifications that can't happen. */}
+            {!isOwner && !isEnded && (
               <WatchlistButton
                 auctionId={auction.id}
                 initialSaved={false}
@@ -505,11 +524,11 @@ export default async function AuctionDetail({
           </div>
         </div>
 
-        {/* Bottom overlay — type pill + bold title + location · lot. */}
+        {/* Bottom overlay — listing pill + bold title + location · lot. */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 px-5 pb-12 pt-16">
           <span className="batta-gold-fill inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider shadow-[var(--shadow-gold)]">
             <Gavel className="size-3" strokeWidth={2.5} />
-            {t(`auction.types.${auction.type}`)}
+            {isDirect ? t("auction.directLabel") : t("auction.label")}
           </span>
           <div className="mt-3 flex items-end justify-between gap-3">
             <h1
@@ -681,7 +700,9 @@ export default async function AuctionDetail({
           also clipping the calendar dropdown panel and the bottom-half
           of the button itself. Sitting in a sibling row gives the menu
           room to open downward without fighting the card's clip. */}
-      {!isDirect && (
+      {/* AuctionCalendarMenu self-hides on ended auctions; skip the row
+          too so we don't leave an empty flex container behind it. */}
+      {!isDirect && !isEnded && (
         <div className="mx-4 mt-3 flex justify-end">
           <AuctionCalendarMenu
             auctionId={auction.id}
@@ -851,7 +872,10 @@ export default async function AuctionDetail({
 
       {/* ─── INSPECTION CTA / REPORT ─── */}
       {/* Hidden while the inspector network is off — "Réserver" would lead
-          to a gated route, and there is no third-party expert to book. */}
+          to a gated route, and there is no third-party expert to book.
+          Once the auction is over, the "Réserver" CTA goes too: inspecting
+          a car you can no longer bid on is a dead end. A report the viewer
+          already paid for stays — that's their document, not an offer. */}
       {!INSPECTIONS_ENABLED ? null : myInspection ? (
         <section className="batta-surface-ivory mx-4 mt-4 flex items-center gap-3 rounded-xl p-4">
           <span className="batta-monogram batta-monogram-filled size-10 shrink-0">
@@ -874,7 +898,7 @@ export default async function AuctionDetail({
             Ouvrir
           </a>
         </section>
-      ) : (
+      ) : isEnded ? null : (
         <section className="batta-surface-ivory mx-4 mt-4 flex items-center gap-3 rounded-xl p-4">
           <span className="batta-monogram size-10 shrink-0">
             <ClipboardCheck className="size-4" strokeWidth={2.2} />
@@ -897,7 +921,20 @@ export default async function AuctionDetail({
         </section>
       )}
 
+      {/* ─── DIAGNOSTIC MAZED ───
+              Our own check of this car: what the "Vérifié et approuvé" badge
+              means, with the points inspected and the photos we took. Renders
+              nothing when we haven't published a diagnostic for this listing,
+              so an unchecked car makes no claim at all. */}
+      <DiagnosticSheet propertyId={property.id} />
+
       {/* ─── DOCUMENTS ─── */}
+      {/* Once the auction is over the legal file is noise for everyone
+          except the two people it still concerns: the seller and the
+          winner. Every other visitor only ever saw a list of locked
+          rows they could never open ("KYC + caution"), so the whole
+          section is dropped rather than shown as a tease. */}
+      {(!isEnded || isOwner || isWinner) && (
       <section className="batta-frame mx-4 mt-4 p-5">
         <h2 className="batta-eyebrow flex items-center gap-2">
           <span aria-hidden className="batta-gold-rule-short" />
@@ -940,6 +977,7 @@ export default async function AuctionDetail({
           })}
         </ul>
       </section>
+      )}
 
       {/* Spacer above the bottom tab bar so the last card isn't covered. */}
       <div aria-hidden className="h-6" />
@@ -997,20 +1035,30 @@ export default async function AuctionDetail({
             )}
             {hasBuyNow && !isOwner && (
               <div className="mt-2 flex justify-center">
-                <Link
-                  // Buy-now jumps straight to the unified checkout (it
-                  // does not require a deposit, so routing through the
-                  // bid page's deposit gate would block a legitimate
-                  // buy-now flow). Login/KYC checks happen on the
-                  // checkout page itself.
-                  href={`/payment/checkout?type=buy_now&auction=${auction.id}` as never}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-black/55 px-3 py-1 text-[11.5px] text-white/85 ring-1 ring-gold/20 backdrop-blur-sm transition hover:bg-black/70 hover:text-white"
-                >
-                  {t("auction.buyNowFor")}{" "}
-                  <span className="font-bold text-white">
-                    {formatTND(Number(auction.buy_now_price), locale)}
+                {buyNowPurchasable ? (
+                  <Link
+                    // Buy-now jumps straight to the unified checkout (it
+                    // does not require a deposit, so routing through the
+                    // bid page's deposit gate would block a legitimate
+                    // buy-now flow). Login/KYC checks happen on the
+                    // checkout page itself.
+                    href={`/payment/checkout?type=buy_now&auction=${auction.id}` as never}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-black/55 px-3 py-1 text-[11.5px] text-white/85 ring-1 ring-gold/20 backdrop-blur-sm transition hover:bg-black/70 hover:text-white"
+                  >
+                    {t("auction.buyNowFor")}{" "}
+                    <span className="font-bold text-white">
+                      {formatTND(buyNowPrice!, locale)}
+                    </span>
+                  </Link>
+                ) : (
+                  // Pre-live: the price is announced but not yet buyable.
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-black/45 px-3 py-1 text-[11.5px] text-white/70 ring-1 ring-gold/10 backdrop-blur-sm">
+                    {t("auction.buyNowAtOpening")}{" "}
+                    <span className="font-bold text-white/90">
+                      {formatTND(buyNowPrice!, locale)}
+                    </span>
                   </span>
-                </Link>
+                )}
               </div>
             )}
           </div>

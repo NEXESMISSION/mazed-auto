@@ -7,13 +7,12 @@ import { minBidIncrement } from "./utils";
 /**
  * SQL/TS parity guard for the money-critical ladders.
  *
- * The bid-increment ladder and the Dutch price formula exist in TWO places:
- *   - TS  (src/lib/utils.ts minBidIncrement, src/lib/auction-engine.ts
- *          dutchCurrentPrice) — drives what the UI shows as the minimum next
- *          bid / current Dutch price.
- *   - SQL (supabase/migrations/0006_security_lockdown.sql bid_increment /
- *          dutch_current_price) — the AUTHORITY enforced inside place_bid
- *          (raises below_min_increment / dutch_price_drifted).
+ * The bid-increment ladder exists in TWO places:
+ *   - TS  (src/lib/utils.ts minBidIncrement) — drives what the UI shows as
+ *          the minimum next bid.
+ *   - SQL (supabase/migrations/0006_security_lockdown.sql bid_increment) —
+ *          the AUTHORITY enforced inside place_bid (raises
+ *          below_min_increment).
  *
  * They agreed only because a human kept them in sync by hand. If a future
  * settings change edits one and not the other, the UI computes a minimum the
@@ -22,7 +21,7 @@ import { minBidIncrement } from "./utils";
  * the TS implementation produces byte-identical results, so drift fails CI with
  * no staging DB required.
  *
- * If you intentionally change a ladder, change BOTH copies and this test will
+ * If you intentionally change the ladder, change BOTH copies and this test will
  * pass again; if you change one, it goes red and tells you which boundary moved.
  */
 
@@ -91,76 +90,4 @@ describe("bid-increment ladder: TS ↔ SQL parity", () => {
       expect(minBidIncrement(n)).toBe(sqlIncrement(n));
     }
   });
-});
-
-/**
- * Dutch price parity. The SQL formula is:
- *   greatest(floor, start - floor(elapsed / tick) * decrement)
- * The TS dutchCurrentPrice (auction-engine.ts) computes the same with
- * Math.max / Math.floor. We reproduce the SQL arithmetic verbatim from the
- * coalesce defaults declared in the migration and compare to the TS output for
- * a grid of (elapsed, decrement, tick) cases — catching any drift in the
- * floor/tick/coalesce semantics.
- */
-import { dutchCurrentPrice } from "./auction-engine";
-import type { Auction } from "./types";
-
-describe("dutch price formula: TS ↔ SQL parity", () => {
-  // Re-derive the SQL semantics straight from the migration text so this test
-  // also fails if someone edits the coalesce defaults (60s tick, 0 decrement,
-  // floor=opening) in SQL without touching the TS mirror.
-  it("SQL still defaults tick to 60 and decrement to 0 (TS mirror assumption)", () => {
-    const fn = SQL.match(
-      /create or replace function public\.dutch_current_price[\s\S]*?\$\$([\s\S]*?)\$\$/i,
-    );
-    expect(fn, "dutch_current_price not found in SQL").toBeTruthy();
-    const body = fn![1];
-    expect(body).toMatch(/dutch_tick_seconds,\s*60/);
-    expect(body).toMatch(/dutch_decrement,\s*0/);
-    expect(body).toMatch(/dutch_floor_price,\s*a\.opening_price/);
-    expect(body).toMatch(/dutch_start_price,\s*a\.opening_price/);
-  });
-
-  // Faithful re-implementation of the SQL arithmetic.
-  function sqlDutch(
-    start: number,
-    floor: number,
-    decrement: number,
-    tick: number,
-    elapsedSec: number,
-  ): number {
-    const ticks = Math.floor(Math.max(0, elapsedSec) / (tick || 1));
-    return Math.max(floor, start - ticks * decrement);
-  }
-
-  const startIso = "2026-06-01T00:00:00Z";
-  const startMs = new Date(startIso).getTime();
-
-  const cases: Array<{ dec: number; tick: number; floor: number; start: number }> = [
-    { start: 200_000, floor: 150_000, dec: 10_000, tick: 60 },
-    { start: 1_000_000, floor: 250_000, dec: 25_000, tick: 30 },
-    { start: 500_000, floor: 500_000, dec: 0, tick: 60 },
-    { start: 300_000, floor: 100_000, dec: 7_333, tick: 45 },
-  ];
-
-  for (const c of cases) {
-    it(`agrees for start=${c.start} dec=${c.dec} tick=${c.tick}`, () => {
-      const a = {
-        type: "dutch",
-        starts_at: startIso,
-        opening_price: c.start,
-        dutch_start_price: c.start,
-        dutch_floor_price: c.floor,
-        dutch_decrement: c.dec,
-        dutch_tick_seconds: c.tick,
-      } as unknown as Auction;
-
-      for (let elapsed = 0; elapsed <= 5000; elapsed += 17) {
-        const now = new Date(startMs + elapsed * 1000);
-        const ts = dutchCurrentPrice(a, now);
-        const sql = sqlDutch(c.start, c.floor, c.dec, c.tick, elapsed);
-        expect(ts, `elapsed=${elapsed}`).toBe(sql);
-      }
-    });
-  }
 });

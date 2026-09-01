@@ -11,6 +11,7 @@ import {
   Upload,
   Loader2,
   ArrowRight,
+  ArrowLeft,
   AlertCircle,
   FileText,
   X,
@@ -84,8 +85,70 @@ const MAX_FILE_MB = 25;
 // 3G upload of a 25 MB receipt, short enough that a dead connection
 // surfaces as a retryable error instead of an indefinite "Envoi…".
 const COMPRESS_TIMEOUT_MS = 45_000;
-const UPLOAD_TIMEOUT_MS = 120_000;
 const ATTACH_TIMEOUT_MS = 20_000;
+
+/**
+ * Per-file upload budget, scaled to the bytes actually being sent.
+ *
+ * A flat 120 s meant a compressed 400 KB receipt on a dead connection sat
+ * on "Envoi…" for two full minutes before saying anything — indistinguishable
+ * from a frozen page, and the reason this screen reads as "stuck". Budgeting
+ * ~30 s per megabyte (floor 45 s, ceiling 180 s) surfaces a stall on a small
+ * receipt in well under a minute while still letting a genuine 25 MB PDF
+ * crawl up a 2G link.
+ */
+function uploadTimeoutFor(bytes: number): number {
+  const mb = bytes / (1024 * 1024);
+  return Math.min(180_000, Math.max(45_000, Math.round(30_000 * mb)));
+}
+
+/**
+ * Content type for a file whose own `type` came back empty.
+ *
+ * Mobile pickers routinely hand us a File with `type === ""` (HEIC is the
+ * usual offender). supabase-js uploads a File as multipart and takes the
+ * object's mimetype from the PART, not from our `contentType` option — so an
+ * empty type is stored verbatim and the admin queue later renders the receipt
+ * as a broken <Image> with no way to read the proof. Stamping a real type from
+ * the extension before upload keeps the stored object displayable.
+ */
+const EXT_TO_MIME: Record<string, string> = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+  avif: "image/avif",
+  heic: "image/heic",
+  heif: "image/heif",
+  pdf: "application/pdf",
+};
+
+function withKnownType(file: File): File {
+  if (file.type) return file;
+  const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+  const mime = EXT_TO_MIME[ext];
+  if (!mime) return file;
+  return new File([file], file.name, { type: mime });
+}
+
+/** Thrown when the user taps "Annuler" mid-send. */
+class CancelledSend extends Error {
+  constructor() {
+    super("cancelled");
+    this.name = "CancelledSend";
+  }
+}
+
+/** Let React paint the pending state before a main-thread-blocking step. */
+function yieldToPaint(): Promise<void> {
+  return new Promise((resolve) => {
+    if (typeof requestAnimationFrame === "function") {
+      requestAnimationFrame(() => setTimeout(resolve, 0));
+    } else {
+      setTimeout(resolve, 0);
+    }
+  });
+}
 const ACCEPTED_TYPES = [
   "image/jpeg",
   "image/jpg",
@@ -117,6 +180,16 @@ export function CheckoutClient({
   const MAX_RECEIPTS = 3;
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  // What the submit is doing RIGHT NOW ("Compression 1/2…", "Envoi 2/2…").
+  // A single frozen "Envoi…" for the whole compress+upload+attach chain is
+  // what made a slow send indistinguishable from a hung one.
+  const [phase, setPhase] = useState<string | null>(null);
+  // Set by the "Annuler" affordance. Checked between every step so a user on a
+  // dying connection can get out of the pending state without reloading the
+  // page (the in-flight request itself can't be aborted — supabase-js's
+  // storage upload takes no AbortSignal — but everything after it stops and
+  // the objects already written get cleaned up).
+  const cancelRef = useRef(false);
 
   // No cancel affordance in checkout. Abandoning a payment is simply
   // leaving the page — the row stays `pending` and can be resumed, so a
@@ -129,6 +202,27 @@ export function CheckoutClient({
     [provider, instructions],
   );
   const meta = KIND_TITLES[kind];
+
+  // ── Where "Retour" goes ──
+  // A fixed destination, NOT history.back(): this screen is reached from a
+  // notification deep-link, a redirect out of /login, or the buy-now/deposit
+  // CTA — so the previous history entry is regularly missing, or is the very
+  // page that bounced us here (back would land the user in a loop).
+  // Leaving is harmless: the payment row stays `pending` and the user can
+  // resume it from /account/payments.
+  //
+  // For listing-fee payments `auction` actually carries the PROPERTY summary
+  // (see fetchPropertySummary in page.tsx), so it routes to the listing, not
+  // to /auctions/<id> — which would 404 on a property id.
+  const backHref = (
+    kind === "listing_fee"
+      ? auction
+        ? `/sell/${auction.id}`
+        : "/sell"
+      : auction
+        ? `/auctions/${auction.id}`
+        : "/account/payments"
+  ) as never;
 
   async function copyValue(label: string, value: string) {
     try {
@@ -178,11 +272,17 @@ export function CheckoutClient({
 
   async function submit() {
     if (files.length === 0 || submitting) return;
+    cancelRef.current = false;
     setSubmitting(true);
+    setPhase("Préparation…");
     // Track every object we put in the bucket this attempt so we can clean them
     // ALL up if a later upload or the attach call fails (no orphans).
     const uploadedPaths: string[] = [];
     const supabase = getBrowserSupabase();
+    const total = files.length;
+    const throwIfCancelled = () => {
+      if (cancelRef.current) throw new CancelledSend();
+    };
     try {
       const { data: auth } = await withTimeout(supabase.auth.getUser(), 15_000);
       if (!auth.user) {
@@ -191,7 +291,8 @@ export function CheckoutClient({
       }
       const safePid = paymentId.replace(/[^a-z0-9-]/gi, "");
 
-      for (let i = 0; i < files.length; i++) {
+      for (let i = 0; i < total; i++) {
+        throwIfCancelled();
         const original = files[i];
         // Compress image receipts before upload (review-only → document-tier
         // WebP, ~250-500 KB, text stays crisp). compressImage also converts
@@ -201,6 +302,13 @@ export function CheckoutClient({
         const ext0 = original.name.split(".").pop()?.toLowerCase() ?? "";
         const isPdf = original.type === "application/pdf" || ext0 === "pdf";
         if (!isPdf) {
+          setPhase(total > 1 ? `Compression ${i + 1}/${total}…` : "Compression de l'image…");
+          // The canvas decode + encode (and libheif for iPhone HEIC) run on the
+          // main thread and freeze the tab for a second or two on a mid-range
+          // phone. Hand the browser a frame first so the label above is
+          // actually PAINTED before the freeze — otherwise the user stares at
+          // an unchanged button and concludes the page died.
+          await yieldToPaint();
           try {
             // Timed: compressImage decodes on a canvas and, for iPhone HEIC,
             // pulls the libheif wasm bundle. Its own try/catch returns the
@@ -214,23 +322,64 @@ export function CheckoutClient({
             toUpload = original;
           }
         }
+        // An empty File.type survives into the stored object's mimetype and
+        // breaks every downstream preview — stamp one from the extension.
+        toUpload = withKnownType(toUpload);
+        throwIfCancelled();
+
         // Owner-scoped path per RLS (0023); index suffix keeps the 3 distinct.
         const ext = toUpload.name.split(".").pop()?.toLowerCase() ?? "bin";
-        const path = `${auth.user.id}/${safePid}-${Date.now()}-${i}.${ext}`;
-        const { error: upErr } = await withTimeout(
-          supabase.storage
-            .from("receipts")
-            .upload(path, toUpload, { cacheControl: "3600", upsert: false, contentType: toUpload.type }),
-          UPLOAD_TIMEOUT_MS,
-        );
+        setPhase(total > 1 ? `Envoi ${i + 1}/${total}…` : "Envoi du reçu…");
+        // One retry per file. Mobile networks drop a request often enough that
+        // a single blip used to throw away the whole attempt — including the
+        // receipts already uploaded — and send the user back to the start. A
+        // fresh path per attempt keeps upsert:false safe.
+        let upErr: { message: string } | null = null;
+        for (let attempt = 0; attempt < 2; attempt++) {
+          throwIfCancelled();
+          const path = `${auth.user.id}/${safePid}-${Date.now()}-${i}${attempt ? `-r${attempt}` : ""}.${ext}`;
+          try {
+            const { error } = await withTimeout(
+              supabase.storage
+                .from("receipts")
+                .upload(path, toUpload, {
+                  cacheControl: "3600",
+                  upsert: false,
+                  contentType: toUpload.type,
+                }),
+              uploadTimeoutFor(toUpload.size),
+            );
+            if (!error) {
+              uploadedPaths.push(path);
+              upErr = null;
+              break;
+            }
+            upErr = error;
+          } catch (e) {
+            if (e instanceof CancelledSend) throw e;
+            // A timed-out attempt: retry once, then report it like any other
+            // upload failure instead of unwinding the whole submit.
+            upErr = {
+              message: isTimeout(e)
+                ? "connexion trop lente"
+                : e instanceof Error
+                  ? e.message
+                  : "erreur réseau",
+            };
+          }
+          if (attempt === 0) {
+            setPhase(`Nouvelle tentative ${total > 1 ? `${i + 1}/${total} ` : ""}…`);
+          }
+        }
         if (upErr) {
           if (uploadedPaths.length) void supabase.storage.from("receipts").remove(uploadedPaths);
           toast(`Échec du téléversement : ${upErr.message}`, "error");
           return;
         }
-        uploadedPaths.push(path);
       }
 
+      throwIfCancelled();
+      setPhase("Finalisation…");
       const res = await fetch(`/api/payments/${paymentId}/receipt`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -251,19 +400,25 @@ export function CheckoutClient({
       if (uploadedPaths.length) {
         void supabase.storage.from("receipts").remove(uploadedPaths);
       }
-      toast(
-        isTimeout(e)
-          ? "Connexion trop lente — le reçu n'a pas été envoyé. Réessayez."
-          : e instanceof Error
-            ? e.message
-            : "Erreur réseau.",
-        "error",
-      );
+      if (e instanceof CancelledSend) {
+        toast("Envoi annulé — vos fichiers sont toujours là.", "warning");
+      } else {
+        toast(
+          isTimeout(e)
+            ? "Connexion trop lente — le reçu n'a pas été envoyé. Réessayez."
+            : e instanceof Error
+              ? e.message
+              : "Erreur réseau.",
+          "error",
+        );
+      }
     } finally {
       // ALWAYS release the button. Every branch above used to reset this
       // individually, which covered failures but not hangs — any await that
       // never settled left the button pinned on "Envoi…" with no error and
       // no way out but reloading the page.
+      cancelRef.current = false;
+      setPhase(null);
       setSubmitting(false);
     }
   }
@@ -361,6 +516,19 @@ export function CheckoutClient({
   return (
     <div className="min-h-screen bg-background">
       <main className="mx-auto max-w-md px-4 py-6 lg:max-w-5xl lg:py-12">
+        {/* Back — the checkout used to be a dead end on mobile (no header
+            chrome, no cancel affordance), so the only way out of a payment
+            you weren't ready to finish was the browser's own gesture. */}
+        <Link
+          href={backHref}
+          className="tap-target mb-4 inline-flex items-center gap-1.5 text-[13px] font-bold text-[var(--foreground-muted)] transition hover:text-foreground"
+        >
+          <ArrowLeft
+            className={cn("size-4", locale === "ar" && "rotate-180")}
+            strokeWidth={2.5}
+          />
+          Retour
+        </Link>
         <div className="lg:grid lg:grid-cols-[360px_minmax(0,1fr)] lg:items-start lg:gap-8">
         {/* LEFT (desktop) / TOP (mobile) — order summary */}
         <div className="space-y-4 lg:sticky lg:top-[calc(var(--desktop-nav-h)+1.5rem)]">
@@ -558,14 +726,33 @@ export function CheckoutClient({
           )}
         >
           {submitting ? (
-            <><Loader2 className="size-5 animate-spin" /> Envoi…</>
+            // Live step, not a generic "Envoi…": compressing, which receipt is
+            // in flight, whether we're retrying. A label that never changes for
+            // a minute is what makes a slow send look like a dead page.
+            <><Loader2 className="size-5 animate-spin" /> {phase ?? "Envoi…"}</>
           ) : (
             <><Upload className="size-5" strokeWidth={2.5} /> Envoyer {files.length > 1 ? `les ${files.length} reçus` : "le reçu"}</>
           )}
         </button>
-        <p className="text-center text-[11px] text-[var(--foreground-muted)]">
-          {files.length > 0 ? "Validation sous 24 h — vous serez notifié(e)." : "Téléversez d'abord le reçu pour activer le bouton."}
-        </p>
+        {submitting ? (
+          // Escape hatch. The storage client gives us no AbortSignal, so this
+          // stops the sequence at the next step and cleans up what landed —
+          // enough to get out of a wedged send without reloading the page.
+          <button
+            type="button"
+            onClick={() => {
+              cancelRef.current = true;
+              setPhase("Annulation…");
+            }}
+            className="mx-auto block text-[12px] font-semibold text-[var(--foreground-muted)] underline underline-offset-2 hover:text-foreground"
+          >
+            Annuler l&apos;envoi
+          </button>
+        ) : (
+          <p className="text-center text-[11px] text-[var(--foreground-muted)]">
+            {files.length > 0 ? "Validation sous 24 h — vous serez notifié(e)." : "Téléversez d'abord le reçu pour activer le bouton."}
+          </p>
+        )}
 
         {/* Support escape hatch — v1's checkout pattern. */}
         <p className="text-center text-[11.5px] text-[var(--foreground-subtle)]">

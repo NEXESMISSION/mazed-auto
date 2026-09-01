@@ -37,6 +37,18 @@ const TAB_LABEL: Record<string, string> = Object.fromEntries(
   TABS.map((t) => [t.key, t.label]),
 );
 
+const KINDS = [
+  { key: "auction", label: "Enchères", Icon: Gavel },
+  { key: "direct",  label: "Offres directes", Icon: Tag },
+  { key: "all",     label: "Toutes", Icon: ClipboardCheck },
+] as const;
+
+const KIND_LABEL: Record<string, string> = {
+  auction: "Enchères",
+  direct: "Offres directes",
+  all: "Annonces",
+};
+
 type Row = {
   id: string;
   title: string;
@@ -56,10 +68,17 @@ type Row = {
 export default async function AdminProperties({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; q?: string; range?: string; page?: string }>;
+  searchParams: Promise<{ status?: string; q?: string; range?: string; page?: string; kind?: string }>;
 }) {
   const supabase = await getServerSupabase();
-  const { status: statusRaw, q: qParam, range: rangeParam, page: pageParam } = await searchParams;
+  const { status: statusRaw, q: qParam, range: rangeParam, page: pageParam, kind: kindRaw } = await searchParams;
+  // Two products share this queue and they are reviewed differently: an
+  // ENCHERE gets a schedule, an opening price and a caution; an OFFRE is a
+  // fixed price that sells to the first buyer. Mixing them meant the admin
+  // read every row twice — once to work out which kind it was, once to
+  // actually review it. `kind` splits the queue; "all" keeps the old view.
+  const kind: "auction" | "direct" | "all" =
+    kindRaw === "auction" || kindRaw === "direct" ? kindRaw : "all";
   const q = (qParam ?? "").trim().slice(0, 60).replace(/[,()*%]/g, " ").trim();
   const sinceDays = rangeParam === "1" || rangeParam === "7" || rangeParam === "30" ? Number(rangeParam) : null;
   const page = Math.max(1, Number(pageParam) || 1);
@@ -87,6 +106,12 @@ export default async function AdminProperties({
     .order("created_at", { ascending: false })
     .range(from, to);
 
+  if (kind !== "all") {
+    // Rows predating the direct-sale feature have listing_type NULL and are
+    // auctions by definition, so the auction filter has to include them.
+    if (kind === "direct") query = query.eq("listing_type", "direct");
+    else query = query.or("listing_type.eq.auction,listing_type.is.null");
+  }
   if (q) query = query.or(`title.ilike.%${q}%,governorate.ilike.%${q}%`);
   if (sinceDays) {
     query = query.gte("created_at", new Date(Date.now() - sinceDays * 86_400_000).toISOString());
@@ -107,6 +132,10 @@ export default async function AdminProperties({
   const countQ = (col: "status" | null, val: string | null) => {
     let q = supabase.from("properties").select("*", { count: "exact", head: true });
     if (col && val) q = q.eq(col, val);
+    // Counts follow the same split as the rows — otherwise the "À valider"
+    // badge on the enchères view counts direct offers too.
+    if (kind === "direct") q = q.eq("listing_type", "direct");
+    else if (kind === "auction") q = q.or("listing_type.eq.auction,listing_type.is.null");
     return q;
   };
   const [pendingC, rejectedC, readyC] = await Promise.all([
@@ -188,9 +217,27 @@ export default async function AdminProperties({
   return (
     <div>
       <AdminPageHeader
-        eyebrow="Enchères · Création"
-        title="Création d'enchères"
-        description="Tout est ici : photos, prix, documents et reçu. Validez ou refusez sans changer de page."
+        eyebrow={
+          kind === "direct"
+            ? "Offres directes · Gestion"
+            : kind === "auction"
+              ? "Enchères · Gestion"
+              : "Annonces · Gestion"
+        }
+        title={
+          kind === "direct"
+            ? "Gestion des offres"
+            : kind === "auction"
+              ? "Gestion des enchères"
+              : "Gestion des annonces"
+        }
+        description={
+          kind === "direct"
+            ? "Ventes à prix fixe : photos, prix demandé, documents et reçu. Aucune enchère, aucun calendrier."
+            : kind === "auction"
+              ? "Lots mis aux enchères : photos, mise à prix, documents et reçu. Validez ou refusez sans changer de page."
+              : "Tout est ici : photos, prix, documents et reçu. Validez ou refusez sans changer de page."
+        }
         actions={
           pendingCount > 0 ? (
             <StatusBadge tone="warn">{pendingCount} à valider</StatusBadge>
@@ -232,9 +279,31 @@ export default async function AdminProperties({
         )}
       </section>
 
-      <h3 className="batta-eyebrow mb-2 mt-6 flex items-center gap-2">
+      {/* Enchères / Offres switch — the top-level split. Status tabs below
+          filter WITHIN the selected kind. */}
+      <nav className="mb-3 mt-6 flex flex-wrap gap-1.5">
+        {KINDS.map((k) => {
+          const active = kind === k.key;
+          return (
+            <Link
+              key={k.key}
+              href={`/admin/properties?kind=${k.key}&status=${status}` as `/admin/properties?${string}`}
+              className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-[12.5px] font-extrabold ring-1 transition ${
+                active
+                  ? "bg-foreground text-background ring-foreground"
+                  : "bg-surface text-muted ring-border hover:text-foreground hover:ring-gold-soft/50"
+              }`}
+            >
+              <k.Icon className="size-3.5" strokeWidth={2.2} />
+              {k.label}
+            </Link>
+          );
+        })}
+      </nav>
+
+      <h3 className="batta-eyebrow mb-2 flex items-center gap-2">
         <span aria-hidden className="batta-gold-rule-short" />
-        Annonces · {TAB_LABEL[status] ?? status}
+        {KIND_LABEL[kind]} · {TAB_LABEL[status] ?? status}
       </h3>
 
       {/* Filter tabs. Default tab is "À valider" so admins land on
@@ -247,7 +316,7 @@ export default async function AdminProperties({
           return (
             <Link
               key={t.key}
-              href={`/admin/properties?status=${t.key}` as `/admin/properties?status=${string}`}
+              href={`/admin/properties?kind=${kind}&status=${t.key}` as `/admin/properties?${string}`}
               className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-bold ring-1 transition ${
                 active
                   ? "bg-[var(--gold)] text-white ring-[var(--gold)]"

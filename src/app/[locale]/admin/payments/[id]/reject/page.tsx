@@ -3,10 +3,10 @@ import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { RejectPaymentForm } from "@/components/admin/RejectPaymentForm";
+import { ReceiptPreview } from "@/components/admin/ReceiptPreview";
 import { formatTND } from "@/lib/utils";
-import Image from "next/image";
 import {
-  ArrowLeft, ShieldOff, Building2, Smartphone, FileText, ExternalLink,
+  ArrowLeft, ShieldOff, Building2, Smartphone, ExternalLink,
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -68,7 +68,6 @@ export default async function RejectPaymentPage({
   // inline-preview an image right on the reject form. The bucket policy
   // requires auth, so a raw URL would 401 the <img>.
   let signedReceiptUrl: string | null = null;
-  let isPdf = false;
   if (payment.receipt_url) {
     const svc = getServiceSupabase();
     if (svc) {
@@ -76,7 +75,6 @@ export default async function RejectPaymentPage({
         .from("receipts")
         .createSignedUrl(payment.receipt_url, 60 * 30);
       signedReceiptUrl = signed?.signedUrl ?? null;
-      isPdf = payment.receipt_url.toLowerCase().endsWith(".pdf");
     }
   }
 
@@ -145,29 +143,17 @@ export default async function RejectPaymentPage({
       {signedReceiptUrl && (
         <section className="mt-3">
           <p className="batta-eyebrow text-[10px]">Reçu téléversé</p>
-          {isPdf ? (
-            <a
-              href={signedReceiptUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-1.5 inline-flex items-center gap-2 rounded-xl border border-border bg-surface-2 px-3.5 py-2.5 text-[12.5px] font-semibold hover:border-[var(--gold-soft)]"
-            >
-              <FileText className="size-4 text-[var(--gold)]" />
-              Ouvrir le PDF
-              <ExternalLink className="size-3 text-muted" />
-            </a>
-          ) : (
-            <div className="relative mt-1.5 aspect-video w-full overflow-hidden rounded-xl border border-border bg-surface-2">
-              <Image
-                src={signedReceiptUrl}
-                alt="Reçu"
-                fill
-                sizes="(max-width: 768px) 100vw, 640px"
-                className="object-contain"
-                unoptimized
-              />
-            </div>
-          )}
+          {/* Shared preview: PDF / HEIC / an expired signed URL all degrade to
+              a link rather than an empty frame — the admin is about to REJECT
+              a payment and must be able to see the proof first. */}
+          <div className="mt-1.5">
+            <ReceiptPreview
+              url={signedReceiptUrl}
+              path={payment.receipt_url as string}
+              triggerClassName="relative block aspect-video w-full overflow-hidden rounded-xl border border-border bg-surface-2"
+              imgClassName="h-full w-full object-contain"
+            />
+          </div>
         </section>
       )}
 

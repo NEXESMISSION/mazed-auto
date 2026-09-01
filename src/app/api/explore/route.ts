@@ -131,13 +131,13 @@ const fetchExplore = unstable_cache(
  * never shows a listing the buyer couldn't open.
  *
  * Price filtering is done against the *current* price field — that's
- * current_price for live English/sealed auctions or sale_price for
+ * current_price for live auctions or sale_price for
  * direct listings. We use opening_price as a fallback when the live
  * fields are null (scheduled auctions with no bids yet).
  */
 const VALID_TYPES: PropertyType[] = [
   "sedan", "suv", "hatchback", "pickup",
-  "van", "coupe", "convertible", "wagon",
+  "van", "coupe", "convertible", "wagon", "spare_part",
 ];
 
 export const GET = withRouteLogger(async (req: NextRequest) => {

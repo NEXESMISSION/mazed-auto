@@ -1,5 +1,5 @@
 import { getServerSupabase } from "@/lib/supabase/server";
-import { parseMonetizationSettings, parseAntiSnipe, parseAuctionTypes, parseFinalPaymentDays } from "@/lib/pricing";
+import { parseMonetizationSettings, parseAntiSnipe, parseFinalPaymentDays } from "@/lib/pricing";
 import { SettingsForm, type SettingsValues } from "./SettingsForm";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 
@@ -14,7 +14,6 @@ const KEYS = [
   "promo_banner",
   "deposit",
   "auction_antisnipe",
-  "auction_types",
   "final_payment_days",
   "payee_name",
   "payee_bank",
@@ -35,7 +34,6 @@ export default async function AdminSettingsPage() {
 
   const mon = parseMonetizationSettings(map);
   const antiSnipe = parseAntiSnipe(map.get("auction_antisnipe"));
-  const auctionTypes = parseAuctionTypes(map.get("auction_types"));
   const finalPaymentDays = parseFinalPaymentDays(map.get("final_payment_days"));
 
   const initial: SettingsValues = {
@@ -48,17 +46,8 @@ export default async function AdminSettingsPage() {
     promoHome: mon.promoHome,
     promoTop: mon.promoTop,
     promoBanner: mon.promoBanner,
-    deposit: {
-      mode: mon.deposit.mode,
-      value: mon.deposit.value,
-      // <input type=date> wants YYYY-MM-DD.
-      free_until: mon.deposit.free_until ? mon.deposit.free_until.slice(0, 10) : "",
-    },
+    deposit: { amount: mon.deposit.amount },
     antiSnipe: { window_min: antiSnipe.windowMin, extend_min: antiSnipe.extendMin },
-    auctionTypes: {
-      dutch_enabled: auctionTypes.dutchEnabled,
-      sealed_enabled: auctionTypes.sealedEnabled,
-    },
     finalPaymentDays,
     payee_name: strFrom(map.get("payee_name")),
     payee_bank: strFrom(map.get("payee_bank")),
@@ -72,7 +61,7 @@ export default async function AdminSettingsPage() {
       <AdminPageHeader
         eyebrow="Monétisation & paiement"
         title="Réglages"
-        description="Contrôlez ce que les vendeurs paient pour publier, les options, et la caution pour enchérir — gratuit, montant fixe ou pourcentage. Modifiable à tout moment."
+        description="Contrôlez ce que les vendeurs paient pour publier, les options, et la caution pour enchérir — un montant unique valable sur toutes les enchères. Modifiable à tout moment."
       />
 
       <div className="mt-5">

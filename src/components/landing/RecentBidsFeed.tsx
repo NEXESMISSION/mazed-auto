@@ -4,7 +4,7 @@ import { Link } from "@/i18n/navigation";
 import { formatTND } from "@/lib/utils";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { log } from "@/lib/log";
-import { Gavel, Lock } from "lucide-react";
+import { Gavel } from "lucide-react";
 
 /**
  * Recent-bid activity is the same for every visitor, so cache it for 30s
@@ -34,7 +34,6 @@ const getRecentBids = unstable_cache(
         const a = (b as unknown as {
           auction: {
             id: string;
-            type: "english" | "sealed" | "dutch";
             status: string;
             property: { title: string; governorate: string };
           };
@@ -45,7 +44,6 @@ const getRecentBids = unstable_cache(
           title: a.property.title,
           governorate: a.property.governorate,
           amount: Number(b.amount),
-          sealed: a.type === "sealed" && !a.status.startsWith("ended"),
           bidderInitial: String(b.bidder_id).slice(0, 1).toUpperCase(),
           placedAt: b.placed_at as string,
         };
@@ -106,7 +104,6 @@ type BidActivity = {
   title: string;
   governorate: string;
   amount: number;
-  sealed: boolean;
   bidderInitial: string;
   placedAt: string;
 };
@@ -141,14 +138,7 @@ function BidRow({
         </div>
       </div>
       <span className="batta-tabular inline-flex shrink-0 items-center gap-1 text-xs font-bold">
-        {item.sealed ? (
-          <>
-            <Lock className="size-3 text-batta-muted" strokeWidth={1.75} />
-            <span className="text-[10px] uppercase tracking-wider text-batta-muted">sealed</span>
-          </>
-        ) : (
-          <span className="batta-gold-text">{formatTND(item.amount, locale)}</span>
-        )}
+        <span className="batta-gold-text">{formatTND(item.amount, locale)}</span>
       </span>
     </Link>
   );
@@ -156,14 +146,14 @@ function BidRow({
 
 function timeAgo(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();
-  if (ms < 0) return "now";
+  if (ms < 0) return "à l'instant";
   const s = Math.floor(ms / 1000);
-  if (s < 60) return `${s}s ago`;
+  if (s < 60) return `il y a ${s} s`;
   const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m ago`;
+  if (m < 60) return `il y a ${m} min`;
   const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
+  if (h < 24) return `il y a ${h} h`;
   const d = Math.floor(h / 24);
-  return `${d}d ago`;
+  return `il y a ${d} j`;
 }
 

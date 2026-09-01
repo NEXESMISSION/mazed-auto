@@ -3,7 +3,7 @@ import { getTranslations, getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { formatTND, minBidIncrement } from "@/lib/utils";
 import type { AuctionWithProperty } from "@/lib/types";
-import { ArrowUpRight, Gavel, Users, Tag, Car, Flame } from "lucide-react";
+import { ArrowUpRight, Gavel, Tag, Car, Flame } from "lucide-react";
 import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
 import { IMAGE_BLUR_MAP } from "@/lib/imageBlurMap";
 import { WatchlistButton } from "@/components/watchlist/WatchlistButton";
@@ -76,7 +76,6 @@ export async function PropertyCard({
       ? (auction.sale_price ?? auction.current_price ?? auction.opening_price)
       : (auction.current_price ?? auction.opening_price);
   const nextStep = minBidIncrement(price);
-  const isEnglish = auction.type === "english";
   // Last 4 of the auction id, uppercase. Adds the "lot A2F4"
   // auction-catalogue affordance without changing the data model.
   const lotNo = String(auction.id).replace(/-/g, "").slice(-4).toUpperCase();
@@ -181,7 +180,7 @@ export async function PropertyCard({
             ) : (
               <span className="batta-gold-fill inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-[10px] font-extrabold uppercase tracking-wider shadow-[var(--shadow-gold)]">
                 <Tag className="size-3" strokeWidth={2.5} />
-                {t(`auction.types.${auction.type}`)}
+                {t("auction.label")}
               </span>
             )}
           </div>
@@ -268,36 +267,29 @@ export async function PropertyCard({
                 {t("common.tnd")}
               </span>
             </span>
-            {isEnglish ? (
-              isLive && auction.bid_count > 0 ? (
+            {isLive && auction.bid_count > 0 ? (
                 /* Live activity counter — v1 parity. Shows how many bids
                    the lot has attracted; falls back to the bid-step hint
                    below while the count is still zero. */
-                <span
-                  className="batta-tabular inline-flex items-center gap-1 text-[11px] text-muted"
-                  title={
-                    auction.bid_count === 1
-                      ? "1 enchère"
-                      : `${auction.bid_count} enchères`
-                  }
-                >
-                  <Gavel className="size-3" strokeWidth={2} />
-                  {auction.bid_count}
-                </span>
-              ) : (
-                <span
-                  dir="ltr"
-                  className="batta-tabular inline-flex items-center gap-1 text-[11px] text-muted"
-                  title="Bid step"
-                >
-                  <Gavel className="size-3" strokeWidth={2} />
-                  +{formatTND(nextStep, locale)}
-                </span>
-              )
+              <span
+                className="batta-tabular inline-flex items-center gap-1 text-[11px] text-muted"
+                title={
+                  auction.bid_count === 1
+                    ? "1 enchère"
+                    : `${auction.bid_count} enchères`
+                }
+              >
+                <Gavel className="size-3" strokeWidth={2} />
+                {auction.bid_count}
+              </span>
             ) : (
-              <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.12em] text-gold">
-                <Users className="size-3" strokeWidth={2} />
-                {t(`auction.types.${auction.type}`)}
+              <span
+                dir="ltr"
+                className="batta-tabular inline-flex items-center gap-1 text-[11px] text-muted"
+                title="Bid step"
+              >
+                <Gavel className="size-3" strokeWidth={2} />
+                +{formatTND(nextStep, locale)}
               </span>
             )}
           </div>

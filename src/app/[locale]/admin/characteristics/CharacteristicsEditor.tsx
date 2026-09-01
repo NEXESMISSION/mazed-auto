@@ -24,7 +24,7 @@ type DraftRow = {
 
 const PROPERTY_TYPES: PropertyType[] = [
   "sedan", "suv", "hatchback", "pickup",
-  "van", "coupe", "convertible", "wagon",
+  "van", "coupe", "convertible", "wagon", "spare_part",
 ];
 
 const TYPE_LABELS_FR: Record<PropertyType, string> = {
@@ -36,6 +36,7 @@ const TYPE_LABELS_FR: Record<PropertyType, string> = {
   coupe: "Coupé",
   convertible: "Cabriolet",
   wagon: "Break",
+  spare_part: "Pièce de rechange",
 };
 
 const DATA_TYPE_LABELS: Record<AttributeDataType, string> = {

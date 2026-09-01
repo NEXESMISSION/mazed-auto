@@ -5,11 +5,14 @@ import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { formatTND } from "@/lib/utils";
 import { ApprovePropertyButtons } from "@/components/admin/ApprovePropertyButtons";
 import { ImageLightbox } from "@/components/ui/ImageLightbox";
+import { ReceiptPreview } from "@/components/admin/ReceiptPreview";
+import { DiagnosticEditor } from "@/components/admin/DiagnosticEditor";
+import { DIAGNOSTIC_SELECT, toDiagnostic } from "@/lib/diagnostics";
 import { PropertyDocumentOpenButton } from "@/components/property/PropertyDocumentOpenButton";
 import { parseMonetizationSettings, resolvePromoDurations, type PromoKey } from "@/lib/pricing";
 import type { PropertyType } from "@/lib/types";
 import {
-  ArrowLeft, MapPin, FileText, Download, ImageOff, Wallet,
+  ArrowLeft, MapPin, FileText, FileCheck, Download, ImageOff, Wallet,
   User, Phone, Calendar,
 } from "lucide-react";
 
@@ -42,6 +45,7 @@ export default async function AdminPropertyReview({
     .select(
       `id, title, description, type, status, rejection_reason, governorate, address,
        area_sqm, rooms, bathrooms, floor, year_built, attributes, created_at, owner_id,
+       seller_attestation_version, seller_attestation_at,
        photos:property_photos (id, storage_path, sort_order),
        documents:property_documents (id, kind, uploaded_at),
        owner:profiles!properties_owner_id_fkey (full_name, phone)`,
@@ -49,6 +53,17 @@ export default async function AdminPropertyReview({
     .eq("id", id)
     .single();
   if (!prop) notFound();
+
+  // Existing diagnostic sheet, draft included — the admin RLS policy (0148)
+  // lets an admin read their own unpublished drafts.
+  const { data: diagRow } = await supabase
+    .from("vehicle_diagnostics")
+    .select(DIAGNOSTIC_SELECT)
+    .eq("property_id", id)
+    .maybeSingle();
+  const diagnostic = diagRow
+    ? toDiagnostic(diagRow as Parameters<typeof toDiagnostic>[0])
+    : null;
 
   const type = prop.type as PropertyType;
   const photos = ((prop.photos ?? []) as { id: string; storage_path: string; sort_order: number }[])
@@ -246,6 +261,13 @@ export default async function AdminPropertyReview({
         )}
       </Card>
 
+      {/* Diagnostic Mazed — OUR check, written here. Publishing this sheet is
+          what puts the "Vérifié et approuvé" badge on the public listing, so
+          the badge always has evidence behind it. */}
+      <Card title="Diagnostic Mazed" className="mt-0">
+        <DiagnosticEditor propertyId={id} initial={diagnostic} />
+      </Card>
+
       {/* Documents */}
       <Card title={`Documents légaux · ${documents.length}`} className="mt-0">
         {documents.length === 0 ? (
@@ -345,18 +367,16 @@ export default async function AdminPropertyReview({
             </div>
 
             {receiptUrl ? (
-              <ImageLightbox
-                src={receiptUrl}
-                alt="Reçu de paiement"
+              // Shared preview: PDFs and HEIC (and an expired signed URL) fall
+              // back to a link instead of painting an empty frame the admin
+              // can't review.
+              <ReceiptPreview
+                url={receiptUrl}
+                path={payRow.receipt_url as string}
+                label="Reçu de paiement"
                 triggerClassName="block w-full overflow-hidden rounded-xl ring-1 ring-border"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={receiptUrl}
-                  alt="Reçu de paiement"
-                  className="max-h-80 w-full bg-surface-2 object-contain"
-                />
-              </ImageLightbox>
+                imgClassName="max-h-80 w-full bg-surface-2 object-contain"
+              />
             ) : payRow.receipt_url ? (
               <Link
                 href="/admin/payments"
@@ -395,6 +415,30 @@ export default async function AdminPropertyReview({
               <Phone className="size-3.5 text-gold" />
               {owner.phone}
             </a>
+          )}
+        </div>
+
+        {/* Sworn statement. What the seller signed, and when — the record that
+            matters if the listing turns out to be false. A listing submitted
+            before this existed shows as unsigned rather than pretending. */}
+        <div className="mt-3 border-t border-border pt-3">
+          {prop.seller_attestation_at ? (
+            <p className="inline-flex items-start gap-1.5 text-[11.5px] text-foreground">
+              <FileCheck className="mt-0.5 size-3.5 shrink-0 text-[var(--success)]" />
+              <span>
+                Attestation d&apos;exactitude signée le{" "}
+                <strong>
+                  {new Date(prop.seller_attestation_at as string).toLocaleString("fr-FR")}
+                </strong>{" "}
+                (version {(prop.seller_attestation_version as string) ?? "?"}) — le
+                vendeur se déclare responsable de toute information fausse.
+              </span>
+            </p>
+          ) : (
+            <p className="inline-flex items-start gap-1.5 text-[11.5px] text-muted">
+              <FileCheck className="mt-0.5 size-3.5 shrink-0" />
+              Annonce déposée avant la mise en place de l&apos;attestation — non signée.
+            </p>
           )}
         </div>
       </Card>

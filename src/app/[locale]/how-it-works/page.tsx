@@ -64,7 +64,7 @@ export default function HowItWorksPage() {
             num={2}
             icon={<Wallet className="size-5" />}
             title="Payer la caution"
-            text="Une caution remboursable, calculée sur la mise à prix, débloque la participation. Elle vous est intégralement restituée si vous ne remportez pas l'enchère."
+            text="Une caution remboursable, du même montant pour toutes les enchères, débloque la participation. Elle vous est intégralement restituée si vous ne remportez pas l'enchère."
           />
           <FlowStep
             num={3}

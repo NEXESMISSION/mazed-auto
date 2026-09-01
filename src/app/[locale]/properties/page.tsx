@@ -24,7 +24,7 @@ const PAGE_SIZE = 12;
 
 const VALID_TYPES: PropertyType[] = [
   "sedan", "suv", "hatchback", "pickup",
-  "van", "coupe", "convertible", "wagon",
+  "van", "coupe", "convertible", "wagon", "spare_part",
 ];
 
 const FUEL_VALUES = ["gasoline", "diesel", "hybrid", "electric"] as const;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Trophy, TrendingUp, Lock, Eye } from "lucide-react";
+import { Trophy, TrendingUp } from "lucide-react";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import { formatTND } from "@/lib/utils";
 import { cn } from "@/lib/utils";
@@ -27,10 +27,7 @@ interface Props {
   auctionId: string;
   /** SSR seed (from auction_bids_public) — avoids a "..." flash. Newest first. */
   initialBids: PublicBid[];
-  /** Total bid count incl. sealed rows hidden by the view. */
   totalBids: number;
-  /** Mask non-self bid amounts during live phase (sealed-bid only). */
-  isSealedLive: boolean;
   locale: string;
 }
 
@@ -58,7 +55,6 @@ export function BidHistoryRealtime({
   auctionId,
   initialBids,
   totalBids,
-  isSealedLive,
   locale,
 }: Props) {
   const [bids, setBids] = useState<PublicBid[]>(initialBids);
@@ -158,8 +154,6 @@ export function BidHistoryRealtime({
     return () => clearTimeout(t);
   }, [recentId]);
 
-  const hiddenSealedCount = isSealedLive ? Math.max(0, totalBids - bids.length) : 0;
-
   return (
     <div className="space-y-3 lg:space-y-4">
       <div className="flex items-center justify-between">
@@ -172,18 +166,7 @@ export function BidHistoryRealtime({
         </span>
       </div>
 
-      {hiddenSealedCount > 0 && (
-        <div className="flex items-center gap-2 rounded-lg border border-[var(--gold-soft)]/40 bg-[var(--gold-faint)] px-3 py-2 text-[11px] text-[var(--foreground-muted)]">
-          <Eye className="h-3.5 w-3.5 text-[var(--gold)] shrink-0" />
-          <span>
-            {hiddenSealedCount}{" "}
-            {hiddenSealedCount === 1 ? "autre offre placée" : "autres offres placées"} —
-            montants révélés à la clôture.
-          </span>
-        </div>
-      )}
-
-      {bids.length === 0 && hiddenSealedCount === 0 ? (
+      {bids.length === 0 ? (
         <div className="py-6 text-center text-[12px] text-[var(--foreground-muted)]">
           Aucune offre pour le moment
           <div className="hidden lg:block text-[11px] text-[var(--foreground-subtle)] mt-1">
@@ -196,7 +179,6 @@ export function BidHistoryRealtime({
             const isMine = b.is_mine;
             const isLeader = i === 0;
             const isFresh = b.id === recentId;
-            const maskedAmount = isSealedLive && !isMine;
             return (
               <li
                 key={b.id}
@@ -226,7 +208,7 @@ export function BidHistoryRealtime({
                           {maskName(b.bidder_name)}
                         </span>
                       )}
-                      {isLeader && !isSealedLive && (
+                      {isLeader && (
                         <span className="hidden lg:inline-flex items-center px-1.5 h-4 rounded-full bg-[var(--gold-faint)] text-[var(--gold)] text-[9px] font-extrabold uppercase tracking-wider">
                           En tête
                         </span>
@@ -243,17 +225,10 @@ export function BidHistoryRealtime({
                 <div
                   className={cn(
                     "font-bold lg:font-extrabold batta-tabular text-[13px] lg:text-base shrink-0",
-                    isLeader && !maskedAmount && "gradient-gold-text lg:text-lg",
+                    isLeader && "gradient-gold-text lg:text-lg",
                   )}
                 >
-                  {maskedAmount ? (
-                    <span className="inline-flex items-center gap-1 text-[var(--foreground-muted)] font-mono text-xs">
-                      <Lock className="h-3 w-3" />
-                      sealed
-                    </span>
-                  ) : (
-                    formatTND(Number(b.amount), locale)
-                  )}
+                  {formatTND(Number(b.amount), locale)}
                 </div>
               </li>
             );

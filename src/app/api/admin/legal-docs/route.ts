@@ -7,7 +7,7 @@ import type { PropertyType } from "@/lib/types";
 
 const PROPERTY_TYPES: PropertyType[] = [
   "sedan", "suv", "hatchback", "pickup",
-  "van", "coupe", "convertible", "wagon",
+  "van", "coupe", "convertible", "wagon", "spare_part",
 ];
 
 type IncomingItem = {

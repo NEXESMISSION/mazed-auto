@@ -9,6 +9,7 @@ import { optimizeImage } from "@/lib/optimizeImage";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { resolveListingFee, describeFee } from "@/lib/pricing";
 import { log } from "@/lib/log";
+import { SPARE_PART_TYPE, isSparePart } from "@/lib/types";
 import type { PropertyType, AttributeKind } from "@/lib/types";
 import type { RejectionCategory, RejectionMode } from "@/lib/rejection";
 
@@ -32,12 +33,33 @@ import {
 
 export type ListingType = "auction" | "direct";
 
-const TYPES: PropertyType[] = ["sedan", "suv", "hatchback", "pickup", "van", "coupe", "convertible", "wagon"];
+// Cars first, then the one category that isn't a car. A spare part posts
+// free and sells at a fixed price — the form collapses to that shape as
+// soon as it's picked (see `isPart` below).
+const TYPES: PropertyType[] = ["sedan", "suv", "hatchback", "pickup", "van", "coupe", "convertible", "wagon", SPARE_PART_TYPE];
 
 // Canonical keys that mirror out to dedicated `properties` columns so the
 // explore filters and listing cards (which query these columns directly)
 // keep working. Every other attribute lives only inside the JSONB bag.
 const CANONICAL_KEYS = ["area_sqm", "rooms", "bathrooms", "floor", "year_built"] as const;
+
+/**
+ * The seller's sworn statement, ticked at the end of the form.
+ *
+ * Stored as a VERSION on properties.seller_attestation_version (not the whole
+ * paragraph): the wording lives here in the repo, so we can show exactly which
+ * text a given seller signed by looking up the version — and changing the
+ * wording later forces a new version instead of silently rewriting what
+ * everyone already agreed to.
+ */
+export const SELLER_ATTESTATION_VERSION = "v1";
+const SELLER_ATTESTATION_TEXT =
+  "J'atteste sur l'honneur que toutes les informations, photos et documents " +
+  "fournis sont exacts, complets et concernent bien ce véhicule. Je suis seul " +
+  "responsable de toute information fausse, inexacte ou trompeuse. En cas de " +
+  "fausse déclaration, Mazed Auto peut refuser ou retirer l'annonce, annuler " +
+  "la vente et conserver les frais déjà réglés, sans préjudice des recours de " +
+  "l'acheteur.";
 
 const GOVERNORATES = [
   "Tunis", "Ariana", "Ben Arous", "Manouba",
@@ -268,6 +290,14 @@ export function SellForm({
   const [promoTop, setPromoTop] = useState(false);
   const [promoBanner, setPromoBanner] = useState(false);
 
+  // Sworn statement, ticked at the very end of the form. Required on EVERY
+  // submission, edits included — an edit re-opens the listing for review
+  // (propPayload sets status='pending_review'), so the seller is certifying
+  // the information as it stands now, not as it stood when they first posted.
+  // Never pre-checked and never remembered: a signature you didn't make is
+  // not a signature.
+  const [attested, setAttested] = useState(false);
+
   const [success, setSuccess] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -488,12 +518,24 @@ export function SellForm({
     }
   }
 
+  // ─── Pièces de rechange ──────────────────────────────────────────────
+  // A part is never auctioned and never charged for. Both rules are pinned
+  // here rather than left to the user: the DB trigger (0149) forces
+  // listing_type='direct' on insert anyway, so letting the form show an
+  // "Enchère" choice would only produce a listing that silently became
+  // something else.
+  const isPart = isSparePart(type);
+  useEffect(() => {
+    if (isPart && listingType !== "direct") setListingType("direct");
+  }, [isPart, listingType]);
+
   // ─── Totals ──────────────────────────────────────────────────────────
   // Admin-tunable (free / fixed / percent). For a direct offer the percent
   // base is the seller's sale price; auctions have no price yet so percent
   // resolves to 0 (admin restricts auctions to free/fixed anyway).
-  const baseFee =
-    listingType === "direct"
+  const baseFee = isPart
+    ? 0 // parts are free to post — mirrored server-side in initiate-payment
+    : listingType === "direct"
       ? resolveListingFee(pricing.feeDirect, salePrice ? Number(salePrice) : null)
       : resolveListingFee(pricing.feeAuction, null);
   // Only promos the admin left enabled count toward the total.
@@ -573,6 +615,9 @@ export function SellForm({
           missingRequired.label,
         );
       }
+    }
+    if (!attested) {
+      return "Cochez l'attestation sur l'honneur avant d'envoyer votre annonce.";
     }
     return null;
   }
@@ -655,6 +700,11 @@ export function SellForm({
           sale_price: salePriceVal,
           sale_negotiable: saleNegotiableVal,
           status: "pending_review" as const,
+          // The signature. Only the VERSION travels from the client — the
+          // trigger in 0147 stamps seller_attestation_at with the server
+          // clock and refuses any listing that reaches pending_review
+          // without it, so a forged request can't skip the statement.
+          seller_attestation_version: SELLER_ATTESTATION_VERSION,
         };
 
         if (isEdit && initial) {
@@ -942,6 +992,23 @@ export function SellForm({
         hidden={!isSectionVisible("section-price")}
         title="Type d'annonce"
       >
+        {isPart ? (
+          // Parts have exactly one shape, so we state it instead of asking.
+          <div className="flex items-start gap-3 rounded-xl bg-[var(--gold-faint)] p-3.5 ring-1 ring-[var(--gold-soft)]">
+            <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg bg-[var(--gold)] text-white">
+              <Tag className="size-4" strokeWidth={2.2} />
+            </span>
+            <div className="min-w-0">
+              <div className="text-[13.5px] font-extrabold text-foreground">
+                Pièce de rechange · vente directe
+              </div>
+              <p className="mt-0.5 text-[11.5px] leading-snug text-[var(--foreground-muted)]">
+                Prix fixe, sans enchère — le premier acheteur vérifié l&apos;emporte.
+                La publication est <span className="font-bold text-[var(--gold)]">gratuite</span>.
+              </p>
+            </div>
+          </div>
+        ) : (
         <div className="grid grid-cols-2 gap-2.5">
           <ListingTypeOption
             active={listingType === "auction"}
@@ -960,6 +1027,7 @@ export function SellForm({
             onClick={() => setListingType("direct")}
           />
         </div>
+        )}
 
         {listingType === "direct" && (
           <div className="mt-1 grid gap-3 rounded-xl bg-[var(--gold-faint)] p-3 ring-1 ring-[var(--gold-soft)]">
@@ -1316,6 +1384,27 @@ export function SellForm({
         </Section>
         );
       })()}
+
+      {/* 8. ATTESTATION — the last thing before the seller commits.
+          Deliberately NOT folded into a "j'accepte les CGU" line: this is a
+          specific, named statement about the accuracy of THIS listing, and
+          the admin review screen shows when it was signed. */}
+      <Section
+        title="Attestation sur l'honneur"
+        hint="Obligatoire — votre annonce est envoyée à la vérification avec cette déclaration."
+      >
+        <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-[var(--gold-soft)] bg-[var(--gold-faint)]/40 p-4">
+          <input
+            type="checkbox"
+            checked={attested}
+            onChange={(e) => setAttested(e.target.checked)}
+            className="mt-0.5 size-5 shrink-0 accent-[var(--gold)]"
+          />
+          <span className="text-[12.5px] leading-relaxed text-foreground">
+            {SELLER_ATTESTATION_TEXT}
+          </span>
+        </label>
+      </Section>
       </>
       )}
 

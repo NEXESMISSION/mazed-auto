@@ -38,7 +38,7 @@ export function Countdown({ endsAt }: { endsAt: string }) {
   if (days > 0) {
     return (
       <span className={`font-mono font-semibold tabular-nums ${colorClass}`}>
-        {days}d {pad(hours)}:{pad(mins)}:{pad(secs)}
+        {days}j {pad(hours)}:{pad(mins)}:{pad(secs)}
       </span>
     );
   }

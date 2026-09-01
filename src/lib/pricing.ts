@@ -13,7 +13,20 @@ export type ListingFeeConfig = { mode: FeeMode; value: number };
 /** A paid promo add-on: whether it's offered, its price, and how many days
  *  it stays active once a paid listing is approved. */
 export type PromoConfig = { enabled: boolean; value: number; duration_days: number };
-export type DepositConfig = { mode: FeeMode; value: number; free_until: string | null };
+/**
+ * The caution a bidder posts before bidding: ONE flat TND amount, identical
+ * on every lot, set once in /admin/settings.
+ *
+ * It used to be a mode (free | fixed | percent) plus a value plus an optional
+ * "free until" date. Three knobs meant the caution shown to a bidder depended
+ * on the lot's opening price AND on today's date, so no two lots asked for the
+ * same thing and support could not answer "how much is the caution?" without
+ * opening the listing. `amount: 0` is the free case — one number, no modes.
+ */
+export type DepositConfig = { amount: number };
+
+/** Fallback caution when the setting is missing or unreadable (TND). */
+export const DEFAULT_DEPOSIT_TND = 500;
 
 /** The three promo slots, keyed the way payments.metadata.promos + the
  *  accept_listing_payment RPC expect them. */
@@ -34,7 +47,7 @@ export const DEFAULT_MONETIZATION: MonetizationSettings = {
   promoHome: { enabled: true, value: 15, duration_days: 30 },
   promoTop: { enabled: true, value: 10, duration_days: 30 },
   promoBanner: { enabled: true, value: 30, duration_days: 30 },
-  deposit: { mode: "percent", value: 10, free_until: null },
+  deposit: { amount: DEFAULT_DEPOSIT_TND },
 };
 
 /** Clamp a promo duration to a sane 1–365 day window (defaulting when unset). */
@@ -64,13 +77,23 @@ function promoCfg(raw: unknown, def: PromoConfig): PromoConfig {
     duration_days: cleanDurationDays(o.duration_days, def.duration_days),
   };
 }
+/**
+ * Reads the flat caution, and still understands the pre-0146 shape
+ * ({mode,value,free_until}) so a row that hasn't been migrated — or an older
+ * deploy writing over a newer one — never resolves to a surprise number:
+ *   free    → 0
+ *   fixed   → its value (already flat)
+ *   percent → the default flat amount; the old value was a PERCENT, and
+ *             charging "10" TND because the rule said "10 %" would be worse
+ *             than falling back to a deliberate number.
+ */
 function depositCfg(raw: unknown, def: DepositConfig): DepositConfig {
   const o = (raw ?? {}) as Record<string, unknown>;
-  return {
-    mode: mode(o.mode, def.mode),
-    value: num(o.value, def.value),
-    free_until: typeof o.free_until === "string" && o.free_until ? o.free_until : null,
-  };
+  if (o.amount !== undefined) return { amount: Math.max(0, num(o.amount, def.amount)) };
+  const legacyMode = mode(o.mode, "fixed");
+  if (legacyMode === "free") return { amount: 0 };
+  if (legacyMode === "fixed") return { amount: Math.max(0, num(o.value, def.amount)) };
+  return { amount: def.amount };
 }
 
 /** Build the typed settings from an app_settings key→value map. */
@@ -111,27 +134,6 @@ export function parseAntiSnipe(raw: unknown): AntiSnipeSettings {
 }
 
 /**
- * Which auction FORMATS the admin has switched on for sellers. English is the
- * always-available standard, so it isn't stored — only the optional extras
- * (Dégressive / dutch, Cachetée / sealed) are toggled. Default: both OFF, i.e.
- * an English-only marketplace until the admin opts in. The DB guard trigger
- * (migration 0130) enforces the same defaults server-side.
- */
-export type AuctionTypeSettings = { dutchEnabled: boolean; sealedEnabled: boolean };
-export const DEFAULT_AUCTION_TYPES: AuctionTypeSettings = {
-  dutchEnabled: false,
-  sealedEnabled: false,
-};
-
-export function parseAuctionTypes(raw: unknown): AuctionTypeSettings {
-  const o = (raw ?? {}) as Record<string, unknown>;
-  return {
-    dutchEnabled: o.dutch_enabled === true,
-    sealedEnabled: o.sealed_enabled === true,
-  };
-}
-
-/**
  * Number of days the winning bidder has to settle the balance after a sale.
  * Admin-tunable; clamped to a sane 1..90. Default 14. The DB helper
  * final_payment_interval() (migration 0131) reads the same setting so the cron
@@ -162,18 +164,19 @@ export function resolveListingFee(
 }
 
 /**
- * Bid deposit. Returns `required:false` (amount 0) when the owner set the
- * deposit to free, or while the global free window is open.
+ * Bid deposit ("caution"). ONE amount, the same on every lot, read straight
+ * off the admin rule — it takes no price and no clock, so it cannot resolve
+ * to two different numbers for two bidders looking at the same screen.
+ *
+ * It deliberately takes NO opening price: the previous percent mode made the
+ * caution a different number on every lot, which is exactly what the rule now
+ * forbids. 0 TND means bidding is free.
  */
 export function resolveDeposit(
   cfg: DepositConfig,
-  openingPrice: number,
-  now: Date = new Date(),
 ): { required: boolean; amount: number } {
-  const freeWindow = cfg.free_until ? new Date(cfg.free_until) > now : false;
-  if (cfg.mode === "free" || freeWindow) return { required: false, amount: 0 };
-  if (cfg.mode === "fixed") return { required: true, amount: round2(Math.max(0, cfg.value)) };
-  return { required: true, amount: round2((openingPrice * cfg.value) / 100) };
+  const amount = round2(Math.max(0, cfg.amount));
+  return { required: amount > 0, amount };
 }
 
 /**

@@ -101,7 +101,7 @@ export default async function CheckoutEntry({
   const { data: auctionRow } = await (getServiceSupabase() ?? supabase)
     .from("auctions")
     .select(
-      `id, status, listing_type, opening_price, sale_price, buy_now_price, winner_user_id, winner_amount,
+      `id, status, listing_type, opening_price, sale_price, buy_now_price, current_price, winner_user_id, winner_amount,
        property:properties (id, title, governorate, owner_id, photos:property_photos (id, storage_path, sort_order))`,
     )
     .eq("id", auctionId)
@@ -115,6 +115,7 @@ export default async function CheckoutEntry({
     opening_price: number;
     sale_price: number | null;
     buy_now_price: number | null;
+    current_price: number | null;
     winner_user_id: string | null;
     winner_amount: number | null;
     property: {
@@ -143,6 +144,31 @@ export default async function CheckoutEntry({
     }
   }
 
+  // Buy-now is only sellable while the lot is actually open for it. This
+  // checkout creates the payment row directly (it does not go through
+  // /api/auctions/[id]/buy-now), so without this gate a stale link, a
+  // back-button, or a tab left open while bidding ran past the buy-now price
+  // would take a receipt for a sale close_auction_on_purchase (0136) then
+  // refuses to close — money in, nothing delivered.
+  //   direct  → sellable while scheduled/live/extending
+  //   auction → sellable only while live/extending, and only while the
+  //             standing bid is still BELOW buy_now_price. At or above it the
+  //             leader owns the lot and buy-now is retired for good.
+  if (kind === "buy_now") {
+    const openForPurchase =
+      a.listing_type === "direct"
+        ? ["scheduled", "live", "extending"].includes(a.status)
+        : ["live", "extending"].includes(a.status);
+    const retired =
+      a.listing_type === "auction" &&
+      a.buy_now_price != null &&
+      a.current_price != null &&
+      Number(a.current_price) >= Number(a.buy_now_price);
+    if (!openForPurchase || retired) {
+      redirect(`/${locale}/auctions/${a.id}`);
+    }
+  }
+
   // Compute authoritative amount.
   let amount = 0;
   switch (kind) {
@@ -152,7 +178,7 @@ export default async function CheckoutEntry({
       const depCfg = parseMonetizationSettings(
         new Map<string, unknown>([["deposit", depRow?.value]]),
       ).deposit;
-      amount = resolveDeposit(depCfg, Number(a.opening_price)).amount;
+      amount = resolveDeposit(depCfg).amount;
       break;
     }
     case "buy_now": {

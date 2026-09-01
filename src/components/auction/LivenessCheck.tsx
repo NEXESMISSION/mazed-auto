@@ -77,6 +77,42 @@ const DETECT_INTERVAL_MS = 120;
 // on the left side, and resetting the timer makes the left step feel impossible.
 const HOLD_GRACE_MS = 500;
 
+// Constraint chain, richest-to-plainest. Some laptops, Android
+// webviews and desktop browsers with a single camera reject
+// `facingMode` + a resolution hint outright (OverconstrainedError /
+// NotFoundError) even though a plain video stream opens fine, so we
+// degrade instead of failing the whole check.
+const CAMERA_CONSTRAINTS: MediaStreamConstraints[] = [
+  {
+    video: { facingMode: "user", width: { ideal: 720 }, height: { ideal: 720 } },
+    audio: false,
+  },
+  { video: { facingMode: "user" }, audio: false },
+  { video: true, audio: false },
+];
+
+async function openCamera(): Promise<MediaStream> {
+  let lastErr: unknown = null;
+  for (const constraints of CAMERA_CONSTRAINTS) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      log("getUserMedia OK", { constraints });
+      return stream;
+    } catch (e: unknown) {
+      lastErr = e;
+      const name = (e as { name?: string })?.name;
+      // A refusal or a busy device is final — looser constraints won't
+      // help and re-calling only re-prompts (or silently fails), hiding
+      // the real reason from the error screen.
+      if (name === "NotAllowedError" || name === "SecurityError" || name === "NotReadableError") {
+        throw e;
+      }
+      warn("getUserMedia rejected — retrying looser", { name, constraints });
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error("getUserMedia failed");
+}
+
 type FaceApiNs = typeof import("@vladmandic/face-api");
 type TinyFaceDetectorOptionsLike = InstanceType<
   FaceApiNs["TinyFaceDetectorOptions"]
@@ -119,8 +155,17 @@ export function LivenessCheck({ onComplete, onCancel }: Props) {
   const audioCtxRef = useRef<AudioContext | null>(null);
 
   const [phase, setPhase] = useState<
-    "boot" | "running" | "uploading" | "done" | "error"
+    "boot" | "models" | "running" | "uploading" | "done" | "error"
   >("boot");
+  // Held in state (not just the ref) so the <video> attach runs from its
+  // own effect — the element can still be unmounted when getUserMedia
+  // resolves, which used to leave the preview black forever with only a
+  // "videoRef is null at stream attach" line in the console.
+  const [activeStream, setActiveStream] = useState<MediaStream | null>(null);
+  // Bumped by "Réessayer". The boot effect keys off it, so a retry
+  // actually re-requests the camera instead of wedging on the spinner
+  // (the effect used to run once, on mount, and never again).
+  const [attempt, setAttempt] = useState(0);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [stepIdx, setStepIdx] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<StepId>>(
@@ -171,39 +216,46 @@ export function LivenessCheck({ onComplete, onCancel }: Props) {
     (async () => {
       const tBoot = performance.now();
       try {
-        setLivePoseHint("Chargement du modèle de visage...");
-
-        const tImport = performance.now();
-        const faceapi = await import("@vladmandic/face-api");
-        log("face-api module imported", { ms: Math.round(performance.now() - tImport) });
-        if (cancelled) return;
-        faceapiRef.current = faceapi;
-
-        const tDetector = performance.now();
-        await faceapi.nets.tinyFaceDetector.loadFromUri("/models/face-api");
-        log("tinyFaceDetector loaded", { ms: Math.round(performance.now() - tDetector) });
-
-        const tLandmarks = performance.now();
-        await faceapi.nets.faceLandmark68TinyNet.loadFromUri("/models/face-api");
-        log("faceLandmark68TinyNet loaded", { ms: Math.round(performance.now() - tLandmarks) });
-
-        detectorOptionsRef.current = new faceapi.TinyFaceDetectorOptions({
-          inputSize: 320,
-          scoreThreshold: 0.5,
-        });
-
-        if (cancelled) return;
+        /* ── 1. Camera first ──────────────────────────────────────────
+           The ~2 MB face-api download used to run before this, which
+           broke the camera two ways: Safari/iOS only honours a
+           getUserMedia call made close to the user gesture that led to
+           it, and any hiccup fetching the models (offline, stale service
+           worker, 404) meant the camera was never even asked for — the
+           user just watched a black box. Open the stream immediately,
+           then load the models over a live preview. */
         setLivePoseHint("Demande d'accès à la caméra...");
 
+        if (
+          typeof navigator === "undefined" ||
+          !navigator.mediaDevices?.getUserMedia
+        ) {
+          // Browsers only expose mediaDevices in a secure context, so on
+          // plain http:// over a LAN IP — how a phone usually reaches a
+          // dev or preview build — the API is simply absent and the old
+          // code died on "cannot read getUserMedia of undefined".
+          throw new DOMException(
+            window.isSecureContext
+              ? "getUserMedia unsupported in this browser"
+              : `insecure context (${window.location.protocol})`,
+            "NotSupportedError",
+          );
+        }
+
+        /* Start the ~2 MB face-api download NOW, without awaiting it.
+           The camera still gets asked for first (iOS only honours a
+           getUserMedia call made close to the gesture, and a model fetch
+           that hangs must never stop the camera opening) — but the
+           permission prompt sits on screen for seconds while the user
+           reads and taps it, and that time used to be spent doing
+           nothing. Overlapping the two removes the whole download from
+           the perceived startup on a first visit. The promise is awaited
+           below; a rejection is caught there, not here. */
+        const faceApiPromise = import("@vladmandic/face-api");
+        faceApiPromise.catch(() => {}); // no unhandled rejection while it waits
+
         const tCam = performance.now();
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: "user",
-            width: { ideal: 720 },
-            height: { ideal: 720 },
-          },
-          audio: false,
-        });
+        const stream = await openCamera();
         const track = stream.getVideoTracks()[0];
         const settings = track?.getSettings?.() ?? {};
         log("camera granted", {
@@ -220,16 +272,37 @@ export function LivenessCheck({ onComplete, onCancel }: Props) {
           return;
         }
         streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          await videoRef.current
-            .play()
-            .then(() => log("video element playing"))
-            .catch((e) => warn("video.play() rejected", e));
-        } else {
-          warn("videoRef is null at stream attach");
-        }
+        setActiveStream(stream);
 
+        /* ── 2. Models, over a live preview ───────────────────────── */
+        setPhase("models");
+        setLivePoseHint("Chargement du modèle de visage...");
+
+        const tImport = performance.now();
+        // Usually already resolved — it has been downloading since before
+        // the permission prompt.
+        const faceapi = await faceApiPromise;
+        log("face-api module ready", { ms: Math.round(performance.now() - tImport) });
+        if (cancelled) return;
+        faceapiRef.current = faceapi;
+
+        // Both nets in parallel. They are two independent fetches of a
+        // manifest + a weights blob (270 KB total); loading them one after
+        // the other doubled the round-trips for no reason, which is very
+        // visible on a phone on 3G.
+        const tNets = performance.now();
+        await Promise.all([
+          faceapi.nets.tinyFaceDetector.loadFromUri("/models/face-api"),
+          faceapi.nets.faceLandmark68TinyNet.loadFromUri("/models/face-api"),
+        ]);
+        log("face nets loaded", { ms: Math.round(performance.now() - tNets) });
+
+        detectorOptionsRef.current = new faceapi.TinyFaceDetectorOptions({
+          inputSize: 320,
+          scoreThreshold: 0.5,
+        });
+
+        if (cancelled) return;
         setPhase("running");
         setLivePoseHint("Suivez les étapes ci-dessous");
         log("boot done — entering running phase", {
@@ -241,13 +314,23 @@ export function LivenessCheck({ onComplete, onCancel }: Props) {
         const errMessage = e instanceof Error ? e.message : String(e);
         let userMsg = "Impossible d'initialiser la caméra";
         if (errName === "NotAllowedError") {
-          userMsg = "Permission caméra refusée — autorisez puis réessayez";
+          userMsg =
+            "Permission caméra refusée — autorisez la caméra dans les réglages du navigateur, puis réessayez";
         } else if (errName === "NotFoundError" || errName === "OverconstrainedError") {
-          userMsg = "Aucune caméra avant détectée sur cet appareil";
+          userMsg = "Aucune caméra détectée sur cet appareil";
         } else if (errName === "NotReadableError" || errName === "AbortError") {
-          userMsg = "La caméra est utilisée par une autre application";
-        } else if (errName === "SecurityError") {
-          userMsg = "La caméra requiert une connexion sécurisée (HTTPS)";
+          userMsg =
+            "La caméra est utilisée par une autre application — fermez-la puis réessayez";
+        } else if (
+          errName === "SecurityError" ||
+          errName === "NotSupportedError" ||
+          !window.isSecureContext
+        ) {
+          // The single most common "the camera doesn't work" report:
+          // the page was opened over http:// (LAN IP, preview link), so
+          // the browser hides the camera API entirely.
+          userMsg =
+            "La caméra exige une connexion sécurisée — ouvrez le site en https:// puis réessayez";
         } else if (errMessage.includes("Failed to fetch") || errMessage.includes("404")) {
           userMsg = "Échec du chargement du modèle de détection — actualisez la page";
         }
@@ -274,7 +357,32 @@ export function LivenessCheck({ onComplete, onCancel }: Props) {
       stopAll();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [attempt]);
+
+  /* ───────── Attach the stream to the <video> ─────────
+     Its own effect rather than an inline assignment inside boot: React
+     may not have committed the element yet when getUserMedia resolves,
+     and a missed attach meant a permanently black preview. Re-runs
+     whenever a new stream arrives (retry), and re-tries play() on
+     loadedmetadata for browsers that reject the first call. */
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v || !activeStream) return;
+    if (v.srcObject !== activeStream) {
+      v.srcObject = activeStream;
+      log("stream attached to <video>");
+    }
+    const tryPlay = () => {
+      void v.play().then(
+        () => log("video element playing", { w: v.videoWidth, h: v.videoHeight }),
+        (e: unknown) =>
+          warn("video.play() rejected", (e as Error)?.message ?? e),
+      );
+    };
+    tryPlay();
+    v.addEventListener("loadedmetadata", tryPlay);
+    return () => v.removeEventListener("loadedmetadata", tryPlay);
+  }, [activeStream]);
 
   /* ───────── Detection loop ───────── */
   useEffect(() => {
@@ -611,22 +719,31 @@ export function LivenessCheck({ onComplete, onCancel }: Props) {
       t.stop();
     });
     streamRef.current = null;
+    setActiveStream(null);
+    if (videoRef.current) videoRef.current.srcObject = null;
   }
 
   function restart() {
-    log("restart() — re-mount via parent key");
+    // Re-runs the boot effect in place (via `attempt`) instead of
+    // bouncing back to the intro screen. It used to only call onCancel,
+    // so "Réessayer" after a denied-then-allowed permission never
+    // re-asked for the camera.
+    log("restart() — re-booting camera in place");
     stopAll();
+    setErrorMsg(null);
     setPhase("boot");
     setStepIdx(0);
     setCompletedSteps(new Set());
     setProgress(0);
+    setLivePoseHint("Préparation de la caméra...");
     heldSinceRef.current = null;
+    lastGoodFrameAtRef.current = null;
     frontSnapshotRef.current = null;
     rightSnapshotRef.current = null;
     leftSnapshotRef.current = null;
     detectionCountRef.current = 0;
     stoppedRef.current = false;
-    if (onCancel) onCancel();
+    setAttempt((a) => a + 1);
   }
 
   /* ───────── Render ───────── */
@@ -645,6 +762,13 @@ export function LivenessCheck({ onComplete, onCancel }: Props) {
         {phase === "boot" && (
           <div className="absolute inset-0 bg-black/70 flex items-center justify-center text-white text-sm">
             <Loader2 className="h-5 w-5 me-2 animate-spin text-[var(--gold)]" />
+            {livePoseHint}
+          </div>
+        )}
+
+        {phase === "models" && (
+          <div className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-2 p-3 bg-gradient-to-t from-black/80 via-black/40 to-transparent text-white text-[12px]">
+            <Loader2 className="h-4 w-4 animate-spin text-[var(--gold)]" />
             {livePoseHint}
           </div>
         )}

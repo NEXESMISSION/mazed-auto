@@ -2,7 +2,7 @@ import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import {
-  Building2, Receipt, Banknote, Wallet, UserCheck,
+  Receipt, Banknote, Wallet, UserCheck, Gavel, Tag,
   AlertTriangle, ArrowUpRight, CalendarClock,
 } from "lucide-react";
 
@@ -34,9 +34,10 @@ export default async function AdminDashboard() {
     refundPending, refundOverdue,
     payoutPending, payoutOverdue,
     kycPending,
+    offersPending, offersOverdue,
   ] = await Promise.all([
-    head("properties").eq("status", "pending_review"),
-    head("properties").eq("status", "pending_review").lt("created_at", overdue),
+    head("properties").eq("status", "pending_review").or("listing_type.eq.auction,listing_type.is.null"),
+    head("properties").eq("status", "pending_review").or("listing_type.eq.auction,listing_type.is.null").lt("created_at", overdue),
     head("properties").eq("status", "pending_review").gte("created_at", today),
     head("payments").eq("status", "pending_review").eq("kind", "listing_fee"),
     head("payments").eq("status", "pending_review").in("kind", ENTRY_KINDS),
@@ -47,11 +48,16 @@ export default async function AdminDashboard() {
     head("seller_payouts").eq("status", "requested"),
     head("seller_payouts").eq("status", "requested").lt("created_at", overdue),
     head("kyc_submissions").eq("status", "submitted"),
+    // Direct offers are a separate product with a separate review flow —
+    // they get their own queue and their own counter.
+    head("properties").eq("status", "pending_review").eq("listing_type", "direct"),
+    head("properties").eq("status", "pending_review").eq("listing_type", "direct").lt("created_at", overdue),
   ]);
 
   const n = (r: { count: number | null }) => r.count ?? 0;
   const tiles = [
-    { label: "Création d'enchères", href: "/admin/properties", Icon: Building2, count: n(propsPending), overdue: n(propsOverdue), sub: `${n(feePending)} reçu(s) de création` },
+    { label: "Gestion des enchères", href: "/admin/properties?kind=auction", Icon: Gavel, count: n(propsPending), overdue: n(propsOverdue), sub: `${n(feePending)} reçu(s) de création` },
+    { label: "Gestion des offres", href: "/admin/properties?kind=direct", Icon: Tag, count: n(offersPending), overdue: n(offersOverdue), sub: "Ventes directes à prix fixe" },
     { label: "Paiements", href: "/admin/payments", Icon: Receipt, count: n(entryPending), overdue: n(entryOverdue), sub: "Caution · achat · solde" },
     { label: "Remboursements", href: "/admin/deposits", Icon: Banknote, count: n(refundPending), overdue: n(refundOverdue), sub: "Cautions des non-gagnants" },
     { label: "Paiements vendeurs", href: "/admin/payouts", Icon: Wallet, count: n(payoutPending), overdue: n(payoutOverdue), sub: "Retraits demandés" },

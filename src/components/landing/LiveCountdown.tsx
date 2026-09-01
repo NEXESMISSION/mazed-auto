@@ -35,14 +35,14 @@ export function LiveCountdown({
           compact ? "text-[10px]" : "text-xs"
         }`}
       >
-        ended
+        terminée
       </span>
     );
   }
 
   const { d, h, m, s, urgent } = breakdown(remaining);
   const label = d > 0
-    ? `${d}d ${h}h`
+    ? `${d}j ${h}h`
     : h > 0
       ? `${h}h ${m}m`
       : `${m}m ${String(s).padStart(2, "0")}s`;

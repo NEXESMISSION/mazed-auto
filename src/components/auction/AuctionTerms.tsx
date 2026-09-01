@@ -59,10 +59,16 @@ export async function AuctionTerms({
       value: money(currentPrice + minBidIncrement(currentPrice)),
     });
   }
-  if (auction.buy_now_price != null) {
+  // Buy-now is an OFFER, not a fact about the lot: once the auction is over
+  // (or the bidding passed it) there is nothing to buy at that price, so the
+  // row is dropped rather than left as a number nobody can act on.
+  if (
+    auction.buy_now_price != null &&
+    !isEnded &&
+    currentPrice < Number(auction.buy_now_price)
+  ) {
     rows.push({ label: "Achat immédiat", value: money(Number(auction.buy_now_price)) });
   }
-  rows.push({ label: "Type d'enchère", value: t(`auction.types.${auction.type}`) });
   rows.push({
     label: showStart ? "Ouverture" : "Clôture",
     value: dateStr(showStart ? (auction.starts_at as string) : auction.ends_at),
@@ -76,7 +82,11 @@ export async function AuctionTerms({
         Détails de l&apos;enchère
       </h2>
 
-      {/* Caution — the headline figure, kept prominent */}
+      {/* Caution — the headline figure, kept prominent. Dropped once the
+          auction has ended: there is nothing left to bid on, so a big
+          "caution requise · remboursable" block only reads as a call to
+          action that leads nowhere. */}
+      {!isEnded && (
       <div className="mt-4 flex items-center gap-3 rounded-2xl bg-[var(--gold-faint)] p-4">
         <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-2xl bg-surface text-gold ring-1 ring-[var(--gold)]/25">
           <Wallet className="size-5" strokeWidth={2} />
@@ -95,9 +105,11 @@ export async function AuctionTerms({
           </span>
         )}
       </div>
+      )}
 
-      {/* Everything else, as a clean key→value list */}
-      <dl className="mt-3 divide-y divide-black/[0.06]">
+      {/* Everything else, as a clean key→value list. Ended auctions have
+          no caution block above, so the list picks up its spacing. */}
+      <dl className={`${isEnded ? "mt-4" : "mt-3"} divide-y divide-black/[0.06]`}>
         {rows.map((r) => (
           <div key={r.label} className="flex items-center justify-between gap-4 py-2.5">
             <dt className="text-[12.5px] text-muted">{r.label}</dt>

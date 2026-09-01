@@ -18,7 +18,18 @@ export type PropertyType =
   | "van"
   | "coupe"
   | "convertible"
-  | "wagon";
+  | "wagon"
+  // Not a vehicle: a part. Free to post and direct-sale only (enforced by
+  // the trigger in migration 0149) — see SPARE_PART_TYPE below.
+  | "spare_part";
+
+/** The one listing category that is a part, not a car. */
+export const SPARE_PART_TYPE = "spare_part" as const;
+
+/** True for listings that are parts: free to post, never auctioned. */
+export function isSparePart(type: string | null | undefined): boolean {
+  return type === SPARE_PART_TYPE;
+}
 
 export type PropertyStatus =
   | "draft"
@@ -27,7 +38,12 @@ export type PropertyStatus =
   | "ready"
   | "archived";
 
-export type AuctionType = "english" | "sealed" | "dutch";
+// One format only. Mazed Auto runs ascending ("English") auctions and
+// nothing else, so the format is never named or chosen anywhere in the
+// product — the union exists purely to keep the DB column typed. The
+// `auction_type` enum in Postgres still carries the legacy 'sealed' and
+// 'dutch' labels; migration 0150 makes the insert guard reject them.
+export type AuctionType = "english";
 
 export type AuctionStatus =
   | "scheduled"

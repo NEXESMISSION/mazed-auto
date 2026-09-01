@@ -72,7 +72,7 @@ export async function POST(
   const depCfg = parseMonetizationSettings(
     new Map<string, unknown>([["deposit", depRow?.value]]),
   ).deposit;
-  const { required, amount } = resolveDeposit(depCfg, Number(auction.opening_price));
+  const { required, amount } = resolveDeposit(depCfg);
 
   // Free entry — register a zero-amount participation row (place_bid only
   // checks a deposit row exists) and skip payment entirely.

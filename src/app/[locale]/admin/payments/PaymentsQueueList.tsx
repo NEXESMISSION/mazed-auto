@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import {
   Check,
   X,
@@ -11,7 +10,6 @@ import {
   ExternalLink,
   Building2,
   Smartphone,
-  FileText,
   AlertTriangle,
   Star,
   ArrowUpToLine,
@@ -19,7 +17,7 @@ import {
   HandCoins,
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
-import { ImageLightbox } from "@/components/ui/ImageLightbox";
+import { ReceiptPreview } from "@/components/admin/ReceiptPreview";
 
 const DURATION_OPTIONS = [7, 30, 90] as const;
 type PromoKey = "home_featured" | "top_listed" | "banner";
@@ -494,40 +492,6 @@ function DurationRow({
         </button>
       </div>
     </div>
-  );
-}
-
-function ReceiptPreview({ url, path }: { url: string; path: string }) {
-  const isPdf = path.toLowerCase().endsWith(".pdf");
-  if (isPdf) {
-    return (
-      <a
-        href={url}
-        target="_blank"
-        rel="noreferrer"
-        className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-2)]/60 px-3 py-2.5 text-[13px] font-semibold hover:border-[var(--gold-soft)]"
-      >
-        <FileText className="h-4 w-4 text-[var(--gold)]" />
-        Ouvrir le PDF du reçu
-        <ExternalLink className="h-3 w-3 text-[var(--foreground-muted)]" />
-      </a>
-    );
-  }
-  return (
-    <ImageLightbox
-      src={url}
-      alt="Reçu"
-      triggerClassName="relative block aspect-video w-full overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface-2)] hover:ring-2 hover:ring-[var(--gold-soft)]"
-    >
-      <Image
-        src={url}
-        alt="Reçu"
-        fill
-        sizes="(max-width: 600px) 100vw, 400px"
-        className="object-contain"
-        unoptimized
-      />
-    </ImageLightbox>
   );
 }
 

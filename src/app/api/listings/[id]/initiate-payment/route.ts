@@ -3,6 +3,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { parseMonetizationSettings, resolveListingFee } from "@/lib/pricing";
+import { isSparePart } from "@/lib/types";
 
 /**
  * POST /api/listings/[id]/initiate-payment
@@ -36,7 +37,7 @@ export async function POST(
   // Ownership check — the user can only initiate payment for their own listings.
   const { data: prop } = await supabase
     .from("properties")
-    .select("id, owner_id, status, listing_type, sale_price")
+    .select("id, owner_id, status, listing_type, sale_price, type")
     .eq("id", propertyId)
     .single();
   if (!prop || prop.owner_id !== user.id) {
@@ -46,6 +47,10 @@ export async function POST(
   // listing_type to pay the cheaper fee. The SellForm just-inserted row
   // is authoritative.
   const isOffer = prop.listing_type === "direct";
+  // Pièces de rechange are free to post, full stop. Checked against the DB
+  // row (not the client) for the same reason listing_type is: the fee must
+  // not be something the browser can choose.
+  const isPart = isSparePart(prop.type as string | null);
 
   const body = await req.json().catch(() => ({} as Record<string, unknown>));
   const promosIn = (body.promos ?? {}) as Record<string, unknown>;
@@ -75,7 +80,9 @@ export async function POST(
   // Direct-offer fees can be a % of the sale price; auctions can't (no
   // price yet) so they resolve to free/fixed only.
   const salePrice = isOffer ? Number(prop.sale_price ?? 0) || null : null;
-  const base = resolveListingFee(isOffer ? mon.feeListingDirect : mon.feeListingAuction, salePrice);
+  const base = isPart
+    ? 0
+    : resolveListingFee(isOffer ? mon.feeListingDirect : mon.feeListingAuction, salePrice);
   // Only count promos the admin left enabled.
   const homeFee = promos.home_featured && mon.promoHome.enabled ? mon.promoHome.value : 0;
   const topFee  = promos.top_listed    && mon.promoTop.enabled  ? mon.promoTop.value  : 0;

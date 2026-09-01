@@ -63,9 +63,6 @@ export async function POST(
       msg.includes("below_min_increment") ? ["below_min_increment", 409] :
       msg.includes("below_opening") ? ["below_opening", 409] :
       msg.includes("below_current") ? ["below_current", 409] :
-      msg.includes("sealed_one_bid") ? ["sealed_one_bid", 409] :
-      msg.includes("dutch_price_drifted") ? ["dutch_price_drifted", 409] :
-      msg.includes("dutch_reserve_not_met") ? ["dutch_reserve_not_met", 409] :
       msg.includes("invalid_amount") ? ["invalid_amount", 400] :
       // Keep the broad `auth` match LAST so it can't shadow a code that happens
       // to contain the substring.

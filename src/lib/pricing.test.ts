@@ -37,14 +37,14 @@ describe("parseMonetizationSettings", () => {
     const mon = parseMonetizationSettings(
       new Map<string, unknown>([
         ["fee_listing_auction", { mode: "fixed", value: 40 }],
-        ["deposit", { mode: "percent", value: 12, free_until: null }],
+        ["deposit", { amount: 250 }],
         ["promo_home", { enabled: false, value: 99, duration_days: 9999 }],
         // Bad mode falls back to the default mode for that key.
         ["fee_listing_direct", { mode: "banana", value: 5 }],
       ]),
     );
     expect(mon.feeListingAuction).toEqual({ mode: "fixed", value: 40 });
-    expect(mon.deposit.value).toBe(12);
+    expect(mon.deposit.amount).toBe(250);
     expect(mon.promoHome.enabled).toBe(false);
     expect(mon.promoHome.duration_days).toBe(365); // clamped
     expect(mon.feeListingDirect.mode).toBe(DEFAULT_MONETIZATION.feeListingDirect.mode);
@@ -73,25 +73,34 @@ describe("resolveListingFee", () => {
 });
 
 describe("resolveDeposit", () => {
-  const now = new Date("2026-06-02T00:00:00Z");
-  it("free mode requires nothing", () => {
-    expect(resolveDeposit({ mode: "free", value: 0, free_until: null }, 100_000, now)).toEqual({
-      required: false,
-      amount: 0,
-    });
+  it("is the flat admin amount, whatever the lot costs", () => {
+    expect(resolveDeposit({ amount: 500 })).toEqual({ required: true, amount: 500 });
   });
-  it("respects an open free window regardless of mode", () => {
-    const cfg = { mode: "percent" as const, value: 10, free_until: "2026-12-31T00:00:00Z" };
-    expect(resolveDeposit(cfg, 100_000, now)).toEqual({ required: false, amount: 0 });
+  it("0 means no caution at all", () => {
+    expect(resolveDeposit({ amount: 0 })).toEqual({ required: false, amount: 0 });
   });
-  it("charges once the free window has passed", () => {
-    const cfg = { mode: "percent" as const, value: 10, free_until: "2026-01-01T00:00:00Z" };
-    expect(resolveDeposit(cfg, 100_000, now)).toEqual({ required: true, amount: 10_000 });
+  it("never goes negative", () => {
+    expect(resolveDeposit({ amount: -50 })).toEqual({ required: false, amount: 0 });
   });
-  it("fixed deposit is flat", () => {
-    expect(resolveDeposit({ mode: "fixed", value: 250, free_until: null }, 100_000, now)).toEqual({
-      required: true,
-      amount: 250,
+});
+
+describe("deposit config migration (legacy app_settings shapes)", () => {
+  const dep = (raw: unknown) =>
+    parseMonetizationSettings(new Map<string, unknown>([["deposit", raw]])).deposit;
+
+  it("reads the flat shape", () => {
+    expect(dep({ amount: 300 })).toEqual({ amount: 300 });
+  });
+  it("legacy free → 0", () => {
+    expect(dep({ mode: "free", value: 0, free_until: null })).toEqual({ amount: 0 });
+  });
+  it("legacy fixed keeps its value", () => {
+    expect(dep({ mode: "fixed", value: 250, free_until: null })).toEqual({ amount: 250 });
+  });
+  it("legacy percent falls back to the default amount, never the percent number", () => {
+    // "10" meant 10 % — charging 10 TND would be a silent 99 % discount.
+    expect(dep({ mode: "percent", value: 10, free_until: null })).toEqual({
+      amount: DEFAULT_MONETIZATION.deposit.amount,
     });
   });
 });

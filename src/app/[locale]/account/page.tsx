@@ -12,6 +12,7 @@ import {
   ChevronRight,
   ChevronLeft,
   Building2,
+  Heart,
   LayoutGrid,
   LayoutDashboard,
   Briefcase,
@@ -22,6 +23,11 @@ import {
 
 // Per-user, auth-gated — never static (env-less prerender would throw + fail the build).
 export const dynamic = "force-dynamic";
+
+/** Favoris live as a tab of the unified activity hub (/watchlist is a
+ *  redirect to exactly this). Shared by the mobile card and the desktop
+ *  banner so the two can't drift apart. */
+const FAVORIS_HREF = { pathname: "/account/activity", query: { tab: "favoris" } } as const;
 
 /**
  * Account hub — identity card on top, then grouped action rows. The
@@ -193,6 +199,18 @@ export default async function AccountPage() {
           </div>
         </div>
       </div>
+      {/* Favoris — hoisted out of the "Acheteur" list (where it was only a
+          line of body copy under "Mes activités") to the identity card, so
+          the cars someone saved are one tap from the top of the hub. Points
+          at the favoris TAB of the activity page; /watchlist only redirects
+          there, and going through it costs an extra hop. */}
+      <Link
+        href={FAVORIS_HREF}
+        className="tap-target mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gold-faint px-4 py-2.5 text-[13px] font-bold text-gold ring-1 ring-gold-soft/60 transition hover:bg-gold-faint/80"
+      >
+        <Heart className="size-4" strokeWidth={2.2} />
+        Favoris
+      </Link>
     </section>
   );
 
@@ -240,7 +258,14 @@ export default async function AccountPage() {
               <p className="mt-1 text-[13.5px] text-muted">{userEmail}</p>
             )}
           </div>
-          <div className="shrink-0">
+          <div className="flex shrink-0 items-center gap-2.5">
+            <Link
+              href={FAVORIS_HREF}
+              className="inline-flex items-center gap-2 rounded-xl bg-gold-faint px-4 py-2.5 text-[13.5px] font-bold text-gold ring-1 ring-gold-soft/60 transition hover:bg-gold-faint/80"
+            >
+              <Heart className="size-4" strokeWidth={2.2} />
+              Favoris
+            </Link>
             <SignOutButton label="Se déconnecter" />
           </div>
         </section>

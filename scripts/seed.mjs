@@ -352,7 +352,7 @@ if (existingAuctions?.length) {
 }
 
 // Each plan row references a propertyIdx into the LISTINGS-derived
-// `properties` array above. Mix of live english/sealed/dutch,
+// `properties` array above. Mix of live,
 // scheduled, ended_sold, direct sales (listing_type='direct' with a
 // fixed sale_price), and auctions with a buy_now_price escape hatch.
 //
@@ -377,7 +377,7 @@ const auctionPlan = [
     current_price: 140_000, bids: [],
   },
   // ── 2 · Olive farm Agareb 19ha — Sealed LIVE, premium agricultural
-  { propertyIdx: 2, type: "sealed", listing_type: "auction",
+  { propertyIdx: 2, type: "english", listing_type: "auction",
     opening_price: 700_000, reserve_price: 850_000,
     starts_at: hoursFromNow(-36), ends_at: daysFromNow(4), status: "live",
     bids: [
@@ -422,7 +422,7 @@ const auctionPlan = [
     ],
   },
   // ── 7 · Teniour km16 13000m² — Sealed LIVE
-  { propertyIdx: 7, type: "sealed", listing_type: "auction",
+  { propertyIdx: 7, type: "english", listing_type: "auction",
     opening_price: 140_000, reserve_price: 175_000,
     starts_at: hoursFromNow(-24), ends_at: daysFromNow(3), status: "live",
     bids: [
@@ -471,7 +471,7 @@ const auctionPlan = [
     bids: [],
   },
   // ── 13 · 🏛️ STB · Sidi Mansour km3 promoteur — Sealed LIVE, premium land
-  { propertyIdx: 13, type: "sealed", listing_type: "auction",
+  { propertyIdx: 13, type: "english", listing_type: "auction",
     opening_price: 700_000, reserve_price: 850_000,
     starts_at: hoursFromNow(-30), ends_at: daysFromNow(5), status: "live",
     bids: [
@@ -564,7 +564,7 @@ const auctionPlan = [
     ],
   },
   // ── 24 · Bounouma pieds dans l'eau — Sealed LIVE, premium villa
-  { propertyIdx: 24, type: "sealed", listing_type: "auction",
+  { propertyIdx: 24, type: "english", listing_type: "auction",
     opening_price: 820_000, reserve_price: 950_000,
     starts_at: hoursFromNow(-12), ends_at: daysFromNow(6), status: "live",
     bids: [
@@ -628,11 +628,9 @@ const auctionPlan = [
     starts_at: hoursFromNow(-80), ends_at: daysFromNow(45), status: "live",
     current_price: 350_000, bids: [],
   },
-  // ── 32 · Villa Route Mahdia km4 — Dutch LIVE (450k → 290k tick-down)
-  { propertyIdx: 32, type: "dutch", listing_type: "auction",
+  // ── 32 · Villa Route Mahdia km4 — LIVE, no bids yet
+  { propertyIdx: 32, type: "english", listing_type: "auction",
     opening_price: 290_000,
-    dutch_start_price: 450_000, dutch_floor_price: 290_000,
-    dutch_decrement: 5_000, dutch_tick_seconds: 3600, // -5k/hr
     starts_at: hoursFromNow(-4), ends_at: hoursFromNow(60), status: "live",
     bids: [],
   },
@@ -685,10 +683,6 @@ for (const plan of auctionPlan) {
     sale_price: plan.sale_price ?? null,
     sale_negotiable: plan.sale_negotiable ?? false,
     buy_now_price: plan.buy_now_price ?? null,
-    dutch_start_price: plan.dutch_start_price ?? null,
-    dutch_floor_price: plan.dutch_floor_price ?? null,
-    dutch_decrement: plan.dutch_decrement ?? null,
-    dutch_tick_seconds: plan.dutch_tick_seconds ?? null,
     starts_at: plan.starts_at,
     ends_at: plan.ends_at,
     status: plan.status,

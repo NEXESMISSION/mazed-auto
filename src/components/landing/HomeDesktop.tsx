@@ -58,6 +58,7 @@ const PROPERTY_TYPES: { key: string }[] = [
   { key: "pickup" },
   { key: "coupe" },
   { key: "van" },
+  { key: "spare_part" },
 ];
 
 const PRICE_BUCKETS: { key: string; label: string; query: string }[] = [

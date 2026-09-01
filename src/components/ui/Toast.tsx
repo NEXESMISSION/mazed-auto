@@ -18,9 +18,28 @@ interface ToastContextType {
 
 const ToastContext = React.createContext<ToastContextType | null>(null);
 
+// Used when the context is missing. Throwing instead cost far more than it
+// caught: a `useToast()` in any component React happens to render outside the
+// provider's subtree — which SSR does for a subtree it re-renders on its own,
+// e.g. ShareButton on the auction detail page — takes down the SERVER render
+// of that page ("Switched to client rendering because the server rendering
+// errored: useToast must be used within ToastProvider"). The whole route then
+// falls back to client rendering: no server HTML, a blank first paint, and
+// nothing in the page for crawlers. A missing provider is a wiring mistake
+// worth surfacing, but it is not worth a blank page — so we warn in dev and
+// keep rendering. The user simply doesn't get that one toast.
+const NOOP_TOAST: ToastContextType = { toast: () => {} };
+
 export function useToast() {
   const ctx = React.useContext(ToastContext);
-  if (!ctx) throw new Error("useToast must be used within ToastProvider");
+  if (!ctx) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn(
+        "[Toast] useToast() called outside ToastProvider — toasts from this component will be dropped.",
+      );
+    }
+    return NOOP_TOAST;
+  }
   return ctx;
 }
 

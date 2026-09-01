@@ -1,0 +1,135 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServiceSupabase } from "@/lib/supabase/admin";
+import { requireAdmin } from "@/lib/admin/guard";
+import { logAction } from "@/lib/activity";
+import { fail } from "@/lib/http/errors";
+import {
+  normalizePhotos,
+  normalizeSections,
+  normalizeVerdict,
+  type DiagnosticStatus,
+} from "@/lib/diagnostics";
+
+/**
+ * PUT /api/admin/diagnostics/<propertyId> — write the Mazed diagnostic sheet.
+ *
+ * Admin-only, one row per property (upsert on property_id). The body is the
+ * whole document; every field is re-normalised here, so a malformed section or
+ * an over-long note can never reach a public page. `published_at` is stamped by
+ * the DB trigger (0148), never by the client.
+ *
+ * DELETE removes the sheet entirely — which also removes the badge, since the
+ * badge is rendered from the row's existence + status.
+ */
+
+type Body = {
+  status?: unknown;
+  verdict?: unknown;
+  headline?: unknown;
+  summary?: unknown;
+  sections?: unknown;
+  photos?: unknown;
+  inspector_name?: unknown;
+  inspected_at?: unknown;
+};
+
+function str(v: unknown, max: number): string | null {
+  if (typeof v !== "string") return null;
+  const s = v.trim();
+  return s ? s.slice(0, max) : null;
+}
+
+export async function PUT(
+  req: NextRequest,
+  ctx: { params: Promise<{ propertyId: string }> },
+) {
+  const gate = await requireAdmin(req);
+  if (gate instanceof NextResponse) return gate;
+  const { user } = gate;
+  const { propertyId } = await ctx.params;
+
+  const admin = getServiceSupabase();
+  if (!admin) return fail("server_misconfigured", 500);
+
+  // The property must exist — otherwise a typo in the URL silently creates a
+  // diagnostic for a listing nobody will ever see (the FK would reject it, but
+  // a clean 404 beats a redacted 500).
+  const { data: prop } = await admin
+    .from("properties")
+    .select("id")
+    .eq("id", propertyId)
+    .maybeSingle();
+  if (!prop) return NextResponse.json({ error: "property_not_found" }, { status: 404 });
+
+  const body = (await req.json().catch(() => ({}))) as Body;
+  const status: DiagnosticStatus = body.status === "published" ? "published" : "draft";
+
+  let inspectedAt: string | null = null;
+  if (typeof body.inspected_at === "string" && body.inspected_at.trim()) {
+    const d = new Date(body.inspected_at);
+    if (Number.isNaN(d.getTime())) {
+      return NextResponse.json({ error: "invalid_date", key: "inspected_at" }, { status: 400 });
+    }
+    inspectedAt = d.toISOString();
+  }
+
+  const payload = {
+    property_id: propertyId,
+    status,
+    verdict: normalizeVerdict(body.verdict),
+    headline: str(body.headline, 160),
+    summary: str(body.summary, 4000),
+    sections: normalizeSections(body.sections),
+    photos: normalizePhotos(body.photos),
+    inspector_name: str(body.inspector_name, 120),
+    inspected_at: inspectedAt,
+    updated_by: user.id,
+  };
+
+  // A published sheet with nothing in it is worse than no badge: it promises a
+  // check we can't show. Require something a buyer can actually read.
+  if (
+    status === "published" &&
+    payload.sections.length === 0 &&
+    !payload.summary &&
+    payload.photos.length === 0
+  ) {
+    return NextResponse.json(
+      {
+        error: "diagnostic_empty",
+        detail: "Ajoutez au moins un contrôle, une photo ou un résumé avant de publier.",
+      },
+      { status: 400 },
+    );
+  }
+
+  const { error } = await admin
+    .from("vehicle_diagnostics")
+    .upsert(payload, { onConflict: "property_id" });
+  if (error) return fail("diagnostic_save_failed", 500, error);
+
+  logAction(req, user, "admin.diagnostic.save", { propertyId, status });
+  return NextResponse.json({ ok: true, status });
+}
+
+export async function DELETE(
+  req: NextRequest,
+  ctx: { params: Promise<{ propertyId: string }> },
+) {
+  const gate = await requireAdmin(req);
+  if (gate instanceof NextResponse) return gate;
+  const { user } = gate;
+  const { propertyId } = await ctx.params;
+
+  const admin = getServiceSupabase();
+  if (!admin) return fail("server_misconfigured", 500);
+
+  const { error } = await admin
+    .from("vehicle_diagnostics")
+    .delete()
+    .eq("property_id", propertyId);
+  if (error) return fail("diagnostic_delete_failed", 500, error);
+
+  logAction(req, user, "admin.diagnostic.delete", { propertyId });
+  return NextResponse.json({ ok: true });
+}

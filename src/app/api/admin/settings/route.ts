@@ -66,20 +66,16 @@ export async function PUT(req: NextRequest) {
   }
 
   // ── Deposit ──────────────────────────────────────────────────────────
+  // One flat TND caution for every lot (0 = bidding is free). Modes and the
+  // "free until" date are gone: the caution must read the same on every
+  // listing, so there is nothing left to vary. `cleanValue("fixed", …)`
+  // clamps to a non-negative, 2-decimal number.
   {
-    const v = body.deposit as { mode?: unknown; value?: unknown; free_until?: unknown } | undefined;
+    const v = body.deposit as { amount?: unknown } | undefined;
     if (v && typeof v === "object") {
-      const m = (["free", "fixed", "percent"] as const).includes(v.mode as Mode)
-        ? (v.mode as Mode) : "percent";
-      let freeUntil: string | null = null;
-      if (typeof v.free_until === "string" && v.free_until.trim()) {
-        const d = new Date(v.free_until);
-        if (!Number.isNaN(d.getTime())) freeUntil = d.toISOString();
-        else return NextResponse.json({ error: "invalid_date", key: "deposit.free_until" }, { status: 400 });
-      }
       rows.push({
         key: "deposit",
-        value: { mode: m, value: cleanValue(m, v.value), free_until: freeUntil },
+        value: { amount: cleanValue("fixed", v.amount) },
         updated_by: user.id,
       });
     }
@@ -102,23 +98,6 @@ export async function PUT(req: NextRequest) {
         updated_by: user.id,
       });
       antiSnipeSec = { window: windowMin * 60, by: extendMin * 60 };
-    }
-  }
-
-  // ── Auction formats available to sellers ─────────────────────────────
-  // English is always available (not stored). Only the optional extras are
-  // toggled; anything missing defaults to OFF (English-only marketplace).
-  {
-    const v = body.auction_types as { dutch_enabled?: unknown; sealed_enabled?: unknown } | undefined;
-    if (v && typeof v === "object") {
-      rows.push({
-        key: "auction_types",
-        value: {
-          dutch_enabled: v.dutch_enabled === true,
-          sealed_enabled: v.sealed_enabled === true,
-        },
-        updated_by: user.id,
-      });
     }
   }
 

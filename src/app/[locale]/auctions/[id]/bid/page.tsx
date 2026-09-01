@@ -135,11 +135,8 @@ export default async function BidPage({
   // Deposit config is admin-controlled global settings — served from the
   // cached app_settings layer instead of a per-request DB read.
   const mon = await getCachedMonetization();
-  const { required: depositRequired, amount: depositAmount } = resolveDeposit(
-    mon.deposit, auction.opening_price,
-  );
+  const { required: depositRequired, amount: depositAmount } = resolveDeposit(mon.deposit);
   const isLive = auction.status === "live" || auction.status === "extending";
-  const isSealedLive = isLive && auction.type === "sealed";
 
   // Skip the interstitial deposit gate. When the ONLY thing between a
   // verified user and bidding is paying the caution, send them straight to
@@ -347,7 +344,6 @@ export default async function BidPage({
                 auctionId={auction.id}
                 initialBids={initialBids}
                 totalBids={totalBids}
-                isSealedLive={isSealedLive}
                 locale={locale}
               />
             </div>

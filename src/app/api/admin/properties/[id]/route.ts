@@ -26,7 +26,7 @@ export async function PATCH(
   // notify after AND guard the transition.
   const { data: prop } = await supabase
     .from("properties")
-    .select("id, owner_id, title, listing_type, status")
+    .select("id, owner_id, title, listing_type, status, sale_price, sale_negotiable")
     .eq("id", id)
     .single();
 
@@ -64,6 +64,47 @@ export async function PATCH(
   if (status === "ready") {
     revalidateTag("home-feed", "max");
     revalidateTag("explore-feed", "max");
+  }
+
+  // A direct-sale listing is only VISIBLE once it has an auctions row
+  // (listing_type='direct') — that's what the detail page, the feeds and
+  // DirectSalePanel read. `accept_listing_payment` (0028) creates it when a
+  // receipt is captured, which covers every PAID listing. A free one — the
+  // admin set the direct fee to free, or it's a pièce de rechange, which is
+  // always free — never passes through that RPC, so approving it used to
+  // leave the seller with a "published" listing that existed nowhere. Create
+  // the row here when it's missing; the lookup keeps it idempotent.
+  if (status === "ready" && prop?.listing_type === "direct") {
+    const admin = getServiceSupabase();
+    if (admin) {
+      const { data: existing } = await admin
+        .from("auctions")
+        .select("id")
+        .eq("property_id", id)
+        .eq("listing_type", "direct")
+        .limit(1);
+      if (!existing || existing.length === 0) {
+        const price = Number(prop.sale_price ?? 0);
+        if (price > 0) {
+          const now = new Date();
+          const { error: aucErr } = await admin.from("auctions").insert({
+            property_id: id,
+            type: "english", // placeholder; ignored when listing_type='direct'
+            listing_type: "direct",
+            opening_price: price, // satisfies opening_price > 0
+            sale_price: price,
+            sale_negotiable: prop.sale_negotiable ?? false,
+            starts_at: now.toISOString(),
+            ends_at: new Date(now.getTime() + 180 * 86_400_000).toISOString(),
+            status: "live",
+            current_price: price,
+          });
+          if (aucErr) {
+            return fail("direct_listing_publish_failed", 500, aucErr);
+          }
+        }
+      }
+    }
   }
 
   if (prop?.owner_id) {

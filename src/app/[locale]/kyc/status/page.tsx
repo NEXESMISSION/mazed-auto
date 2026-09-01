@@ -155,7 +155,12 @@ export default async function KYCStatusPage({
         <div>
           <h2 className="text-2xl font-extrabold">Vérification en cours</h2>
           <p className="text-sm text-[var(--foreground-muted)] mt-2 leading-relaxed">
-            Réponse sous 24–48&nbsp;h par email.
+            {/* SMS + in-app notification is what actually fires on a KYC
+                verdict (kyc_verified / kyc_rejected are in SMS_KINDS and
+                carry no email). Promising an email was telling the user to
+                watch a channel we never send on. */}
+            Réponse sous 24–48&nbsp;h. Vous recevrez un SMS et une
+            notification dès que votre identité est vérifiée.
           </p>
         </div>
 

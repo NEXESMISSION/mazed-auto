@@ -69,7 +69,7 @@ const CARS = [
     plan: { type: "english", status: "live", starts_at: hoursFromNow(-18), ends_at: hoursFromNow(10),
       bids: [{ user: sami, amount: 36_000 }, { user: leila, amount: 39_000 }] } },
   { make: "Mercedes", model: "GLC 220d", year: 2020, mileage: 60_000, fuel: "diesel", transmission: "automatic", color: "Gris", category: "suv", city: "Sousse", price: 165_000,
-    plan: { type: "sealed", status: "live", starts_at: hoursFromNow(-36), ends_at: daysFromNow(4),
+    plan: { type: "english", status: "live", starts_at: hoursFromNow(-36), ends_at: daysFromNow(4),
       bids: [{ user: karim, amount: 135_000 }, { user: leila, amount: 150_000 }] } },
   { make: "Toyota", model: "Hilux 2.4 D-4D", year: 2018, mileage: 95_000, fuel: "diesel", transmission: "manual", color: "Blanc", category: "pickup", city: "Gabès", price: 98_000,
     plan: { type: "english", status: "live", starts_at: hoursFromNow(-12), ends_at: daysFromNow(2),
