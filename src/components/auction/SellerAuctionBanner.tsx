@@ -39,7 +39,7 @@ interface Props {
  *
  * Sellers used to land on the bidder UI when they tapped a
  * seller_received_bid / auction_sold_seller notification: deposit box,
- * "Placer une enchère" button, sixth-offer form — none of it relevant
+ * "Participer à l'enchère" button, sixth-offer form — none of it relevant
  * to them. This banner replaces that framing with the data points the
  * owner actually wants: current depth (bids + deposit-holding bidders),
  * the verdict if closed, the buyer's final-payment status when sold,

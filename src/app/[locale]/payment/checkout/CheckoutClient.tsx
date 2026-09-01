@@ -48,8 +48,12 @@ interface Props {
 const KIND_TITLES: Record<CheckoutKind, { label: string; body: string }> = {
   deposit: {
     label: "Caution de participation",
+    // The old copy called the caution "remboursable" and then said it was
+    // "déduite du prix final" — which contradicts itself, since a deposit
+    // applied to the price is precisely the case where it is NOT refunded.
+    // State what actually happens to the money in each outcome instead.
     body:
-      "Caution remboursable — déduite du prix final si vous gagnez, restituée après la clôture sinon.",
+      "Montant bloqué pendant l'enchère. Déduit du prix si vous remportez la voiture, intégralement restitué après la clôture sinon.",
   },
   buy_now: {
     label: "Achat",
@@ -113,36 +117,12 @@ export function CheckoutClient({
   const MAX_RECEIPTS = 3;
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [cancelling, setCancelling] = useState(false);
-  const [cancelled, setCancelled] = useState(false);
 
-  async function cancelPayment() {
-    if (cancelling) return;
-    const ok = window.confirm(
-      "Annuler ce paiement ? Vous pourrez en démarrer un nouveau à tout moment.",
-    );
-    if (!ok) return;
-    setCancelling(true);
-    try {
-      const res = await fetch(`/api/payments/${paymentId}/cancel`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-      if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as {
-          error?: string;
-          detail?: string;
-        };
-        toast(data.detail ?? data.error ?? "Annulation impossible.", "error");
-        setCancelling(false);
-        return;
-      }
-      setCancelled(true);
-    } catch {
-      toast("Erreur réseau lors de l'annulation.", "error");
-      setCancelling(false);
-    }
-  }
+  // No cancel affordance in checkout. Abandoning a payment is simply
+  // leaving the page — the row stays `pending` and can be resumed, so a
+  // destructive "cancel" button on the pay screen only invited people to
+  // throw away a payment they were part-way through. The /cancel API and
+  // the control in account/payments are untouched.
 
   const active = useMemo(
     () => instructions.find((p) => p.value === provider) ?? instructions[0],
@@ -286,53 +266,6 @@ export function CheckoutClient({
       // no way out but reloading the page.
       setSubmitting(false);
     }
-  }
-
-  if (cancelled) {
-    return (
-      <div className="min-h-screen bg-background">
-        <main className="max-w-md mx-auto px-4 py-10 lg:py-16">
-          {/* Obviously-cancelled card — the previous version was a few
-              tiny lines on a white page that read as "blank" to several
-              testers. The red ring, full-width card surface, and the
-              prominent return-to-listing CTA make the state legible at
-              a glance. */}
-          <div className="rounded-2xl border-2 border-red-300 bg-red-50 p-6 text-center shadow-lg">
-            <div className="mx-auto inline-flex h-16 w-16 items-center justify-center rounded-full bg-red-500 text-white shadow-md shadow-red-500/30">
-              <X className="h-8 w-8" strokeWidth={2.8} />
-            </div>
-            <h1 className="mt-4 text-[22px] font-extrabold leading-tight text-red-900">
-              Paiement annulé
-            </h1>
-            <p className="mt-2 text-[13px] text-red-900/80 leading-relaxed">
-              Aucun montant n&apos;a été prélevé. Vous pouvez relancer le
-              paiement à tout moment depuis l&apos;annonce.
-            </p>
-            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {auction && (
-                <a
-                  href={
-                    kind === "listing_fee"
-                      ? `/${locale}/sell`
-                      : `/${locale}/auctions/${auction.id}`
-                  }
-                  className="inline-flex h-11 items-center justify-center rounded-[var(--radius)] bg-surface border border-red-200 text-red-900 px-5 text-[13px] font-bold hover:border-red-400"
-                >
-                  {kind === "listing_fee" ? "Voir mes annonces" : "Retour à l'annonce"}
-                </a>
-              )}
-              <a
-                href={`/${locale}`}
-                className="inline-flex h-11 items-center justify-center rounded-[var(--radius)] bg-[var(--gold)] text-white px-5 text-[13px] font-bold hover:bg-[var(--gold-bright)]"
-              >
-                Accueil
-                <ArrowRight className="ml-1.5 h-4 w-4" />
-              </a>
-            </div>
-          </div>
-        </main>
-      </div>
-    );
   }
 
   if (submitted) {
@@ -633,18 +566,6 @@ export function CheckoutClient({
         <p className="text-center text-[11px] text-[var(--foreground-muted)]">
           {files.length > 0 ? "Validation sous 24 h — vous serez notifié(e)." : "Téléversez d'abord le reçu pour activer le bouton."}
         </p>
-
-        {/* Cancel — small, out of the way */}
-        {!reupload && (
-          <button
-            type="button"
-            onClick={cancelPayment}
-            disabled={cancelling}
-            className="mx-auto block text-[12px] font-semibold text-[var(--foreground-subtle)] underline underline-offset-2 hover:text-red-500 disabled:opacity-50"
-          >
-            {cancelling ? "Annulation…" : "Annuler ce paiement"}
-          </button>
-        )}
 
         {/* Support escape hatch — v1's checkout pattern. */}
         <p className="text-center text-[11.5px] text-[var(--foreground-subtle)]">

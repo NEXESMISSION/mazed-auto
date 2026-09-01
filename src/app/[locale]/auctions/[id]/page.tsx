@@ -316,7 +316,7 @@ export default async function AuctionDetail({
     sellerActiveDeposits = depCountRes.count ?? 0;
   }
 
-  // The "Placer une enchère" CTA detaches from the document flow and
+  // The "Participer à l'enchère" CTA detaches from the document flow and
   // floats above the bottom tab bar — always visible, no scrolling
   // required. We show it for every biddable state (scheduled, live,
   // extending) so the action is reachable even before the server-side
