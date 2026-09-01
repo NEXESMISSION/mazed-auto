@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { PhoneInput } from "./PhoneInput";
+import { PasswordInput } from "./PasswordInput";
 import { Loader2, Smartphone } from "lucide-react";
 import { TUNISIAN_GOVERNORATES, normalizeE164, validatePhone } from "@/lib/tunisia";
 import { Modal } from "@/components/ui/Modal";
@@ -289,9 +290,8 @@ export function SignupForm() {
         </select>
       </label>
 
-      <Field
+      <PasswordInput
         label="Mot de passe (min 8)"
-        type="password"
         value={password}
         onChange={setPassword}
         required

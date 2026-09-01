@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { useRouter } from "@/i18n/navigation";
+import { useLocale } from "next-intl";
 import { CheckCircle2 } from "lucide-react";
 import { getBrowserSupabase } from "@/lib/supabase/client";
+import { PasswordInput } from "./PasswordInput";
 
 /**
  * Sits on /reset-password. Supabase's recovery email link drops the
@@ -17,7 +18,7 @@ import { getBrowserSupabase } from "@/lib/supabase/client";
  * back to /forgot-password.
  */
 export function ResetPasswordForm() {
-  const router = useRouter();
+  const locale = useLocale();
   const [ready, setReady] = useState<"loading" | "ok" | "invalid">("loading");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -77,9 +78,11 @@ export function ResetPasswordForm() {
         return;
       }
       setDone(true);
-      // Short pause so the user reads the success state, then back to
-      // /login with the new password.
-      setTimeout(() => router.replace("/login"), 1600);
+      // The recovery session established by the reset link IS a full
+      // session (cookie already written by the browser client), so the
+      // user is signed in — go straight home instead of back to /login.
+      // Hard navigation so the server render picks up the auth cookie.
+      setTimeout(() => window.location.assign(`/${locale}`), 1200);
     });
   }
 
@@ -113,7 +116,7 @@ export function ResetPasswordForm() {
           Mot de passe mis à jour
         </h2>
         <p className="mt-2 text-[12.5px] text-batta-cream/75">
-          Redirection vers la page de connexion…
+          Vous êtes connecté. Redirection…
         </p>
       </div>
     );
@@ -121,29 +124,23 @@ export function ResetPasswordForm() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <label className="block">
-        <span className="batta-eyebrow text-[10px]">Nouveau mot de passe (min 8)</span>
-        <input
-          type="password"
-          required
-          minLength={8}
-          autoFocus
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="mt-1.5 w-full rounded-xl border border-batta-gold/25 bg-batta-surface-2 px-4 py-2.5 text-sm text-batta-cream focus:border-batta-gold focus:outline-none focus:ring-1 focus:ring-batta-gold/40"
-        />
-      </label>
-      <label className="block">
-        <span className="batta-eyebrow text-[10px]">Confirmer</span>
-        <input
-          type="password"
-          required
-          minLength={8}
-          value={confirm}
-          onChange={(e) => setConfirm(e.target.value)}
-          className="mt-1.5 w-full rounded-xl border border-batta-gold/25 bg-batta-surface-2 px-4 py-2.5 text-sm text-batta-cream focus:border-batta-gold focus:outline-none focus:ring-1 focus:ring-batta-gold/40"
-        />
-      </label>
+      <PasswordInput
+        label="Nouveau mot de passe (min 8)"
+        value={password}
+        onChange={setPassword}
+        required
+        minLength={8}
+        autoFocus
+        autoComplete="new-password"
+      />
+      <PasswordInput
+        label="Confirmer"
+        value={confirm}
+        onChange={setConfirm}
+        required
+        minLength={8}
+        autoComplete="new-password"
+      />
       {error && (
         <p role="alert" aria-live="assertive" className="batta-tone-bad rounded-lg px-3 py-2 text-xs">{error}</p>
       )}

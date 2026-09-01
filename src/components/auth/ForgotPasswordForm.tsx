@@ -2,8 +2,10 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "@/i18n/navigation";
+import { useLocale } from "next-intl";
 import { Loader2, Smartphone, CheckCircle2 } from "lucide-react";
 import { PhoneInput } from "./PhoneInput";
+import { PasswordInput } from "./PasswordInput";
 import { normalizeE164, validatePhone } from "@/lib/tunisia";
 
 /**
@@ -13,7 +15,8 @@ import { normalizeE164, validatePhone } from "@/lib/tunisia";
  *   1. phone     → POST /api/auth/phone/send   (SMS code)
  *   2. otp       → POST /api/auth/phone/verify (stamps a short-lived verified_at proof)
  *   3. password  → POST /api/auth/reset-password (server checks the proof, then
- *                  admin-updates the password) → redirect to /login.
+ *                  admin-updates the password) → auto sign-in with the fresh
+ *                  credentials (falls back to /login if that fails).
  *
  * The OTP proof is server-side (phone_otps.verified_at keyed by phone) so the
  * client never holds a recovery token. Reuses the exact send/verify routes the
@@ -23,7 +26,9 @@ type Phase = "phone" | "otp" | "password" | "done";
 
 export function ForgotPasswordForm() {
   const router = useRouter();
+  const locale = useLocale();
   const [phase, setPhase] = useState<Phase>("phone");
+  const [autoLoggedIn, setAutoLoggedIn] = useState(false);
   const [dialCode, setDialCode] = useState("+216");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [phone, setPhone] = useState<string | null>(null); // normalized E.164
@@ -177,8 +182,29 @@ export function ForgotPasswordForm() {
         });
         const j = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
         if (res.ok && j.ok) {
+          // Auto sign-in with the fresh credentials so the user lands home
+          // already authenticated. Best-effort: any failure falls back to the
+          // old redirect-to-/login behaviour (the reset itself succeeded).
+          let signedIn = false;
+          try {
+            const login = await fetch("/api/auth/login-by-phone", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ phone, password }),
+            });
+            const lj = (await login.json().catch(() => ({}))) as { ok?: boolean };
+            signedIn = !!lj.ok;
+          } catch {
+            // network hiccup — the fallback below still gets them to /login
+          }
+          setAutoLoggedIn(signedIn);
           setPhase("done");
-          setTimeout(() => router.replace("/login"), 1600);
+          setTimeout(() => {
+            // Hard navigation when signed in: the auth cookie was written by
+            // the login response; a soft navigation can render anonymous.
+            if (signedIn) window.location.assign(`/${locale}`);
+            else router.replace("/login");
+          }, 1200);
           return;
         }
         const map: Record<string, string> = {
@@ -210,7 +236,9 @@ export function ForgotPasswordForm() {
           Mot de passe mis à jour
         </h2>
         <p className="mt-2 text-[12.5px] text-batta-cream/75">
-          Redirection vers la page de connexion…
+          {autoLoggedIn
+            ? "Connexion à votre compte…"
+            : "Redirection vers la page de connexion…"}
         </p>
       </div>
     );
@@ -281,31 +309,23 @@ export function ForgotPasswordForm() {
   if (phase === "password") {
     return (
       <form onSubmit={onSetPassword} className="space-y-4">
-        <label className="block">
-          <span className="batta-eyebrow text-[10px]">Nouveau mot de passe (min 8)</span>
-          <input
-            type="password"
-            required
-            minLength={8}
-            autoFocus
-            autoComplete="new-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="mt-1.5 w-full rounded-xl border border-batta-gold/25 bg-batta-surface-2 px-4 py-2.5 text-sm text-batta-cream focus:border-batta-gold focus:outline-none focus:ring-1 focus:ring-batta-gold/40"
-          />
-        </label>
-        <label className="block">
-          <span className="batta-eyebrow text-[10px]">Confirmer</span>
-          <input
-            type="password"
-            required
-            minLength={8}
-            autoComplete="new-password"
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-            className="mt-1.5 w-full rounded-xl border border-batta-gold/25 bg-batta-surface-2 px-4 py-2.5 text-sm text-batta-cream focus:border-batta-gold focus:outline-none focus:ring-1 focus:ring-batta-gold/40"
-          />
-        </label>
+        <PasswordInput
+          label="Nouveau mot de passe (min 8)"
+          value={password}
+          onChange={setPassword}
+          required
+          minLength={8}
+          autoFocus
+          autoComplete="new-password"
+        />
+        <PasswordInput
+          label="Confirmer"
+          value={confirm}
+          onChange={setConfirm}
+          required
+          minLength={8}
+          autoComplete="new-password"
+        />
         {error && (
           <p role="alert" aria-live="assertive" className="batta-tone-bad rounded-lg px-3 py-2 text-xs">{error}</p>
         )}

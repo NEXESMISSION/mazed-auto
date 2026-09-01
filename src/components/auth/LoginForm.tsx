@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { stripLocalePrefix } from "@/i18n/routing";
 import { PhoneInput } from "./PhoneInput";
+import { PasswordInput } from "./PasswordInput";
 import { normalizeE164, validatePhone } from "@/lib/tunisia";
 
 /**
@@ -112,9 +113,8 @@ export function LoginForm() {
         />
       </label>
 
-      <Field
+      <PasswordInput
         label="Mot de passe"
-        type="password"
         value={password}
         onChange={setPassword}
         required
@@ -135,35 +135,5 @@ export function LoginForm() {
         )}
       </button>
     </form>
-  );
-}
-
-function Field({
-  label, type, value, onChange, required, invalid, describedBy, autoComplete,
-}: {
-  label: string;
-  type: string;
-  value: string;
-  onChange: (v: string) => void;
-  required?: boolean;
-  /** Mark the field invalid + point AT to the error message (a11y). */
-  invalid?: boolean;
-  describedBy?: string;
-  autoComplete?: string;
-}) {
-  return (
-    <label className="block">
-      <span className="batta-eyebrow text-[10px]">{label}</span>
-      <input
-        type={type}
-        value={value}
-        required={required}
-        aria-invalid={invalid || undefined}
-        aria-describedby={invalid ? describedBy : undefined}
-        autoComplete={autoComplete}
-        onChange={(e) => onChange(e.target.value)}
-        className="mt-1.5 w-full rounded-xl border border-batta-gold/25 bg-batta-surface-2 px-4 py-2.5 text-sm text-batta-cream placeholder:text-batta-muted focus:border-batta-gold focus:outline-none focus:ring-1 focus:ring-batta-gold/40"
-      />
-    </label>
   );
 }
