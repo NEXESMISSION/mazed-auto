@@ -14,13 +14,22 @@ export default async function InspectorApply({
   const currentLocale = await getLocale();
   const isRTL = currentLocale === "ar";
 
+  // `redirect()` throws NEXT_REDIRECT — keep it out of the try, or the
+  // catch swallows it and anonymous visitors get the form instead of login.
+  let user: { id: string } | null = null;
+  let gateAvailable = true;
   try {
     const supabase = await getServerSupabase();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) redirect({ href: "/login", locale: locale as "ar" | "fr" | "en" });
+    const { data } = await supabase.auth.getUser();
+    user = data.user;
   } catch {
     // env not configured — render the form; the client SDK will surface
     // the sign-in requirement on submit.
+    gateAvailable = false;
+  }
+
+  if (gateAvailable && !user) {
+    redirect({ href: "/login", locale: locale as "ar" | "fr" | "en" });
   }
 
   return (

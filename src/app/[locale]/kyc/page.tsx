@@ -21,6 +21,10 @@ export default async function KYCIndex({
   const { locale } = await params;
   const loc = locale as Locale;
 
+  // `redirect()` throws NEXT_REDIRECT, so it must not be called inside the
+  // try — the catch would swallow it and send an already-verified user to
+  // /kyc/start instead of /kyc/status. Decide the target here, redirect after.
+  let target = "/kyc/start";
   try {
     const supabase = await getServerSupabase();
     const { data: { user } } = await supabase.auth.getUser();
@@ -32,7 +36,7 @@ export default async function KYCIndex({
         .single();
       const s = profile?.kyc_status;
       if (s === "verified" || s === "submitted" || s === "pending") {
-        redirect({ href: "/kyc/status", locale: loc });
+        target = "/kyc/status";
       }
     }
   } catch {
@@ -40,5 +44,5 @@ export default async function KYCIndex({
     // /kyc/start which renders the public intro without a session.
   }
 
-  redirect({ href: "/kyc/start", locale: loc });
+  redirect({ href: target, locale: loc });
 }

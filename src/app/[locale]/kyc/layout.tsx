@@ -18,22 +18,33 @@ export default async function KYCLayout({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+
+  // Only the session lookup belongs in the try. `redirect()` signals by
+  // THROWING a NEXT_REDIRECT error — calling it in here means the catch
+  // below swallows the redirect, the gate silently passes, and the whole
+  // KYC flow renders anonymously (camera/upload buttons disabled, no
+  // permission prompt). Resolve the user here, redirect after.
+  let user: { id: string } | null = null;
+  let gateAvailable = true;
   try {
     const supabase = await getServerSupabase();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      redirect({ href: "/login", locale: locale as "ar" | "fr" | "en" });
-    }
+    const { data } = await supabase.auth.getUser();
+    user = data.user;
   } catch (e) {
     // env missing in dev — let the page render and surface its own
     // "not signed in" state. Beats hard-crashing the route. We log
     // so the cause is visible in the server console rather than
     // silently presenting a half-broken camera flow to the dev.
+    gateAvailable = false;
     console.warn(
       "[KYC layout] auth gate skipped — Supabase env likely missing. " +
         "Pages will render without a user; camera/upload buttons will be disabled.",
       e instanceof Error ? e.message : e,
     );
+  }
+
+  if (gateAvailable && !user) {
+    redirect({ href: "/login", locale: locale as "ar" | "fr" | "en" });
   }
 
   return <>{children}</>;
