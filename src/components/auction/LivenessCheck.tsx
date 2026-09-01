@@ -167,6 +167,11 @@ export function LivenessCheck({ onComplete, onCancel }: Props) {
   // (the effect used to run once, on mount, and never again).
   const [attempt, setAttempt] = useState(0);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  // True when the browser has the camera BLOCKED for this origin, not just
+  // "not answered yet". A blocked permission never re-prompts, so
+  // "réessayez" alone is a dead end — the user has to change the site
+  // setting first. Drives the step-by-step panel in the error state.
+  const [permBlocked, setPermBlocked] = useState(false);
   const [stepIdx, setStepIdx] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<StepId>>(
     new Set(),
@@ -314,8 +319,25 @@ export function LivenessCheck({ onComplete, onCancel }: Props) {
         const errMessage = e instanceof Error ? e.message : String(e);
         let userMsg = "Impossible d'initialiser la caméra";
         if (errName === "NotAllowedError") {
-          userMsg =
-            "Permission caméra refusée — autorisez la caméra dans les réglages du navigateur, puis réessayez";
+          // Distinguish a sticky per-origin block from a prompt the user
+          // merely dismissed. Chrome/Edge remember "Block" forever and
+          // never ask again, which is why this reads as "the camera is
+          // broken" — on another port or domain the same browser works
+          // fine, because permissions are stored per origin.
+          let blocked = false;
+          try {
+            const st = await navigator.permissions?.query({
+              name: "camera" as PermissionName,
+            });
+            blocked = st?.state === "denied";
+          } catch {
+            // Permissions API unsupported (Safari) — fall back to the
+            // generic wording rather than guessing.
+          }
+          if (!cancelled) setPermBlocked(blocked);
+          userMsg = blocked
+            ? "La caméra est bloquée pour ce site dans votre navigateur"
+            : "Permission caméra refusée — autorisez l'accès puis réessayez";
         } else if (errName === "NotFoundError" || errName === "OverconstrainedError") {
           userMsg = "Aucune caméra détectée sur cet appareil";
         } else if (errName === "NotReadableError" || errName === "AbortError") {
@@ -731,6 +753,7 @@ export function LivenessCheck({ onComplete, onCancel }: Props) {
     log("restart() — re-booting camera in place");
     stopAll();
     setErrorMsg(null);
+    setPermBlocked(false);
     setPhase("boot");
     setStepIdx(0);
     setCompletedSteps(new Set());
@@ -778,6 +801,26 @@ export function LivenessCheck({ onComplete, onCancel }: Props) {
             <AlertCircle className="h-10 w-10 text-red-400" />
             <div className="font-bold">Impossible d&apos;initialiser la caméra</div>
             <div className="text-xs text-white/80">{errorMsg}</div>
+            {permBlocked && (
+              // A blocked permission cannot be re-requested from script —
+              // the only way back is the browser's own site settings, so
+              // spell out where they are instead of saying "réessayez".
+              <ol className="space-y-1 text-start text-[11px] leading-relaxed text-white/70">
+                <li>
+                  1. Ordinateur : cliquez sur l&apos;icône 🎥 ou 🔒 à gauche de
+                  l&apos;adresse, puis « Autoriser la caméra ».
+                </li>
+                <li>
+                  2. Android : ⋮ → Informations sur le site → Autorisations →
+                  Caméra → Autoriser.
+                </li>
+                <li>
+                  3. iPhone : Réglages → Safari → Caméra → Demander ou
+                  Autoriser.
+                </li>
+                <li>4. Rechargez la page, puis touchez « Réessayer ».</li>
+              </ol>
+            )}
             {onCancel && (
               <Button size="sm" variant="secondary" onClick={onCancel}>
                 Retour
