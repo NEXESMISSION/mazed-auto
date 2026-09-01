@@ -3,6 +3,7 @@
 import { useTranslations, useLocale } from "next-intl";
 import { useRouter, usePathname } from "@/i18n/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { resolveBack, readStack, writeStack } from "@/lib/navStack";
 
 // Root tabs — the universal back button hides on these because there's
 // nowhere logical to go back to from a top-level surface. Mirrors the
@@ -18,9 +19,14 @@ const ROOT_PATHS = new Set([
  * Universal back affordance for the TopBar.
  *
  * - Hidden on the home / root-tab routes (already top-level).
- * - Always returns to the home page. Per product decision we don't try to
- *   guess a "logical parent" anymore — every back tap is a reliable, no-
- *   surprise trip home. The bottom tab bar covers section-level navigation.
+ * - Returns to the page you actually came from, using the per-tab stack in
+ *   `@/lib/navStack` rather than `router.back()`. Replaying real browser
+ *   history walks back into gate routes that immediately redirect forward
+ *   again (the /login ↔ /account ping-pong); the stack lets us skip those and
+ *   push a destination the user can actually stand on. See navStack.ts for
+ *   the full reasoning.
+ * - Falls back to an explicit hierarchical parent, then home, when there is
+ *   no usable history (deep link, fresh tab).
  * - Chevron flips for RTL so it always points in the page-flow direction.
  */
 export function BackButton() {
@@ -33,10 +39,18 @@ export function BackButton() {
 
   if (ROOT_PATHS.has(pathname)) return null;
 
+  function goBack() {
+    const { target, nextStack } = resolveBack(readStack(), pathname);
+    // Persist the truncated stack BEFORE navigating, so the tracker sees the
+    // target already at the head and doesn't re-append it.
+    writeStack(nextStack);
+    router.push(target as "/");
+  }
+
   return (
     <button
       type="button"
-      onClick={() => router.push("/")}
+      onClick={goBack}
       aria-label={t("shell.back")}
       className="
         group relative h-9 w-9 rounded-full shrink-0

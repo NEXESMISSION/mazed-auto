@@ -5,6 +5,7 @@ import { TopBar } from "./TopBar";
 import { DesktopNav } from "./DesktopNav";
 import { BottomTabBar } from "./BottomTabBar";
 import { ScrollToTop } from "./ScrollToTop";
+import { NavHistoryTracker } from "./NavHistoryTracker";
 import { PullToRefresh } from "@/components/ui/PullToRefresh";
 import { KYCNudgeModal } from "@/components/kyc/KYCNudgeModal";
 
@@ -49,6 +50,7 @@ export function MobileShell({ children }: { children: React.ReactNode }) {
     return (
       <>
         <ScrollToTop />
+        <NavHistoryTracker />
         <main id="main-content" tabIndex={-1} className="min-h-screen">{children}</main>
       </>
     );
@@ -57,6 +59,7 @@ export function MobileShell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <ScrollToTop />
+      <NavHistoryTracker />
       <TopBar />
       <DesktopNav />
       <PullToRefresh>
