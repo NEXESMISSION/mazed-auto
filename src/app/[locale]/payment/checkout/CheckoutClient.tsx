@@ -18,7 +18,6 @@ import {
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { formatTND, cn } from "@/lib/utils";
-import { getBrowserSupabase } from "@/lib/supabase/client";
 import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
 import { compressImage } from "@/lib/imageCompress";
 import { withTimeout, isTimeout } from "@/lib/withTimeout";
@@ -28,6 +27,12 @@ import type { CheckoutKind } from "./page";
 
 interface Props {
   paymentId: string;
+  /** The signed-in user's id, resolved SERVER-side. Receipts upload to
+   *  `<userId>/…` (storage RLS, migration 0023), and the page is already
+   *  behind a server auth check — so the id is known before the browser
+   *  renders anything. Asking supabase-js for it again at submit time cost
+   *  a round-trip on the critical path and could stall the whole send. */
+  userId: string;
   kind: CheckoutKind;
   amount: number;
   auction: {
@@ -131,6 +136,25 @@ function withKnownType(file: File): File {
   return new File([file], file.name, { type: mime });
 }
 
+/**
+ * Best-effort removal of receipts written by a send that then failed.
+ *
+ * Goes through our API (service role) rather than the browser storage
+ * client: the receipts bucket has no DELETE policy for `authenticated`, so
+ * the old client-side `remove()` silently deleted nothing and every failed
+ * attempt left an orphan in the bucket. Fire-and-forget by design — the user
+ * already has an error to read, and a failed cleanup must never mask it.
+ */
+function cleanupOrphans(paymentId: string, paths: string[]): void {
+  if (paths.length === 0) return;
+  void fetch(`/api/payments/${paymentId}/receipt-url`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ paths }),
+    keepalive: true,
+  }).catch(() => {});
+}
+
 /** Thrown when the user taps "Annuler" mid-send. */
 class CancelledSend extends Error {
   constructor() {
@@ -139,14 +163,28 @@ class CancelledSend extends Error {
   }
 }
 
-/** Let React paint the pending state before a main-thread-blocking step. */
+/**
+ * Let React paint the pending state before a main-thread-blocking step.
+ *
+ * requestAnimationFrame gives us a REAL paint, but it does not fire at all
+ * while the tab is hidden or backgrounded — and a phone screen that locks,
+ * or a user who switches app while the receipt uploads, does exactly that.
+ * Awaiting a bare rAF there hangs the whole send on "Compression…" with no
+ * timeout to break it. So the frame is only ever a best case: a timer races
+ * it and whichever lands first wins.
+ */
 function yieldToPaint(): Promise<void> {
   return new Promise((resolve) => {
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      resolve();
+    };
     if (typeof requestAnimationFrame === "function") {
-      requestAnimationFrame(() => setTimeout(resolve, 0));
-    } else {
-      setTimeout(resolve, 0);
+      requestAnimationFrame(() => setTimeout(finish, 0));
     }
+    setTimeout(finish, 50);
   });
 }
 const ACCEPTED_TYPES = [
@@ -162,6 +200,7 @@ const ACCEPTED_TYPES = [
 
 export function CheckoutClient({
   paymentId,
+  userId,
   kind,
   amount,
   auction,
@@ -190,6 +229,9 @@ export function CheckoutClient({
   // storage upload takes no AbortSignal — but everything after it stops and
   // the objects already written get cleaned up).
   const cancelRef = useRef(false);
+  // The in-flight send's controller, so "Annuler" aborts the real request
+  // instead of just flagging the loop and letting the upload run on.
+  const abortRef = useRef<AbortController | null>(null);
 
   // No cancel affordance in checkout. Abandoning a payment is simply
   // leaving the page — the row stays `pending` and can be resumed, so a
@@ -278,42 +320,42 @@ export function CheckoutClient({
     // Track every object we put in the bucket this attempt so we can clean them
     // ALL up if a later upload or the attach call fails (no orphans).
     const uploadedPaths: string[] = [];
-    const supabase = getBrowserSupabase();
     const total = files.length;
     const throwIfCancelled = () => {
       if (cancelRef.current) throw new CancelledSend();
     };
+    // One controller for the whole send: "Annuler" and every per-request
+    // timeout abort the ACTUAL request now, instead of leaving it running
+    // behind a promise nobody is waiting on any more.
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
     try {
-      const { data: auth } = await withTimeout(supabase.auth.getUser(), 15_000);
-      if (!auth.user) {
+      if (!userId) {
         toast("Session expirée — reconnectez-vous.", "error");
         return;
       }
-      const safePid = paymentId.replace(/[^a-z0-9-]/gi, "");
 
+      // ── 1. Compress everything first ────────────────────────────────
+      // Doing the CPU work up front keeps the network phase below one
+      // uninterrupted run, so the label stops flip-flopping between
+      // "Compression" and "Envoi" on a multi-receipt send.
+      const prepared: File[] = [];
       for (let i = 0; i < total; i++) {
         throwIfCancelled();
         const original = files[i];
-        // Compress image receipts before upload (review-only → document-tier
-        // WebP, ~250-500 KB, text stays crisp). compressImage also converts
-        // HEIC→webp even when the picker reports an empty mime; PDFs pass
-        // through untouched.
         let toUpload = original;
         const ext0 = original.name.split(".").pop()?.toLowerCase() ?? "";
         const isPdf = original.type === "application/pdf" || ext0 === "pdf";
         if (!isPdf) {
           setPhase(total > 1 ? `Compression ${i + 1}/${total}…` : "Compression de l'image…");
-          // The canvas decode + encode (and libheif for iPhone HEIC) run on the
-          // main thread and freeze the tab for a second or two on a mid-range
-          // phone. Hand the browser a frame first so the label above is
-          // actually PAINTED before the freeze — otherwise the user stares at
-          // an unchanged button and concludes the page died.
+          // The canvas decode + encode (and libheif for iPhone HEIC) run on
+          // the main thread and freeze the tab for a second or two on a
+          // mid-range phone. Hand the browser a frame first so the label is
+          // actually PAINTED before the freeze.
           await yieldToPaint();
           try {
-            // Timed: compressImage decodes on a canvas and, for iPhone HEIC,
-            // pulls the libheif wasm bundle. Its own try/catch returns the
-            // original on FAILURE, but a wedged decoder or a stalled chunk
-            // fetch never rejects at all — so guard the hang here too.
+            // Timed: a wedged decoder or a stalled wasm fetch never rejects
+            // on its own, and compressImage's own catch cannot see that.
             toUpload = await withTimeout(
               compressImage(original, { maxEdge: 2000, quality: 0.86, format: "webp" }),
               COMPRESS_TIMEOUT_MS,
@@ -324,56 +366,91 @@ export function CheckoutClient({
         }
         // An empty File.type survives into the stored object's mimetype and
         // breaks every downstream preview — stamp one from the extension.
-        toUpload = withKnownType(toUpload);
-        throwIfCancelled();
+        prepared.push(withKnownType(toUpload));
+      }
 
-        // Owner-scoped path per RLS (0023); index suffix keeps the 3 distinct.
-        const ext = toUpload.name.split(".").pop()?.toLowerCase() ?? "bin";
+      // ── 2. Ask the server for one signed upload URL per receipt ───────
+      // The browser's supabase-js client is deliberately NOT used for the
+      // upload: it routes through the auth client, which serialises on the
+      // per-origin `lock:sb-<ref>-auth-token` Web Lock shared with every
+      // other tab. One stalled auth call there wedges the lock and the
+      // receipt never leaves the browser — no request, no error, just a
+      // spinner until our own timeout fires. A signed URL is plain fetch.
+      throwIfCancelled();
+      setPhase("Préparation de l'envoi…");
+      const urlRes = await fetch(`/api/payments/${paymentId}/receipt-url`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          exts: prepared.map((f) => f.name.split(".").pop()?.toLowerCase() ?? "bin"),
+        }),
+        signal: AbortSignal.any([ctrl.signal, AbortSignal.timeout(ATTACH_TIMEOUT_MS)]),
+      });
+      if (!urlRes.ok) {
+        const data = (await urlRes.json().catch(() => ({}))) as { error?: string };
+        toast(
+          data.error === "payment_already_resolved"
+            ? "Ce paiement a déjà été traité."
+            : "Impossible de préparer l'envoi. Réessayez.",
+          "error",
+        );
+        return;
+      }
+      const { uploads } = (await urlRes.json()) as {
+        uploads: { path: string; signedUrl: string }[];
+      };
+
+      // ── 3. PUT the bytes straight to storage ────────────────────
+      for (let i = 0; i < prepared.length; i++) {
+        const file = prepared[i];
+        const target = uploads[i];
+        if (!target) {
+          toast("Réponse inattendue du serveur. Réessayez.", "error");
+          return;
+        }
         setPhase(total > 1 ? `Envoi ${i + 1}/${total}…` : "Envoi du reçu…");
-        // One retry per file. Mobile networks drop a request often enough that
-        // a single blip used to throw away the whole attempt — including the
-        // receipts already uploaded — and send the user back to the start. A
-        // fresh path per attempt keeps upsert:false safe.
-        let upErr: { message: string } | null = null;
+        // One retry per file — mobile networks drop a request often enough
+        // that a single blip used to throw the whole attempt away.
+        let upErr: string | null = null;
         for (let attempt = 0; attempt < 2; attempt++) {
           throwIfCancelled();
-          const path = `${auth.user.id}/${safePid}-${Date.now()}-${i}${attempt ? `-r${attempt}` : ""}.${ext}`;
           try {
-            const { error } = await withTimeout(
-              supabase.storage
-                .from("receipts")
-                .upload(path, toUpload, {
-                  cacheControl: "3600",
-                  upsert: false,
-                  contentType: toUpload.type,
-                }),
-              uploadTimeoutFor(toUpload.size),
-            );
-            if (!error) {
-              uploadedPaths.push(path);
+            // Multipart with an empty field name is what the storage API
+            // expects for a signed upload (see storage-js uploadToSignedUrl).
+            const form = new FormData();
+            form.append("cacheControl", "3600");
+            form.append("", file);
+            const put = await fetch(target.signedUrl, {
+              method: "PUT",
+              body: form,
+              signal: AbortSignal.any([
+                ctrl.signal,
+                AbortSignal.timeout(uploadTimeoutFor(file.size)),
+              ]),
+            });
+            if (put.ok) {
+              uploadedPaths.push(target.path);
               upErr = null;
               break;
             }
-            upErr = error;
+            const detail = await put.text().catch(() => "");
+            upErr = `${put.status}${detail ? ` — ${detail.slice(0, 120)}` : ""}`;
           } catch (e) {
-            if (e instanceof CancelledSend) throw e;
-            // A timed-out attempt: retry once, then report it like any other
-            // upload failure instead of unwinding the whole submit.
-            upErr = {
-              message: isTimeout(e)
+            if (cancelRef.current) throw new CancelledSend();
+            upErr =
+              e instanceof DOMException && e.name === "TimeoutError"
                 ? "connexion trop lente"
                 : e instanceof Error
                   ? e.message
-                  : "erreur réseau",
-            };
+                  : "erreur réseau";
           }
           if (attempt === 0) {
-            setPhase(`Nouvelle tentative ${total > 1 ? `${i + 1}/${total} ` : ""}…`);
+            setPhase(`Nouvelle tentative${total > 1 ? ` ${i + 1}/${total}` : ""}…`);
           }
         }
         if (upErr) {
-          if (uploadedPaths.length) void supabase.storage.from("receipts").remove(uploadedPaths);
-          toast(`Échec du téléversement : ${upErr.message}`, "error");
+          void cleanupOrphans(paymentId, uploadedPaths);
+          toast(`Échec du téléversement : ${upErr}`, "error");
           return;
         }
       }
@@ -384,12 +461,12 @@ export function CheckoutClient({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ receipt_paths: uploadedPaths, provider }),
-        signal: AbortSignal.timeout(ATTACH_TIMEOUT_MS),
+        signal: AbortSignal.any([ctrl.signal, AbortSignal.timeout(ATTACH_TIMEOUT_MS)]),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         // Couldn't attach — clean up every uploaded object so we don't orphan.
-        void supabase.storage.from("receipts").remove(uploadedPaths);
+        void cleanupOrphans(paymentId, uploadedPaths);
         toast(data.error ?? "Échec de la soumission.", "error");
         return;
       }
@@ -397,9 +474,7 @@ export function CheckoutClient({
     } catch (e) {
       // Timeouts land here too. Whatever made it into the bucket before the
       // stall is orphaned unless we clear it, same as the explicit branches.
-      if (uploadedPaths.length) {
-        void supabase.storage.from("receipts").remove(uploadedPaths);
-      }
+      void cleanupOrphans(paymentId, uploadedPaths);
       if (e instanceof CancelledSend) {
         toast("Envoi annulé — vos fichiers sont toujours là.", "warning");
       } else {
@@ -417,6 +492,7 @@ export function CheckoutClient({
       // individually, which covered failures but not hangs — any await that
       // never settled left the button pinned on "Envoi…" with no error and
       // no way out but reloading the page.
+      abortRef.current = null;
       cancelRef.current = false;
       setPhase(null);
       setSubmitting(false);
@@ -516,19 +592,28 @@ export function CheckoutClient({
   return (
     <div className="min-h-screen bg-background">
       <main className="mx-auto max-w-md px-4 py-6 lg:max-w-5xl lg:py-12">
-        {/* Back — the checkout used to be a dead end on mobile (no header
-            chrome, no cancel affordance), so the only way out of a payment
-            you weren't ready to finish was the browser's own gesture. */}
-        <Link
-          href={backHref}
-          className="tap-target mb-4 inline-flex items-center gap-1.5 text-[13px] font-bold text-[var(--foreground-muted)] transition hover:text-foreground"
-        >
-          <ArrowLeft
-            className={cn("size-4", locale === "ar" && "rotate-180")}
-            strokeWidth={2.5}
-          />
-          Retour
-        </Link>
+        {/* Back — the checkout is a flow route: MobileShell strips the TopBar
+            and tab bar here, so without this the only way out of a payment you
+            weren't ready to finish is the browser's own gesture.
+            STICKY, not a line of text at the top: it has to still be there
+            three screens down at the receipt upload, which is exactly where
+            people change their mind. Sticky rather than fixed so it rides the
+            centred content column instead of the viewport edge — a fixed
+            button lands on top of the summary card around 1024px. Nothing is
+            pinned above it to clear: /payment is a flow route, so MobileShell
+            renders no TopBar and no DesktopNav here. */}
+        <div className="sticky top-3 z-40 mb-3 lg:top-6">
+          <Link
+            href={backHref}
+            className="tap-target inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)]/85 px-3.5 py-2 text-[13px] font-bold text-foreground shadow-[0_6px_20px_-8px_rgba(0,0,0,0.45)] backdrop-blur-md transition hover:border-[var(--gold-soft)] hover:text-[var(--gold)]"
+          >
+            <ArrowLeft
+              className={cn("size-4", locale === "ar" && "rotate-180")}
+              strokeWidth={2.5}
+            />
+            Retour
+          </Link>
+        </div>
         <div className="lg:grid lg:grid-cols-[360px_minmax(0,1fr)] lg:items-start lg:gap-8">
         {/* LEFT (desktop) / TOP (mobile) — order summary */}
         <div className="space-y-4 lg:sticky lg:top-[calc(var(--desktop-nav-h)+1.5rem)]">
@@ -742,6 +827,7 @@ export function CheckoutClient({
             type="button"
             onClick={() => {
               cancelRef.current = true;
+              abortRef.current?.abort();
               setPhase("Annulation…");
             }}
             className="mx-auto block text-[12px] font-semibold text-[var(--foreground-muted)] underline underline-offset-2 hover:text-foreground"

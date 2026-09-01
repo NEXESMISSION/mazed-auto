@@ -75,6 +75,7 @@ export default async function CheckoutEntry({
     return (
       <CheckoutClient
         paymentId={pay.id as string}
+        userId={user.id}
         kind={mappedKind}
         amount={Number(pay.amount)}
         auction={auction}
@@ -317,6 +318,7 @@ export default async function CheckoutEntry({
   return (
     <CheckoutClient
       paymentId={paymentId}
+      userId={user.id}
       kind={kind}
       amount={amount}
       auction={{
