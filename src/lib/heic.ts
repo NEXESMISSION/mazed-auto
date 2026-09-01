@@ -13,6 +13,7 @@
  */
 
 import { log } from "@/lib/log";
+import { withTimeout } from "@/lib/withTimeout";
 
 const xlog = log.scope("img");
 
@@ -34,13 +35,21 @@ export async function ensureDisplayable(file: File): Promise<File> {
   if (!heic) return file;
   const done = xlog.time(`heic convert ${file.name}`);
   try {
-    const heic2any = (await import("heic2any")).default;
     // Race against a timeout: heic2any spins up a Web Worker, and if that
     // worker is blocked (e.g. a strict CSP) the promise can hang forever
     // instead of rejecting — which would freeze the upload button. The
     // timeout guarantees we always fall back to the original file.
+    //
+    // The dynamic import() is INSIDE the guarded region on purpose. It
+    // pulls ~1.5 MB of libheif wasm over the network, and on a stalled
+    // mobile connection that fetch can hang indefinitely — leaving it
+    // outside the timeout (as it was) meant the "can't freeze the upload"
+    // guarantee above didn't actually hold for the slowest step.
     const out = await withTimeout(
-      heic2any({ blob: file, toType: "image/jpeg", quality: 0.92 }),
+      (async () => {
+        const heic2any = (await import("heic2any")).default;
+        return heic2any({ blob: file, toType: "image/jpeg", quality: 0.92 });
+      })(),
       20_000,
     );
     const blob = Array.isArray(out) ? out[0] : out;
@@ -59,20 +68,4 @@ export async function ensureDisplayable(file: File): Promise<File> {
     });
     return file;
   }
-}
-
-function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    const id = setTimeout(() => reject(new Error("heic_timeout")), ms);
-    p.then(
-      (v) => {
-        clearTimeout(id);
-        resolve(v);
-      },
-      (e) => {
-        clearTimeout(id);
-        reject(e);
-      },
-    );
-  });
 }

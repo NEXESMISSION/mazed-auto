@@ -20,6 +20,7 @@ import { formatTND, cn } from "@/lib/utils";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
 import { compressImage } from "@/lib/imageCompress";
+import { withTimeout, isTimeout } from "@/lib/withTimeout";
 import type { ProviderInstructions } from "@/lib/payments";
 import type { PaymentProvider } from "@/lib/payments/types";
 import type { CheckoutKind } from "./page";
@@ -74,6 +75,13 @@ const PROVIDER_ICONS: Record<PaymentProvider, typeof Building2> = {
 // Images get compressed client-side before upload (final upload typically
 // 200-600 KB). PDFs pass through unchanged and the limit is the cap.
 const MAX_FILE_MB = 25;
+
+// Upload-path timeouts. Generous enough not to cut off a genuinely slow
+// 3G upload of a 25 MB receipt, short enough that a dead connection
+// surfaces as a retryable error instead of an indefinite "Envoi…".
+const COMPRESS_TIMEOUT_MS = 45_000;
+const UPLOAD_TIMEOUT_MS = 120_000;
+const ATTACH_TIMEOUT_MS = 20_000;
 const ACCEPTED_TYPES = [
   "image/jpeg",
   "image/jpg",
@@ -194,12 +202,11 @@ export function CheckoutClient({
     // Track every object we put in the bucket this attempt so we can clean them
     // ALL up if a later upload or the attach call fails (no orphans).
     const uploadedPaths: string[] = [];
+    const supabase = getBrowserSupabase();
     try {
-      const supabase = getBrowserSupabase();
-      const { data: auth } = await supabase.auth.getUser();
+      const { data: auth } = await withTimeout(supabase.auth.getUser(), 15_000);
       if (!auth.user) {
         toast("Session expirée — reconnectez-vous.", "error");
-        setSubmitting(false);
         return;
       }
       const safePid = paymentId.replace(/[^a-z0-9-]/gi, "");
@@ -215,7 +222,14 @@ export function CheckoutClient({
         const isPdf = original.type === "application/pdf" || ext0 === "pdf";
         if (!isPdf) {
           try {
-            toUpload = await compressImage(original, { maxEdge: 2000, quality: 0.86, format: "webp" });
+            // Timed: compressImage decodes on a canvas and, for iPhone HEIC,
+            // pulls the libheif wasm bundle. Its own try/catch returns the
+            // original on FAILURE, but a wedged decoder or a stalled chunk
+            // fetch never rejects at all — so guard the hang here too.
+            toUpload = await withTimeout(
+              compressImage(original, { maxEdge: 2000, quality: 0.86, format: "webp" }),
+              COMPRESS_TIMEOUT_MS,
+            );
           } catch {
             toUpload = original;
           }
@@ -223,13 +237,15 @@ export function CheckoutClient({
         // Owner-scoped path per RLS (0023); index suffix keeps the 3 distinct.
         const ext = toUpload.name.split(".").pop()?.toLowerCase() ?? "bin";
         const path = `${auth.user.id}/${safePid}-${Date.now()}-${i}.${ext}`;
-        const { error: upErr } = await supabase.storage
-          .from("receipts")
-          .upload(path, toUpload, { cacheControl: "3600", upsert: false, contentType: toUpload.type });
+        const { error: upErr } = await withTimeout(
+          supabase.storage
+            .from("receipts")
+            .upload(path, toUpload, { cacheControl: "3600", upsert: false, contentType: toUpload.type }),
+          UPLOAD_TIMEOUT_MS,
+        );
         if (upErr) {
           if (uploadedPaths.length) void supabase.storage.from("receipts").remove(uploadedPaths);
           toast(`Échec du téléversement : ${upErr.message}`, "error");
-          setSubmitting(false);
           return;
         }
         uploadedPaths.push(path);
@@ -239,18 +255,35 @@ export function CheckoutClient({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ receipt_paths: uploadedPaths, provider }),
+        signal: AbortSignal.timeout(ATTACH_TIMEOUT_MS),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         // Couldn't attach — clean up every uploaded object so we don't orphan.
         void supabase.storage.from("receipts").remove(uploadedPaths);
         toast(data.error ?? "Échec de la soumission.", "error");
-        setSubmitting(false);
         return;
       }
       setSubmitted(true);
     } catch (e) {
-      toast(e instanceof Error ? e.message : "Erreur réseau.", "error");
+      // Timeouts land here too. Whatever made it into the bucket before the
+      // stall is orphaned unless we clear it, same as the explicit branches.
+      if (uploadedPaths.length) {
+        void supabase.storage.from("receipts").remove(uploadedPaths);
+      }
+      toast(
+        isTimeout(e)
+          ? "Connexion trop lente — le reçu n'a pas été envoyé. Réessayez."
+          : e instanceof Error
+            ? e.message
+            : "Erreur réseau.",
+        "error",
+      );
+    } finally {
+      // ALWAYS release the button. Every branch above used to reset this
+      // individually, which covered failures but not hangs — any await that
+      // never settled left the button pinned on "Envoi…" with no error and
+      // no way out but reloading the page.
       setSubmitting(false);
     }
   }
