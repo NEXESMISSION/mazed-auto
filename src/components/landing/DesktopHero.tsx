@@ -117,7 +117,7 @@ export async function DesktopHero({
               <span className="relative h-2 w-2 rounded-full bg-emerald-400" />
             </span>
             <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-300">
-              En direct · {liveCount} enchères en cours
+              {liveCount} enchères en cours
             </span>
           </div>
 
@@ -358,7 +358,7 @@ function FallbackHero({ liveCount }: { liveCount: number }) {
             <span className="relative h-2 w-2 rounded-full bg-emerald-400" />
           </span>
           <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-300">
-            En direct · {liveCount} enchères en cours
+            {liveCount} enchères en cours
           </span>
         </div>
         <div className="mt-5 inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.24em] text-[var(--gold)]">

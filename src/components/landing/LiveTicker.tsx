@@ -1,4 +1,4 @@
-import { getLocale, getTranslations } from "next-intl/server";
+import { getLocale } from "next-intl/server";
 import { unstable_cache } from "next/cache";
 import { Link } from "@/i18n/navigation";
 import { formatTND } from "@/lib/utils";
@@ -61,7 +61,6 @@ const getLiveTickerItems = unstable_cache(
  * stay silent than to lie on the homepage.
  */
 export async function LiveTicker() {
-  const t = await getTranslations();
   const locale = await getLocale();
 
   const items = await getLiveTickerItems();
@@ -93,7 +92,10 @@ export async function LiveTicker() {
     <div
       className="relative overflow-hidden border-y border-batta-gold/20 bg-batta-surface/60 py-2.5 backdrop-blur-sm"
       role="region"
-      aria-label={t("auction.live")}
+      // Literal rather than t("auction.live"): that key still reads "En
+      // direct" for the auction detail pages, and the home page now says
+      // "en cours" everywhere. Screen readers should hear what the page says.
+      aria-label="Enchères en cours"
     >
       {/* Edge fades so items don't visually pop in/out. */}
       <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-8 bg-gradient-to-r from-batta-paper to-transparent" />

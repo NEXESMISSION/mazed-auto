@@ -185,7 +185,7 @@ export async function HomeDesktop({
             ════════════════════════════════════════════════════════════ */}
         <SectionDivider
           tone="live"
-          eyebrow="Enchères en direct"
+          eyebrow="Enchères en cours"
           title="Les voitures à miser"
           subtitle="Les plus suivies, les plus disputées et les nouveautés — toutes vérifiées, toutes biddables maintenant."
         />

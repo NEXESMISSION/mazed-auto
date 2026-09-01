@@ -37,7 +37,7 @@ type Promo = {
 const PROMOS: Promo[] = [
   {
     Icon: Gavel,
-    eyebrow: "Enchères en direct",
+    eyebrow: "Enchères en cours",
     title: "Misez en temps réel",
     subtitle: "Des dizaines de voitures vérifiées en cours d'enchère",
     href: "/properties",

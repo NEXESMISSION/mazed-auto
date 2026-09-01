@@ -18,7 +18,7 @@ export function StatsBar({
 }) {
   if (!live && !sold && !makes && !govs) return null;
   const items = [
-    { Icon: Gavel, value: live, label: "en direct" },
+    { Icon: Gavel, value: live, label: "en cours" },
     { Icon: Trophy, value: sold, label: "vendues / mois" },
     { Icon: Car, value: makes, label: "marques" },
     { Icon: MapPin, value: govs, label: "régions" },

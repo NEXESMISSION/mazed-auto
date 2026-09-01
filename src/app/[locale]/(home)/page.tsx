@@ -348,7 +348,7 @@ export default async function LandingPage({
       <HomeSectionDivider
         tone="live"
         eyebrow="En ce moment"
-        title="Enchères en direct"
+        title="Enchères en cours"
         subtitle="Voitures vérifiées · enchères transparentes"
       />
 
@@ -1036,7 +1036,7 @@ function RailHeader({
 /**
  * Slides for the second-tier hero — the items closest to closing after
  * the top hero's headliners. Same shape as `buildHeroSlides` but the
- * eyebrow leads with "Bientôt clos" instead of "En direct", so the
+ * eyebrow leads with "Bientôt clos" instead of "En cours", so the
  * surface reads as urgency-on-urgency rather than a duplicate of the
  * top hero. No brand-pitch slide — this carousel is purely listings.
  */

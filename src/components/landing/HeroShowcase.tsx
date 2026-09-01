@@ -182,7 +182,7 @@ function SlideBody({
           {slide.isLive && (
             <span className="batta-pulse-dot size-1.5 rounded-full bg-red-500 text-red-500/40" />
           )}
-          {slide.isLive ? "En direct" : "Enchère"}
+          {slide.isLive ? "En cours" : "Enchère"}
         </span>
         {slide.endsAt && (
           <span className="shrink-0 drop-shadow">

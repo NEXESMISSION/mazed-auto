@@ -433,7 +433,7 @@ function BrandSlide({
               style={{ boxShadow: "0 0 8px rgba(239,68,68,0.6)" }}
             />
           )}
-          {hasLiveCount ? "En direct" : "Mazed Auto · Tunisie"}
+          {hasLiveCount ? "Enchères en cours" : "Mazed Auto · Tunisie"}
         </span>
 
         {/* Middle — stretches to fill, centers its content vertically. */}
