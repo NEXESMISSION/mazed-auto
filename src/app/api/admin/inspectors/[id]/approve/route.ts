@@ -3,8 +3,15 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
+import { INSPECTIONS_ENABLED } from "@/lib/features";
 
 export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  // Feature-gated — middleware's matcher excludes /api, so gate here. 404s
+  // while the inspector network is off; approving into a hidden surface
+  // would silently elevate a profile's role with nowhere to use it.
+  if (!INSPECTIONS_ENABLED) {
+    return NextResponse.json({ error: "not_found" }, { status: 404 });
+  }
   const gate = await requireAdmin(req);
   if (gate instanceof NextResponse) return gate;
   const { user, supabase } = gate;

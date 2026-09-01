@@ -4,6 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { routing } from "./i18n/routing";
 import { log } from "./lib/log";
 import { logActivity } from "./lib/activity";
+import { INSPECTIONS_ENABLED } from "./lib/features";
 
 const intlMiddleware = createIntlMiddleware(routing);
 
@@ -130,6 +131,22 @@ export async function middleware(req: NextRequest) {
       mwLog.warn(`session refresh failed: ${err instanceof Error ? err.message : err}`);
     } finally {
       endAuth();
+    }
+  }
+
+  // Inspections gate. While INSPECTIONS_ENABLED is off the whole inspector
+  // surface is hidden: the UI drops its entry points, and this bounces any
+  // direct URL — typed, bookmarked, or linked from an old notification — to
+  // the home shell so nothing reachable is half-built. Covers /inspector,
+  // /inspectors/*, /account/inspections/* and /admin/inspectors.
+  if (!INSPECTIONS_ENABLED) {
+    const inspectionsMatch = pathname.match(
+      /^\/(fr|ar|en)\/(?:inspector|inspectors|account\/inspections|admin\/inspectors)(?:\/.*)?$/,
+    );
+    if (inspectionsMatch) {
+      const target = new URL(`/${inspectionsMatch[1]}`, req.url);
+      mwLog.info(`inspections-gate ${pathname} → ${target.pathname} (feature off)`);
+      return NextResponse.redirect(target, 307);
     }
   }
 

@@ -15,6 +15,7 @@ import { WinnerPaymentExplainer } from "@/components/auction/WinnerPaymentExplai
 import type { SellerCardData } from "@/lib/auction/detail";
 import { PropertyMap } from "@/components/property/PropertyMap";
 import { PropertyDocumentOpenButton } from "@/components/property/PropertyDocumentOpenButton";
+import { INSPECTIONS_ENABLED } from "@/lib/features";
 import {
   MapPin, Ruler, Calendar, ChevronRight,
   ClipboardCheck, FileText, Lock, Gavel, Download, Clock, Hourglass,
@@ -456,8 +457,8 @@ export async function AuctionDesktop(props: {
             </ul>
           </section>
 
-          {/* Inspection */}
-          {myInspection ? (
+          {/* Inspection — hidden while the inspector network is off. */}
+          {!INSPECTIONS_ENABLED ? null : myInspection ? (
             <section className={`${CARD} flex items-center gap-3 p-5`}>
               <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--gold-faint)] text-gold"><ClipboardCheck className="size-4" strokeWidth={2} /></span>
               <div className="min-w-0 flex-1">

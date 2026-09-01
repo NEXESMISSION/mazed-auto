@@ -4,6 +4,7 @@ import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { SignOutButton } from "@/components/auth/SignOutButton";
 import { DeleteAccountButton } from "@/components/account/DeleteAccountButton";
+import { INSPECTIONS_ENABLED } from "@/lib/features";
 import {
   ShieldCheck,
   ClipboardCheck,
@@ -134,9 +135,9 @@ export default async function AccountPage() {
     roleActions.push({ href: "/admin", Icon: LayoutDashboard, title: "Console admin", body: "Annonces, KYC, experts." });
   } else if (role === "bank" || role === "agency" || role === "bailiff") {
     roleActions.push({ href: "/partners/dashboard", Icon: Briefcase, title: "Espace partenaire", body: "Portefeuille banque / agence." });
-  } else if (role === "inspector") {
+  } else if (role === "inspector" && INSPECTIONS_ENABLED) {
     roleActions.push({ href: "/inspector", Icon: ClipboardCheck, title: "Espace inspecteur", body: "Vos missions d'expertise." });
-  } else {
+  } else if (INSPECTIONS_ENABLED) {
     roleActions.push({ href: "/inspectors/apply", Icon: UserCog, title: "Devenir inspecteur", body: "Rejoignez le réseau d'experts." });
   }
 
@@ -156,7 +157,9 @@ export default async function AccountPage() {
   const buyerActions: ActionItem[] = [
     { href: "/account/activity", Icon: LayoutGrid, title: "Mes activités", body: "Enchères, achats et favoris." },
     { href: "/account/payments", Icon: Wallet, title: t("sections.payments"), body: t("sections.paymentsBody") },
-    { href: "/account/inspections", Icon: ClipboardCheck, title: t("sections.inspections"), body: t("sections.inspectionsBody") },
+    ...(INSPECTIONS_ENABLED
+      ? [{ href: "/account/inspections", Icon: ClipboardCheck, title: t("sections.inspections"), body: t("sections.inspectionsBody") }]
+      : []),
   ];
   const sellerActions: ActionItem[] = [
     { href: "/sell", Icon: Building2, title: "Tableau du vendeur", body: "Annonces, revenus, retraits." },

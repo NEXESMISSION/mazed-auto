@@ -28,6 +28,7 @@ import { PerfProbe } from "@/components/dev/PerfProbe";
 // serverless cold start — instead of rendering ~200 cards on every request.
 export const revalidate = 60;
 import type { AuctionWithProperty } from "@/lib/types";
+import { INSPECTIONS_ENABLED } from "@/lib/features";
 import {
   ArrowUpRight,
   ChevronRight,
@@ -112,7 +113,12 @@ const TRUST_PILLARS: {
 }[] = [
   { key: "escrow",     titleKey: "home.trustEscrowTitle",     bodyKey: "home.trustEscrowBody",     Icon: Lock },
   { key: "kyc",        titleKey: "home.trustKycTitle",        bodyKey: "home.trustKycBody",        Icon: ShieldCheck },
-  { key: "inspection", titleKey: "home.trustInspectionTitle", bodyKey: "home.trustInspectionBody", Icon: ClipboardCheck },
+  // Only claim the inspection guarantee while there is an inspector network
+  // to back it — promising an independent expert report we can't deliver is
+  // worse than not mentioning it.
+  ...(INSPECTIONS_ENABLED
+    ? [{ key: "inspection", titleKey: "home.trustInspectionTitle", bodyKey: "home.trustInspectionBody", Icon: ClipboardCheck }]
+    : []),
   { key: "legal",      titleKey: "home.trustLegalTitle",      bodyKey: "home.trustLegalBody",      Icon: Scale },
 ];
 
@@ -760,7 +766,13 @@ export default async function LandingPage({
             {t("home.trustTitle")}
           </h3>
         </div>
-        <div className="snap-rail hide-scrollbar mt-4 flex gap-3 overflow-x-auto px-4 pb-1 lg:grid lg:grid-cols-4 lg:gap-4 lg:overflow-visible">
+        {/* Column count follows the pillar count so dropping the inspection
+            pillar doesn't leave a hole in the desktop grid. */}
+        <div
+          className={`snap-rail hide-scrollbar mt-4 flex gap-3 overflow-x-auto px-4 pb-1 lg:grid lg:gap-4 lg:overflow-visible ${
+            TRUST_PILLARS.length === 3 ? "lg:grid-cols-3" : "lg:grid-cols-4"
+          }`}
+        >
           {TRUST_PILLARS.map((p) => (
             <div
               key={p.key}

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { INSPECTIONS_ENABLED } from "@/lib/features";
 
 /**
  * Stream an inspection report PDF to a permitted reader. The storage
@@ -14,6 +15,13 @@ export async function GET(
   _req: NextRequest,
   ctx: { params: Promise<{ id: string }> },
 ) {
+  // Feature-gated. Middleware can't cover this — its matcher excludes /api —
+  // so the check lives here. 404 rather than 403: while the feature is off
+  // the endpoint doesn't exist as far as callers are concerned.
+  if (!INSPECTIONS_ENABLED) {
+    return NextResponse.json({ error: "not_found" }, { status: 404 });
+  }
+
   const { id } = await ctx.params;
   const supabase = await getServerSupabase();
 

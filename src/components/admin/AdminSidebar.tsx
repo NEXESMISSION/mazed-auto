@@ -9,6 +9,7 @@ import {
   LayoutDashboard, ExternalLink, HandCoins, Activity, Menu, X,
   type LucideIcon,
 } from "lucide-react";
+import { INSPECTIONS_ENABLED } from "@/lib/features";
 
 /**
  * Admin console navigation. One source of truth for the link set (GROUPS),
@@ -43,7 +44,9 @@ const GROUPS: Group[] = [
     items: [
       { label: "KYC", href: "/admin/kyc-queue", Icon: UserCheck },
       { label: "Utilisateurs", href: "/admin/users", Icon: Users },
-      { label: "Inspecteurs", href: "/admin/inspectors", Icon: ShieldCheck },
+      ...(INSPECTIONS_ENABLED
+        ? [{ label: "Inspecteurs", href: "/admin/inspectors", Icon: ShieldCheck }]
+        : []),
     ],
   },
   {

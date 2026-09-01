@@ -42,6 +42,8 @@ const TABS: Tab[] = [
       p === "/properties" ||
       p.startsWith("/properties/") ||
       p.startsWith("/auctions") ||
+      // /inspectors is gated off in middleware while INSPECTIONS_ENABLED is
+      // false, so this arm is simply never reached then.
       p.startsWith("/inspectors"),
   },
   {

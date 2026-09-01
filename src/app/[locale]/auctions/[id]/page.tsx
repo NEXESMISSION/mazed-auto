@@ -27,6 +27,7 @@ import { PropertyDocumentOpenButton } from "@/components/property/PropertyDocume
 import { WatchlistButton } from "@/components/watchlist/WatchlistButton";
 import { ShareButton } from "@/components/auction/ShareButton";
 import { Link } from "@/i18n/navigation";
+import { INSPECTIONS_ENABLED } from "@/lib/features";
 import {
   MapPin, Ruler, BedDouble, Bath, Calendar,
   ClipboardCheck, FileText, Lock, Gavel, Download, Clock,
@@ -849,7 +850,9 @@ export default async function AuctionDetail({
       )}
 
       {/* ─── INSPECTION CTA / REPORT ─── */}
-      {myInspection ? (
+      {/* Hidden while the inspector network is off — "Réserver" would lead
+          to a gated route, and there is no third-party expert to book. */}
+      {!INSPECTIONS_ENABLED ? null : myInspection ? (
         <section className="batta-surface-ivory mx-4 mt-4 flex items-center gap-3 rounded-xl p-4">
           <span className="batta-monogram batta-monogram-filled size-10 shrink-0">
             <ClipboardCheck className="size-4" strokeWidth={2.2} />

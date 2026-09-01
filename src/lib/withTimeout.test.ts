@@ -28,11 +28,11 @@ describe("withTimeout", () => {
   });
 
   it("accepts a supabase-style thenable and keeps its value type", async () => {
-    // supabase-js returns thenable builders, not native promises.
-    const thenable = {
-      then<R>(onOk: (v: { error: null }) => R) {
-        return Promise.resolve(onOk({ error: null }));
-      },
+    // supabase-js returns thenable builders, not native promises. Typed as
+    // PromiseLike so this also pins the signature: if withTimeout ever goes
+    // back to taking a plain Promise, `res.error` stops resolving here.
+    const thenable: PromiseLike<{ error: null }> = {
+      then: (onOk, onErr) => Promise.resolve({ error: null }).then(onOk, onErr),
     };
     const res = await withTimeout(thenable, 1000);
     expect(res.error).toBeNull();
