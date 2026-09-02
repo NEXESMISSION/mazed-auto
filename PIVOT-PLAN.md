@@ -16,6 +16,26 @@ reason is recorded.
 
 Append here as phases land. Newest first.
 
+### The « Activité » tab never lit up · **DONE** 2026-09-02
+
+Pivot fallout, and a good illustration of why both halves of a rule belong in
+one place. The tab was repointed to `/account/listings` when « Mes enchères »
+became « Mes annonces », but its matcher was left testing the old
+`/account/activity` — so it navigated somewhere it did not recognise and never
+highlighted, while the Compte tab's `startsWith("/account/")` quietly claimed
+the highlight instead. Tapping Activité lit Compte.
+
+The rule now lives in `src/lib/nav/tabs.ts` as a pure function over the
+pathname, next to the hrefs it matches, and both navs use it — the desktop
+header had drifted the same way, lighting « Parcourir » and « Vendre » together
+on the sell wizard. The matchers are disjoint by construction rather than by
+array order.
+
+Six tests pin the two invariants that were violated: every tab lights for its
+own destination, and no path lights two. Both failed on the first run against
+the new module and caught overlaps I had left in it.
+
+
 ### The catalog was empty because 62 cars were one column short · **DONE** 2026-09-02
 
 Reported as *"I don't like how it's empty, I want it full of cars"*, and the

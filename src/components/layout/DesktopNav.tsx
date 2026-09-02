@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
+import { activeTabFor, TAB_HREFS, type TabId } from "@/lib/nav/tabs";
 import { AccountMenu } from "./AccountMenu";
 import { normalizeSearchQuery } from "@/lib/search";
 import { Search } from "lucide-react";
@@ -49,18 +50,15 @@ const LINKS: {
   { href: "/pricing", key: "pricing" },
 ];
 
+/**
+ * Shares the bottom bar's rule (src/lib/nav/tabs.ts) for every link that is
+ * also a tab, so the two navs cannot disagree about where you are. The local
+ * version had the same overlap the bar did: its `/annonces` branch matched
+ * `/annonces/nouvelle`, lighting "Parcourir" and "Vendre" together.
+ */
 function isActive(pathname: string, href: string): boolean {
-  if (href === "/") return pathname === "/";
-  if (href === "/annonces") {
-    // v2 paths keep lighting this tab until Phase 6 removes them entirely.
-    return (
-      pathname === "/annonces" ||
-      pathname.startsWith("/annonces/") ||
-      pathname === "/properties" ||
-      pathname.startsWith("/properties/") ||
-      pathname.startsWith("/auctions")
-    );
-  }
+  const tab = (Object.keys(TAB_HREFS) as TabId[]).find((id) => TAB_HREFS[id] === href);
+  if (tab) return activeTabFor(pathname) === tab;
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 

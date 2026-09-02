@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { Home, Search, Plus, LayoutGrid, User } from "lucide-react";
+import { activeTabFor, TAB_HREFS, type TabId } from "@/lib/nav/tabs";
 
 /**
  * Bottom tab bar — full-width, flush-bottom, frosted dark surface.
@@ -19,71 +20,31 @@ import { Home, Search, Plus, LayoutGrid, User } from "lucide-react";
  */
 
 type Tab = {
-  href: "/" | "/annonces" | "/annonces/nouvelle" | "/account/listings" | "/account";
-  labelKey: "home" | "browse" | "sell" | "activity" | "account";
+  id: TabId;
+  labelKey: TabId;
   Icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
-  match: (p: string) => boolean;
-  /** Renders the floating navy FAB instead of a regular cell. */
+  /** Renders the floating gold "Sell" FAB instead of a regular cell. */
   isCenter?: boolean;
 };
 
+/**
+ * Order on screen. Which tab is ACTIVE is decided by `activeTabFor` in
+ * src/lib/nav/tabs.ts, next to the hrefs it matches — the two used to live
+ * apart, and drifted: this tab linked to /account/listings while matching the
+ * old /account/activity, so it never lit up.
+ */
 const TABS: Tab[] = [
-  {
-    href: "/",
-    labelKey: "home",
-    Icon: Home,
-    match: (p) => p === "/",
-  },
-  {
-    // The catalog. /properties and /auctions are v2 surfaces that no longer
-    // have an entry point anywhere in the app (PIVOT-PLAN.md Phase 6 deletes
-    // them); they stay in `match` only so a stale bookmark still lights the
-    // right tab while the last lots finish.
-    href: "/annonces",
-    labelKey: "browse",
-    Icon: Search,
-    match: (p) =>
-      p === "/annonces" ||
-      p.startsWith("/annonces/") ||
-      p === "/properties" ||
-      p.startsWith("/properties/") ||
-      p.startsWith("/auctions"),
-  },
-  {
-    href: "/annonces/nouvelle",
-    labelKey: "sell",
-    Icon: Plus,
-    match: (p) => p.startsWith("/annonces/nouvelle") || p === "/sell" || p.startsWith("/sell/"),
-    isCenter: true,
-  },
-  {
-    href: "/account/listings",
-    labelKey: "activity",
-    Icon: LayoutGrid,
-    match: (p) =>
-      p === "/account/activity" ||
-      p === "/watchlist" ||
-      p.startsWith("/watchlist/"),
-  },
-  {
-    href: "/account",
-    labelKey: "account",
-    Icon: User,
-    match: (p) =>
-      p === "/account" ||
-      (p.startsWith("/account/") && p !== "/account/activity") ||
-      p === "/login" ||
-      p === "/signup" ||
-      p.startsWith("/kyc") ||
-      p.startsWith("/payment") ||
-      p.startsWith("/partners") ||
-      p.startsWith("/admin"),
-  },
+  { id: "home", labelKey: "home", Icon: Home },
+  { id: "browse", labelKey: "browse", Icon: Search },
+  { id: "sell", labelKey: "sell", Icon: Plus, isCenter: true },
+  { id: "activity", labelKey: "activity", Icon: LayoutGrid },
+  { id: "account", labelKey: "account", Icon: User },
 ];
 
 export function BottomTabBar() {
   const t = useTranslations("shell.tabs");
   const pathname = usePathname();
+  const activeId = activeTabFor(pathname);
 
   return (
     <nav
@@ -96,7 +57,9 @@ export function BottomTabBar() {
     >
       {TABS.map((tab) => {
         const Icon = tab.Icon;
-        const active = tab.match(pathname);
+        const active = tab.id === activeId;
+        // Typed routes: these are literal paths from TAB_HREFS, not user input.
+        const href = TAB_HREFS[tab.id] as never;
 
         if (tab.isCenter) {
           // Gold-gradient FAB — same metallic 135° sweep as the splash,
@@ -104,8 +67,8 @@ export function BottomTabBar() {
           // it floating above the bar's hairline border.
           return (
             <Link
-              key={tab.href}
-              href={tab.href}
+              key={tab.id}
+              href={href}
               className="relative flex h-full items-center justify-center"
               aria-label={t(tab.labelKey)}
               aria-current={active ? "page" : undefined}
@@ -123,8 +86,8 @@ export function BottomTabBar() {
 
         return (
           <Link
-            key={tab.href}
-            href={tab.href}
+            key={tab.id}
+            href={href}
             className={`relative flex h-full min-w-0 flex-col items-center justify-center gap-1 px-1 transition-colors ${
               active
                 ? "text-[var(--gold)]"
