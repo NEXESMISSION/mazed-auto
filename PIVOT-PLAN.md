@@ -16,6 +16,42 @@ reason is recorded.
 
 Append here as phases land. Newest first.
 
+### Phase 4 — Public surfaces · **IN PROGRESS** 2026-09-02
+
+The catalog is browsable and a buyer can reach a seller. Home rails, the
+/auctions → /annonces redirects and the sitemap/JSON-LD switch are still to do.
+
+**Done**
+
+| Piece | What it does |
+|---|---|
+| `/annonces` | The catalog: Véhicules ⇄ Pièces switch first (a buyer wants one or the other, never both), then search, category, gouvernorat, prix max — and for parts, **"compatible avec mon véhicule"**. |
+| `/annonces/[id]` | Gallery, price, category-labelled specs (not a jsonb dump), fitments, the verified badge, and an honest line saying we do not touch the transaction. |
+| `POST /api/annonces/[id]/contact` | The reveal. Logs to `contact_reveals` with a **salted IP hash**, rate-limited to 40/hour per address. |
+| 0163 | Fix: the reveal counter never incremented (below). |
+
+**Verified against real published listings** (one car, one part, seeded for the
+purpose):
+
+- `/annonces` shows both · `?kind=part` shows only the part
+- **`?make=Renault&model=Clio 5&year=2020` returns the brake pads** — the query
+  a parts marketplace lives on, answered by `listing_fitments` rather than by
+  hoping the words appear in a description
+- **the phone number does not appear in the page HTML at all** (`grep` count: 0)
+  — it arrives only from the reveal endpoint, and the reveal is logged with a
+  hashed IP and a null user for an anonymous visitor
+
+**A bug this phase found and fixed (0163).** The reveal endpoint bumped its
+display counter through an RPC that did not exist, with a read-modify-write in
+the rejection handler. supabase-js does not *reject* on a missing function — it
+*resolves* with `{ error }` — so the fallback never ran, and the counter sat at
+0 while `contact_reveals` filled up correctly. Now one atomic statement, with
+the failure logged rather than swallowed, and the existing rows backfilled.
+Counter and log now agree (2 = 2).
+
+**Still to do in Phase 4:** home rebuilt around the two rails, 301s from
+`/auctions/*`, sitemap + JSON-LD switched from auction offers to plain offers.
+
 ### Phase 3 — Selling + moderation · **DONE** 2026-09-02
 
 The whole publish path exists and is proven end to end. What is missing is the
