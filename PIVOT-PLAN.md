@@ -16,6 +16,42 @@ reason is recorded.
 
 Append here as phases land. Newest first.
 
+### Phase 5 — Account + notifications · **DONE** 2026-09-02
+
+**Renewal closes the expiry loop.** Expiry is what keeps the catalog honest
+(D2); renewal is the other half of that bargain. `POST /api/annonces/[id]/renew`
+follows the same order as `/submit` — credit first, payment otherwise, and
+**never straight to published**: a renewed annonce is re-checked, because being
+looked at is what makes a paid listing worth more than a free one. Priced by the
+`renewal` product when the admin has set one, otherwise by that category's
+ordinary fee, since a renewal *is* a publication.
+
+The button in *Mes annonces* says which way it will be paid **before** it is
+pressed — "1 publication du forfait" or the price. A "Renouveler" that silently
+spends one of five prepaid publications is exactly the surprise that becomes a
+support message.
+
+Verified live: published → past its date → `expire_listings()` takes it down →
+renew spends a credit (`remaining: 4`) → back in the queue with
+`renewed_count: 1` → published again for 30 days, and the J-3 warning flag is
+cleared so the next cycle warns properly.
+
+**Notifications trimmed to the v3 lifecycle.** `SMS_KINDS` now texts what a
+seller who is *not* on the site needs to hear: published, refused, expiring,
+expired, fee received, forfait credited/expired, badge granted/revoked, payment
+verdicts. The auction kinds stay only while the last lots close.
+
+Dropped: every `kyc_*` (the feature is gone), `payout_*` (went with escrow),
+`sixth_offer_*`, and the inspection kinds. `listing_submitted` stays in-app
+only — it acknowledges something the seller just did, and the verdict that
+follows carries the news; texting both meant two SMS for one thing.
+
+**The invariants test was rewritten, not deleted.** It asserted that
+`kyc_verified`, `payout_paid` and `sixth_offer_awarded` must always SMS —
+i.e. that removed features still text people. It now guards the v3 list, and a
+new case asserts the removed kinds are *absent*, so nobody re-adds a text
+pointing at a screen that no longer exists.
+
 ### Phase 5 (brought forward) — the app stops looking like an auction house · **DONE** 2026-09-02
 
 Two problems reported together: "the PWA still looks old, nothing changed" and

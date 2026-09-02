@@ -28,15 +28,38 @@ describe("SMS_KINDS", () => {
   it("always SMSes the money / outcome-critical kinds", () => {
     // A regression tripwire: if anyone removes one of these from the list, a
     // user stops getting an SMS for something they must act on quickly.
+    //
+    // Rewritten for v3. The old list guarded kyc_*, payout_* and
+    // sixth_offer_awarded — surfaces the pivot removed, so guarding them here
+    // was asserting that a deleted feature still texts people. What replaces
+    // them is the annonce lifecycle: a seller who is not on the site needs to
+    // hear that their listing went live, was refused, or is about to expire.
     const mustSms = [
-      "kyc_verified", "kyc_rejected",
-      "auction_won", "auction_lost", "sixth_offer_awarded",
-      "payment_accepted", "payment_rejected", "deposit_refunded",
+      // v3 — the annonce and what was paid for it
+      "listing_published", "listing_rejected", "listing_expiring", "listing_expired",
+      "listing_payment_received",
+      "credits_granted", "credits_expired",
+      "badge_granted", "badge_revoked",
+      "payment_accepted", "payment_rejected",
+      // v2 — still true while the last lots close (deleted in Phase 6)
+      "auction_won", "auction_lost", "auction_sold_seller",
       "final_payment_due_soon", "final_payment_overdue", "final_payment_defaulted",
-      "payout_paid", "payout_rejected",
-      "auction_sold_seller", "auction_cancelled",
+      "deposit_refunded",
     ];
     for (const k of mustSms) expect(SMS_KINDS.has(k)).toBe(true);
+  });
+
+  it("does not SMS surfaces the v3 pivot removed", () => {
+    // KYC is deleted (PIVOT-PLAN.md §2.1), payouts went with the escrow model,
+    // and the sixth-offer window is retired. Texting about any of them would
+    // point a user at a screen that no longer exists.
+    const gone = [
+      "kyc_verified", "kyc_rejected", "kyc_pending_reminder",
+      "payout_paid", "payout_rejected", "payout_processing",
+      "sixth_offer_awarded", "sixth_offer_outbid",
+      "inspection_completed", "inspector_approved",
+    ];
+    for (const k of gone) expect(SMS_KINDS.has(k)).toBe(false);
   });
 
   it("only caps kinds that are actually SMS-eligible", () => {
@@ -50,9 +73,11 @@ describe("SMS_KINDS", () => {
     // The cap is only allowed to throttle high-frequency noise. If a critical
     // kind ever ends up capped, an outbid storm could swallow a "you won" SMS.
     const critical = [
-      "auction_won", "auction_lost", "sixth_offer_awarded", "payment_accepted",
-      "payment_rejected", "deposit_refunded", "kyc_verified", "kyc_rejected",
-      "payout_paid", "final_payment_due_soon", "final_payment_overdue",
+      "listing_published", "listing_rejected", "listing_payment_received",
+      "credits_granted", "badge_granted", "badge_revoked",
+      "auction_won", "auction_lost", "payment_accepted",
+      "payment_rejected", "deposit_refunded",
+      "final_payment_due_soon", "final_payment_overdue",
     ];
     for (const k of critical) expect(CAPPED_KINDS.has(k)).toBe(false);
   });

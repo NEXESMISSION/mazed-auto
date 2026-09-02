@@ -18,41 +18,58 @@
 // email; SMS carries the verdict only.
 // The per-user daily cap (CAPPED_KINDS) still bounds an outbid storm.
 export const SMS_KINDS = new Set<string>([
-  // KYC / identity
-  "kyc_verified", "kyc_rejected", "kyc_pending_reminder",
-  // Auction went live (watchers/depositors + the seller)
-  "auction_live", "auction_live_seller",
-  // Bidding & buy-now (buyer)
-  "outbid", "auction_outbid", "sixth_offer_outbid", "auction_ending_soon",
-  "auction_won", "auction_lost", "sixth_offer_awarded", "buy_now_initiated",
-  // Auction outcome (seller)
-  "auction_sold_seller", "auction_finalized_seller", "reserve_not_met",
-  "auction_ended_unsold", "auction_cancelled",
-  // Payments (buyer) — verdicts only; "payment_receipt_received" is an on-site ack.
-  "payment_accepted", "payment_rejected",
-  "deposit_refunded",
-  // Final payment (buyer + seller)
+  // ── v3: the annonce lifecycle ──────────────────────────────────────────
+  // A seller is not sitting on the site waiting. These four are the moments
+  // where something happened TO their listing and they can do something about
+  // it — the whole reason SMS exists here.
+  "listing_published",          // it is live
+  "listing_rejected",           // it needs a fix, with the reason
+  "listing_expiring",           // J-3: renew or lose the visibility
+  "listing_expired",            // it came down
+  "listing_payment_received",   // the fee landed, it moved to review
+
+  // Forfaits & badge — money and status, both worth a text.
+  "credits_granted",
+  "credits_expired",
+  "badge_granted",
+  "badge_expiring",
+  "badge_revoked",
+
+  // Payments (buyer/seller) — verdicts only. "payment_receipt_received" stays
+  // an on-site acknowledgement: it is always followed by a real verdict, and
+  // texting both meant two SMS for one thing.
+  "payment_accepted",
+  "payment_rejected",
+
+  // ── v2 auctions: kept only while lots are still running ────────────────
+  // Auction creation is frozen (0152) and every entry point is hidden
+  // (AUCTIONS_VISIBLE), but 60 lots still close, still have winners, and those
+  // people must still be told. Phase 6 deletes this block with the rest.
+  "auction_won", "auction_lost", "auction_ending_soon",
+  "outbid", "auction_outbid",
+  "auction_sold_seller", "auction_finalized_seller",
   "final_payment_due_soon", "final_payment_due_tomorrow",
-  "final_payment_overdue", "final_payment_overdue_seller",
-  "final_payment_defaulted",
-  // Listings (seller) — outcomes only; "listing_submitted" is an on-site ack.
-  "listing_published", "listing_approved",
-  "listing_rejected", "listing_payment_rejected", "listing_expired",
-  "listing_unscheduled_reminder",
-  // Payouts (seller)
-  "payout_processing", "payout_paid", "payout_rejected",
-  // Inspections
-  "inspection_requested", "inspection_assigned", "inspection_scheduled",
-  "inspection_completed",
-  // Inspector onboarding — approval only; "inspector_application_received" is an on-site ack.
-  "inspector_approved",
+  "final_payment_overdue", "final_payment_defaulted",
+  "deposit_refunded",
 ]);
+
+// DELIBERATELY NOT SMS-ABLE, and why:
+//   listing_submitted / payment_receipt_received  — on-site acknowledgements of
+//     something the user JUST did; the verdict that follows carries the news.
+//   admin_*                                       — the operator dashboard's job.
+//   announcement / promo / maintenance            — a mass campaign is a
+//     deliberate act, not a per-user lifecycle event.
+//   sixth_offer_*, auction_live, reserve_not_met, kyc_*, inspection_*,
+//   inspector_*, listing_unscheduled_reminder     — surfaces that no longer
+//     exist in v3 (KYC removed, inspections gated, sixth-offer retired).
 
 // The per-user daily cap applies ONLY to these higher-frequency kinds (so an
 // "outbid storm" can't burn credit). Every other kind — the money/outcome/
 // account-critical ones (won, payment/KYC/payout verdicts, final-payment,
 // deposit refunded, …) — BYPASSES the cap and is never suppressed.
 export const CAPPED_KINDS = new Set<string>([
-  "outbid", "auction_outbid", "sixth_offer_outbid",
-  "auction_ending_soon", "auction_live", "auction_live_seller",
+  // High-frequency pings only. Everything else — a publication going live, a
+  // refusal, a forfait credited — is a one-off the user must not miss.
+  "outbid", "auction_outbid", "auction_ending_soon",
+  "listing_expiring",
 ]);

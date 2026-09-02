@@ -6,6 +6,9 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { formatTND } from "@/lib/utils";
 import { Plus, Ticket, ImageOff, Clock } from "lucide-react";
+import { RenewButton } from "./RenewButton";
+import { PRODUCT_SELECT, resolveListingFee, toProduct, type Product } from "@/lib/products";
+import { formatTND as fmt } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -39,12 +42,12 @@ export default async function MyListingsPage() {
   const admin = getServiceSupabase();
   const db = admin ?? supabase;
 
-  const [listRes, creditRes] = await Promise.all([
+  const [listRes, creditRes, prodRes] = await Promise.all([
     db
       .from("listings")
       .select(
         `id, title, price, price_on_request, status, rejection_reason, published_at,
-         expires_at, created_at, category:categories (label_fr),
+         expires_at, created_at, category_id, category:categories (label_fr),
          photos:listing_photos (storage_path, sort_order)`,
       )
       .eq("seller_id", user.id)
@@ -54,7 +57,13 @@ export default async function MyListingsPage() {
       .select("quota_total, quota_used, expires_at, status")
       .eq("seller_id", user.id)
       .eq("status", "active"),
+    db.from("products").select(PRODUCT_SELECT).eq("is_active", true),
   ]);
+
+  const products: Product[] = (prodRes.data ?? []).map((r) =>
+    toProduct(r as Parameters<typeof toProduct>[0]),
+  );
+  const renewalProduct = products.find((p) => p.kind === "renewal") ?? null;
 
   const now = Date.now();
   const creditsLeft = (creditRes.data ?? []).reduce((n, c) => {
@@ -67,6 +76,7 @@ export default async function MyListingsPage() {
     status: string; rejection_reason: string | null; published_at: string | null;
     expires_at: string | null; created_at: string;
     category: { label_fr: string } | { label_fr: string }[] | null;
+    category_id: string;
     photos: { storage_path: string; sort_order: number }[] | null;
   };
   const rows = (listRes.data ?? []) as Row[];
@@ -135,6 +145,18 @@ export default async function MyListingsPage() {
                     <Clock className="size-3" />
                     Jusqu&apos;au {new Date(l.expires_at).toLocaleDateString("fr-FR")}
                   </p>
+                )}
+
+                {["expired", "archived", "sold"].includes(l.status) && (
+                  <RenewButton
+                    listingId={l.id}
+                    usesCredit={creditsLeft > 0}
+                    feeLabel={(() => {
+                      const p =
+                        renewalProduct ?? resolveListingFee(products, l.category_id);
+                      return p ? `${fmt(p.price, locale)} TND` : null;
+                    })()}
+                  />
                 )}
               </div>
             </article>
