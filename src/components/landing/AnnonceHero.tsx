@@ -3,6 +3,7 @@ import { getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
+import { ListingImage } from "@/components/media/ListingImage";
 import { formatTND } from "@/lib/utils";
 import { AnnonceHeroCarousel } from "./AnnonceHeroCarousel";
 import { ArrowUpRight, Gauge, MapPin, Sparkles, Wrench } from "lucide-react";
@@ -108,13 +109,11 @@ export async function AnnonceHero() {
         {/* Atmospheric backdrop — the featured car, blurred under a heavy
             gradient, so the hero is anchored in a real photo. */}
         <div className="absolute inset-0 -z-10" aria-hidden>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={backdrop}
-            alt=""
-            className="h-full w-full scale-110 object-cover opacity-40 blur-3xl"
-            draggable={false}
-          />
+          {/* Deliberately tiny: this is blurred by 3xl and sat at 40% opacity,
+              so a 128px variant is visually identical to a 1280px one and
+              costs about 1KB. */}
+          <ListingImage path={backdrop} alt="" sizes="128px" quality={50}
+            className="scale-110 opacity-40 blur-3xl" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/85 to-background" />
           <div
             className="absolute inset-0 opacity-[0.12]"
@@ -195,15 +194,12 @@ function FeaturedCard({ row, locale }: { row: Row; locale: string }) {
       href={`/annonces/${row.id}` as never}
       className="group relative block aspect-[16/10] overflow-hidden rounded-[28px] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.65)] ring-1 ring-white/10 transition-all hover:ring-[var(--gold)]"
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={img}
+      <ListingImage
+        path={img}
         alt={headline}
-        loading="eager"
-        fetchPriority="high"
-        decoding="async"
-        className="absolute inset-0 h-full w-full object-cover transition-transform duration-[900ms] ease-out group-hover:scale-[1.04]"
-        draggable={false}
+        sizes="(min-width:1280px) 55vw, 60vw"
+        priority
+        className="transition-transform duration-[900ms] ease-out group-hover:scale-[1.04]"
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/55 to-black/15" />
       <div className="absolute inset-0 bg-gradient-to-r from-black/35 via-transparent to-transparent" />
@@ -289,14 +285,11 @@ function RunnerCard({ row, locale }: { row: Row; locale: string }) {
       href={`/annonces/${row.id}` as never}
       className="group relative block overflow-hidden rounded-[22px] ring-1 ring-white/10 transition-all hover:ring-[var(--gold)]"
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={img}
+      <ListingImage
+        path={img}
         alt={row.title}
-        loading="lazy"
-        decoding="async"
-        className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.05]"
-        draggable={false}
+        sizes="(min-width:1280px) 28vw, 32vw"
+        className="transition-transform duration-700 ease-out group-hover:scale-[1.05]"
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/45 to-transparent" />
 

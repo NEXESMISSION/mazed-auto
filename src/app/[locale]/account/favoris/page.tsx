@@ -3,7 +3,7 @@ import { getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
-import { propertyPhotoUrl } from "@/lib/imageUrl";
+import { ListingImage } from "@/components/media/ListingImage";
 import { formatTND } from "@/lib/utils";
 import { FavoriteButton } from "@/components/property/FavoriteButton";
 import { Heart, ImageOff, MapPin, Search } from "lucide-react";
@@ -95,8 +95,7 @@ export default async function FavorisPage() {
                 className="size-20 shrink-0 overflow-hidden rounded-xl bg-surface-2 ring-1 ring-border"
               >
                 {cover ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={propertyPhotoUrl(cover.storage_path)} alt="" className="size-full object-cover" />
+                  <ListingImage path={cover.storage_path} alt="" sizes="80px" />
                 ) : (
                   <span className="grid size-full place-items-center text-muted"><ImageOff className="size-5" /></span>
                 )}

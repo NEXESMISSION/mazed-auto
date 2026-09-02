@@ -1,7 +1,7 @@
 import { getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServiceSupabase } from "@/lib/supabase/admin";
-import { propertyPhotoUrl } from "@/lib/imageUrl";
+import { ListingImage } from "@/components/media/ListingImage";
 import { formatTND } from "@/lib/utils";
 import { GOVERNORATES } from "@/lib/governorates";
 import { listingIdsMatching } from "@/lib/fitment";
@@ -270,12 +270,11 @@ export default async function AnnoncesPage({
             >
               <div className="relative aspect-[4/3] bg-surface-2">
                 {cover ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={propertyPhotoUrl(cover.storage_path)}
+                  <ListingImage
+                    path={cover.storage_path}
                     alt={l.title}
-                    loading="lazy"
-                    className="size-full object-cover transition group-hover:scale-[1.02]"
+                    sizes="(min-width:1024px) 25vw, (min-width:640px) 33vw, 50vw"
+                    className="transition group-hover:scale-[1.02]"
                   />
                 ) : (
                   <span className="grid size-full place-items-center text-muted">

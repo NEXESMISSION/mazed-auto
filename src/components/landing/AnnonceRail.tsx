@@ -1,6 +1,6 @@
 import { Link } from "@/i18n/navigation";
 import { getServiceSupabase } from "@/lib/supabase/admin";
-import { propertyPhotoUrl } from "@/lib/imageUrl";
+import { ListingImage } from "@/components/media/ListingImage";
 import { formatTND } from "@/lib/utils";
 import { TrendingRail } from "@/components/landing/TrendingRail";
 import { ArrowRight, BadgeCheck, ImageOff, MapPin } from "lucide-react";
@@ -144,12 +144,11 @@ function Card({
     >
       <div className="relative aspect-[4/3] bg-surface-2">
         {cover ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={propertyPhotoUrl(cover.storage_path)}
+          <ListingImage
+            path={cover.storage_path}
             alt={listing.title}
-            loading="lazy"
-            className="size-full object-cover transition group-hover:scale-[1.02]"
+            sizes="260px"
+            className="transition group-hover:scale-[1.02]"
           />
         ) : (
           <span className="grid size-full place-items-center text-muted">

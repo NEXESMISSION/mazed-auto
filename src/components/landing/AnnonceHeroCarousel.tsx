@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import { ArrowRight, BadgeCheck, Car, Tag, Wrench } from "lucide-react";
 
@@ -138,13 +139,17 @@ export function AnnonceHeroCarousel({
               >
                 <div className="relative aspect-[16/10] w-full sm:aspect-[2/1]">
                   {bg ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
+                    <Image
                       src={bg}
                       alt=""
-                      className="absolute inset-0 size-full object-cover"
-                      loading={i === 0 ? "eager" : "lazy"}
-                      fetchPriority={i === 0 ? "high" : "auto"}
+                      fill
+                      // The cover spans the viewport on phones and is capped by
+                      // the content column above that.
+                      sizes="(min-width:640px) 640px, 100vw"
+                      quality={72}
+                      priority={i === 0}
+                      loading={i === 0 ? undefined : "lazy"}
+                      className="object-cover"
                       draggable={false}
                     />
                   ) : (
