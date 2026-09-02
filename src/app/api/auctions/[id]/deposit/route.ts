@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { isSameOrigin } from "@/lib/sameOrigin";
+import { KYC_ENABLED } from "@/lib/features";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { parseMonetizationSettings, resolveDeposit } from "@/lib/pricing";
 import { fail } from "@/lib/http/errors";
@@ -47,7 +48,7 @@ export async function POST(
 
   const { data: profile } = await supabase
     .from("profiles").select("kyc_status").eq("id", user.id).single();
-  if (!profile || profile.kyc_status !== "verified") {
+  if (KYC_ENABLED && (!profile || profile.kyc_status !== "verified")) {
     return NextResponse.json({ error: "kyc_required" }, { status: 403 });
   }
 

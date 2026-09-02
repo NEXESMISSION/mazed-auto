@@ -8,6 +8,7 @@ import { ScrollToTop } from "./ScrollToTop";
 import { NavHistoryTracker } from "./NavHistoryTracker";
 import { PullToRefresh } from "@/components/ui/PullToRefresh";
 import { KYCNudgeModal } from "@/components/kyc/KYCNudgeModal";
+import { KYC_ENABLED } from "@/lib/features";
 
 /**
  * Mobile-app shell — top bar, scrollable main, bottom tab bar.
@@ -66,7 +67,10 @@ export function MobileShell({ children }: { children: React.ReactNode }) {
         <main id="main-content" tabIndex={-1} className="batta-shell-main">{children}</main>
       </PullToRefresh>
       <BottomTabBar />
-      <KYCNudgeModal />
+      {/* Nothing to nudge towards while KYC is off (PIVOT-PLAN.md §2.1).
+          Gated here rather than inside the component so its hooks are never
+          conditionally skipped. */}
+      {KYC_ENABLED && <KYCNudgeModal />}
     </>
   );
 }

@@ -4,7 +4,7 @@ import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { SignOutButton } from "@/components/auth/SignOutButton";
 import { DeleteAccountButton } from "@/components/account/DeleteAccountButton";
-import { INSPECTIONS_ENABLED } from "@/lib/features";
+import { INSPECTIONS_ENABLED, KYC_ENABLED } from "@/lib/features";
 import {
   ShieldCheck,
   ClipboardCheck,
@@ -152,12 +152,17 @@ export default async function AccountPage() {
   // role-specific space sit under "Mon compte"; buyer surfaces under
   // "Acheteur"; selling under "Vendeur".
   const accountActions: ActionItem[] = [
-    {
-      href: kycHref,
-      Icon: ShieldCheck,
-      title: t("sections.kyc"),
-      body: kycStatus === "verified" ? "Identité vérifiée" : t("sections.kycBody"),
-    },
+    // The KYC row is gone with the feature: there is nothing to start and
+    // nothing to check on. Trust now comes from the badge, which an admin
+    // grants — so there is no self-serve entry point to offer here.
+    ...(KYC_ENABLED
+      ? [{
+          href: kycHref,
+          Icon: ShieldCheck,
+          title: t("sections.kyc"),
+          body: kycStatus === "verified" ? "Identité vérifiée" : t("sections.kycBody"),
+        }]
+      : []),
     ...roleActions,
   ];
   const buyerActions: ActionItem[] = [

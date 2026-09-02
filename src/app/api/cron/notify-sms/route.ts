@@ -34,6 +34,35 @@ const PER_USER_DAILY = 6; // cap SMS per user / 24h (anti-spam + cost)
 // window, so the decisive last-minute outbid / ending-soon SMS always sends.
 const CLOSING_WINDOW_MS = 15 * 60 * 1000; // 15 min
 
+/**
+ * ONE SMS PER AUCTION for these kinds — the point is "someone has outbid you,
+ * come back", and that sentence is worth exactly one text message.
+ *
+ * A hot lot fires an outbid notification on every single overbid: a 26-bid
+ * auction produced a stream of near-identical texts to the same two people in
+ * ten minutes. The daily cap did not save them (it is bypassed inside the
+ * closing window, precisely when bidding is fastest), and the second, third and
+ * tenth message carried no information the first one didn't.
+ *
+ * So: the first outbid on a given auction is texted; every later one is
+ * suppressed for SMS only. The in-app bell and email still get every single
+ * event, so nothing is lost for someone who has the site open — this only
+ * governs the channel that interrupts you when you're away from it. Bidding
+ * again and being outbid again does NOT re-arm it; if you are on the site
+ * bidding, you are not the person this SMS exists for.
+ */
+const ONCE_PER_AUCTION_KINDS = new Set<string>([
+  "outbid",
+  "auction_outbid",
+  "sixth_offer_outbid",
+]);
+
+/** The auction a notification points at, from its deep link. */
+function auctionIdFromLink(link: string | null): string | null {
+  const m = link?.match(/\/auctions\/([0-9a-f-]{36})/i);
+  return m ? m[1] : null;
+}
+
 // First line of every SMS so the user can tell which app sent it (the sender ID
 // is MAZED for both apps, so the body must carry the brand).
 const BRAND = "Mazed Auto";
@@ -49,7 +78,11 @@ function siteUrl(): string {
   ]) {
     if (c && !/localhost|127\.0\.0\.1/i.test(c)) return c.replace(/\/$/, "");
   }
-  return "https://mazed.tn";
+  // Last resort: the live deployment. NOT mazed.tn — that domain does not
+  // resolve (DNS returns nothing), so every link built from it was dead on
+  // arrival in a real SMS. Point it at the host that actually serves the app;
+  // change this the day mazed.tn is pointed at the deployment.
+  return "https://mazed-auto.vercel.app";
 }
 
 async function run(req: NextRequest) {
@@ -149,6 +182,32 @@ async function run(req: NextRequest) {
       // done so we don't retry forever.
       await db.from("notifications").update({ sms_sent_at: new Date().toISOString() }).eq("id", row.id);
       return "skipped";
+    }
+
+    // Already told them about THIS auction? Then don't tell them again.
+    // Checked against sms_sent_at on the user's earlier notifications for the
+    // same lot, so it survives restarts and overlapping cron runs (no
+    // in-memory state), and a re-listed lot gets a new id → a fresh first SMS.
+    if (ONCE_PER_AUCTION_KINDS.has(row.kind)) {
+      const auctionId = auctionIdFromLink(row.link);
+      if (auctionId) {
+        const { count } = await db
+          .from("notifications")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", row.user_id)
+          .in("kind", Array.from(ONCE_PER_AUCTION_KINDS))
+          .like("link", `%${auctionId}%`)
+          .not("sms_sent_at", "is", null);
+        if ((count ?? 0) > 0) {
+          // Suppress the SMS, keep the notification: stamping sms_sent_at is
+          // how this pipeline records "handled, do not retry".
+          await db
+            .from("notifications")
+            .update({ sms_sent_at: new Date().toISOString() })
+            .eq("id", row.id);
+          return "skipped";
+        }
+      }
     }
 
     // Per-user daily cap — applies ONLY to high-frequency kinds (CAPPED_KINDS),

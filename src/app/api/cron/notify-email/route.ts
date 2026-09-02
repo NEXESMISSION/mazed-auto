@@ -73,7 +73,11 @@ function siteUrl(): string {
   ]) {
     if (c && !/localhost|127\.0\.0\.1/i.test(c)) return c.replace(/\/$/, "");
   }
-  return "https://mazed.tn";
+  // Last resort: the live deployment. NOT mazed.tn — that domain does not
+  // resolve (DNS returns nothing), so every link built from it was dead on
+  // arrival in a real email. Point it at the host that actually serves the app;
+  // change this the day mazed.tn is pointed at the deployment.
+  return "https://mazed-auto.vercel.app";
 }
 
 function escapeHtml(s: string): string {

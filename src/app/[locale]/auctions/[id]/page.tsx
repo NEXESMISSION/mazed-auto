@@ -9,6 +9,7 @@ import type { AuctionWithProperty } from "@/lib/types";
 import { formatTND } from "@/lib/utils";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { resolveDeposit } from "@/lib/pricing";
+import { KYC_ENABLED } from "@/lib/features";
 import { getCachedMonetization, getCachedFinalPaymentDays } from "@/lib/settings";
 import { jsonLdSafe } from "@/lib/jsonld";
 import { getPublicAuctionDetail, getPublicSellerCard, getCachedAttributeKinds, AUCTION_DETAIL_SELECT } from "@/lib/auction/detail";
@@ -26,6 +27,7 @@ import { PropertyMap } from "@/components/property/PropertyMap";
 import { PropertyDocumentOpenButton } from "@/components/property/PropertyDocumentOpenButton";
 import { WatchlistButton } from "@/components/watchlist/WatchlistButton";
 import { DiagnosticSheet } from "@/components/property/DiagnosticSheet";
+import { LivePrice } from "@/components/auction/LiveAuctionFigures";
 import { ShareButton } from "@/components/auction/ShareButton";
 import { Link } from "@/i18n/navigation";
 import { INSPECTIONS_ENABLED } from "@/lib/features";
@@ -291,7 +293,7 @@ export default async function AuctionDetail({
         .limit(1)
         .maybeSingle(),
     ]);
-    kycVerified = profileRes.data?.kyc_status === "verified";
+    kycVerified = !KYC_ENABLED || profileRes.data?.kyc_status === "verified";
     hasActiveDeposit = !!depositRes.data;
     depositUnderReview = (pendRes.data?.length ?? 0) > 0;
     myInspection = (insRes.data as { id: string; status: string } | null) ?? null;
@@ -407,9 +409,11 @@ export default async function AuctionDetail({
   const seoImages = photos
     .slice(0, 6)
     .map((ph) => propertyPhotoUrl(ph.storage_path, { transform: { width: 1200, quality: 80 } }));
+  // Absolute URLs for the JSON-LD product feed. mazed.tn does not resolve, so
+  // it can't be the fallback — a search engine following it gets nothing.
   const seoSiteUrl = (
     process.env.NEXT_PUBLIC_SITE_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://mazed.tn")
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://mazed-auto.vercel.app")
   ).replace(/\/$/, "");
   const jsonLd = {
     "@context": "https://schema.org",
@@ -615,11 +619,20 @@ export default async function AuctionDetail({
               isRTL ? "font-arabic" : ""
             }`}
           >
-            {formatTND(
-              isEnded && auction.winner_amount
-                ? Number(auction.winner_amount)
-                : currentPrice,
-              locale,
+            {isEnded && auction.winner_amount ? (
+              formatTND(Number(auction.winner_amount), locale)
+            ) : (
+              // LIVE. This used to be a plain server-rendered number under a
+              // pulsing "En direct" dot: it froze at whatever the price was
+              // when the page rendered, so a lot could be bid up 30 000 TND
+              // while the headline still showed the opening price.
+              <LivePrice
+                auctionId={auction.id}
+                initialPrice={currentPrice}
+                initialBids={totalBids}
+                status={auction.status}
+                locale={locale}
+              />
             )}
             <span className="ms-2 text-[14px] font-bold uppercase tracking-[0.16em] text-gold/80">
               {t("common.tnd")}

@@ -12,6 +12,7 @@ import { AuctionTerms } from "@/components/auction/AuctionTerms";
 import { SellerAuctionBanner } from "@/components/auction/SellerAuctionBanner";
 import { SellerCard } from "@/components/auction/SellerCard";
 import { DiagnosticSheet } from "@/components/property/DiagnosticSheet";
+import { LivePrice } from "@/components/auction/LiveAuctionFigures";
 import { WinnerPaymentExplainer } from "@/components/auction/WinnerPaymentExplainer";
 import type { SellerCardData } from "@/lib/auction/detail";
 import { PropertyMap } from "@/components/property/PropertyMap";
@@ -258,7 +259,19 @@ export async function AuctionDesktop(props: {
                   </span>
                 </div>
                 <div className={`batta-tabular gradient-gold-text mt-1.5 text-[42px] font-extrabold leading-none tracking-tight ${isRTL ? "font-arabic" : ""}`}>
-                  {formatTND(isEnded && auction.winner_amount ? Number(auction.winner_amount) : currentPrice, locale)}
+                  {isEnded && auction.winner_amount ? (
+                    formatTND(Number(auction.winner_amount), locale)
+                  ) : (
+                    // Live — the server-rendered number used to freeze here for
+                    // the whole session (see LiveAuctionFigures).
+                    <LivePrice
+                      auctionId={auction.id}
+                      initialPrice={currentPrice}
+                      initialBids={totalBids}
+                      status={auction.status}
+                      locale={locale}
+                    />
+                  )}
                   <span className="ms-2 text-[13px] font-bold uppercase tracking-[0.16em] text-gold/70">{tnd}</span>
                 </div>
 

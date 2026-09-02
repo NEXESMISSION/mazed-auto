@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { KYC_ENABLED } from "@/lib/features";
 import { DeleteAccountButton } from "@/components/account/DeleteAccountButton";
 import { SmsNotificationsToggle } from "@/components/account/SmsNotificationsToggle";
 import { PasswordSection } from "./PasswordSection";
@@ -175,23 +176,27 @@ export default async function SettingsPage() {
         </Section>
 
         {/* ── Compte ───────────────────────────────────────────────── */}
-        <Section label="Compte">
-          <Link
-            href={kycHref as `/${string}`}
-            className="tap-target flex items-center gap-3 p-4 transition hover:bg-surface-2 active:bg-surface-2 lg:p-5"
-          >
-            <IconBadge>
-              <ShieldCheck className="size-5" strokeWidth={2} />
-            </IconBadge>
-            <div className="min-w-0 flex-1">
-              <div className="text-[14px] font-bold text-foreground">
-                Vérification d&apos;identité
+        {/* The identity-verification row goes with the feature: /kyc/* is
+            bounced by middleware, so linking to it would be a dead end. */}
+        {KYC_ENABLED && (
+          <Section label="Compte">
+            <Link
+              href={kycHref as `/${string}`}
+              className="tap-target flex items-center gap-3 p-4 transition hover:bg-surface-2 active:bg-surface-2 lg:p-5"
+            >
+              <IconBadge>
+                <ShieldCheck className="size-5" strokeWidth={2} />
+              </IconBadge>
+              <div className="min-w-0 flex-1">
+                <div className="text-[14px] font-bold text-foreground">
+                  Vérification d&apos;identité
+                </div>
+                <div className="mt-0.5 truncate text-[12px] text-muted">{kycSub}</div>
               </div>
-              <div className="mt-0.5 truncate text-[12px] text-muted">{kycSub}</div>
-            </div>
-            <ChevronEnd className="size-5 shrink-0 text-muted" />
-          </Link>
-        </Section>
+              <ChevronEnd className="size-5 shrink-0 text-muted" />
+            </Link>
+          </Section>
+        )}
 
         {/* ── Zone de danger ───────────────────────────────────────── */}
         <section>

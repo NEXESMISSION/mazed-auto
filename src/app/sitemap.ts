@@ -13,8 +13,9 @@ export const revalidate = 3600;
 /**
  * Dynamic sitemap. Public, crawlable surfaces only:
  *   - the static marketing/legal pages
- *   - every auction/listing whose property is `ready` and that is in a
- *     publicly-visible state (upcoming, live, or recently concluded)
+ *   - every PUBLISHED annonce (the v3 catalog)
+ *   - every auction whose property is `ready` and that is publicly visible —
+ *     kept while lots are still running; it retires with them (Phase 6)
  *
  * Authenticated areas (admin/account/kyc/payment/sell) are excluded here and
  * in robots.ts. Uses the cookieless service-role client like the home feed.
@@ -24,6 +25,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: `${base}/fr`, changeFrequency: "hourly", priority: 1 },
+    { url: `${base}/fr/annonces`, changeFrequency: "hourly", priority: 1 },
     { url: `${base}/fr/properties`, changeFrequency: "hourly", priority: 0.9 },
     { url: `${base}/fr/terms`, changeFrequency: "yearly", priority: 0.2 },
     { url: `${base}/fr/privacy`, changeFrequency: "yearly", priority: 0.2 },
@@ -34,6 +36,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   if (!sb || !base) return staticRoutes;
 
   try {
+    // The v3 catalog. Only published listings are crawlable — a draft or an
+    // expired annonce is not a page anyone should land on from a search result.
+    const { data: annonces } = await sb
+      .from("listings")
+      .select("id, updated_at, published_at, expires_at")
+      .eq("status", "published")
+      .order("published_at", { ascending: false })
+      .limit(5000);
+
+    const annonceRoutes: MetadataRoute.Sitemap = (annonces ?? []).map((row) => {
+      const r = row as { id: string; updated_at: string | null; published_at: string | null };
+      return {
+        url: `${base}/fr/annonces/${r.id}`,
+        lastModified: r.updated_at ?? r.published_at ?? undefined,
+        changeFrequency: "daily" as const,
+        priority: 0.8,
+      };
+    });
+
     const { data } = await sb
       .from("auctions")
       .select("id, updated_at, created_at, status, property:properties!inner(status)")
@@ -53,7 +74,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       };
     });
 
-    return [...staticRoutes, ...listingRoutes];
+    return [...staticRoutes, ...annonceRoutes, ...listingRoutes];
   } catch {
     // Never let a DB hiccup 500 the sitemap — degrade to static routes.
     return staticRoutes;
