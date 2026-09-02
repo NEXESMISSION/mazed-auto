@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { Link, usePathname } from "@/i18n/navigation";
 import {
-  Building2, Banknote, Wallet, Receipt, UserCheck, Users,
-  ShieldCheck, Settings2, LayoutTemplate, FileText,
+  Building2, Banknote, Wallet, Receipt, Users,
+  ShieldCheck, Settings2, Tag, BadgeCheck, LayoutTemplate, FileText,
   Sparkles, Bell, MessageSquare, Inbox, Home as HomeIcon,
   LayoutDashboard, ExternalLink, HandCoins, Activity, Menu, X,
   type LucideIcon,
@@ -24,10 +24,18 @@ type Item = { label: string; href: string; Icon: LucideIcon };
 type Group = { label: string; items: Item[] };
 
 const GROUPS: Group[] = [
+  // The v3 catalogue leads: annonces are the product now. The auction group
+  // below is what is left of v2 and shrinks phase by phase (PIVOT-PLAN.md).
   {
-    label: "Enchères",
+    label: "Catalogue",
     items: [
-      { label: "Création d'enchères", href: "/admin/properties", Icon: Building2 },
+      { label: "Annonces", href: "/admin/annonces", Icon: Inbox },
+    ],
+  },
+  {
+    label: "Enchères (v2)",
+    items: [
+      { label: "Anciennes annonces", href: "/admin/properties", Icon: Building2 },
       { label: "Paiements", href: "/admin/payments", Icon: Receipt },
       { label: "Remboursements", href: "/admin/deposits", Icon: Banknote },
     ],
@@ -35,6 +43,8 @@ const GROUPS: Group[] = [
   {
     label: "Argent",
     items: [
+      { label: "Tarifs", href: "/admin/pricing", Icon: Tag },
+      { label: "Forfaits & badges", href: "/admin/sellers", Icon: BadgeCheck },
       { label: "Paiements vendeurs", href: "/admin/payouts", Icon: Wallet },
       { label: "Paiement manuel", href: "/admin/manual-payment", Icon: HandCoins },
     ],
@@ -42,7 +52,7 @@ const GROUPS: Group[] = [
   {
     label: "Personnes",
     items: [
-      { label: "KYC", href: "/admin/kyc-queue", Icon: UserCheck },
+      // KYC queue removed with the feature (PIVOT-PLAN.md §2.1) — nothing enters it.
       { label: "Utilisateurs", href: "/admin/users", Icon: Users },
       ...(INSPECTIONS_ENABLED
         ? [{ label: "Inspecteurs", href: "/admin/inspectors", Icon: ShieldCheck }]
