@@ -34,7 +34,17 @@ type SearchParams = {
   model?: string;
   year?: string;
   max?: string;
+  page?: string;
 };
+
+/**
+ * The catalog pages rather than truncating. It used to `.limit(60)` and print
+ * `rows.length` as the total — which was invisible while the catalog held a
+ * handful of cars, and became two bugs the moment it filled up: the count
+ * under-reported the real number, and everything past the 60th listing was
+ * unreachable because nothing linked to it.
+ */
+const PAGE_SIZE = 24;
 
 type ListingRow = {
   id: string; title: string; price: number | null; price_on_request: boolean;
@@ -97,31 +107,87 @@ export default async function AnnoncesPage({
     );
   }
 
-  let query = admin
-    .from("listings")
-    .select(
-      `id, title, price, price_on_request, negotiable, governorate, condition,
-       published_at, seller_id,
-       category:categories (label_fr, kind),
-       photos:listing_photos (storage_path, sort_order)`,
-    )
-    .eq("status", "published")
-    .order("published_at", { ascending: false })
-    .limit(60);
+  const page = Math.max(1, Math.floor(Number(sp.page)) || 1);
 
-  if (sp.cat) query = query.eq("category_id", sp.cat);
-  else if (kind) query = query.in("category_id", visibleCats.map((c) => c.id));
-  if (sp.gov) query = query.eq("governorate", sp.gov);
-  if (sp.q) query = query.ilike("search_text", `%${sp.q.trim().toLowerCase()}%`);
-  if (sp.max && Number(sp.max) > 0) query = query.lte("price", Number(sp.max));
-  if (fitmentIds) {
-    // No fitment matched → no results, without a pointless second query.
-    if (fitmentIds.length === 0) query = query.eq("id", "00000000-0000-0000-0000-000000000000");
-    else query = query.in("id", fitmentIds);
+  const LISTING_SELECT = `id, title, price, price_on_request, negotiable, governorate,
+     condition, published_at, seller_id,
+     category:categories (label_fr, kind),
+     photos:listing_photos (storage_path, sort_order)`;
+
+  /** The subset of the query builder these filters need. */
+  type Filterable = {
+    eq: (column: string, value: unknown) => Filterable;
+    in: (column: string, values: readonly unknown[]) => Filterable;
+    ilike: (column: string, pattern: string) => Filterable;
+    lte: (column: string, value: unknown) => Filterable;
+  };
+
+  // One filter chain, applied to both the page read and the count-only read,
+  // so the total can never describe a different set than the cards shown.
+  function applyFilters<T>(builder: T): T {
+    let q = builder as Filterable;
+    if (sp.cat) q = q.eq("category_id", sp.cat);
+    else if (kind) q = q.in("category_id", visibleCats.map((c) => c.id));
+    if (sp.gov) q = q.eq("governorate", sp.gov);
+    if (sp.q) q = q.ilike("search_text", `%${sp.q.trim().toLowerCase()}%`);
+    if (sp.max && Number(sp.max) > 0) q = q.lte("price", Number(sp.max));
+    if (fitmentIds) {
+      // No fitment matched → no results, without a pointless second query.
+      if (fitmentIds.length === 0) q = q.eq("id", "00000000-0000-0000-0000-000000000000");
+      else q = q.in("id", fitmentIds);
+    }
+    return q as T;
   }
 
-  const { data } = await query;
-  const rows = (data ?? []) as ListingRow[];
+  const pagedQuery = (offset: number) =>
+    applyFilters(
+      admin
+        .from("listings")
+        .select(LISTING_SELECT, { count: "exact" })
+        .eq("status", "published")
+        .order("published_at", { ascending: false })
+        .range(offset, offset + PAGE_SIZE - 1),
+    );
+
+  const countQuery = () =>
+    applyFilters(
+      admin
+        .from("listings")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "published"),
+    );
+
+  const { data, count } = await pagedQuery((page - 1) * PAGE_SIZE);
+  let rows = (data ?? []) as ListingRow[];
+  let total = count ?? rows.length;
+
+  // A page past the end — a stale bookmark, or narrowing a filter while on
+  // page 3 — must not read as "Aucune annonce ne correspond." when there are
+  // matches. PostgREST answers an out-of-range slice with no rows AND no
+  // count, so the real total has to be asked for separately before we can
+  // fall back to the last real page. Both extra reads only ever happen on a
+  // URL that is already wrong.
+  if (rows.length === 0 && page > 1) {
+    const { count: realTotal } = await countQuery();
+    total = realTotal ?? 0;
+    if (total > 0) {
+      const last = Math.max(1, Math.ceil(total / PAGE_SIZE));
+      const { data: clamped } = await pagedQuery((last - 1) * PAGE_SIZE);
+      rows = (clamped ?? []) as ListingRow[];
+    }
+  }
+
+  const lastPage = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const shownPage = Math.min(page, lastPage);
+
+  // Paging must carry the active filters, or "Suivant" quietly drops the
+  // buyer back into the unfiltered catalog. Empty values are left out so the
+  // URL stays readable.
+  const pageQuery: Record<string, string> = {};
+  for (const k of ["kind", "cat", "gov", "q", "make", "model", "year", "max"] as const) {
+    const v = sp[k];
+    if (v) pageQuery[k] = v;
+  }
 
   // Which of these the viewer already saved — one read, through their own
   // session so RLS decides what they can see.
@@ -179,9 +245,10 @@ export default async function AnnoncesPage({
       </div>
 
       <p className="mt-4 text-[12.5px] text-muted">
-        {rows.length === 0
+        {total === 0
           ? "Aucune annonce ne correspond."
-          : `${rows.length} annonce${rows.length > 1 ? "s" : ""}`}
+          : `${total} annonce${total > 1 ? "s" : ""}`}
+        {lastPage > 1 && <span> · page {shownPage} sur {lastPage}</span>}
         {sp.make && (
           <span>
             {" "}· compatibles {sp.make}
@@ -251,6 +318,30 @@ export default async function AnnoncesPage({
           );
         })}
       </div>
+
+      {lastPage > 1 && (
+        <nav className="mt-6 flex items-center justify-center gap-2" aria-label="Pagination">
+          {shownPage > 1 && (
+            <Link
+              href={{ pathname: "/annonces", query: { ...pageQuery, page: String(shownPage - 1) } }}
+              className="rounded-full bg-surface px-4 py-2 text-[12.5px] font-bold text-foreground ring-1 ring-border hover:text-gold"
+            >
+              Précédent
+            </Link>
+          )}
+          <span className="batta-tabular text-[12.5px] text-muted">
+            {shownPage} / {lastPage}
+          </span>
+          {shownPage < lastPage && (
+            <Link
+              href={{ pathname: "/annonces", query: { ...pageQuery, page: String(shownPage + 1) } }}
+              className="rounded-full bg-surface px-4 py-2 text-[12.5px] font-bold text-foreground ring-1 ring-border hover:text-gold"
+            >
+              Suivant
+            </Link>
+          )}
+        </nav>
+      )}
     </main>
   );
 }

@@ -16,6 +16,89 @@ reason is recorded.
 
 Append here as phases land. Newest first.
 
+### The catalog was empty because 62 cars were one column short · **DONE** 2026-09-02
+
+Reported as *"I don't like how it's empty, I want it full of cars"*, and the
+cause was not missing data. 0155 migrated **all 62 auction properties into
+`listings` with their 462 photos, titles, prices and specs intact** — then left
+every one of them as `draft`, because the backfill had no contact number to
+give them and the table refuses to publish a row nobody can call:
+
+    check (status <> 'published' or contact_phone is not null)
+
+So the entire inventory sat one column away from being visible while the
+catalog showed almost nothing. `scripts/publish-legacy-listings.mjs` publishes
+it: seller's own number where there is one, `fee_waived_by` on our own migrated
+stock, attestation marked `v1-admin` (nobody signed for these — we listed them
+ourselves), and publication dates spread over three weeks so "les plus
+récentes" has something real to sort by.
+
+The three sellers are seeded demo agencies with no phone. Rather than invent
+plausible Tunisian mobiles — which would send buyers to whichever stranger owns
+them — each carries a placeholder in the unassigned +216 71 000 xxx range.
+**These must be replaced with the real showroom numbers before the catalog is
+used to reach a seller**; grep `SAFE_PLACEHOLDER`.
+
+Filling the catalog then exposed a second bug that had been invisible while it
+was nearly empty: `/annonces` read `.limit(60)` and printed `rows.length` as the
+total. With 64 published, it under-reported the count **and four cars were
+unreachable, because nothing linked past the sixtieth**. The page now pages
+properly — exact count, 24 per page, filters carried through, and an
+out-of-range page (a stale bookmark, or narrowing a filter while on page 3)
+clamps to the last real page instead of claiming nothing matched. That last
+case needs a separate count read: PostgREST answers an out-of-range slice with
+no rows *and* no count, so the first attempt at the clamp silently did nothing.
+
+Verified through the running site: 64 annonces across 3 pages (24/24/16, no
+overlap), `?page=99` lands on page 3, `?gov=Tunis&page=2` falls back to its
+single page of 9 rather than reading "aucune annonce", and the filters report
+exact totals.
+
+Still thin: **the pièces catalog holds 1 listing.** Filling it with invented
+parts would mean invented photos, and a car photo on a brake-pad listing is
+worse than an empty shelf — the new admin panel is the way to add real ones.
+
+
+### Admin manual listing creation · **DONE** 2026-09-02
+
+**This was recorded as delivered in Phase 3 and had never been built.** The
+plan's own acceptance line — *"an admin publishes one manually"* — was ticked
+against a queue that could only approve, reject and archive what a seller had
+already submitted. Found by re-reading the plan against the code rather than by
+anything failing, which is the point of keeping the plan.
+
+It matters because it is half the brief: *"ou on l'ajoute manuellement depuis
+l'admin"*. A seller who rings up, walks in, or sends photos on WhatsApp is a
+real way listings arrive here, and until now the only answer was to ask them to
+go and do it themselves.
+
+`POST /api/admin/annonces` creates the annonce **on behalf of** the seller and
+publishes it straight away — the admin filling it in is the moderation. Three
+decisions worth recording:
+
+- **The annonce belongs to the seller, not the admin.** `seller_id` is theirs,
+  the phone on it is theirs, it appears in their « Mes annonces » and they can
+  renew it. Anything else would leave them unable to touch their own car.
+- **`fee_waived_by` records who comped it.** No credit is consumed and no
+  payment is attached, so the revenue reporting shows the gap instead of hiding
+  a free publication among the paid ones.
+- **The attestation is stamped `v1-admin`, not `v1`.** `v1` means the seller
+  personally ticked the sworn accuracy statement. Here they did not — someone
+  typed the car in from a phone call. Writing `v1` would be a false record of
+  precisely the thing the attestation exists to prove.
+
+The panel sits at the top of `/admin/annonces`: seller search, category with
+its own attributes, price or "sur demande", photos through the same compression
+pipeline as the seller wizard, and fitments when the category is a part. The
+field primitives moved to `src/components/listing/fields.tsx` so the two forms
+render a category attribute the same way instead of drifting.
+
+Verified against the live database: the row inserts past the publish guard, the
+attestation trigger stamps the moment, `seller_credit_id` and `fee_payment_id`
+stay null, photos and fitments attach, the seller's notification enqueues, and
+the row deletes cleanly afterwards. Test row removed.
+
+
 ### Gaps closed + Phase 7 · **DONE** 2026-09-02
 
 Three things the earlier phases left behind, found by re-reading the plan
@@ -785,7 +868,9 @@ mixes schema work with UI work — that is what makes migrations unreviewable.
 ### Phase 3 — Selling + moderation (3–4 days)
 - New sell wizard on `listings`, consuming a credit when one exists, otherwise
   routing to checkout for a `listing_single`.
-- Admin annonces queue + **manual listing creation** (fee waived).
+- Admin annonces queue + **manual listing creation** (fee waived) — the queue
+  shipped with Phase 3; manual creation only landed on 2026-09-02, see the
+  progress log.
 - ✅ A seller publishes a car AND a part end-to-end, once by paying and once
   from a pack; an admin publishes one manually.
 
