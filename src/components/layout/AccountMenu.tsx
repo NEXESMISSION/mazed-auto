@@ -15,7 +15,7 @@ const ITEMS: Item[] = [
   { href: "/account", label: "Mon compte", sub: "Profil et vérification", Icon: User },
   { href: "/account/listings", label: "Mes annonces", sub: "Publiées, en attente, expirées", Icon: Activity },
   { href: "/account/payments", label: "Mes paiements", sub: "Cautions et reçus", Icon: Receipt },
-  { href: "/watchlist", label: "Favoris", sub: "Vos voitures suivies", Icon: Heart },
+  { href: "/account/favoris", label: "Favoris", sub: "Vos annonces enregistrées", Icon: Heart },
   ...(false
     ? [{ href: "/account/inspections", label: "Inspections", sub: "Rapports d'expertise", Icon: ClipboardCheck }]
     : []),

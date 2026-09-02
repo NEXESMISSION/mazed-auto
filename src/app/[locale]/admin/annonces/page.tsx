@@ -1,6 +1,11 @@
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { ListingQueue, type QueueListing } from "./ListingQueue";
+import {
+  ManualListingForm,
+  type AdminCategory,
+  type AdminSeller,
+} from "./ManualListingForm";
 import { DIAGNOSTIC_SELECT, toDiagnostic, type Diagnostic } from "@/lib/diagnostics";
 
 export const dynamic = "force-dynamic";
@@ -45,7 +50,60 @@ export default async function AdminAnnoncesPage({
 
   if (status && status !== "all") query = query.eq("status", status);
 
-  const { data } = await query;
+  // Everything the "créer une annonce" panel needs: who we can publish for,
+  // and what a listing in each category is made of.
+  const [{ data }, profRes, catRes, attrRes] = await Promise.all([
+    query,
+    admin.from("profiles").select("id, full_name, phone").order("full_name"),
+    admin
+      .from("categories")
+      .select("id, parent_id, label_fr, kind, sort_order")
+      .eq("is_active", true)
+      .order("sort_order"),
+    admin
+      .from("category_attributes")
+      .select("category_id, field_key, label, data_type, options, unit, required, sort_order")
+      .order("sort_order"),
+  ]);
+
+  const sellers: AdminSeller[] = (profRes.data ?? []).map((p) => ({
+    id: p.id as string,
+    name: (p.full_name as string | null) ?? "Sans nom",
+    phone: (p.phone as string | null) ?? null,
+  }));
+
+  type CatRow = { id: string; parent_id: string | null; label_fr: string; kind: string };
+  type AttrRow = {
+    category_id: string; field_key: string; label: string; data_type: string;
+    options: { value: string; label: string }[] | null;
+    unit: string | null; required: boolean;
+  };
+  const catRows = (catRes.data ?? []) as CatRow[];
+  const attrRows = (attrRes.data ?? []) as AttrRow[];
+  const parents = catRows.filter((c) => c.parent_id == null);
+
+  const formCategories: AdminCategory[] = catRows
+    .filter((c) => c.parent_id != null)
+    .map((c) => ({
+      id: c.id,
+      label: c.label_fr,
+      kind: c.kind === "part" ? "part" : "vehicle",
+      groupLabel: parents.find((p) => p.id === c.parent_id)?.label_fr ?? "Autres",
+      attributes: attrRows
+        .filter((a) => a.category_id === c.id)
+        .map((a) => ({
+          fieldKey: a.field_key,
+          label: a.label,
+          dataType: (["number", "text", "boolean", "select"] as const).includes(
+            a.data_type as "text",
+          )
+            ? (a.data_type as "number" | "text" | "boolean" | "select")
+            : "text",
+          options: a.options ?? null,
+          unit: a.unit,
+          required: a.required,
+        })),
+    }));
 
   // Existing diagnostics for the listings on screen, drafts included — one read
   // rather than one per row.
@@ -131,11 +189,13 @@ export default async function AdminAnnoncesPage({
           <>
             La file de modération v3. Valider met l&apos;annonce en ligne pour la durée
             achetée ; refuser la renvoie au vendeur avec un motif — et lui <strong>rend sa
-            publication</strong>, parce qu&apos;un refus n&apos;est pas une parution.
+            publication</strong>, parce qu&apos;un refus n&apos;est pas une parution. Vous pouvez
+            aussi <strong>créer une annonce vous-même</strong> pour un vendeur, sans frais.
           </>
         }
       />
-      <div className="mt-6">
+      <div className="mt-6 space-y-4">
+        <ManualListingForm sellers={sellers} categories={formCategories} />
         <ListingQueue listings={listings} counts={counts} activeStatus={status ?? "all"} />
       </div>
     </div>

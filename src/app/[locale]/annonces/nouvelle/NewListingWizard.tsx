@@ -5,6 +5,14 @@ import { useRouter } from "@/i18n/navigation";
 import { useToast } from "@/components/ui/Toast";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/imageCompress";
+import {
+  AttributeField,
+  CheckField,
+  Field,
+  INPUT,
+  Label,
+  type ListingAttribute,
+} from "@/components/listing/fields";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { withTimeout, isTimeout } from "@/lib/withTimeout";
 import { formatTND, cn } from "@/lib/utils";
@@ -40,14 +48,7 @@ const ATTESTATION_TEXT =
   "fausse déclaration, Mazed Auto peut refuser ou retirer l'annonce et " +
   "conserver les frais déjà réglés.";
 
-export type WizardAttribute = {
-  fieldKey: string;
-  label: string;
-  dataType: "number" | "text" | "boolean" | "select";
-  options: { value: string; label: string }[] | null;
-  unit: string | null;
-  required: boolean;
-};
+export type WizardAttribute = ListingAttribute;
 
 export type WizardCategory = {
   id: string;
@@ -395,8 +396,8 @@ export function NewListingWizard({
               disabled={onRequest}
             />
             <div className="flex flex-col justify-end gap-2 pb-1">
-              <Check2 label="Prix négociable" checked={negotiable} onChange={setNegotiable} />
-              <Check2 label="Prix sur demande" checked={onRequest} onChange={setOnRequest} />
+              <CheckField label="Prix négociable" checked={negotiable} onChange={setNegotiable} />
+              <CheckField label="Prix sur demande" checked={onRequest} onChange={setOnRequest} />
             </div>
           </div>
 
@@ -673,93 +674,5 @@ function FitmentEditor({
         ))}
       </div>
     </div>
-  );
-}
-
-function AttributeField({
-  attr, value, onChange,
-}: {
-  attr: WizardAttribute;
-  value: string | boolean | undefined;
-  onChange: (v: string | boolean) => void;
-}) {
-  if (attr.dataType === "boolean") {
-    return <Check2 label={attr.label} checked={value === true} onChange={onChange} />;
-  }
-  if (attr.dataType === "select" && attr.options) {
-    return (
-      <label className="block">
-        <Label>{attr.label}{attr.required && " *"}</Label>
-        <select value={(value as string) ?? ""} onChange={(e) => onChange(e.target.value)} className={INPUT}>
-          <option value="">—</option>
-          {attr.options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
-      </label>
-    );
-  }
-  return (
-    <Field
-      label={attr.unit ? `${attr.label} (${attr.unit})` : attr.label + (attr.required ? " *" : "")}
-      type={attr.dataType === "number" ? "number" : "text"}
-      value={(value as string) ?? ""}
-      onChange={onChange}
-    />
-  );
-}
-
-const INPUT =
-  "mt-1 w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-[13.5px] text-foreground placeholder:text-muted focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold-soft disabled:opacity-50";
-
-function Label({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-muted">
-      {children}
-    </span>
-  );
-}
-
-function Field({
-  label, value, onChange, placeholder, type = "text", disabled,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  type?: string;
-  disabled?: boolean;
-}) {
-  return (
-    <label className="block">
-      <Label>{label}</Label>
-      <input
-        type={type}
-        inputMode={type === "number" ? "decimal" : undefined}
-        value={value}
-        placeholder={placeholder}
-        disabled={disabled}
-        onChange={(e) => onChange(e.target.value)}
-        className={INPUT}
-      />
-    </label>
-  );
-}
-
-function Check2({
-  label, checked, onChange,
-}: {
-  label: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
-}) {
-  return (
-    <label className="inline-flex cursor-pointer items-center gap-2 text-[13px] text-foreground">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        className="size-4 accent-[var(--gold)]"
-      />
-      {label}
-    </label>
   );
 }

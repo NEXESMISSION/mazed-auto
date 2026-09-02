@@ -25,7 +25,7 @@ export const dynamic = "force-dynamic";
 /** Favoris live as a tab of the unified activity hub (/watchlist is a
  *  redirect to exactly this). Shared by the mobile card and the desktop
  *  banner so the two can't drift apart. */
-const FAVORIS_HREF = { pathname: "/account/activity", query: { tab: "favoris" } } as const;
+const FAVORIS_HREF = "/account/favoris" as const;
 
 /**
  * Account hub — identity card on top, then grouped action rows. The
