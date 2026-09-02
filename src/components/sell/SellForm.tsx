@@ -43,15 +43,6 @@ const TYPES: PropertyType[] = ["sedan", "suv", "hatchback", "pickup", "van", "co
 // keep working. Every other attribute lives only inside the JSONB bag.
 const CANONICAL_KEYS = ["area_sqm", "rooms", "bathrooms", "floor", "year_built"] as const;
 
-/**
- * The seller's sworn statement, ticked at the end of the form.
- *
- * Stored as a VERSION on properties.seller_attestation_version (not the whole
- * paragraph): the wording lives here in the repo, so we can show exactly which
- * text a given seller signed by looking up the version — and changing the
- * wording later forces a new version instead of silently rewriting what
- * everyone already agreed to.
- */
 export const SELLER_ATTESTATION_VERSION = "v1";
 const SELLER_ATTESTATION_TEXT =
   "J'atteste sur l'honneur que toutes les informations, photos et documents " +
@@ -108,22 +99,6 @@ export type SellFormInitial = {
   wasRejected?: boolean;
 };
 
-/**
- * Property listing form — two-step in new mode:
- *
- *   Step 1: Details (fields + photos + legal docs from the admin catalog).
- *   Step 2: Promotions picker — base listing fee plus opt-in placements
- *           (home rail, top of search, banner). Prices come from
- *           app_settings (set in /admin/settings).
- *
- *   Submit (new mode): insert property + upload photos & docs →
- *   POST /api/listings/<id>/initiate-payment with promo selections →
- *   redirect to /payment/checkout?payment=<id> for IBAN/D17 + receipt upload.
- *
- *   Edit mode keeps a single submit and carries forward any prior
- *   captured listing_fee payment — sellers don't re-pay to fix a rejected
- *   listing.
- */
 export function SellForm({
   initial,
   pricing,
@@ -265,9 +240,13 @@ export function SellForm({
   // Listing intent — "enchère" (auction) or "offre directe" (fixed-price
   // sale). Drives the fee shown in step 2 and whether the seller still
   // has to schedule an auction after admin approval.
+  // v3: every NEW listing is a fixed-price annonce. `auction` survives only so
+  // that the 60 lots still running can be edited without being silently
+  // converted — the DB refuses new ones outright (migration 0152).
   const [listingType, setListingType] = useState<ListingType>(
-    initial?.listing_type ?? "auction",
+    initial?.listing_type ?? "direct",
   );
+  const isLegacyAuction = initial?.listing_type === "auction";
   const [salePrice, setSalePrice] = useState<string>(
     initial?.sale_price != null ? String(initial.sale_price) : "",
   );
@@ -1008,25 +987,39 @@ export function SellForm({
               </p>
             </div>
           </div>
+        ) : isLegacyAuction ? (
+          // An auction created before the change. Shown, not offered: the
+          // seller can still fix a typo without the form flipping their live
+          // lot to a fixed price under them.
+          <div className="flex items-start gap-3 rounded-xl bg-[var(--surface-2)] p-3.5 ring-1 ring-[var(--border)]">
+            <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg bg-[var(--surface)] text-[var(--foreground-muted)] ring-1 ring-[var(--border)]">
+              <Gavel className="size-4" strokeWidth={2.2} />
+            </span>
+            <div className="min-w-0">
+              <div className="text-[13.5px] font-extrabold text-foreground">Enchère en cours</div>
+              <p className="mt-0.5 text-[11.5px] leading-snug text-[var(--foreground-muted)]">
+                Cette annonce a été créée en mode enchère. Elle va jusqu&apos;à son terme
+                normalement. Les nouvelles annonces se publient désormais à prix fixe.
+              </p>
+            </div>
+          </div>
         ) : (
-        <div className="grid grid-cols-2 gap-2.5">
-          <ListingTypeOption
-            active={listingType === "auction"}
-            icon={<Gavel className="size-4" strokeWidth={2.2} />}
-            label="Enchère"
-            sub="Le prix monte avec les offres reçues."
-            priceLabel={describeFee(pricing.feeAuction)}
-            onClick={() => setListingType("auction")}
-          />
-          <ListingTypeOption
-            active={listingType === "direct"}
-            icon={<Tag className="size-4" strokeWidth={2.2} />}
-            label="Offre directe"
-            sub="Prix fixe, vente sans enchère."
-            priceLabel={describeFee(pricing.feeDirect)}
-            onClick={() => setListingType("direct")}
-          />
-        </div>
+          // ONE shape now: a fixed-price annonce. There is nothing to choose,
+          // so we state it rather than render a radio group with one option.
+          <div className="flex items-start gap-3 rounded-xl bg-[var(--gold-faint)] p-3.5 ring-1 ring-[var(--gold-soft)]">
+            <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg bg-[var(--gold)] text-white">
+              <Tag className="size-4" strokeWidth={2.2} />
+            </span>
+            <div className="min-w-0">
+              <div className="text-[13.5px] font-extrabold text-foreground">
+                Annonce à prix fixe
+              </div>
+              <p className="mt-0.5 text-[11.5px] leading-snug text-[var(--foreground-muted)]">
+                Vous fixez le prix, l&apos;acheteur vous contacte directement.
+                Publication&nbsp;: <span className="font-bold text-[var(--gold)]">{describeFee(pricing.feeDirect)}</span>.
+              </p>
+            </div>
+          </div>
         )}
 
         {listingType === "direct" && (
@@ -1644,78 +1637,6 @@ function PromoLine({ label, price }: { label: string; price: number }) {
     </div>
   );
 }
-
-function ListingTypeOption({
-  active, icon, label, sub, priceLabel, onClick,
-}: {
-  active: boolean;
-  icon: React.ReactNode;
-  label: string;
-  sub: string;
-  priceLabel: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={
-        "relative flex h-full flex-col rounded-2xl border p-4 text-start transition " +
-        (active
-          ? "border-[var(--gold)] bg-[var(--gold-faint)] shadow-[0_0_0_3px_var(--gold-faint),0_8px_20px_-12px_var(--gold-glow)]"
-          : "border-[var(--border)] bg-surface hover:border-[var(--gold-soft)] hover:shadow-sm")
-      }
-    >
-      {/* Selected indicator — gold check pip in the top-right corner */}
-      <span
-        aria-hidden
-        className={
-          "absolute right-3 top-3 inline-flex size-5 items-center justify-center rounded-full transition " +
-          (active
-            ? "batta-gradient-gold text-white shadow-[var(--shadow-gold)]"
-            : "border border-[var(--border)] bg-surface")
-        }
-      >
-        {active && <Check className="size-3" strokeWidth={3} />}
-      </span>
-
-      {/* Icon disc */}
-      <span
-        className={
-          "inline-flex size-10 items-center justify-center rounded-full transition " +
-          (active
-            ? "batta-gradient-gold text-white shadow-[var(--shadow-gold)]"
-            : "bg-[var(--gold-faint)] text-[var(--gold)]")
-        }
-      >
-        {icon}
-      </span>
-
-      <span className="mt-3 text-[14px] font-extrabold leading-tight text-foreground">
-        {label}
-      </span>
-      <p className="mt-1 text-[11.5px] leading-snug text-[var(--foreground-muted)]">
-        {sub}
-      </p>
-
-      {/* Price chip pinned to the bottom — consistent baseline across the
-          two cards even if `sub` wraps differently. */}
-      <span
-        className={
-          "batta-tabular mt-3 inline-flex w-fit items-baseline gap-1 rounded-full px-2.5 py-1 text-[11px] font-extrabold " +
-          (active
-            ? "bg-surface text-[var(--gold)]"
-            : "bg-[var(--gold-faint)] text-[var(--gold)]")
-        }
-      >
-        {priceLabel}
-      </span>
-    </button>
-  );
-}
-
-// ─── Form primitives — light theme to match the rest of the app ────────
 
 const FIELD_BASE =
   "mt-1.5 w-full rounded-xl border border-[var(--border)] bg-surface px-3.5 py-3 text-[14px] text-foreground placeholder:text-[var(--foreground-subtle)] transition focus:border-[var(--gold)] focus:outline-none focus:ring-2 focus:ring-[var(--gold-faint)]";

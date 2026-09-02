@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { routing } from "./i18n/routing";
 import { log } from "./lib/log";
 import { logActivity } from "./lib/activity";
-import { INSPECTIONS_ENABLED } from "./lib/features";
+import { INSPECTIONS_ENABLED, KYC_ENABLED } from "./lib/features";
 
 const intlMiddleware = createIntlMiddleware(routing);
 
@@ -131,6 +131,19 @@ export async function middleware(req: NextRequest) {
       mwLog.warn(`session refresh failed: ${err instanceof Error ? err.message : err}`);
     } finally {
       endAuth();
+    }
+  }
+
+  // KYC gate. While KYC_ENABLED is off nothing may enter the funnel: the UI
+  // drops its entry points and this bounces any direct URL — typed, bookmarked,
+  // or linked from an old notification/e-mail — back to the account page.
+  // Covers /kyc/* and the admin review queue, which has nothing left to review.
+  if (!KYC_ENABLED) {
+    const kycMatch = pathname.match(/^\/(fr|ar|en)\/(?:kyc|admin\/kyc-queue)(?:\/.*)?$/);
+    if (kycMatch) {
+      const target = new URL(`/${kycMatch[1]}/account`, req.url);
+      mwLog.info(`kyc-gate ${pathname} → ${target.pathname} (feature off)`);
+      return NextResponse.redirect(target, 307);
     }
   }
 

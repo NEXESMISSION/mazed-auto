@@ -92,11 +92,6 @@ const HOW_IT_WORKS: {
     href: "/properties", Icon: Search,
   },
   {
-    key: "verify", eyebrowKey: "home.step2Eyebrow",
-    titleKey: "home.step2Title", bodyKey: "home.step2Body",
-    href: "/kyc", Icon: ShieldCheck,
-  },
-  {
     key: "bid", eyebrowKey: "home.step3Eyebrow",
     titleKey: "home.step3Title", bodyKey: "home.step3Body",
     href: "/properties", Icon: Gavel,
@@ -871,9 +866,10 @@ export default async function LandingPage({
                   no matter which intent they came in with. */}
               <div className="col-span-5 flex flex-col gap-3">
                 {[
+                  // Two steps, not three: "vérifiez votre identité" is gone with
+                  // KYC. The full home rebuild lands in Phase 4 of the pivot.
                   { num: "01", href: "/properties" as const, title: t("nav.properties"), body: t("home.step1Body") },
-                  { num: "02", href: "/kyc"        as const, title: t("home.step2Title"), body: t("home.step2Body") },
-                  { num: "03", href: "/sell"       as const, title: "Vendre",            body: t("home.step3Body") },
+                  { num: "02", href: "/sell"       as const, title: "Vendre",            body: t("home.step3Body") },
                 ].map((s) => (
                   <Link
                     key={s.num}
