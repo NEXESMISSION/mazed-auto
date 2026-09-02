@@ -145,16 +145,6 @@ const nextConfig: NextConfig = {
           { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
         ],
       },
-      // face-api weights for the KYC selfie step. Fixed files that only
-      // change when we swap the model itself, and the selfie screen cannot
-      // start until they land — so let the browser keep them instead of
-      // re-fetching 270 KB on every KYC attempt and every retry.
-      {
-        source: "/models/:path*",
-        headers: [
-          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
-        ],
-      },
     ];
   },
 };

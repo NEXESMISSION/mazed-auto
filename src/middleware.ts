@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { routing } from "./i18n/routing";
 import { log } from "./lib/log";
 import { logActivity } from "./lib/activity";
-import { INSPECTIONS_ENABLED, KYC_ENABLED, AUCTIONS_VISIBLE } from "./lib/features";
+import { AUCTIONS_VISIBLE } from "./lib/features";
 
 const intlMiddleware = createIntlMiddleware(routing);
 
@@ -151,25 +151,24 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // KYC gate. While KYC_ENABLED is off nothing may enter the funnel: the UI
-  // drops its entry points and this bounces any direct URL — typed, bookmarked,
-  // or linked from an old notification/e-mail — back to the account page.
-  // Covers /kyc/* and the admin review queue, which has nothing left to review.
-  if (!KYC_ENABLED) {
+  // KYC is deleted (PIVOT-PLAN.md §2.1). The routes are gone, so this only
+  // catches what still points at them: a bookmark, an old e-mail, a
+  // notification sent before the pivot. Sending those to /account beats a 404,
+  // which reads as "the site is broken" rather than "that step no longer
+  // exists".
+  {
     const kycMatch = pathname.match(/^\/(fr|ar|en)\/(?:kyc|admin\/kyc-queue)(?:\/.*)?$/);
     if (kycMatch) {
       const target = new URL(`/${kycMatch[1]}/account`, req.url);
-      mwLog.info(`kyc-gate ${pathname} → ${target.pathname} (feature off)`);
-      return NextResponse.redirect(target, 307);
+      mwLog.info(`kyc-gone ${pathname} → ${target.pathname}`);
+      return NextResponse.redirect(target, 308);
     }
   }
 
-  // Inspections gate. While INSPECTIONS_ENABLED is off the whole inspector
-  // surface is hidden: the UI drops its entry points, and this bounces any
-  // direct URL — typed, bookmarked, or linked from an old notification — to
-  // the home shell so nothing reachable is half-built. Covers /inspector,
-  // /inspectors/*, /account/inspections/* and /admin/inspectors.
-  if (!INSPECTIONS_ENABLED) {
+  // The inspector network is deleted too — Diagnostic Mazed replaced it, and
+  // we do the checks ourselves. Same reasoning as above: redirect the stale
+  // links instead of 404ing them.
+  {
     const inspectionsMatch = pathname.match(
       /^\/(fr|ar|en)\/(?:inspector|inspectors|account\/inspections|admin\/inspectors)(?:\/.*)?$/,
     );

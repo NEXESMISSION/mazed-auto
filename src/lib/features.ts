@@ -8,61 +8,22 @@
  */
 
 /**
- * Inspections / the third-party inspector network — booking an inspection,
- * applying to become an inspector, the inspector workspace, the admin
- * approval queue, and the report download.
- *
- * OFF for launch. Everything is handled directly by us at first, so there
- * is no external inspector network for a user to book from or apply to, and
- * a visible-but-empty surface reads as broken. The code is intact and gated
- * rather than deleted so this can be turned back on in one line.
- *
- * Turning it on again: flip to `true`. The gates are
- *   - middleware.ts        → blocks /inspector, /inspectors/*,
- *                            /account/inspections/*, /admin/inspectors
- *   - api/inspector/report/[id]              → 404s while off
- *   - api/admin/inspectors/[id]/approve      → 404s while off
- *   - the nav / account / auction / home entry points that link to them
- */
-export const INSPECTIONS_ENABLED = false;
-
-/**
- * KYC — CIN capture, selfie liveness, the review queue, and every gate that
- * asked "is this user verified?".
- *
- * OFF, and on its way out for good (see PIVOT-PLAN.md §2.1). v3 is a paid
- * classifieds marketplace: we never hold the money for a sale, so a verified
- * identity buys us nothing, while storing CIN images and selfies of Tunisian
- * citizens is the heaviest liability in the system. Identity is now: a verified
- * phone, moderation of every listing, the per-listing seller attestation, and
- * the paid "Vendeur vérifié" badge an admin grants by hand.
- *
- * While this is false:
- *   - middleware.ts bounces /kyc/* and /admin/kyc-queue
- *   - the account row, the home step and the nudge modal disappear
- *   - every "kycVerified" gate reads TRUE, so the 60 auctions still running
- *     stay biddable for people who never verified
- *
- * It is a flag rather than a deletion for exactly one release: Phase 6 deletes
- * the ~3 640 lines behind it, drops kyc_submissions, and purges the bucket.
- */
-export const KYC_ENABLED = false;
-
-/**
  * The v2 auction surfaces — the live ticker, the bid rails, the "enchères en
- * cours" blocks on the home page, the explore grid, and the entry points that
- * lead to them.
+ * cours" blocks, the explore grid, and every entry point that leads to them.
  *
  * OFF. The platform sells fixed-price annonces now (PIVOT-PLAN.md), auctions
  * cannot be created (migration 0152), and a home page still shouting "Enchères
- * en cours" is the single loudest way to tell a visitor they are looking at the
- * old product.
+ * en cours" is the loudest way to tell a visitor they are looking at the old
+ * product.
  *
  * The 60 lots still running are NOT broken by this: /auctions/<id> keeps
  * working for anyone holding a link, and the admin console keeps its v2 group,
  * so a live lot can still be watched, bid on and settled. What goes is every
  * place the app INVITES someone into an auction.
  *
- * Phase 6 deletes the code behind this flag outright, along with the routes.
+ * This is the last flag of the pivot. KYC_ENABLED and INSPECTIONS_ENABLED are
+ * gone because the code behind them is gone — a flag guarding deleted code is
+ * just a lie about what the product can do. This one stays until the final lot
+ * settles (latest end: 2026-09-11), then the auction code follows.
  */
 export const AUCTIONS_VISIBLE = false;

@@ -1,5 +1,11 @@
 # Mazed Auto — Complete Web App Guide
 
+> **v3 notice.** The platform is mid-pivot from auctions to paid classifieds
+> (cars **and** spare parts, fixed price, buyer contacts the seller). KYC and the
+> inspector network are deleted; auctions are frozen and retiring. Anything below
+> that describes bidding, deposits, escrow or KYC is v2 and on its way out — see
+> [`PIVOT-PLAN.md`](./PIVOT-PLAN.md) for what is current.
+
 > A full, plain-language walkthrough of every user type, every page, every action.
 > This file is auto-generated from a code-verified audit (2026-06-12). The same
 > guide applies to the twin project **mazed land** — swap the car wording for

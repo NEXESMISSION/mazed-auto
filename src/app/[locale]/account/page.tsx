@@ -4,9 +4,7 @@ import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { SignOutButton } from "@/components/auth/SignOutButton";
 import { DeleteAccountButton } from "@/components/account/DeleteAccountButton";
-import { INSPECTIONS_ENABLED, KYC_ENABLED } from "@/lib/features";
 import {
-  ShieldCheck,
   ClipboardCheck,
   Wallet,
   ChevronRight,
@@ -131,19 +129,14 @@ export default async function AccountPage() {
   }
 
   // Signed-in surface.
-  const kycHref =
-    kycStatus === "verified" || kycStatus === "submitted" || kycStatus === "pending"
-      ? "/kyc/status"
-      : "/kyc/start";
-
   const roleActions: ActionItem[] = [];
   if (role === "admin") {
     roleActions.push({ href: "/admin", Icon: LayoutDashboard, title: "Console admin", body: "Annonces, KYC, experts." });
   } else if (role === "bank" || role === "agency" || role === "bailiff") {
     roleActions.push({ href: "/partners/dashboard", Icon: Briefcase, title: "Espace partenaire", body: "Portefeuille banque / agence." });
-  } else if (role === "inspector" && INSPECTIONS_ENABLED) {
+  } else if (role === "inspector" && false) {
     roleActions.push({ href: "/inspector", Icon: ClipboardCheck, title: "Espace inspecteur", body: "Vos missions d'expertise." });
-  } else if (INSPECTIONS_ENABLED) {
+  } else if (false) {
     roleActions.push({ href: "/inspectors/apply", Icon: UserCog, title: "Devenir inspecteur", body: "Rejoignez le réseau d'experts." });
   }
 
@@ -151,24 +144,14 @@ export default async function AccountPage() {
   // dashboard next to their bids (and vice-versa). Identity/KYC + the
   // role-specific space sit under "Mon compte"; buyer surfaces under
   // "Acheteur"; selling under "Vendeur".
-  const accountActions: ActionItem[] = [
-    // The KYC row is gone with the feature: there is nothing to start and
-    // nothing to check on. Trust now comes from the badge, which an admin
-    // grants — so there is no self-serve entry point to offer here.
-    ...(KYC_ENABLED
-      ? [{
-          href: kycHref,
-          Icon: ShieldCheck,
-          title: t("sections.kyc"),
-          body: kycStatus === "verified" ? "Identité vérifiée" : t("sections.kycBody"),
-        }]
-      : []),
-    ...roleActions,
-  ];
+  // No identity row any more: KYC is deleted, and trust comes from the
+  // "Vendeur vérifié" badge, which an admin grants — there is nothing for a
+  // seller to start or check on here.
+  const accountActions: ActionItem[] = [...roleActions];
   const buyerActions: ActionItem[] = [
     { href: "/account/activity", Icon: LayoutGrid, title: "Mes activités", body: "Enchères, achats et favoris." },
     { href: "/account/payments", Icon: Wallet, title: t("sections.payments"), body: t("sections.paymentsBody") },
-    ...(INSPECTIONS_ENABLED
+    ...(false
       ? [{ href: "/account/inspections", Icon: ClipboardCheck, title: t("sections.inspections"), body: t("sections.inspectionsBody") }]
       : []),
   ];

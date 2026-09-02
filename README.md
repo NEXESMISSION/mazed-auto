@@ -1,8 +1,16 @@
-# Batta.tn
+# Mazed Auto
 
-Real-estate auction platform for Tunisia — English / Dutch / sealed-bid auctions plus direct fixed-price offers, with KYC, deposits, notary handoff, and a 1/6-surenchère window (Tunisian law).
+Paid classifieds marketplace for Tunisia — **cars and spare parts** at fixed
+prices, where the buyer contacts the seller directly and the only money the
+platform takes is the publication fee.
 
-Stack: **Next.js 16 (App Router) · React 19 · TypeScript · Tailwind 4 · Supabase (Postgres + Auth + Storage + Realtime) · next-intl (fr only)**.
+Stack: **Next.js 16 (App Router) · React 19 · TypeScript · Tailwind 4 · Supabase
+(Postgres + Auth + Storage + Realtime) · next-intl (fr)**.
+
+> **This is v3.** The platform used to run auctions (deposits, bidding, escrow,
+> KYC). That model is being retired — see [`PIVOT-PLAN.md`](./PIVOT-PLAN.md) for
+> the full migration, what is done, and what is left. If something in the code
+> looks auction-shaped, check the plan before building on it.
 
 ---
 
@@ -11,49 +19,68 @@ Stack: **Next.js 16 (App Router) · React 19 · TypeScript · Tailwind 4 · Supa
 ```bash
 pnpm install
 cp .env.example .env.local        # fill in Supabase keys
-supabase link --project-ref <your-ref>
-supabase db push                  # applies all migrations
+node scripts/apply-migrations.mjs --commit 0153 0154   # or `supabase db push`
 pnpm dev                          # http://localhost:3000
 ```
 
-Payments are gateway-free: buyers transfer externally (bank wire or D17 mobile-money push), upload a receipt screenshot, and an admin verifies it under `/admin/payments`. The admin-set payee details (RIB, IBAN, D17 number) and the listing fees live in `app_settings` (manage via `/admin/legal-docs` and `/admin/settings`).
+Migrations are numbered files under `supabase/migrations/`.
+`scripts/apply-migrations.mjs` applies named ones in order, each in its own
+transaction. Use it — the repo previously had no runner, which is how four
+migrations ended up written but never applied while the code needing them
+shipped.
 
-## Required environment variables
+---
 
-| Var | Where | Notes |
-|---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | client + server | from Supabase project settings |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | client + server | from Supabase project settings |
-| `SUPABASE_SERVICE_ROLE_KEY` | server only | service-role; used by admin captures, KYC seed, payouts |
-| `NEXT_PUBLIC_SITE_URL` | client + server | absolute site URL — used for emails / share links |
+## How the product works
 
-## Database
+**Publishing.** A seller picks a category (Voitures … Pièces de rechange >
+Freinage …), fills the attributes that category defines, adds photos and a phone
+number, signs an accuracy attestation, and pays — either by spending a
+publication from a pack they bought, or with a one-off fee for that category.
+Every listing is then moderated before it goes live, for 30 days, and can be
+renewed.
 
-Supabase migrations live under `supabase/migrations/`. Apply with `supabase db push` after `supabase link`. The migrations cover:
+**Buying.** There is no bidding and no escrow. A buyer browses `/annonces`,
+filters (for parts: *compatible avec* make / model / year), and clicks to reveal
+the seller's number. **The number is never in the page** — `contact_phone` is
+granted to `service_role` alone, and the reveal endpoint logs each request with
+a salted IP hash and rate-limits it. That is what stops the catalog being
+harvested.
 
-- **0001** — core schema (profiles, properties, auctions, bids, deposits, payments, etc.) + RLS
-- **0006** — security lockdown (place_bid RPC, profile guard, sealed-bid masking)
-- **0007** — auction state machine + `_on_payment_captured` trigger
-- **0015–0019** — KYC mirror bypass, kyc audit hardening, listing_type + buy_now_price, atomic auction close
-- **0020** — seller payouts (earnings view + balance RPC + request_payout)
-- **0021** — Realtime publication for live bid + admin queues
-- **0026** — pay-per-post listings (app_settings + promo flags + accept/reject RPCs)
-- **0028** — listing_type on properties (offer vs auction) + offer listing fee
+**Money.** Everything purchasable is a row in `products`: annonce à l'unité
+(priced per category), packs, abonnements, mises en avant, the *Vendeur vérifié*
+badge, renouvellement. Prices are edited in `/admin/pricing` — never in code.
+Packs become `seller_credits`, spent through `consume_listing_credit()` and
+recorded in an append-only `credit_ledger`.
 
-## Deploy on Vercel
+**Trust.** No KYC. A verified phone, moderation of every listing, the seller's
+signed attestation, the *Diagnostic Mazed* sheet (our own inspection, published
+from the admin), and a paid badge an admin grants by hand and can revoke.
 
-1. Connect this repo to a Vercel project.
-2. Set every env var from the table above in **Project Settings → Environment Variables** (Production + Preview).
-3. Push to `main` — Vercel builds with `pnpm build` / serves with `next start`.
-4. The auction state machine ticks every minute via **Supabase pg_cron** (`tick_auctions_cron` → `tick_auctions`) — the primary scheduler. `vercel.json` carries **no** crons (Vercel Hobby caps crons at daily). The email-outbox drain AND a tick backstop both ride the **external** `.github/workflows/cron.yml` (~every 5 min) — it hits `/api/cron/notify-email` + `/api/cron/auctions/tick` and polls `/api/health` so a pg_cron stall is detected. Set the `CRON_SECRET` secret and `SITE_URL` variable in the repo or **neither runs** (the email outbox then silently stalls — the 4-day-stale symptom).
+Payments are gateway-free: the seller transfers by bank wire or D17, uploads a
+receipt, and an admin captures it under `/admin/payments`. Payee details live in
+`app_settings`; prices live in `products`.
 
-## Scripts
+---
 
-| Command | What |
+## Surfaces
+
+| Path | What it is |
 |---|---|
-| `pnpm dev` | Local dev server (Turbopack) |
-| `pnpm build` | Production build |
-| `pnpm start` | Production server |
-| `pnpm lint` | ESLint |
-| `pnpm typecheck` | TypeScript no-emit |
-| `pnpm seed` | `scripts/seed.mjs` — sample data |
+| `/annonces` | The catalog — category switch, filters, fitment search |
+| `/annonces/[id]` | One listing + contact reveal |
+| `/annonces/nouvelle` | The 4-step sell wizard |
+| `/account/listings` | Mes annonces — status, renew, forfait |
+| `/admin/annonces` | Moderation queue |
+| `/admin/pricing` | Tarifs — every price, no deploy needed |
+| `/admin/sellers` | Forfaits & badges |
+| `/admin/properties`, `/auctions/[id]` | **v2, retiring.** Live only while the last auctions close. |
+
+---
+
+## Docs
+
+- [`PIVOT-PLAN.md`](./PIVOT-PLAN.md) — the v2 → v3 migration, phase by phase,
+  with a progress log. **Start here.**
+- [`ARCHITECTURE.md`](./ARCHITECTURE.md) — data model and request flow.
+- [`RUNBOOK.md`](./RUNBOOK.md) — operations: crons, drains, incidents.

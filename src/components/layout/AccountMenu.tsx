@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "@/i18n/navigation";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
-import { INSPECTIONS_ENABLED } from "@/lib/features";
 import {
   User, Activity, Receipt, Heart, ClipboardCheck, ShieldCheck, Plus,
   Bell, Settings, LogOut, Loader2,
@@ -17,7 +16,7 @@ const ITEMS: Item[] = [
   { href: "/account/listings", label: "Mes annonces", sub: "Publiées, en attente, expirées", Icon: Activity },
   { href: "/account/payments", label: "Mes paiements", sub: "Cautions et reçus", Icon: Receipt },
   { href: "/watchlist", label: "Favoris", sub: "Vos voitures suivies", Icon: Heart },
-  ...(INSPECTIONS_ENABLED
+  ...(false
     ? [{ href: "/account/inspections", label: "Inspections", sub: "Rapports d'expertise", Icon: ClipboardCheck }]
     : []),
   { href: "/account/notifications", label: "Notifications", sub: "Alertes et activité", Icon: Bell },

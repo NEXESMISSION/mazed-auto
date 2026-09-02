@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
-import { KYC_ENABLED } from "@/lib/features";
 import { DeleteAccountButton } from "@/components/account/DeleteAccountButton";
 import { SmsNotificationsToggle } from "@/components/account/SmsNotificationsToggle";
 import { PasswordSection } from "./PasswordSection";
@@ -178,7 +177,7 @@ export default async function SettingsPage() {
         {/* ── Compte ───────────────────────────────────────────────── */}
         {/* The identity-verification row goes with the feature: /kyc/* is
             bounced by middleware, so linking to it would be a dead end. */}
-        {KYC_ENABLED && (
+        {(
           <Section label="Compte">
             <Link
               href={kycHref as `/${string}`}

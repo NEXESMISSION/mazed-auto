@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { isSameOrigin } from "@/lib/sameOrigin";
-import { KYC_ENABLED } from "@/lib/features";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { parseMonetizationSettings, resolveDeposit } from "@/lib/pricing";
 import { fail } from "@/lib/http/errors";
@@ -44,12 +43,6 @@ export async function POST(
   const ownerId = (auction as unknown as { property: { owner_id: string } }).property.owner_id;
   if (ownerId === user.id) {
     return NextResponse.json({ error: "owner_cannot_bid" }, { status: 403 });
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles").select("kyc_status").eq("id", user.id).single();
-  if (KYC_ENABLED && (!profile || profile.kyc_status !== "verified")) {
-    return NextResponse.json({ error: "kyc_required" }, { status: 403 });
   }
 
   // Idempotency: if there's already an active deposit on this auction,

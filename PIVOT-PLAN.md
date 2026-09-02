@@ -16,6 +16,53 @@ reason is recorded.
 
 Append here as phases land. Newest first.
 
+### Phase 6a — KYC and the inspector network deleted · **DONE** 2026-09-02
+
+Not disabled, not flagged — **deleted**. A flag guarding dead code is a lie
+about what the product can do.
+
+**5 455 lines across 48 files**, plus `@vladmandic/face-api` (~2 MB out of the
+browser bundle) and its model weights. Gone: the whole `/kyc` funnel, the
+liveness check, the admin review queue, the nudge modal, the KYC cron, the
+inspector workspace, the apply/book pages, the inspector API, and every gate,
+import and dead branch that referenced them. `KYC_ENABLED` and
+`INSPECTIONS_ENABLED` are gone with the code they guarded; `AUCTIONS_VISIBLE`
+is the last flag of the pivot.
+
+Old links do not 404: `/kyc/*` and the admin queue now **308** to `/account`,
+the inspector paths **307** to home. A bookmark or an old e-mail that lands on
+"page not found" reads as a broken site rather than a retired step.
+
+**Migration 0164** drops the 8 KYC functions and the 4 triggers on
+`kyc_submissions` — machinery firing on a table nothing writes to any more.
+
+**What it deliberately does NOT delete: the data.** `kyc_submissions` (2 rows)
+and the private `kyc` bucket (8 objects) hold CIN photographs and selfies of
+real people. That deletion is irreversible and is a data-protection decision,
+not an engineering one. `scripts/purge-kyc-data.mjs` is ready and **dry-run by
+default**: it exports the rows and downloads every object first, refuses to
+delete without `--export`, and prints the final DDL. It needs the owner's word,
+not a commit.
+
+### Phase 6b — auctions · **BLOCKED until 2026-09-11**
+
+60 lots are still open (10 scheduled, 50 live), the last ending **11 Sept**.
+Deleting the auction code or redirecting `/auctions/*` today would break lots
+people can still bid in. Nothing in the app links to them; they finish, then
+the code, the tables, the enums and the 301s go in one pass.
+
+### Phase 7 — Docs · **PARTLY DONE** 2026-09-02
+
+`README.md` rewritten for what the product now is — publishing, buying, money,
+trust, the surface map, and a pointer to this plan. `ARCHITECTURE.md`,
+`RUNBOOK.md` and `WEBAPP-GUIDE.md` carry a v3 banner rather than a rewrite:
+their content is still largely accurate, and a stale rewrite would be worse
+than an honest pointer. They get rewritten when Phase 6b lands and the auction
+half can be cut rather than annotated.
+
+Still to do: reseed `scripts/seed.mjs` for listings/parts/products, and tests
+for fee resolution and fitment matching.
+
 ### Phase 5 — Account + notifications · **DONE** 2026-09-02
 
 **Renewal closes the expiry loop.** Expiry is what keeps the catalog honest

@@ -1,5 +1,11 @@
 # Batta.tn — Operations Runbook
 
+> **v3 notice.** The platform is mid-pivot from auctions to paid classifieds
+> (cars **and** spare parts, fixed price, buyer contacts the seller). KYC and the
+> inspector network are deleted; auctions are frozen and retiring. Anything below
+> that describes bidding, deposits, escrow or KYC is v2 and on its way out — see
+> [`PIVOT-PLAN.md`](./PIVOT-PLAN.md) for what is current.
+
 The on-call reference: how to tell the system is healthy, find an incident, and
 recover. Pairs with [ARCHITECTURE.md](ARCHITECTURE.md) (how it's built) and the
 go-to-market check (`node scripts/launch-check.mjs`).

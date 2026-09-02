@@ -4,7 +4,6 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { resolveDeposit } from "@/lib/pricing";
-import { KYC_ENABLED } from "@/lib/features";
 import { getCachedMonetization } from "@/lib/settings";
 import { AUCTION_DETAIL_SELECT } from "@/lib/auction/detail";
 import { BidComposer } from "@/components/auction/BidComposer";
@@ -124,7 +123,7 @@ export default async function BidPage({
     kycStatus = (profileRes.data?.kyc_status as string | null) ?? null;
     // KYC off → the identity gate passes for everyone, so the 60 lots still
     // running stay biddable instead of stranding anyone who never verified.
-    kycVerified = !KYC_ENABLED || kycStatus === "verified";
+    kycVerified = kycStatus === "verified";
     hasActiveDeposit = !!depositRes.data;
     depositUnderReview = (pendRes.data?.length ?? 0) > 0;
   }

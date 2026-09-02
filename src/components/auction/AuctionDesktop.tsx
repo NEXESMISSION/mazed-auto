@@ -17,10 +17,9 @@ import { WinnerPaymentExplainer } from "@/components/auction/WinnerPaymentExplai
 import type { SellerCardData } from "@/lib/auction/detail";
 import { PropertyMap } from "@/components/property/PropertyMap";
 import { PropertyDocumentOpenButton } from "@/components/property/PropertyDocumentOpenButton";
-import { INSPECTIONS_ENABLED } from "@/lib/features";
 import {
   MapPin, Ruler, Calendar, ChevronRight,
-  ClipboardCheck, FileText, Lock, Gavel, Download, Clock, Hourglass,
+ FileText, Lock, Gavel, Download, Clock, Hourglass,
   ShieldCheck, Trophy, Wallet, Car, Gauge, Fuel, Cog,
 } from "lucide-react";
 
@@ -78,7 +77,7 @@ export async function AuctionDesktop(props: {
     auction, totalBids, currentPrice, depositRequired, deposit,
     isLive, isDirect, hasBuyNow, buyNowPurchasable, isEnded, isOwner,
     kycVerified, hasActiveDeposit, depositUnderReview, userId,
-    documents, attrKinds, attrs, myInspection,
+    documents, attrKinds, attrs,
     sellerFinalPayment, sellerActiveDeposits, winnerBalance, finalPaymentDays, sellerCard,
   } = props;
 
@@ -495,25 +494,6 @@ export async function AuctionDesktop(props: {
           {/* Inspection — hidden while the inspector network is off, and
               the "Réserver" CTA also goes once the auction has ended. A
               report the viewer already paid for stays. */}
-          {!INSPECTIONS_ENABLED ? null : myInspection ? (
-            <section className={`${CARD} flex items-center gap-3 p-5`}>
-              <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--gold-faint)] text-gold"><ClipboardCheck className="size-4" strokeWidth={2} /></span>
-              <div className="min-w-0 flex-1">
-                <div className="text-[14px] font-bold text-foreground">{t("property.inspectionReport")}</div>
-                <div className="mt-0.5 text-[11px] text-muted">Statut : {myInspection.status}</div>
-              </div>
-              <a href={`/api/inspector/report/${myInspection.id}`} target="_blank" rel="noopener noreferrer" className="shrink-0 rounded-full bg-[var(--gold-faint)] px-4 py-2 text-[12px] font-bold text-[var(--gold)]">Ouvrir</a>
-            </section>
-          ) : isEnded ? null : (
-            <section className={`${CARD} flex items-center gap-3 p-5`}>
-              <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--gold-faint)] text-gold"><ClipboardCheck className="size-4" strokeWidth={2} /></span>
-              <div className="min-w-0 flex-1">
-                <div className="text-[14px] font-bold text-foreground">{t("property.requestInspection")}</div>
-                <div className="mt-0.5 text-[11px] text-muted">Rapport indépendant d&apos;un expert agréé.</div>
-              </div>
-              <Link href={`/inspectors/book?property=${property.id}` as `/inspectors/book`} className="shrink-0 rounded-full bg-[var(--gold-faint)] px-4 py-2 text-[12px] font-bold text-[var(--gold)]">Réserver</Link>
-            </section>
-          )}
 
           {/* Map */}
           {property.lat != null && property.lng != null && (

@@ -9,7 +9,6 @@ import type { AuctionWithProperty } from "@/lib/types";
 import { formatTND } from "@/lib/utils";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { resolveDeposit } from "@/lib/pricing";
-import { KYC_ENABLED } from "@/lib/features";
 import { getCachedMonetization, getCachedFinalPaymentDays } from "@/lib/settings";
 import { jsonLdSafe } from "@/lib/jsonld";
 import { getPublicAuctionDetail, getPublicSellerCard, getCachedAttributeKinds, AUCTION_DETAIL_SELECT } from "@/lib/auction/detail";
@@ -30,10 +29,8 @@ import { DiagnosticSheet } from "@/components/property/DiagnosticSheet";
 import { LivePrice } from "@/components/auction/LiveAuctionFigures";
 import { ShareButton } from "@/components/auction/ShareButton";
 import { Link } from "@/i18n/navigation";
-import { INSPECTIONS_ENABLED } from "@/lib/features";
 import {
-  MapPin, Ruler, BedDouble, Bath, Calendar,
-  ClipboardCheck, FileText, Lock, Gavel, Download, Clock,
+  MapPin, Ruler, BedDouble, Bath, Calendar, FileText, Lock, Gavel, Download, Clock,
   Hourglass, Car, Gauge, Fuel, Cog, Palette, BadgeCheck,
   Armchair, ListChecks,
 } from "lucide-react";
@@ -293,7 +290,7 @@ export default async function AuctionDetail({
         .limit(1)
         .maybeSingle(),
     ]);
-    kycVerified = !KYC_ENABLED || profileRes.data?.kyc_status === "verified";
+    kycVerified = profileRes.data?.kyc_status === "verified";
     hasActiveDeposit = !!depositRes.data;
     depositUnderReview = (pendRes.data?.length ?? 0) > 0;
     myInspection = (insRes.data as { id: string; status: string } | null) ?? null;
@@ -889,50 +886,6 @@ export default async function AuctionDetail({
           Once the auction is over, the "Réserver" CTA goes too: inspecting
           a car you can no longer bid on is a dead end. A report the viewer
           already paid for stays — that's their document, not an offer. */}
-      {!INSPECTIONS_ENABLED ? null : myInspection ? (
-        <section className="batta-surface-ivory mx-4 mt-4 flex items-center gap-3 rounded-xl p-4">
-          <span className="batta-monogram batta-monogram-filled size-10 shrink-0">
-            <ClipboardCheck className="size-4" strokeWidth={2.2} />
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="batta-eyebrow">Inspection</div>
-            <div className="mt-0.5 text-[15px] font-bold text-foreground">
-              {t("property.inspectionReport")}
-            </div>
-            <div className="mt-0.5 text-[11px] text-muted">
-              Statut : {myInspection.status}
-            </div>
-          </div>
-          <a
-            href={`/api/inspector/report/${myInspection.id}`}
-            target="_blank" rel="noopener noreferrer"
-            className="batta-btn-luxe tap-target shrink-0 px-4 py-2 text-[11.5px]"
-          >
-            Ouvrir
-          </a>
-        </section>
-      ) : isEnded ? null : (
-        <section className="batta-surface-ivory mx-4 mt-4 flex items-center gap-3 rounded-xl p-4">
-          <span className="batta-monogram size-10 shrink-0">
-            <ClipboardCheck className="size-4" strokeWidth={2.2} />
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="batta-eyebrow">Avant d&apos;enchérir</div>
-            <div className="mt-0.5 text-[15px] font-bold text-foreground">
-              {t("property.requestInspection")}
-            </div>
-            <div className="mt-0.5 text-[11px] text-muted">
-              Rapport indépendant d&apos;un expert agréé.
-            </div>
-          </div>
-          <Link
-            href={`/inspectors/book?property=${property.id}` as `/inspectors/book`}
-            className="batta-btn-luxe tap-target shrink-0 px-4 py-2 text-[11.5px]"
-          >
-            Réserver
-          </Link>
-        </section>
-      )}
 
       {/* ─── DIAGNOSTIC MAZED ───
               Our own check of this car: what the "Vérifié et approuvé" badge

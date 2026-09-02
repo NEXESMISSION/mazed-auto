@@ -1,5 +1,11 @@
 # Architecture
 
+> **v3 notice.** The platform is mid-pivot from auctions to paid classifieds
+> (cars **and** spare parts, fixed price, buyer contacts the seller). KYC and the
+> inspector network are deleted; auctions are frozen and retiring. Anything below
+> that describes bidding, deposits, escrow or KYC is v2 and on its way out — see
+> [`PIVOT-PLAN.md`](./PIVOT-PLAN.md) for what is current.
+
 Batta.tn — a Tunisian real-estate auction & direct-sale marketplace. This doc
 is the map: what the pieces are, where they live, and the non-obvious rules
 that keep the app fast, cheap, and safe at scale.

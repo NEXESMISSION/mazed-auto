@@ -30,7 +30,6 @@ import { PerfProbe } from "@/components/dev/PerfProbe";
 // serverless cold start — instead of rendering ~200 cards on every request.
 export const revalidate = 60;
 import type { AuctionWithProperty } from "@/lib/types";
-import { INSPECTIONS_ENABLED } from "@/lib/features";
 import {
   ArrowUpRight,
   ChevronRight,
@@ -114,7 +113,7 @@ const TRUST_PILLARS: {
   // Only claim the inspection guarantee while there is an inspector network
   // to back it — promising an independent expert report we can't deliver is
   // worse than not mentioning it.
-  ...(INSPECTIONS_ENABLED
+  ...(false
     ? [{ key: "inspection", titleKey: "home.trustInspectionTitle", bodyKey: "home.trustInspectionBody", Icon: ClipboardCheck }]
     : []),
   { key: "legal",      titleKey: "home.trustLegalTitle",      bodyKey: "home.trustLegalBody",      Icon: Scale },

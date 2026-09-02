@@ -9,7 +9,6 @@ import {
   LayoutDashboard, ExternalLink, HandCoins, Activity, Menu, X,
   type LucideIcon,
 } from "lucide-react";
-import { INSPECTIONS_ENABLED } from "@/lib/features";
 
 /**
  * Admin console navigation. One source of truth for the link set (GROUPS),
@@ -54,7 +53,7 @@ const GROUPS: Group[] = [
     items: [
       // KYC queue removed with the feature (PIVOT-PLAN.md §2.1) — nothing enters it.
       { label: "Utilisateurs", href: "/admin/users", Icon: Users },
-      ...(INSPECTIONS_ENABLED
+      ...(false
         ? [{ label: "Inspecteurs", href: "/admin/inspectors", Icon: ShieldCheck }]
         : []),
     ],

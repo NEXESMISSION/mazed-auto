@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
-import { KYC_ENABLED } from "@/lib/features";
 import { log } from "@/lib/log";
 
 /**
@@ -108,12 +107,6 @@ export async function POST(
 
   if (a.property.owner_id === user.id) {
     return NextResponse.json({ error: "self_purchase_forbidden" }, { status: 403 });
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles").select("kyc_status").eq("id", user.id).single();
-  if (KYC_ENABLED && (!profile || profile.kyc_status !== "verified")) {
-    return NextResponse.json({ error: "kyc_required" }, { status: 403 });
   }
 
   // Rare (audit #22): the buyer's locked caution already covers the full price,
