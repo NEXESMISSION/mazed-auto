@@ -4,7 +4,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
-import { PRODUCT_SELECT, resolveListingFee, toProduct } from "@/lib/products";
+import { PRODUCT_SELECT, isFree, resolveListingFee, toProduct } from "@/lib/products";
 
 /**
  * POST /api/annonces/[id]/renew — put an expired annonce back online.
@@ -96,12 +96,40 @@ export async function POST(
     .eq("is_active", true);
   const products = (prodRows ?? []).map((r) => toProduct(r as Parameters<typeof toProduct>[0]));
 
+  const { data: cat } = await admin
+    .from("categories")
+    .select("parent_id")
+    .eq("id", listing.category_id as string)
+    .maybeSingle();
+  const categoryFee = resolveListingFee(
+    products,
+    listing.category_id as string,
+    (cat?.parent_id as string | null) ?? null,
+  );
+
   // A dedicated renewal price if the admin set one; otherwise the ordinary
   // publication fee for this category, because that is what a renewal is.
-  const renewal =
-    products.find((p) => p.kind === "renewal") ??
-    resolveListingFee(products, listing.category_id as string);
+  // Exception first: a category that publishes for free renews for free.
+  // Charging 15 TND to keep a free annonce alive would be a trap.
+  const renewal = isFree(categoryFee)
+    ? categoryFee
+    : products.find((p) => p.kind === "renewal") ?? categoryFee;
   if (!renewal) return fail("no_price_configured", 503);
+
+  if (renewal.price <= 0) {
+    const { error } = await admin
+      .from("listings")
+      .update({
+        status: "pending_review",
+        rejection_reason: null,
+        renewed_count: (listing.renewed_count as number) + 1,
+      })
+      .eq("id", id);
+    if (error) return fail("listing_renew_failed", 500, error);
+
+    logAction(req, user, "listing.renew.free", { id, productSlug: renewal.slug });
+    return NextResponse.json({ status: "pending_review", paidWith: "free" });
+  }
 
   const { data: existing } = await admin
     .from("payments")

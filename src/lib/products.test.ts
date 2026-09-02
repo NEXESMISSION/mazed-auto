@@ -3,6 +3,7 @@ import {
   badgeProduct,
   pricePerListing,
   purchasablePacks,
+  isFree,
   resolveListingFee,
   toProduct,
   usableCredits,
@@ -61,6 +62,47 @@ describe("resolveListingFee", () => {
   it("does not mistake another kind for a listing price", () => {
     const badge = make({ id: "p-badge", kind: "badge_verified", price: 200, durationDays: 365 });
     expect(resolveListingFee([badge], "cat-voitures")).toBeNull();
+  });
+
+  // ── Parent inheritance: how spare parts are free (0167) ──────────────────
+  const partsParent = make({
+    id: "p-parts-parent",
+    slug: "annonce-piece",
+    price: 0,
+    categoryId: "cat-pieces",
+  });
+
+  it("inherits a parent category's price", () => {
+    // "Les pièces sont gratuites" is ONE row on « Pièces de rechange », not
+    // nine identical rows on its children that would drift apart.
+    expect(resolveListingFee([base, partsParent], "cat-freinage", "cat-pieces")?.price).toBe(0);
+    expect(resolveListingFee([base, partsParent], "cat-moteur", "cat-pieces")?.price).toBe(0);
+  });
+
+  it("covers a sub-category nobody has priced yet", () => {
+    // A category added next month must inherit free, not fall through to the
+    // 15 TND catch-all — which is the failure this lookup exists to prevent.
+    expect(resolveListingFee([base, partsParent], "cat-brand-new", "cat-pieces")?.price).toBe(0);
+  });
+
+  it("still lets a child override its parent", () => {
+    const pricey = make({ id: "p-tyres", price: 5, categoryId: "cat-pneus" });
+    expect(resolveListingFee([base, partsParent, pricey], "cat-pneus", "cat-pieces")?.price).toBe(5);
+  });
+
+  it("leaves cars alone", () => {
+    expect(resolveListingFee([base, partsParent], "cat-voitures", "cat-vehicules")?.price).toBe(15);
+  });
+});
+
+describe("isFree", () => {
+  it("separates a deliberate zero from an unpriced category", () => {
+    // The distinction the submit route turns on: zero skips payment entirely,
+    // null refuses to publish. Collapsing them would either charge for a free
+    // part or give away a car.
+    expect(isFree(make({ price: 0 }))).toBe(true);
+    expect(isFree(make({ price: 15 }))).toBe(false);
+    expect(isFree(null)).toBe(false);
   });
 });
 

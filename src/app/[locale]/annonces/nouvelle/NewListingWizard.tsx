@@ -365,7 +365,9 @@ export function NewListingWizard({
                         <span className="mt-0.5 block text-[10.5px] font-semibold text-muted">
                           {usingCredit
                             ? "1 publication de votre forfait"
-                            : `${formatTND(feeByCategory[c.id] as number, locale)} TND`}
+                            : (feeByCategory[c.id] as number) <= 0
+                              ? "Gratuit"
+                              : `${formatTND(feeByCategory[c.id] as number, locale)} TND`}
                         </span>
                       )}
                     </button>
@@ -531,20 +533,28 @@ export function NewListingWizard({
           <div className="rounded-2xl bg-surface-2 p-4 ring-1 ring-border">
             <div className="flex items-center justify-between gap-3">
               <span className="text-[13px] text-muted">
-                {usingCredit ? "Publication depuis votre forfait" : "Frais de publication"}
+                {usingCredit
+                  ? "Publication depuis votre forfait"
+                  : fee != null && fee <= 0
+                    ? "Publication"
+                    : "Frais de publication"}
               </span>
               <span className="batta-tabular text-[18px] font-extrabold text-foreground">
                 {usingCredit
                   ? `1 / ${creditsLeft}`
-                  : fee != null
-                    ? `${formatTND(fee, locale)} TND`
-                    : "—"}
+                  : fee == null
+                    ? "—"
+                    : fee <= 0
+                      ? "Gratuit"
+                      : `${formatTND(fee, locale)} TND`}
               </span>
             </div>
             <p className="mt-1.5 text-[11.5px] leading-snug text-muted">
               {usingCredit
                 ? "Aucun paiement : une publication est décomptée de votre forfait."
-                : "Vous serez redirigé vers le paiement. L'annonce part en vérification dès la réception du reçu."}
+                : fee != null && fee <= 0
+                  ? "Publication gratuite dans cette catégorie : votre annonce part directement en vérification."
+                  : "Vous serez redirigé vers le paiement. L'annonce part en vérification dès la réception du reçu."}
             </p>
           </div>
         </section>

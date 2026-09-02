@@ -7,7 +7,7 @@ import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { formatTND } from "@/lib/utils";
 import { Plus, Ticket, ImageOff, Clock } from "lucide-react";
 import { RenewButton } from "./RenewButton";
-import { PRODUCT_SELECT, resolveListingFee, toProduct, type Product } from "@/lib/products";
+import { PRODUCT_SELECT, isFree, resolveListingFee, toProduct, type Product } from "@/lib/products";
 import { formatTND as fmt } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -64,6 +64,13 @@ export default async function MyListingsPage() {
     toProduct(r as Parameters<typeof toProduct>[0]),
   );
   const renewalProduct = products.find((p) => p.kind === "renewal") ?? null;
+
+  // Category → parent, so a price set on a parent (« Pièces de rechange » at 0)
+  // resolves for its children the same way the API does it.
+  const { data: catRows } = await db.from("categories").select("id, parent_id");
+  const parentOf = new Map(
+    (catRows ?? []).map((c) => [c.id as string, (c.parent_id as string | null) ?? null]),
+  );
 
   const now = Date.now();
   const creditsLeft = (creditRes.data ?? []).reduce((n, c) => {
@@ -152,9 +159,19 @@ export default async function MyListingsPage() {
                     listingId={l.id}
                     usesCredit={creditsLeft > 0}
                     feeLabel={(() => {
-                      const p =
-                        renewalProduct ?? resolveListingFee(products, l.category_id);
-                      return p ? `${fmt(p.price, locale)} TND` : null;
+                      // Mirrors the renew route exactly, including its
+                      // exception: a category that publishes for free renews
+                      // for free, so a part must not be quoted 15 TND here.
+                      const categoryFee = resolveListingFee(
+                        products,
+                        l.category_id,
+                        parentOf.get(l.category_id) ?? null,
+                      );
+                      const p = isFree(categoryFee)
+                        ? categoryFee
+                        : renewalProduct ?? categoryFee;
+                      if (!p) return null;
+                      return p.price <= 0 ? "Gratuit" : `${fmt(p.price, locale)} TND`;
                     })()}
                   />
                 )}

@@ -101,14 +101,31 @@ export function toProduct(row: ProductRow): Product {
 export function resolveListingFee(
   products: Product[],
   categoryId: string | null,
+  parentCategoryId: string | null = null,
 ): Product | null {
   const singles = products.filter((p) => p.isActive && p.kind === "listing_single");
   return (
+    // Most specific first: this exact category…
     singles.find((p) => p.categoryId != null && p.categoryId === categoryId) ??
+    // …then its parent, so "les pièces sont gratuites" is one row an admin sets
+    // on « Pièces de rechange » rather than nine identical ones — and a
+    // sub-category added later inherits that answer instead of silently
+    // falling back to the global price.
+    (parentCategoryId
+      ? singles.find((p) => p.categoryId != null && p.categoryId === parentCategoryId)
+      : undefined) ??
+    // …then the catch-all.
     singles.find((p) => p.categoryId == null) ??
     null
   );
 }
+
+/**
+ * A fee of zero is FREE — an answer an admin set on purpose. Distinct from
+ * `resolveListingFee` returning null, which means nobody has priced this yet
+ * and publishing would be a silent revenue hole.
+ */
+export const isFree = (fee: Product | null): boolean => fee != null && fee.price <= 0;
 
 /** Packs and subscriptions a seller can buy right now, cheapest first. */
 export function purchasablePacks(products: Product[]): Product[] {

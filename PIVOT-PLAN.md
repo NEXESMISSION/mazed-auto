@@ -16,6 +16,46 @@ reason is recorded.
 
 Append here as phases land. Newest first.
 
+### The home page lost its cover, and parts are now free · **DONE** 2026-09-02
+
+**The cover.** Reported as *"the top thing was nice and felt alive, now it
+looks awful — get the cover back"*, and it was a hole I made. Both heroes were
+built on auctions: `PromoHero` cycled slides about bidding, a refundable
+deposit and KYC over auction photos, and `DesktopHero` rendered countdowns and
+bid counts linking to `/auctions/[id]`. Putting the auction blocks behind
+`AUCTIONS_VISIBLE` took the hero with them, so the home page opened straight
+onto a rail of cards with nothing above it.
+
+`AnnonceHero` restores the same two layouts from the catalog we actually have:
+the cycling cover on mobile, the magazine spread (featured annonce + up to
+three runners) on desktop. One `cache`d read serves both trees, and it renders
+nothing when no published annonce has a photo — a hero is not worth a grey box.
+The slides say what is true now: the price is shown, you call the seller, we
+diagnose the car, and publishing a part is free.
+
+**Parts are free (0167).** A decision expressed as a `products` row like every
+other price, not a special case in code — an admin can start charging for them
+from /admin/pricing without a deploy. It is scoped to the « Pièces de rechange »
+PARENT category, and `resolveListingFee` now falls back to the parent, so:
+one row instead of nine identical ones on the sub-categories that would drift
+apart the first time one was edited, and a sub-category added next month
+inherits free rather than silently falling through to the 15 TND catch-all.
+
+Zero had to be taught to mean something. The submit route would have created a
+payment for 0 TND and parked the annonce in `pending_payment`, waiting for a
+seller to upload a receipt for nothing — so a zero fee now skips payment
+entirely and goes straight to the queue. Renewal follows: a category that
+publishes for free renews for free, because charging 15 TND to keep a free
+annonce alive is a trap. `isFree` keeps that distinct from *unpriced*, which
+still refuses to publish — collapsing the two would either charge for a part
+or give away a car. Six tests pin it.
+
+**On the errors while adding a listing:** the logged failures at that time were
+mine — `TAB_HREFS is not defined` and `isActivityPath is not defined`, thrown
+by the dev server between two of my saves while the nav fix was half-applied.
+They are gone. No failure was logged against the publish flow itself.
+
+
 ### The « Activité » tab never lit up · **DONE** 2026-09-02
 
 Pivot fallout, and a good illustration of why both halves of a rule belong in

@@ -98,10 +98,14 @@ export default async function NewListingPage() {
     toProduct(r as Parameters<typeof toProduct>[0]),
   );
 
-  // What each category costs, resolved here so the wizard never guesses.
+  // What each category costs, resolved here so the wizard never guesses. The
+  // parent goes in too: a price set on « Pièces de rechange » covers all of its
+  // sub-categories (0167), which is how parts are free.
+  const parentOf = new Map(catRows.map((c) => [c.id, c.parent_id]));
   const feeByCategory: Record<string, number | null> = {};
   for (const c of categories) {
-    feeByCategory[c.id] = resolveListingFee(products, c.id)?.price ?? null;
+    feeByCategory[c.id] =
+      resolveListingFee(products, c.id, parentOf.get(c.id) ?? null)?.price ?? null;
   }
 
   const now = Date.now();

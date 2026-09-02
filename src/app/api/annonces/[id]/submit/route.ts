@@ -124,12 +124,49 @@ export async function POST(
     .select(PRODUCT_SELECT)
     .eq("is_active", true);
   const products = (prodRows ?? []).map((r) => toProduct(r as Parameters<typeof toProduct>[0]));
-  const fee = resolveListingFee(products, listing.category_id as string);
+  // The parent category too, so a price set on « Pièces de rechange » covers
+  // every part sub-category (0167).
+  const { data: cat } = await admin
+    .from("categories")
+    .select("parent_id")
+    .eq("id", listing.category_id as string)
+    .maybeSingle();
+
+  const fee = resolveListingFee(
+    products,
+    listing.category_id as string,
+    (cat?.parent_id as string | null) ?? null,
+  );
 
   if (!fee) {
     // No price configured is NOT "free" — it is a misconfiguration, and
     // publishing for nothing would be a silent revenue hole.
     return fail("no_price_configured", 503);
+  }
+
+  // ── 2a. Priced at zero: free on purpose ───────────────────────────────────
+  // Spare parts, today. A payment row for 0 TND would send the seller to a
+  // checkout to upload a receipt for nothing, and leave the annonce stuck in
+  // `pending_payment` waiting for an admin to capture an empty payment.
+  if (fee.price <= 0) {
+    const { error } = await admin
+      .from("listings")
+      .update({ status: "pending_review", rejection_reason: null })
+      .eq("id", id);
+    if (error) return fail("listing_submit_failed", 500, error);
+
+    await admin
+      .rpc("enqueue_notification", {
+        p_user_id: user.id,
+        p_kind: "listing_submitted",
+        p_title: "Annonce envoyée à la vérification",
+        p_body: `« ${listing.title} » est en cours de vérification. La publication est gratuite dans cette catégorie.`,
+        p_link: "/account/listings",
+      })
+      .then(() => {}, () => {});
+
+    logAction(req, user, "listing.submit.free", { id, productSlug: fee.slug });
+    return NextResponse.json({ status: "pending_review", paidWith: "free" });
   }
 
   // Reuse an actionable payment so a double-submit can't create two.
