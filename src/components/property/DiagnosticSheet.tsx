@@ -24,13 +24,14 @@ import { BadgeCheck, CircleAlert, CircleX, Camera } from "lucide-react";
  */
 
 export async function fetchPublishedDiagnostic(
-  propertyId: string,
+  subjectId: string,
+  subject: "listing" | "property" = "property",
 ): Promise<Diagnostic | null> {
   const supabase = await getServerSupabase();
   const { data } = await supabase
     .from("vehicle_diagnostics")
     .select(DIAGNOSTIC_SELECT)
-    .eq("property_id", propertyId)
+    .eq(subject === "listing" ? "listing_id" : "property_id", subjectId)
     .eq("status", "published")
     .maybeSingle();
   if (!data) return null;
@@ -66,12 +67,23 @@ export function DiagnosticBadge({ diagnostic }: { diagnostic: Diagnostic | null 
 /** The full sheet. Pass a pre-fetched diagnostic, or a propertyId to fetch. */
 export async function DiagnosticSheet({
   propertyId,
+  listingId,
   diagnostic: passed,
 }: {
-  propertyId: string;
+  /** v2 subject. Retires with the auction pages. */
+  propertyId?: string;
+  /** v3 subject — an annonce. */
+  listingId?: string;
   diagnostic?: Diagnostic | null;
 }) {
-  const diagnostic = passed !== undefined ? passed : await fetchPublishedDiagnostic(propertyId);
+  const diagnostic =
+    passed !== undefined
+      ? passed
+      : listingId
+        ? await fetchPublishedDiagnostic(listingId, "listing")
+        : propertyId
+          ? await fetchPublishedDiagnostic(propertyId, "property")
+          : null;
   if (!diagnostic) return null;
 
   const checked = diagnostic.sections.reduce((n, s) => n + s.items.length, 0);

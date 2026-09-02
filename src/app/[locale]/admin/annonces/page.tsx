@@ -1,6 +1,7 @@
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { ListingQueue, type QueueListing } from "./ListingQueue";
+import { DIAGNOSTIC_SELECT, toDiagnostic, type Diagnostic } from "@/lib/diagnostics";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -46,6 +47,22 @@ export default async function AdminAnnoncesPage({
 
   const { data } = await query;
 
+  // Existing diagnostics for the listings on screen, drafts included — one read
+  // rather than one per row.
+  const listingIds = (data ?? []).map((r) => (r as { id: string }).id);
+  const diagnostics = new Map<string, Diagnostic>();
+  if (listingIds.length > 0) {
+    const { data: diagRows } = await admin
+      .from("vehicle_diagnostics")
+      .select(DIAGNOSTIC_SELECT)
+      .in("listing_id", listingIds);
+    for (const row of diagRows ?? []) {
+      const d = toDiagnostic(row as Parameters<typeof toDiagnostic>[0]);
+      const key = (row as { listing_id: string | null }).listing_id;
+      if (key) diagnostics.set(key, d);
+    }
+  }
+
   type Row = {
     id: string; title: string; description: string | null; price: number | null;
     negotiable: boolean; governorate: string; status: string; condition: string | null;
@@ -86,6 +103,7 @@ export default async function AdminAnnoncesPage({
       createdAt: r.created_at,
       publishedAt: r.published_at,
       expiresAt: r.expires_at,
+      diagnostic: diagnostics.get(r.id) ?? null,
       photos: (r.photos ?? [])
         .slice()
         .sort((a, b) => a.sort_order - b.sort_order)

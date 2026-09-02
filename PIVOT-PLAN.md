@@ -16,6 +16,52 @@ reason is recorded.
 
 Append here as phases land. Newest first.
 
+### Gaps closed + Phase 7 · **DONE** 2026-09-02
+
+Three things the earlier phases left behind, found by re-reading the plan
+rather than by anything breaking.
+
+**The diagnostic could not reach the catalog (0165).** 0148 keyed
+`vehicle_diagnostics` to `property_id` — the only object a car could be at the
+time. Nothing a seller publishes today is a property, so the sheet behind the
+"Vérifié et approuvé" badge **could not be attached to a single v3 annonce**.
+With KYC gone, the diagnostic and the paid badge are the two things separating
+us from a free listings board, so this was not a small gap. Both columns are now
+nullable with `num_nonnulls(property_id, listing_id) = 1`, so a row points at
+exactly one subject and can never disagree with itself. The admin writes it from
+a panel on each row of the annonces queue — the moment someone is already
+looking at the photos is the moment to write down what they saw — and the sheet
+renders on the public page. Verified: a published diagnostic shows its verdict,
+headline, sections and per-item notes on a live annonce, and a row naming both
+subjects is refused.
+
+**Favourites could not point at an annonce (0166).** `watchlist` was keyed to
+`auction_id`, so the heart on a listing card had nowhere to write. Same shape as
+the fix above; the old composite primary key became partial unique indexes so
+"saved twice" is still impossible on either subject. Optimistic button, and a
+logged-out visitor is sent to sign in with `next` pointing back at the annonce
+they were saving.
+
+**Phase 7 — tests and seed.**
+
+- `src/lib/fitment.ts` — the "compatible avec" rule extracted from the catalog
+  page and unit-tested (12 cases): accent folding, model matching in either
+  direction (a seller writes "Clio 5 Business", a buyer types "Clio 5"),
+  open-ended year ranges, and *returning nothing rather than everything* when
+  nothing fits. The page now calls it instead of carrying its own copy — two
+  places deciding what "compatible" means is how a buyer ends up with parts for
+  another car. Verified through the real page: `RENAULT/2020` hits,
+  `Clio/2018` (outside the range) does not, `toyota` does not.
+- `src/lib/products.test.ts` — 13 cases over the pricing rules, including the
+  two that are quietly expensive to get wrong: a category price must beat the
+  global one (D4), and "no price configured" must return **null, not free**.
+- `scripts/seed-v3.mjs` — 3 cars + 3 parts with real fitments, reusing existing
+  photo objects. Separate from `scripts/seed.mjs`, which seeds auctions and dies
+  with them. It carries the same live-database guard, and it does **not** invent
+  pack or badge prices.
+
+Totals now: **179 unit tests**, `tsc` clean, ESLint 0 errors, build clean.
+
 ### Phase 6a — KYC and the inspector network deleted · **DONE** 2026-09-02
 
 Not disabled, not flagged — **deleted**. A flag guarding dead code is a lie

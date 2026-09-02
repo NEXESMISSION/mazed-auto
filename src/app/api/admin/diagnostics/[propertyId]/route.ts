@@ -46,20 +46,27 @@ export async function PUT(
   const gate = await requireAdmin(req);
   if (gate instanceof NextResponse) return gate;
   const { user } = gate;
-  const { propertyId } = await ctx.params;
+  const { propertyId: subjectId } = await ctx.params;
 
   const admin = getServiceSupabase();
   if (!admin) return fail("server_misconfigured", 500);
 
-  // The property must exist — otherwise a typo in the URL silently creates a
-  // diagnostic for a listing nobody will ever see (the FK would reject it, but
-  // a clean 404 beats a redacted 500).
-  const { data: prop } = await admin
-    .from("properties")
-    .select("id")
-    .eq("id", propertyId)
-    .maybeSingle();
-  if (!prop) return NextResponse.json({ error: "property_not_found" }, { status: 404 });
+  // The id may be a v3 listing or a v2 property — one route, because a
+  // diagnostic is the same document either way and the admin should not have to
+  // know which era they are looking at. Listings are checked first: that is the
+  // catalog now.
+  const { data: listing } = await admin
+    .from("listings").select("id").eq("id", subjectId).maybeSingle();
+  const { data: prop } = listing
+    ? { data: null }
+    : await admin.from("properties").select("id").eq("id", subjectId).maybeSingle();
+  if (!listing && !prop) {
+    return NextResponse.json({ error: "subject_not_found" }, { status: 404 });
+  }
+  const subject: { listing_id: string | null; property_id: string | null } = listing
+    ? { listing_id: subjectId, property_id: null }
+    : { listing_id: null, property_id: subjectId };
+  const conflictKey = listing ? "listing_id" : "property_id";
 
   const body = (await req.json().catch(() => ({}))) as Body;
   const status: DiagnosticStatus = body.status === "published" ? "published" : "draft";
@@ -74,7 +81,7 @@ export async function PUT(
   }
 
   const payload = {
-    property_id: propertyId,
+    ...subject,
     status,
     verdict: normalizeVerdict(body.verdict),
     headline: str(body.headline, 160),
@@ -105,10 +112,10 @@ export async function PUT(
 
   const { error } = await admin
     .from("vehicle_diagnostics")
-    .upsert(payload, { onConflict: "property_id" });
+    .upsert(payload, { onConflict: conflictKey });
   if (error) return fail("diagnostic_save_failed", 500, error);
 
-  logAction(req, user, "admin.diagnostic.save", { propertyId, status });
+  logAction(req, user, "admin.diagnostic.save", { subjectId, status });
   return NextResponse.json({ ok: true, status });
 }
 
@@ -119,7 +126,7 @@ export async function DELETE(
   const gate = await requireAdmin(req);
   if (gate instanceof NextResponse) return gate;
   const { user } = gate;
-  const { propertyId } = await ctx.params;
+  const { propertyId: subjectId } = await ctx.params;
 
   const admin = getServiceSupabase();
   if (!admin) return fail("server_misconfigured", 500);
@@ -127,9 +134,9 @@ export async function DELETE(
   const { error } = await admin
     .from("vehicle_diagnostics")
     .delete()
-    .eq("property_id", propertyId);
+    .or(`listing_id.eq.${subjectId},property_id.eq.${subjectId}`);
   if (error) return fail("diagnostic_delete_failed", 500, error);
 
-  logAction(req, user, "admin.diagnostic.delete", { propertyId });
+  logAction(req, user, "admin.diagnostic.delete", { subjectId });
   return NextResponse.json({ ok: true });
 }

@@ -4,7 +4,10 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { formatTND } from "@/lib/utils";
 import { GOVERNORATES } from "@/lib/governorates";
+import { listingIdsMatching } from "@/lib/fitment";
 import { AnnonceFilters } from "./AnnonceFilters";
+import { FavoriteButton } from "@/components/property/FavoriteButton";
+import { getServerSupabase } from "@/lib/supabase/server";
 import { BadgeCheck, ImageOff, MapPin, Wrench, Car } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -70,23 +73,28 @@ export default async function AnnoncesPage({
   const visibleCats = kind ? leaves.filter((c) => c.kind === kind) : leaves;
 
   // ── Fitment first: it narrows the set before anything else does ──────────
+  // The DB query is a coarse filter (make, roughly the model); the exact rule —
+  // accent folding, model matching in either direction, open-ended year ranges
+  // — lives in src/lib/fitment.ts, where it is unit-tested. Two places deciding
+  // what "compatible" means is how a buyer ends up with parts for another car.
   let fitmentIds: string[] | null = null;
   if (sp.make) {
-    let fq = admin
+    const { data: fits } = await admin
       .from("listing_fitments")
       .select("listing_id, make, model, year_from, year_to")
-      .ilike("make", sp.make.trim());
-    if (sp.model) fq = fq.ilike("model", `%${sp.model.trim()}%`);
-    const { data: fits } = await fq.limit(500);
+      .ilike("make", sp.make.trim())
+      .limit(1000);
 
-    const year = Number(sp.year);
-    const matching = (fits ?? []).filter((f) => {
-      if (!Number.isFinite(year) || year <= 0) return true;
-      const from = (f.year_from as number | null) ?? 0;
-      const to = (f.year_to as number | null) ?? 9999;
-      return year >= from && year <= to;
-    });
-    fitmentIds = [...new Set(matching.map((f) => f.listing_id as string))];
+    fitmentIds = listingIdsMatching(
+      (fits ?? []).map((f) => ({
+        listingId: f.listing_id as string,
+        make: f.make as string,
+        model: (f.model as string | null) ?? null,
+        yearFrom: (f.year_from as number | null) ?? null,
+        yearTo: (f.year_to as number | null) ?? null,
+      })),
+      { make: sp.make, model: sp.model, year: sp.year },
+    );
   }
 
   let query = admin
@@ -114,6 +122,20 @@ export default async function AnnoncesPage({
 
   const { data } = await query;
   const rows = (data ?? []) as ListingRow[];
+
+  // Which of these the viewer already saved — one read, through their own
+  // session so RLS decides what they can see.
+  const userClient = await getServerSupabase();
+  const { data: { user } } = await userClient.auth.getUser();
+  const savedIds = new Set<string>();
+  if (user && rows.length > 0) {
+    const { data: saved } = await userClient
+      .from("watchlist")
+      .select("listing_id")
+      .eq("user_id", user.id)
+      .in("listing_id", rows.map((r) => r.id));
+    for (const w of saved ?? []) if (w.listing_id) savedIds.add(w.listing_id as string);
+  }
 
   // Badges in one round-trip rather than one per card.
   const sellerIds = [...new Set(rows.map((r) => r.seller_id))];
@@ -198,6 +220,14 @@ export default async function AnnoncesPage({
                     <BadgeCheck className="size-3 text-gold" /> vérifié
                   </span>
                 )}
+                <div className="absolute right-2 top-2">
+                  <FavoriteButton
+                    listingId={l.id}
+                    initialSaved={savedIds.has(l.id)}
+                    loggedIn={user !== null}
+                    size="sm"
+                  />
+                </div>
               </div>
 
               <div className="p-3">

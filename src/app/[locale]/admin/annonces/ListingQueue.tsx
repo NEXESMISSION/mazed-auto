@@ -7,7 +7,9 @@ import { AdminButton } from "@/components/admin/AdminButton";
 import { ImageLightbox } from "@/components/ui/ImageLightbox";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { formatTND } from "@/lib/utils";
-import { Check, X, Archive, Phone, MapPin, ImageOff, Ticket, Wallet, Gift } from "lucide-react";
+import { Check, X, Archive, Phone, MapPin, ImageOff, Ticket, Wallet, Gift, Stethoscope } from "lucide-react";
+import { DiagnosticEditor } from "@/components/admin/DiagnosticEditor";
+import type { Diagnostic } from "@/lib/diagnostics";
 
 export type QueueListing = {
   id: string;
@@ -30,6 +32,8 @@ export type QueueListing = {
   createdAt: string;
   publishedAt: string | null;
   expiresAt: string | null;
+  /** Our own inspection sheet for this annonce, draft or published. */
+  diagnostic: Diagnostic | null;
   photos: string[];
 };
 
@@ -193,6 +197,34 @@ export function ListingQueue({
                     )}
                   </div>
                 </div>
+
+                {/* Diagnostic Mazed — written here, because the moment someone
+                    is already looking at the photos and the papers is the moment
+                    to write down what they saw. Publishing the sheet is what
+                    puts the badge on the annonce. */}
+                <details className="mt-3 border-t border-border pt-3">
+                  <summary className="inline-flex cursor-pointer items-center gap-1.5 text-[12px] font-bold text-muted hover:text-foreground">
+                    <Stethoscope className="size-3.5" />
+                    Diagnostic Mazed
+                    {l.diagnostic ? (
+                      <span
+                        className={
+                          "rounded-full px-2 py-0.5 text-[9.5px] font-extrabold uppercase tracking-[0.1em] " +
+                          (l.diagnostic.status === "published"
+                            ? "batta-tone-ok"
+                            : "bg-surface-2 text-muted ring-1 ring-border")
+                        }
+                      >
+                        {l.diagnostic.status === "published" ? "publié" : "brouillon"}
+                      </span>
+                    ) : (
+                      <span className="text-[10.5px] font-semibold text-muted">— aucun</span>
+                    )}
+                  </summary>
+                  <div className="mt-3">
+                    <DiagnosticEditor propertyId={l.id} initial={l.diagnostic} />
+                  </div>
+                </details>
 
                 {(actionable || l.status === "published") && (
                   <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3">

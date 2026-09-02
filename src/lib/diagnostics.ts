@@ -117,7 +117,8 @@ export function normalizeVerdict(v: unknown): DiagnosticVerdict {
 
 /** DB row → the shape every surface renders. */
 export function toDiagnostic(row: {
-  property_id: string;
+  property_id?: string | null;
+  listing_id?: string | null;
   status: string;
   verdict: string;
   headline: string | null;
@@ -129,7 +130,7 @@ export function toDiagnostic(row: {
   published_at: string | null;
 }): Diagnostic {
   return {
-    propertyId: row.property_id,
+    propertyId: row.property_id ?? row.listing_id ?? "",
     status: row.status === "published" ? "published" : "draft",
     verdict: normalizeVerdict(row.verdict),
     headline: text(row.headline, 160),
@@ -144,4 +145,4 @@ export function toDiagnostic(row: {
 
 /** The columns every diagnostic read selects. */
 export const DIAGNOSTIC_SELECT =
-  "property_id, status, verdict, headline, summary, sections, photos, inspector_name, inspected_at, published_at";
+  "property_id, listing_id, status, verdict, headline, summary, sections, photos, inspector_name, inspected_at, published_at";

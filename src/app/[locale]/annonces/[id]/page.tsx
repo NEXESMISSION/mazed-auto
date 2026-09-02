@@ -6,6 +6,13 @@ import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { formatTND } from "@/lib/utils";
 import { HeroCarousel } from "@/components/auction/HeroCarousel";
 import { ContactReveal } from "./ContactReveal";
+import { FavoriteButton } from "@/components/property/FavoriteButton";
+import { getServerSupabase } from "@/lib/supabase/server";
+import {
+  DiagnosticSheet,
+  DiagnosticBadge,
+  fetchPublishedDiagnostic,
+} from "@/components/property/DiagnosticSheet";
 import { BadgeCheck, MapPin, Wrench, Car, Clock, ShieldAlert } from "lucide-react";
 import type { Metadata } from "next";
 
@@ -92,6 +99,23 @@ export default async function AnnoncePage({
     .map((p) => ({ id: p.storage_path, storage_path: p.storage_path, sort_order: p.sort_order }));
 
   const admin = getServiceSupabase();
+  // Our own inspection of THIS annonce, if we published one. Fetched here (not
+  // inside the component) so the badge in the header and the sheet lower down
+  // come from a single read and can never disagree.
+  const diagnostic = await fetchPublishedDiagnostic(l.id, "listing");
+
+  const userClient = await getServerSupabase();
+  const { data: { user } } = await userClient.auth.getUser();
+  let saved = false;
+  if (user) {
+    const { data: w } = await userClient
+      .from("watchlist")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("listing_id", l.id)
+      .maybeSingle();
+    saved = !!w;
+  }
   const [{ data: badge }, { data: attrDefs }] = await Promise.all([
     admin
       ? admin.rpc("has_verified_badge", { p_seller: l.seller_id })
@@ -187,6 +211,9 @@ export default async function AnnoncePage({
               <BadgeCheck className="size-3.5" strokeWidth={2.4} /> Vendeur vérifié
             </span>
           )}
+          {/* Two different claims, deliberately distinct: the badge above is
+              about the SELLER, this one is about THIS vehicle. */}
+          <DiagnosticBadge diagnostic={diagnostic} />
         </div>
 
         <h1 className="mt-2 text-[24px] font-extrabold leading-tight tracking-tight">{l.title}</h1>
@@ -218,6 +245,9 @@ export default async function AnnoncePage({
 
         {/* ── Contact ── */}
         <section className="mt-5 rounded-2xl border border-gold-soft bg-gold-faint/30 p-4">
+          <div className="mb-3 flex justify-end">
+            <FavoriteButton listingId={l.id} initialSaved={saved} loggedIn={user !== null} />
+          </div>
           <ContactReveal
             listingId={l.id}
             sellerName={l.contact_name}
@@ -269,6 +299,11 @@ export default async function AnnoncePage({
             </p>
           </section>
         )}
+
+        {/* Our own inspection — renders nothing when we haven't done one. */}
+        <div className="mt-6">
+          <DiagnosticSheet listingId={l.id} diagnostic={diagnostic} />
+        </div>
 
         {/* ── The honest disclaimer ── */}
         <section className="mt-8 flex items-start gap-2.5 rounded-2xl bg-surface-2 p-4 ring-1 ring-border">
