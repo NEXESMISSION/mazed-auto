@@ -14,7 +14,7 @@ type Item = { href: string; label: string; sub?: string; Icon: typeof User };
 
 const ITEMS: Item[] = [
   { href: "/account", label: "Mon compte", sub: "Profil et vérification", Icon: User },
-  { href: "/account/activity", label: "Mon activité", sub: "Enchères et achats", Icon: Activity },
+  { href: "/account/listings", label: "Mes annonces", sub: "Publiées, en attente, expirées", Icon: Activity },
   { href: "/account/payments", label: "Mes paiements", sub: "Cautions et reçus", Icon: Receipt },
   { href: "/watchlist", label: "Favoris", sub: "Vos voitures suivies", Icon: Heart },
   ...(INSPECTIONS_ENABLED

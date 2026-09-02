@@ -19,7 +19,7 @@ import { Home, Search, Plus, LayoutGrid, User } from "lucide-react";
  */
 
 type Tab = {
-  href: "/" | "/properties" | "/sell" | "/account/activity" | "/account";
+  href: "/" | "/annonces" | "/annonces/nouvelle" | "/account/listings" | "/account";
   labelKey: "home" | "browse" | "sell" | "activity" | "account";
   Icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
   match: (p: string) => boolean;
@@ -35,26 +35,29 @@ const TABS: Tab[] = [
     match: (p) => p === "/",
   },
   {
-    href: "/properties",
+    // The catalog. /properties and /auctions are v2 surfaces that no longer
+    // have an entry point anywhere in the app (PIVOT-PLAN.md Phase 6 deletes
+    // them); they stay in `match` only so a stale bookmark still lights the
+    // right tab while the last lots finish.
+    href: "/annonces",
     labelKey: "browse",
     Icon: Search,
     match: (p) =>
+      p === "/annonces" ||
+      p.startsWith("/annonces/") ||
       p === "/properties" ||
       p.startsWith("/properties/") ||
-      p.startsWith("/auctions") ||
-      // /inspectors is gated off in middleware while INSPECTIONS_ENABLED is
-      // false, so this arm is simply never reached then.
-      p.startsWith("/inspectors"),
+      p.startsWith("/auctions"),
   },
   {
-    href: "/sell",
+    href: "/annonces/nouvelle",
     labelKey: "sell",
     Icon: Plus,
-    match: (p) => p === "/sell" || p.startsWith("/sell/"),
+    match: (p) => p.startsWith("/annonces/nouvelle") || p === "/sell" || p.startsWith("/sell/"),
     isCenter: true,
   },
   {
-    href: "/account/activity",
+    href: "/account/listings",
     labelKey: "activity",
     Icon: LayoutGrid,
     match: (p) =>

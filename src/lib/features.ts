@@ -47,3 +47,22 @@ export const INSPECTIONS_ENABLED = false;
  * the ~3 640 lines behind it, drops kyc_submissions, and purges the bucket.
  */
 export const KYC_ENABLED = false;
+
+/**
+ * The v2 auction surfaces — the live ticker, the bid rails, the "enchères en
+ * cours" blocks on the home page, the explore grid, and the entry points that
+ * lead to them.
+ *
+ * OFF. The platform sells fixed-price annonces now (PIVOT-PLAN.md), auctions
+ * cannot be created (migration 0152), and a home page still shouting "Enchères
+ * en cours" is the single loudest way to tell a visitor they are looking at the
+ * old product.
+ *
+ * The 60 lots still running are NOT broken by this: /auctions/<id> keeps
+ * working for anyone holding a link, and the admin console keeps its v2 group,
+ * so a live lot can still be watched, bid on and settled. What goes is every
+ * place the app INVITES someone into an auction.
+ *
+ * Phase 6 deletes the code behind this flag outright, along with the routes.
+ */
+export const AUCTIONS_VISIBLE = false;

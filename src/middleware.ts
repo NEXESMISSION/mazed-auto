@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { routing } from "./i18n/routing";
 import { log } from "./lib/log";
 import { logActivity } from "./lib/activity";
-import { INSPECTIONS_ENABLED, KYC_ENABLED } from "./lib/features";
+import { INSPECTIONS_ENABLED, KYC_ENABLED, AUCTIONS_VISIBLE } from "./lib/features";
 
 const intlMiddleware = createIntlMiddleware(routing);
 
@@ -131,6 +131,23 @@ export async function middleware(req: NextRequest) {
       mwLog.warn(`session refresh failed: ${err instanceof Error ? err.message : err}`);
     } finally {
       endAuth();
+    }
+  }
+
+  // Auction gate. The v2 explore grid is a wall of auctions, so while
+  // AUCTIONS_VISIBLE is off it sends people to the annonces catalog instead of
+  // to a product we no longer sell. Old links, bookmarks and search results all
+  // land somewhere useful rather than on a page full of "enchères en cours".
+  //
+  // /auctions/<id> is deliberately NOT redirected: 60 lots are still running,
+  // and their bidders must be able to reach them. Nothing in the app links
+  // there any more. Phase 6 redirects them once the last lot has settled.
+  if (!AUCTIONS_VISIBLE) {
+    const exploreMatch = pathname.match(/^\/(fr|ar|en)\/properties(?:\/.*)?$/);
+    if (exploreMatch) {
+      const target = new URL(`/${exploreMatch[1]}/annonces`, req.url);
+      mwLog.info(`auction-gate ${pathname} → ${target.pathname}`);
+      return NextResponse.redirect(target, 307);
     }
   }
 

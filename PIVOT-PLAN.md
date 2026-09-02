@@ -16,6 +16,41 @@ reason is recorded.
 
 Append here as phases land. Newest first.
 
+### Phase 5 (brought forward) — the app stops looking like an auction house · **DONE** 2026-09-02
+
+Two problems reported together: "the PWA still looks old, nothing changed" and
+"make sure I don't see anything related to auction any more".
+
+**The PWA was serving the old app, and the cause was ours.** `sw.js` carries a
+`VERSION` string, and the activate handler deletes every cache whose key does
+not start with it. That string had not changed since v8 — so a returning
+visitor's browser fetched a byte-identical worker, no update event fired, and
+the old shell kept being served no matter what we deployed. Fixed three ways:
+the version is now `mazed-v3-1` (which evicts everything older), the register
+calls `update()` immediately instead of waiting on the browser's 24-hour check,
+and a `controllerchange` listener reloads **once** when a new worker takes over
+— otherwise the page you are looking at was already rendered from the old cache,
+which is exactly what "nothing changed" looks like.
+
+**Auctions are out of sight, behind `AUCTIONS_VISIBLE = false`.** What went:
+
+- the home hero, live ticker, every bid rail, "Enchères en cours", "Les plus
+  disputées", "Sélection VIP", the ending-soon carousel, the activity feed and
+  the sold-lot proof strip — on **both** the mobile and desktop trees
+- `/properties`, the v2 explore grid, now redirects to `/annonces`
+- the nav: Parcourir → `/annonces`, the centre button → `/annonces/nouvelle`,
+  Activité → `/account/listings`, "Mes enchères" → "Mes annonces"
+- the copy: 15 strings that still sold an auction ("Verrouillez la caution puis
+  enchérissez", "Une enchère pensée pour vous protéger", "Enchérisseurs
+  vérifiés") now describe a marketplace where you contact the seller
+
+Measured on the rendered page, scripts stripped: **0 auction words** on the
+home page, `/annonces` and `/account` — down from 54.
+
+**What deliberately still works:** `/auctions/<id>` for the 60 lots still
+running, and the admin's "Enchères (v2)" group. Nothing in the app links there
+any more. Phase 6 deletes the routes and adds the 301s once the last lot settles.
+
 ### Phase 4 — Public surfaces · **DONE** 2026-09-02
 
 The catalog is browsable and a buyer can reach a seller. Home rails, the

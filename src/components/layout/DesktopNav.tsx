@@ -40,19 +40,22 @@ const NotificationBell = dynamic(
 //   Mes enchères → /account/activity · Tarifs Pro → /pricing.
 // The logo itself links home, so no "Accueil" item (same as v1).
 const LINKS: {
-  href: "/properties" | "/sell" | "/account/activity" | "/pricing";
+  href: "/annonces" | "/annonces/nouvelle" | "/account/listings" | "/pricing";
   key: "browse" | "sellLong" | "myBids" | "pricing";
 }[] = [
-  { href: "/properties", key: "browse" },
-  { href: "/sell", key: "sellLong" },
-  { href: "/account/activity", key: "myBids" },
+  { href: "/annonces", key: "browse" },
+  { href: "/annonces/nouvelle", key: "sellLong" },
+  { href: "/account/listings", key: "myBids" },
   { href: "/pricing", key: "pricing" },
 ];
 
 function isActive(pathname: string, href: string): boolean {
   if (href === "/") return pathname === "/";
-  if (href === "/properties") {
+  if (href === "/annonces") {
+    // v2 paths keep lighting this tab until Phase 6 removes them entirely.
     return (
+      pathname === "/annonces" ||
+      pathname.startsWith("/annonces/") ||
       pathname === "/properties" ||
       pathname.startsWith("/properties/") ||
       pathname.startsWith("/auctions")

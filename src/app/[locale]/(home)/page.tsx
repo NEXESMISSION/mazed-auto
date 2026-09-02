@@ -14,6 +14,7 @@ import { BrandRail } from "@/components/landing/BrandRail";
 import { StatsBar } from "@/components/landing/StatsBar";
 import { CarRail } from "@/components/landing/CarRail";
 import { AnnonceRail } from "@/components/landing/AnnonceRail";
+import { AUCTIONS_VISIBLE } from "@/lib/features";
 import { PromoHero } from "@/components/landing/PromoHero";
 import { PropertyCard } from "@/components/property/PropertyCard";
 import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
@@ -90,7 +91,7 @@ const HOW_IT_WORKS: {
   {
     key: "browse", eyebrowKey: "home.step1Eyebrow",
     titleKey: "home.step1Title", bodyKey: "home.step1Body",
-    href: "/properties", Icon: Search,
+    href: "/annonces", Icon: Search,
   },
   {
     key: "bid", eyebrowKey: "home.step3Eyebrow",
@@ -321,15 +322,17 @@ export default async function LandingPage({
           laid over real live-auction photos, with gold accents + a top
           progress bar. Replaces the brand/stat HeroBanner on phones — leads
           with cars + trust, which reads sharper. */}
-      <PromoHero pool={trending} />
+      {AUCTIONS_VISIBLE && <PromoHero pool={trending} />}
 
       {/* LIVE TICKER — streamed in its own Suspense boundary so the page
           shell + hero paint immediately instead of blocking on this query. */}
-      <section className="mt-5">
-        <Suspense fallback={<TickerSkeleton />}>
-          <LiveTicker />
-        </Suspense>
-      </section>
+      {AUCTIONS_VISIBLE && (
+        <section className="mt-5">
+          <Suspense fallback={<TickerSkeleton />}>
+            <LiveTicker />
+          </Suspense>
+        </section>
+      )}
 
       {/* ══════════════════════════════════════════════════════════════
           BROWSE — the page's center of gravity. Trending rail on top
@@ -360,273 +363,284 @@ export default async function LandingPage({
         locale={locale}
       />
 
-      {/* Trending rail — horizontal scroller of the top 8 hottest auctions. */}
-      <StatsBar live={liveCount} sold={soldThisMonthCount} makes={topMakes.length} govs={coverageGovs} />
+      {/* ── v2 AUCTION BLOCKS ──
+          Hidden with AUCTIONS_VISIBLE (see src/lib/features.ts): the live
+          ticker, the bid rails, "Enchères en cours", the ending-soon hero
+          and the activity feed. A visitor should not be invited into a
+          product we no longer sell. The lots still running stay reachable
+          by direct link; Phase 6 deletes this whole region. */}
+      {AUCTIONS_VISIBLE && (
+        <>
+        {/* Trending rail — horizontal scroller of the top 8 hottest auctions. */}
+        <StatsBar live={liveCount} sold={soldThisMonthCount} makes={topMakes.length} govs={coverageGovs} />
 
-      <HomeSectionDivider
-        tone="live"
-        eyebrow="En ce moment"
-        title="Enchères en cours"
-        subtitle="Voitures vérifiées · enchères transparentes"
-      />
-
-      {/* 🔥 Hottest signal — live lots ranked by bid count, each card
-          carrying the glowing red FOMO pill. Leads the live block (v1
-          rhythm: open with urgency). */}
-      {hotNow.length > 0 && (
-        <section className="mt-6">
-          <RailHeader
-            eyebrow="🔥 Chaud"
-            title="Les plus disputées"
-            countLabel={hotNow.length}
-            ctaHref="/properties"
-            ChevronEnd={ChevronEnd}
-            isRTL={isRTL}
-            seeAllLabel={t("home.seeAll")}
-            flush
-          />
-          <CarRail items={hotNow} savedIds={savedIds} loggedIn={loggedIn} hot />
-        </section>
-      )}
-
-      {/* Urgency band right after the hot rail (moved up from the top so the
-          live block reads hot → ending → curated). */}
-      <div className="mt-7">
-        <Suspense fallback={null}>
-          <EndingSoonBanner />
-        </Suspense>
-      </div>
-
-      {vip.length > 0 && (
-        <section className="mt-6">
-          <RailHeader
-            eyebrow="Sélection"
-            title="Sélection VIP"
-            countLabel={vip.length}
-            ctaHref="/properties"
-            ChevronEnd={ChevronEnd}
-            isRTL={isRTL}
-            seeAllLabel={t("home.seeAll")}
-            flush
-          />
-          <CarRail items={vip} savedIds={savedIds} loggedIn={loggedIn} />
-        </section>
-      )}
-
-      <section className="mt-7">
-        <RailHeader
-          eyebrow={t("home.trendingEyebrow")}
-          title={t("home.trendingTitle")}
-          countLabel={trending.length}
-          ctaHref="/properties"
-          ChevronEnd={ChevronEnd}
-          isRTL={isRTL}
-          seeAllLabel={t("home.seeAll")}
-          flush
+        <HomeSectionDivider
+          tone="live"
+          eyebrow="En ce moment"
+          title="Enchères en cours"
+          subtitle="Voitures vérifiées · enchères transparentes"
         />
-        {/* Mobile: horizontal snap rail (auto-advancing). Desktop: replaced
-            by a proper 4-col grid below — much better than a horizontal
-            scroller when the input device is a mouse and the viewport is
-            wide enough to show eight cards on one viewport-height of
-            screen. */}
-        <div className="lg:hidden">
-          {trending.length > 0 ? (
-            <TrendingRail>
-              {trending.map((a, i) => (
-                <div key={a.id} className="w-[230px] shrink-0 snap-start">
-                  <PropertyCard
-                    auction={a}
-                    saved={savedIds.has(a.id)}
-                    loggedIn={loggedIn}
-                    priority={i < 3}
-                  />
-                </div>
-              ))}
-              <div className="w-1 shrink-0" />
-            </TrendingRail>
-          ) : (
-            <TrendingRail>
-              <TrendingSkeleton />
-              <TrendingSkeleton />
-              <TrendingSkeleton />
-            </TrendingRail>
-          )}
+
+        {/* 🔥 Hottest signal — live lots ranked by bid count, each card
+            carrying the glowing red FOMO pill. Leads the live block (v1
+            rhythm: open with urgency). */}
+        {hotNow.length > 0 && (
+          <section className="mt-6">
+            <RailHeader
+              eyebrow="🔥 Chaud"
+              title="Les plus disputées"
+              countLabel={hotNow.length}
+              ctaHref="/annonces"
+              ChevronEnd={ChevronEnd}
+              isRTL={isRTL}
+              seeAllLabel={t("home.seeAll")}
+              flush
+            />
+            <CarRail items={hotNow} savedIds={savedIds} loggedIn={loggedIn} hot />
+          </section>
+        )}
+
+        {/* Urgency band right after the hot rail (moved up from the top so the
+            live block reads hot → ending → curated). */}
+        <div className="mt-7">
+          <Suspense fallback={null}>
+            <EndingSoonBanner />
+          </Suspense>
         </div>
-        {trending.length > 0 && (
-          <div className="hidden lg:grid lg:grid-cols-4 lg:gap-5 lg:px-6 lg:mt-4">
-            {trending.slice(0, 8).map((a, i) => (
-              <PropertyCard
-                key={a.id}
-                auction={a}
-                saved={savedIds.has(a.id)}
-                loggedIn={loggedIn}
-                priority={i < 4}
-              />
-            ))}
+
+        {vip.length > 0 && (
+          <section className="mt-6">
+            <RailHeader
+              eyebrow="Sélection"
+              title="Sélection VIP"
+              countLabel={vip.length}
+              ctaHref="/annonces"
+              ChevronEnd={ChevronEnd}
+              isRTL={isRTL}
+              seeAllLabel={t("home.seeAll")}
+              flush
+            />
+            <CarRail items={vip} savedIds={savedIds} loggedIn={loggedIn} />
+          </section>
+        )}
+
+        <section className="mt-7">
+          <RailHeader
+            eyebrow={t("home.trendingEyebrow")}
+            title={t("home.trendingTitle")}
+            countLabel={trending.length}
+            ctaHref="/annonces"
+            ChevronEnd={ChevronEnd}
+            isRTL={isRTL}
+            seeAllLabel={t("home.seeAll")}
+            flush
+          />
+          {/* Mobile: horizontal snap rail (auto-advancing). Desktop: replaced
+              by a proper 4-col grid below — much better than a horizontal
+              scroller when the input device is a mouse and the viewport is
+              wide enough to show eight cards on one viewport-height of
+              screen. */}
+          <div className="lg:hidden">
+            {trending.length > 0 ? (
+              <TrendingRail>
+                {trending.map((a, i) => (
+                  <div key={a.id} className="w-[230px] shrink-0 snap-start">
+                    <PropertyCard
+                      auction={a}
+                      saved={savedIds.has(a.id)}
+                      loggedIn={loggedIn}
+                      priority={i < 3}
+                    />
+                  </div>
+                ))}
+                <div className="w-1 shrink-0" />
+              </TrendingRail>
+            ) : (
+              <TrendingRail>
+                <TrendingSkeleton />
+                <TrendingSkeleton />
+                <TrendingSkeleton />
+              </TrendingRail>
+            )}
+          </div>
+          {trending.length > 0 && (
+            <div className="hidden lg:grid lg:grid-cols-4 lg:gap-5 lg:px-6 lg:mt-4">
+              {trending.slice(0, 8).map((a, i) => (
+                <PropertyCard
+                  key={a.id}
+                  auction={a}
+                  saved={savedIds.has(a.id)}
+                  loggedIn={loggedIn}
+                  priority={i < 4}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* ─── "Offres directes" rail — fixed-price (buy-now) listings, kept
+            separate from the bidding lots so buyers can browse them on their
+            own. Only shown when there's direct stock. */}
+        {offers.length > 0 && (
+          <section className="mt-7">
+            <RailHeader
+              eyebrow="Achat immédiat"
+              title="Offres directes"
+              countLabel={offers.length}
+              ctaHref="/annonces"
+              ChevronEnd={ChevronEnd}
+              isRTL={isRTL}
+              seeAllLabel={t("home.seeAll")}
+              flush
+            />
+            <div className="lg:hidden">
+              <TrendingRail>
+                {offers.map((a, i) => (
+                  <div key={a.id} className="w-[230px] shrink-0 snap-start">
+                    <PropertyCard
+                      auction={a}
+                      saved={savedIds.has(a.id)}
+                      loggedIn={loggedIn}
+                      priority={i < 3}
+                    />
+                  </div>
+                ))}
+                <div className="w-1 shrink-0" />
+              </TrendingRail>
+            </div>
+            <div className="hidden lg:grid lg:grid-cols-4 lg:gap-5 lg:px-6 lg:mt-4">
+              {offers.slice(0, 8).map((a, i) => (
+                <PropertyCard
+                  key={a.id}
+                  auction={a}
+                  saved={savedIds.has(a.id)}
+                  loggedIn={loggedIn}
+                  priority={i < 4}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ─── "Nouveautés" rail — sibling of the trending rail above,
+            sorted by created_at desc instead of ends_at + paid placement.
+            Same card layout so it feels familiar, different headline so
+            the user understands the section answers "what's new" rather
+            than "what's hottest". Only rendered when we actually have
+            fresh inventory — falls back to nothing rather than empty
+            skeletons because the trending rail above already absorbs the
+            "we just opened" copy. */}
+        {nouveautes.length > 0 && (
+          <section className="mt-7">
+            <RailHeader
+              eyebrow={t("home.nouveautesEyebrow")}
+              title={t("home.nouveautesTitle")}
+              countLabel={nouveautes.length}
+              ctaHref="/annonces"
+              ChevronEnd={ChevronEnd}
+              isRTL={isRTL}
+              seeAllLabel={t("home.seeAll")}
+              flush
+            />
+            <div className="lg:hidden">
+              <TrendingRail>
+                {nouveautes.map((a, i) => (
+                  <div key={a.id} className="w-[230px] shrink-0 snap-start">
+                    <PropertyCard
+                      auction={a}
+                      saved={savedIds.has(a.id)}
+                      loggedIn={loggedIn}
+                      priority={i < 3}
+                    />
+                  </div>
+                ))}
+                <div className="w-1 shrink-0" />
+              </TrendingRail>
+            </div>
+            <div className="hidden lg:grid lg:grid-cols-4 lg:gap-5 lg:px-6 lg:mt-4">
+              {nouveautes.slice(0, 8).map((a, i) => (
+                <PropertyCard
+                  key={a.id}
+                  auction={a}
+                  saved={savedIds.has(a.id)}
+                  loggedIn={loggedIn}
+                  priority={i < 4}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ─── Second hero — same shape as the top carousel, but its
+            payload is the "ending soon" continuation: trending items
+            beyond the first 5, still sorted by ends_at asc. Gives the
+            urgency thread a second surface lower on the page. Hidden
+            when there's no second-tier urgency to show.
+
+            Desktop: skipped entirely. The wide hero at the top of the
+            page + the dedicated EndingSoonBanner already absorb the
+            urgency thread on lg+; a second photo carousel here turns
+            into a fourth full-width banner the user has to scroll past
+            to reach the browse rails. */}
+        {endingSoonSlides.length > 0 && (
+          <div className="mt-6 lg:hidden">
+            <HeroBanner slides={endingSoonSlides} isRTL={isRTL} />
           </div>
         )}
-      </section>
 
-      {/* ─── "Offres directes" rail — fixed-price (buy-now) listings, kept
-          separate from the bidding lots so buyers can browse them on their
-          own. Only shown when there's direct stock. */}
-      {offers.length > 0 && (
+        {/* Live activity feed — header-less, runs as a quiet tape under
+            the trending rail. The vertical marquee says "this place is
+            alive" without needing a label. */}
+        <section className="mt-6 px-4">
+          <Suspense fallback={null}>
+            <RecentBidsFeed />
+          </Suspense>
+        </section>
+
+        {/* Compact coverage strip — only lit wilayas + a "+N more" pill. */}
         <section className="mt-7">
-          <RailHeader
-            eyebrow="Achat immédiat"
-            title="Offres directes"
-            countLabel={offers.length}
-            ctaHref="/properties"
-            ChevronEnd={ChevronEnd}
-            isRTL={isRTL}
-            seeAllLabel={t("home.seeAll")}
-            flush
-          />
-          <div className="lg:hidden">
-            <TrendingRail>
-              {offers.map((a, i) => (
-                <div key={a.id} className="w-[230px] shrink-0 snap-start">
-                  <PropertyCard
-                    auction={a}
-                    saved={savedIds.has(a.id)}
-                    loggedIn={loggedIn}
-                    priority={i < 3}
-                  />
-                </div>
+          <Suspense fallback={null}>
+            <CoverageStrip />
+          </Suspense>
+        </section>
+
+        {/* More auctions — second batch on a 2-up grid. Replaces the
+            old "Featured estates" + "Recently added" duplicate sections
+            (those rendered the same rows.slice as the trending rail).
+            One header, one grid, the rest of the available data. */}
+        {recent.length > 0 && (
+          <section className="mt-9 px-4">
+            <RailHeader
+              title={t("home.moreToExplore")}
+              ctaHref="/annonces"
+              ChevronEnd={ChevronEnd}
+              isRTL={isRTL}
+              seeAllLabel={t("home.seeAll")}
+              flush
+            />
+            <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-5">
+              {recent.map((a, i) => (
+                <PropertyCard
+                  key={a.id}
+                  auction={a}
+                  saved={savedIds.has(a.id)}
+                  loggedIn={loggedIn}
+                  priority={i < 4}
+                />
               ))}
-              <div className="w-1 shrink-0" />
-            </TrendingRail>
-          </div>
-          <div className="hidden lg:grid lg:grid-cols-4 lg:gap-5 lg:px-6 lg:mt-4">
-            {offers.slice(0, 8).map((a, i) => (
-              <PropertyCard
-                key={a.id}
-                auction={a}
-                saved={savedIds.has(a.id)}
-                loggedIn={loggedIn}
-                priority={i < 4}
-              />
-            ))}
-          </div>
-        </section>
+            </div>
+          </section>
+        )}
+
+        {/* Browse by type — horizontal scroll rail of compact pills.
+            The old 2×3 grid had big monogram chips with empty space
+            around them; this version puts the icon and label inline
+            so the eye reads "category" not "tile". No borders. */}
+        {/* Mobile: two stacked horizontal pill rails — fits the thumb-
+            scroll rhythm and keeps each section's headline visible. */}
+        </>
       )}
 
-      {/* ─── "Nouveautés" rail — sibling of the trending rail above,
-          sorted by created_at desc instead of ends_at + paid placement.
-          Same card layout so it feels familiar, different headline so
-          the user understands the section answers "what's new" rather
-          than "what's hottest". Only rendered when we actually have
-          fresh inventory — falls back to nothing rather than empty
-          skeletons because the trending rail above already absorbs the
-          "we just opened" copy. */}
-      {nouveautes.length > 0 && (
-        <section className="mt-7">
-          <RailHeader
-            eyebrow={t("home.nouveautesEyebrow")}
-            title={t("home.nouveautesTitle")}
-            countLabel={nouveautes.length}
-            ctaHref="/properties"
-            ChevronEnd={ChevronEnd}
-            isRTL={isRTL}
-            seeAllLabel={t("home.seeAll")}
-            flush
-          />
-          <div className="lg:hidden">
-            <TrendingRail>
-              {nouveautes.map((a, i) => (
-                <div key={a.id} className="w-[230px] shrink-0 snap-start">
-                  <PropertyCard
-                    auction={a}
-                    saved={savedIds.has(a.id)}
-                    loggedIn={loggedIn}
-                    priority={i < 3}
-                  />
-                </div>
-              ))}
-              <div className="w-1 shrink-0" />
-            </TrendingRail>
-          </div>
-          <div className="hidden lg:grid lg:grid-cols-4 lg:gap-5 lg:px-6 lg:mt-4">
-            {nouveautes.slice(0, 8).map((a, i) => (
-              <PropertyCard
-                key={a.id}
-                auction={a}
-                saved={savedIds.has(a.id)}
-                loggedIn={loggedIn}
-                priority={i < 4}
-              />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* ─── Second hero — same shape as the top carousel, but its
-          payload is the "ending soon" continuation: trending items
-          beyond the first 5, still sorted by ends_at asc. Gives the
-          urgency thread a second surface lower on the page. Hidden
-          when there's no second-tier urgency to show.
-
-          Desktop: skipped entirely. The wide hero at the top of the
-          page + the dedicated EndingSoonBanner already absorb the
-          urgency thread on lg+; a second photo carousel here turns
-          into a fourth full-width banner the user has to scroll past
-          to reach the browse rails. */}
-      {endingSoonSlides.length > 0 && (
-        <div className="mt-6 lg:hidden">
-          <HeroBanner slides={endingSoonSlides} isRTL={isRTL} />
-        </div>
-      )}
-
-      {/* Live activity feed — header-less, runs as a quiet tape under
-          the trending rail. The vertical marquee says "this place is
-          alive" without needing a label. */}
-      <section className="mt-6 px-4">
-        <Suspense fallback={null}>
-          <RecentBidsFeed />
-        </Suspense>
-      </section>
-
-      {/* Compact coverage strip — only lit wilayas + a "+N more" pill. */}
-      <section className="mt-7">
-        <Suspense fallback={null}>
-          <CoverageStrip />
-        </Suspense>
-      </section>
-
-      {/* More auctions — second batch on a 2-up grid. Replaces the
-          old "Featured estates" + "Recently added" duplicate sections
-          (those rendered the same rows.slice as the trending rail).
-          One header, one grid, the rest of the available data. */}
-      {recent.length > 0 && (
-        <section className="mt-9 px-4">
-          <RailHeader
-            title={t("home.moreToExplore")}
-            ctaHref="/properties"
-            ChevronEnd={ChevronEnd}
-            isRTL={isRTL}
-            seeAllLabel={t("home.seeAll")}
-            flush
-          />
-          <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-5">
-            {recent.map((a, i) => (
-              <PropertyCard
-                key={a.id}
-                auction={a}
-                saved={savedIds.has(a.id)}
-                loggedIn={loggedIn}
-                priority={i < 4}
-              />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Browse by type — horizontal scroll rail of compact pills.
-          The old 2×3 grid had big monogram chips with empty space
-          around them; this version puts the icon and label inline
-          so the eye reads "category" not "tile". No borders. */}
-      {/* Mobile: two stacked horizontal pill rails — fits the thumb-
-          scroll rhythm and keeps each section's headline visible. */}
       <section className="mt-10 px-4 lg:hidden">
         <h3 className={`text-[15px] font-bold leading-tight ${isRTL ? "font-arabic" : ""}`}>
           {t("home.browseByType")}
@@ -673,7 +687,7 @@ export default async function LandingPage({
           12 cards scroll). No padded placeholders: a "Coming soon"
           tile alongside a real sold listing reads as filler and makes
           the page feel emptier than just hiding the section would. */}
-      {hammered.length > 0 && (
+      {AUCTIONS_VISIBLE && hammered.length > 0 && (
         <HomeSectionDivider
           tone="sold"
           eyebrow="Historique"
@@ -681,7 +695,7 @@ export default async function LandingPage({
           subtitle="Prix réels obtenus aux enchères"
         />
       )}
-      {hammered.length > 0 && (
+      {AUCTIONS_VISIBLE && hammered.length > 0 && (
         <section className="mt-10">
           <div className="flex items-baseline justify-between px-4">
             <h3 className={`inline-flex items-center gap-1.5 text-[15px] font-bold leading-tight ${isRTL ? "font-arabic" : ""}`}>
@@ -828,7 +842,7 @@ export default async function LandingPage({
           here" question the hero opens with, answered concretely. */}
       <section className="mt-10 px-4 lg:px-6">
         <Link
-          href="/properties"
+          href={"/annonces" as never}
           className="batta-surface-navy-luxe tap-target relative flex items-center justify-between gap-3 overflow-hidden rounded-2xl p-6 ring-1 ring-gold/25 transition active:scale-[0.99] lg:hidden"
         >
           <div className="relative min-w-0">
@@ -868,14 +882,14 @@ export default async function LandingPage({
                 </p>
                 <div className="mt-7 flex items-center gap-3">
                   <Link
-                    href="/properties"
+                    href={"/annonces" as never}
                     className="batta-gold-fill inline-flex items-center gap-2 rounded-full px-5 py-3 text-[12.5px] font-extrabold uppercase tracking-[0.14em] shadow-[var(--shadow-gold)] transition active:scale-[0.99]"
                   >
                     {t("home.heroBrowseCta")}
                     <ArrowUpRight className="size-4" strokeWidth={2.5} />
                   </Link>
                   <Link
-                    href="/sell"
+                    href={"/annonces/nouvelle" as never}
                     className="inline-flex items-center gap-2 rounded-full border border-gold/30 px-5 py-3 text-[12.5px] font-bold text-foreground transition hover:border-gold-soft/60 hover:bg-gold-faint"
                   >
                     Vendre
@@ -998,7 +1012,8 @@ function RailHeader({
       surface (Reels + Grid + numbered pagination). The /auctions
       index was removed (it was a duplicate of /properties); the
       detail route /auctions/[id] still exists for individual lots. */
-  ctaHref: "/properties";
+  /** Where "tout voir" goes. The v3 catalog; the literal keeps typed routes honest. */
+  ctaHref: "/annonces";
   ChevronEnd: React.ComponentType<{ className?: string }>;
   isRTL: boolean;
   /** Pre-translated "See all" label. Server component callers pass

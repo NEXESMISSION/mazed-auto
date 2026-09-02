@@ -8,6 +8,8 @@ import { EndingSoonBanner } from "@/components/landing/EndingSoonBanner";
 import { HeroBanner, type HeroSlide } from "@/components/landing/HeroBanner";
 import { DesktopHero } from "@/components/landing/DesktopHero";
 import { BrandRail } from "@/components/landing/BrandRail";
+import { AnnonceRail } from "@/components/landing/AnnonceRail";
+import { AUCTIONS_VISIBLE } from "@/lib/features";
 import { PropertyCard } from "@/components/property/PropertyCard";
 import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
 import { formatTND, cn } from "@/lib/utils";
@@ -170,285 +172,313 @@ export async function HomeDesktop({
   return (
     <div className={alwaysVisible ? "block" : "hidden lg:block"}>
       {/* ─── CINEMATIC MAGAZINE HERO — full-bleed, 1 featured + 3 runners ─── */}
-      <DesktopHero pool={heroPool} liveCount={liveCount} />
+      {/* ── v2 AUCTION BLOCKS (desktop) ──
+          Hidden with AUCTIONS_VISIBLE, same as the mobile tree: the hero,
+          the ticker, every bid rail, "Les voitures à miser" and the sold-lot
+          proof strip. What survives below is what still describes the
+          product — the brand rail, the trust strip and the footer.
+          Phase 6 deletes this file along with the rest of the auction UI. */}
+      {AUCTIONS_VISIBLE && <DesktopHero pool={heroPool} liveCount={liveCount} />}
 
-      {/* Everything below the hero stays in the constrained content column. */}
-      <div className="mx-auto max-w-[var(--max-w-wide)] px-8 pb-24">
-        {/* LIVE TICKER — streamed so it never blocks the desktop shell. */}
-        <section className="mt-10">
-          <Suspense fallback={<div className="h-9 rounded-full bg-surface-2" />}>
-            <LiveTicker />
-          </Suspense>
-        </section>
-
-        {/* ════════════════════════════════════════════════════════════
-            SECTION · ENCHÈRES EN DIRECT — everything biddable now.
-            ════════════════════════════════════════════════════════════ */}
-        <SectionDivider
-          tone="live"
-          eyebrow="Enchères en cours"
-          title="Les voitures à miser"
-          subtitle="Les plus suivies, les plus disputées et les nouveautés — toutes vérifiées, toutes biddables maintenant."
+        {/* Everything below the hero stays in the constrained content column. */}
+        <div className="mx-auto max-w-[var(--max-w-wide)] px-8 pb-24">
+        {/* The v3 catalog on desktop. The home page's own rails live inside its
+            lg:hidden tree, so they never reach this breakpoint. */}
+        <AnnonceRail
+          kind="vehicle"
+          eyebrow="À vendre"
+          title="Voitures à prix fixe"
+          subtitle="Vous contactez le vendeur directement"
+          locale={locale}
+        />
+        <AnnonceRail
+          kind="part"
+          eyebrow="Pièces de rechange"
+          title="Pièces disponibles"
+          subtitle="Trouvez la pièce compatible avec votre véhicule"
+          locale={locale}
         />
 
-        {/* TRENDING — auto-sliding carousel */}
-        {trending.length > 0 && (
-          <section className="mt-10">
-            <RailHeader
-              eyebrow={t("home.trendingEyebrow")}
-              title={t("home.trendingTitle")}
-              countLabel={trending.length}
-              ChevronEnd={ChevronEnd}
-              isRTL={isRTL}
-              seeAllLabel={t("home.seeAll")}
-            />
-            <CardSlider
-              items={trending}
-              savedIds={savedIds}
-              loggedIn={loggedIn}
-              priorityCount={4}
-            />
-          </section>
-        )}
-
-        {/* LES PLUS DISPUTÉES — hottest by bid count */}
-        {hotNow.length > 0 && (
-          <section className="mt-12">
-            <RailHeader
-              eyebrow="🔥 Chaud"
-              title="Les plus disputées"
-              countLabel={hotNow.length}
-              ChevronEnd={ChevronEnd}
-              isRTL={isRTL}
-              seeAllLabel={t("home.seeAll")}
-            />
-            <CardSlider items={hotNow} savedIds={savedIds} loggedIn={loggedIn} hot />
-          </section>
-        )}
-
-        {/* DERNIÈRE CHANCE — hammers falling within the hour (red urgency
-            tier, ported from v1's LastCallRail; inline header because the
-            red treatment diverges from the gold RailHeader). */}
-        {lastCall.length > 0 && (
-          <section className="mt-12">
-            <div className="flex items-end justify-between gap-3 px-4">
-              <div className="min-w-0">
-                <div className="mb-1.5 flex items-center gap-2">
-                  <span className="relative flex h-2 w-2">
-                    <span className="absolute inset-0 animate-ping rounded-full bg-red-500 opacity-60" />
-                    <span className="relative h-2 w-2 rounded-full bg-red-500" />
-                  </span>
-                  <span className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-red-400">
-                    Dernière chance
-                  </span>
-                </div>
-                <h3 className="inline-flex items-center gap-2 text-[20px] font-extrabold leading-tight tracking-tight">
-                  {"Se terminent dans moins d'une heure"}
-                  <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-red-500/15 px-2.5 text-[11px] font-extrabold tracking-wider text-red-300 ring-1 ring-red-500/40">
-                    {lastCall.length}
-                  </span>
-                </h3>
-              </div>
-              <Link
-                href="/properties"
-                className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border bg-surface px-3.5 py-1.5 text-[11.5px] font-semibold text-muted transition-colors hover:border-gold-soft/40 hover:text-gold"
-              >
-                {t("home.seeAll")}
-                <ChevronEnd className="size-3" />
-              </Link>
-            </div>
-            <CardSlider items={lastCall} savedIds={savedIds} loggedIn={loggedIn} />
-          </section>
-        )}
-
-        {/* EN VEDETTE — paid/featured placements (v1's VipRail: Crown header,
-            faint gold radial glow behind a 4-up grid so the premium tier
-            stands apart from the scrolling rails). */}
-        {vip.length > 0 && (
-          <section className="mt-12">
-            <div className="flex items-end justify-between gap-3 px-4">
-              <div className="min-w-0">
-                <div className="mb-1.5 flex items-center gap-2">
-                  <Crown className="size-3.5 text-gold" strokeWidth={2.2} />
-                  <span className="batta-eyebrow">Sélection premium</span>
-                </div>
-                <h3 className="text-[20px] font-extrabold leading-tight tracking-tight">
-                  En <span className="gradient-gold-text">vedette</span>
-                </h3>
-              </div>
-              <Link
-                href="/properties"
-                className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border bg-surface px-3.5 py-1.5 text-[11.5px] font-semibold text-muted transition-colors hover:border-gold-soft/40 hover:text-gold"
-              >
-                {t("home.seeAll")}
-                <ChevronEnd className="size-3" />
-              </Link>
-            </div>
-            <div className="relative mt-4 px-4">
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-x-4 top-1/2 h-1/2 -translate-y-1/2 rounded-[28px] opacity-[0.18]"
-                style={{
-                  background:
-                    "radial-gradient(ellipse at center, rgba(212,175,55,0.25), transparent 60%)",
-                }}
-              />
-              <div className="relative grid grid-cols-4 gap-6">
-                {vip.map((a) => (
-                  <PropertyCard
-                    key={a.id}
-                    auction={a}
-                    saved={savedIds.has(a.id)}
-                    loggedIn={loggedIn}
-                  />
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* OFFRES DIRECTES — auto-sliding carousel */}
-        {offers.length > 0 && (
-          <section className="mt-12">
-            <RailHeader
-              eyebrow="Achat immédiat"
-              title="Offres directes"
-              countLabel={offers.length}
-              ChevronEnd={ChevronEnd}
-              isRTL={isRTL}
-              seeAllLabel={t("home.seeAll")}
-            />
-            <CardSlider items={offers} savedIds={savedIds} loggedIn={loggedIn} />
-          </section>
-        )}
-
-        {/* NOUVEAUTÉS — auto-sliding carousel */}
-        {nouveautes.length > 0 && (
-          <section className="mt-12">
-            <RailHeader
-              eyebrow={t("home.nouveautesEyebrow")}
-              title={t("home.nouveautesTitle")}
-              countLabel={nouveautes.length}
-              ChevronEnd={ChevronEnd}
-              isRTL={isRTL}
-              seeAllLabel={t("home.seeAll")}
-            />
-            <CardSlider items={nouveautes} savedIds={savedIds} loggedIn={loggedIn} />
-          </section>
-        )}
-
-        {/* SECOND HERO — "ending soon" carousel (was mobile-only). */}
-        {endingSoonSlides.length > 0 && (
-          <section className="mt-12">
-            <HeroBanner slides={endingSoonSlides} isRTL={isRTL} />
-          </section>
-        )}
-
-        {/* ENDING SOON band */}
-        <section className="mt-12">
-          <Suspense fallback={null}>
-            <EndingSoonBanner />
-          </Suspense>
-        </section>
-
-        {/* PARCOURIR — category tiles (one row) + price pills */}
-        <section className="mt-14">
-          <div className="flex items-end justify-between gap-3">
-            <div>
-              <span className="batta-eyebrow">Parcourir</span>
-              <h3 className="mt-1.5 text-[22px] font-extrabold leading-tight tracking-tight">
-                Trouvez votre voiture
-              </h3>
-            </div>
-            <Link
-              href="/properties"
-              className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border bg-surface px-3.5 py-1.5 text-[11.5px] font-semibold text-muted transition-colors hover:border-gold-soft/40 hover:text-gold"
-            >
-              {t("home.seeAll")}
-              <ChevronEnd className="size-3" />
-            </Link>
-          </div>
-
-          {/* Type — six compact category tiles across one row. */}
-          <div className="mt-6 grid grid-cols-6 gap-3">
-            {PROPERTY_TYPES.map((pt) => (
-              <Link
-                key={pt.key}
-                href={`/properties?types=${pt.key}` as `/properties`}
-                className="group flex flex-col items-center gap-2 rounded-2xl bg-surface px-3 py-5 ring-1 ring-border transition hover:-translate-y-0.5 hover:bg-surface-2 hover:ring-gold-soft/50"
-              >
-                <span className="inline-flex size-12 items-center justify-center rounded-xl bg-gold-faint text-gold ring-1 ring-gold/15 transition group-hover:ring-gold/30">
-                  <CarTypeIcon typeKey={pt.key} />
-                </span>
-                <span className="text-[12.5px] font-bold text-foreground">
-                  {t(`property.types.${pt.key}`)}
-                </span>
-              </Link>
-            ))}
-          </div>
-
-          {/* Price — four pills across one row. */}
-          <div className="mt-3 grid grid-cols-4 gap-3">
-            {PRICE_BUCKETS.map((b) => (
-              <Link
-                key={b.key}
-                href={`/properties?${b.query}` as `/properties`}
-                className="group flex items-center justify-between rounded-2xl bg-surface px-5 py-3.5 ring-1 ring-border transition hover:bg-gold-faint hover:ring-gold-soft/50"
-              >
-                <span className="text-[13px] font-bold text-foreground">{b.label}</span>
-                <ArrowUpRight
-                  className="size-4 text-muted transition group-hover:text-gold-bright"
-                  strokeWidth={2.2}
-                />
-              </Link>
-            ))}
-          </div>
-        </section>
-
-        {/* MORE TO EXPLORE — auto-sliding carousel */}
-        {recent.length > 0 && (
-          <section className="mt-14">
-            <RailHeader
-              title={t("home.moreToExplore")}
-              ChevronEnd={ChevronEnd}
-              isRTL={isRTL}
-              seeAllLabel={t("home.seeAll")}
-            />
-            <CardSlider items={recent} savedIds={savedIds} loggedIn={loggedIn} />
-          </section>
-        )}
-
-        {/* ════════════════════════════════════════════════════════════
-            SECTION · RÉCEMMENT VENDUES — social proof / history.
-            ════════════════════════════════════════════════════════════ */}
-        {hammered.length > 0 && (
+        {AUCTIONS_VISIBLE && (
           <>
-            <SectionDivider
-              tone="sold"
-              eyebrow="Récemment vendues"
-              title="La preuve qu'on vend"
-              subtitle="Voitures attribuées récemment — prix réels obtenus aux enchères."
-            />
-            <section className="mt-8">
-              <div className="grid grid-cols-4 gap-5">
-                {hammered.slice(0, 8).map((h) => (
-                  <HammeredCard
-                    key={h.id}
-                    row={h}
-                    locale={locale}
-                    soldLabel={t("home.soldChip")}
-                    tnd={t("common.tnd")}
-                  />
-                ))}
+          {/* LIVE TICKER — streamed so it never blocks the desktop shell. */}
+          <section className="mt-10">
+            <Suspense fallback={<div className="h-9 rounded-full bg-surface-2" />}>
+              <LiveTicker />
+            </Suspense>
+          </section>
+
+          {/* ════════════════════════════════════════════════════════════
+              SECTION · ENCHÈRES EN DIRECT — everything biddable now.
+              ════════════════════════════════════════════════════════════ */}
+          <SectionDivider
+            tone="live"
+            eyebrow="Enchères en cours"
+            title="Les voitures à miser"
+            subtitle="Les plus suivies, les plus disputées et les nouveautés — toutes vérifiées, toutes biddables maintenant."
+          />
+
+          {/* TRENDING — auto-sliding carousel */}
+          {trending.length > 0 && (
+            <section className="mt-10">
+              <RailHeader
+                eyebrow={t("home.trendingEyebrow")}
+                title={t("home.trendingTitle")}
+                countLabel={trending.length}
+                ChevronEnd={ChevronEnd}
+                isRTL={isRTL}
+                seeAllLabel={t("home.seeAll")}
+              />
+              <CardSlider
+                items={trending}
+                savedIds={savedIds}
+                loggedIn={loggedIn}
+                priorityCount={4}
+              />
+            </section>
+          )}
+
+          {/* LES PLUS DISPUTÉES — hottest by bid count */}
+          {hotNow.length > 0 && (
+            <section className="mt-12">
+              <RailHeader
+                eyebrow="🔥 Chaud"
+                title="Les plus disputées"
+                countLabel={hotNow.length}
+                ChevronEnd={ChevronEnd}
+                isRTL={isRTL}
+                seeAllLabel={t("home.seeAll")}
+              />
+              <CardSlider items={hotNow} savedIds={savedIds} loggedIn={loggedIn} hot />
+            </section>
+          )}
+
+          {/* DERNIÈRE CHANCE — hammers falling within the hour (red urgency
+              tier, ported from v1's LastCallRail; inline header because the
+              red treatment diverges from the gold RailHeader). */}
+          {lastCall.length > 0 && (
+            <section className="mt-12">
+              <div className="flex items-end justify-between gap-3 px-4">
+                <div className="min-w-0">
+                  <div className="mb-1.5 flex items-center gap-2">
+                    <span className="relative flex h-2 w-2">
+                      <span className="absolute inset-0 animate-ping rounded-full bg-red-500 opacity-60" />
+                      <span className="relative h-2 w-2 rounded-full bg-red-500" />
+                    </span>
+                    <span className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-red-400">
+                      Dernière chance
+                    </span>
+                  </div>
+                  <h3 className="inline-flex items-center gap-2 text-[20px] font-extrabold leading-tight tracking-tight">
+                    {"Se terminent dans moins d'une heure"}
+                    <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-red-500/15 px-2.5 text-[11px] font-extrabold tracking-wider text-red-300 ring-1 ring-red-500/40">
+                      {lastCall.length}
+                    </span>
+                  </h3>
+                </div>
+                <Link
+                  href="/properties"
+                  className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border bg-surface px-3.5 py-1.5 text-[11.5px] font-semibold text-muted transition-colors hover:border-gold-soft/40 hover:text-gold"
+                >
+                  {t("home.seeAll")}
+                  <ChevronEnd className="size-3" />
+                </Link>
+              </div>
+              <CardSlider items={lastCall} savedIds={savedIds} loggedIn={loggedIn} />
+            </section>
+          )}
+
+          {/* EN VEDETTE — paid/featured placements (v1's VipRail: Crown header,
+              faint gold radial glow behind a 4-up grid so the premium tier
+              stands apart from the scrolling rails). */}
+          {vip.length > 0 && (
+            <section className="mt-12">
+              <div className="flex items-end justify-between gap-3 px-4">
+                <div className="min-w-0">
+                  <div className="mb-1.5 flex items-center gap-2">
+                    <Crown className="size-3.5 text-gold" strokeWidth={2.2} />
+                    <span className="batta-eyebrow">Sélection premium</span>
+                  </div>
+                  <h3 className="text-[20px] font-extrabold leading-tight tracking-tight">
+                    En <span className="gradient-gold-text">vedette</span>
+                  </h3>
+                </div>
+                <Link
+                  href="/properties"
+                  className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border bg-surface px-3.5 py-1.5 text-[11.5px] font-semibold text-muted transition-colors hover:border-gold-soft/40 hover:text-gold"
+                >
+                  {t("home.seeAll")}
+                  <ChevronEnd className="size-3" />
+                </Link>
+              </div>
+              <div className="relative mt-4 px-4">
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-x-4 top-1/2 h-1/2 -translate-y-1/2 rounded-[28px] opacity-[0.18]"
+                  style={{
+                    background:
+                      "radial-gradient(ellipse at center, rgba(212,175,55,0.25), transparent 60%)",
+                  }}
+                />
+                <div className="relative grid grid-cols-4 gap-6">
+                  {vip.map((a) => (
+                    <PropertyCard
+                      key={a.id}
+                      auction={a}
+                      saved={savedIds.has(a.id)}
+                      loggedIn={loggedIn}
+                    />
+                  ))}
+                </div>
               </div>
             </section>
-          </>
-        )}
+          )}
 
-        {/* PARCOURIR PAR MARQUE — make chips */}
-        {topMakes.length > 0 && (
-          <BrandRail makes={topMakes} title="Parcourir par marque" />
-        )}
+          {/* OFFRES DIRECTES — auto-sliding carousel */}
+          {offers.length > 0 && (
+            <section className="mt-12">
+              <RailHeader
+                eyebrow="Achat immédiat"
+                title="Offres directes"
+                countLabel={offers.length}
+                ChevronEnd={ChevronEnd}
+                isRTL={isRTL}
+                seeAllLabel={t("home.seeAll")}
+              />
+              <CardSlider items={offers} savedIds={savedIds} loggedIn={loggedIn} />
+            </section>
+          )}
+
+          {/* NOUVEAUTÉS — auto-sliding carousel */}
+          {nouveautes.length > 0 && (
+            <section className="mt-12">
+              <RailHeader
+                eyebrow={t("home.nouveautesEyebrow")}
+                title={t("home.nouveautesTitle")}
+                countLabel={nouveautes.length}
+                ChevronEnd={ChevronEnd}
+                isRTL={isRTL}
+                seeAllLabel={t("home.seeAll")}
+              />
+              <CardSlider items={nouveautes} savedIds={savedIds} loggedIn={loggedIn} />
+            </section>
+          )}
+
+          {/* SECOND HERO — "ending soon" carousel (was mobile-only). */}
+          {endingSoonSlides.length > 0 && (
+            <section className="mt-12">
+              <HeroBanner slides={endingSoonSlides} isRTL={isRTL} />
+            </section>
+          )}
+
+          {/* ENDING SOON band */}
+          <section className="mt-12">
+            <Suspense fallback={null}>
+              <EndingSoonBanner />
+            </Suspense>
+          </section>
+
+          {/* PARCOURIR — category tiles (one row) + price pills */}
+          <section className="mt-14">
+            <div className="flex items-end justify-between gap-3">
+              <div>
+                <span className="batta-eyebrow">Parcourir</span>
+                <h3 className="mt-1.5 text-[22px] font-extrabold leading-tight tracking-tight">
+                  Trouvez votre voiture
+                </h3>
+              </div>
+              <Link
+                href="/properties"
+                className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border bg-surface px-3.5 py-1.5 text-[11.5px] font-semibold text-muted transition-colors hover:border-gold-soft/40 hover:text-gold"
+              >
+                {t("home.seeAll")}
+                <ChevronEnd className="size-3" />
+              </Link>
+            </div>
+
+            {/* Type — six compact category tiles across one row. */}
+            <div className="mt-6 grid grid-cols-6 gap-3">
+              {PROPERTY_TYPES.map((pt) => (
+                <Link
+                  key={pt.key}
+                  href={`/properties?types=${pt.key}` as `/properties`}
+                  className="group flex flex-col items-center gap-2 rounded-2xl bg-surface px-3 py-5 ring-1 ring-border transition hover:-translate-y-0.5 hover:bg-surface-2 hover:ring-gold-soft/50"
+                >
+                  <span className="inline-flex size-12 items-center justify-center rounded-xl bg-gold-faint text-gold ring-1 ring-gold/15 transition group-hover:ring-gold/30">
+                    <CarTypeIcon typeKey={pt.key} />
+                  </span>
+                  <span className="text-[12.5px] font-bold text-foreground">
+                    {t(`property.types.${pt.key}`)}
+                  </span>
+                </Link>
+              ))}
+            </div>
+
+            {/* Price — four pills across one row. */}
+            <div className="mt-3 grid grid-cols-4 gap-3">
+              {PRICE_BUCKETS.map((b) => (
+                <Link
+                  key={b.key}
+                  href={`/properties?${b.query}` as `/properties`}
+                  className="group flex items-center justify-between rounded-2xl bg-surface px-5 py-3.5 ring-1 ring-border transition hover:bg-gold-faint hover:ring-gold-soft/50"
+                >
+                  <span className="text-[13px] font-bold text-foreground">{b.label}</span>
+                  <ArrowUpRight
+                    className="size-4 text-muted transition group-hover:text-gold-bright"
+                    strokeWidth={2.2}
+                  />
+                </Link>
+              ))}
+            </div>
+          </section>
+
+          {/* MORE TO EXPLORE — auto-sliding carousel */}
+          {recent.length > 0 && (
+            <section className="mt-14">
+              <RailHeader
+                title={t("home.moreToExplore")}
+                ChevronEnd={ChevronEnd}
+                isRTL={isRTL}
+                seeAllLabel={t("home.seeAll")}
+              />
+              <CardSlider items={recent} savedIds={savedIds} loggedIn={loggedIn} />
+            </section>
+          )}
+
+          {/* ════════════════════════════════════════════════════════════
+              SECTION · RÉCEMMENT VENDUES — social proof / history.
+              ════════════════════════════════════════════════════════════ */}
+          {hammered.length > 0 && (
+            <>
+              <SectionDivider
+                tone="sold"
+                eyebrow="Récemment vendues"
+                title="La preuve qu'on vend"
+                subtitle="Voitures attribuées récemment — prix réels obtenus aux enchères."
+              />
+              <section className="mt-8">
+                <div className="grid grid-cols-4 gap-5">
+                  {hammered.slice(0, 8).map((h) => (
+                    <HammeredCard
+                      key={h.id}
+                      row={h}
+                      locale={locale}
+                      soldLabel={t("home.soldChip")}
+                      tnd={t("common.tnd")}
+                    />
+                  ))}
+                </div>
+              </section>
+            </>
+          )}
+
+        </>
+      )}
+
+      {/* PARCOURIR PAR MARQUE — make chips */}
+      {topMakes.length > 0 && (
+        <BrandRail makes={topMakes} title="Parcourir par marque" />
+      )}
 
         {/* ─── CLOSING CTA — twin pillars (buyers / sellers) ─── */}
         <section className="mt-16">
@@ -458,7 +488,7 @@ export async function HomeDesktop({
               Icon={Gavel}
               eyebrow="Acheteurs"
               title="Trouvez votre prochaine voiture"
-              text="Des enchères vérifiées chaque jour, partout en Tunisie — KYC, carte grise et dépôt contrôlés."
+              text="Des annonces vérifiées chaque jour, partout en Tunisie — voitures et pièces de rechange."
               cta="Parcourir tout"
               tone="gold"
             />

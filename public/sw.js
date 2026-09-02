@@ -8,7 +8,13 @@
 //   - Other GETs     : stale-while-revalidate into RUNTIME_CACHE.
 //   - Cross-origin & non-GET: passthrough, never cached.
 
-const VERSION = "mazed-auto-v8";
+// Bump this on every release that changes what users see. The activate
+// handler deletes every cache whose key does not start with VERSION, so a new
+// string is what actually evicts the old shell — and a build that ships new
+// pages while leaving this alone hands returning visitors the previous app.
+// That is exactly what happened with the v3 catalog: the bytes of this file
+// never changed, so no update event ever fired.
+const VERSION = "mazed-v3-1";
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 const ASSET_CACHE = `${VERSION}-assets`;
 const IMAGE_CACHE = `${VERSION}-images`;
