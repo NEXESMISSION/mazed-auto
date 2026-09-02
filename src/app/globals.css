@@ -897,3 +897,10 @@ html[dir="rtl"] .batta-marquee-reverse { animation-name: batta-marquee; }
     animation: none !important;
   }
 }
+
+/* Home cover carousel — the progress bar sweeps in time with the slide
+   interval, so the hero reads as moving on purpose rather than jumping. */
+@keyframes batta-hero-sweep {
+  from { width: 0%; }
+  to   { width: 100%; }
+}

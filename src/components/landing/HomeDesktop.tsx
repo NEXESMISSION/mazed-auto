@@ -10,6 +10,7 @@ import { DesktopHero } from "@/components/landing/DesktopHero";
 import { BrandRail } from "@/components/landing/BrandRail";
 import { AnnonceRail } from "@/components/landing/AnnonceRail";
 import { AUCTIONS_VISIBLE } from "@/lib/features";
+import { AnnonceHero } from "./AnnonceHero";
 import { PropertyCard } from "@/components/property/PropertyCard";
 import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
 import { formatTND, cn } from "@/lib/utils";
@@ -171,7 +172,14 @@ export async function HomeDesktop({
 
   return (
     <div className={alwaysVisible ? "block" : "hidden lg:block"}>
-      {/* ─── CINEMATIC MAGAZINE HERO — full-bleed, 1 featured + 3 runners ─── */}
+      {/* ─── CINEMATIC MAGAZINE HERO — full-bleed, 1 featured + 3 runners ───
+          The v3 cover: same spread, drawn from the annonces catalog. It
+          replaces DesktopHero, which spoke in countdowns and bid counts and
+          went dark with the auction blocks — taking the whole top of the page
+          with it. AnnonceHero renders BOTH trees (it owns the mobile carousel
+          too), so this instance is desktop-only via its own breakpoints. */}
+      <AnnonceHero />
+
       {/* ── v2 AUCTION BLOCKS (desktop) ──
           Hidden with AUCTIONS_VISIBLE, same as the mobile tree: the hero,
           the ticker, every bid rail, "Les voitures à miser" and the sold-lot

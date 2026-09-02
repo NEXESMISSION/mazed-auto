@@ -15,7 +15,7 @@ import { StatsBar } from "@/components/landing/StatsBar";
 import { CarRail } from "@/components/landing/CarRail";
 import { AnnonceRail } from "@/components/landing/AnnonceRail";
 import { AUCTIONS_VISIBLE } from "@/lib/features";
-import { PromoHero } from "@/components/landing/PromoHero";
+import { AnnonceHeroMobile } from "@/components/landing/AnnonceHero";
 import { PropertyCard } from "@/components/property/PropertyCard";
 import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
 import { formatTND } from "@/lib/utils";
@@ -321,7 +321,12 @@ export default async function LandingPage({
           laid over real live-auction photos, with gold accents + a top
           progress bar. Replaces the brand/stat HeroBanner on phones — leads
           with cars + trust, which reads sharper. */}
-      {AUCTIONS_VISIBLE && <PromoHero pool={trending} />}
+      {/* THE COVER. PromoHero — the old cycling hero — sold bidding, a
+          refundable deposit and KYC over auction photos, so it went dark with
+          the auction blocks and took the whole top of the page with it: the
+          home opened straight onto a rail of cards. AnnonceHeroMobile is the
+          same carousel rebuilt on the annonces catalog. */}
+      <AnnonceHeroMobile />
 
       {/* LIVE TICKER — streamed in its own Suspense boundary so the page
           shell + hero paint immediately instead of blocking on this query. */}
