@@ -3,7 +3,6 @@ import { Link } from "@/i18n/navigation";
 import {
   ChevronDown,
   ChevronLeft,
-  Gavel,
   KeyRound,
   LifeBuoy,
   Mail,
@@ -16,7 +15,7 @@ import {
 export const metadata: Metadata = {
   title: "Centre d'aide — Mazed Auto",
   description:
-    "Questions fréquentes sur Mazed Auto : compte et vérification KYC, enchères et caution, paiements par virement ou D17, vente de votre voiture, remise du véhicule et support.",
+    "Questions fréquentes sur Mazed Auto : acheter au prix affiché, contacter le vendeur, publier une annonce, frais de publication, pièces de rechange et support.",
 };
 
 // Pure static content — prerender at build and serve from the edge CDN.
@@ -33,124 +32,184 @@ type Group = {
 /* French copy is hardcoded on purpose — this page is content, not chrome. */
 const GROUPS: Group[] = [
   {
-    id: "compte-kyc",
-    title: "Compte & KYC",
+    id: "compte",
+    title: "Compte",
     Icon: ShieldCheck,
     items: [
       {
         q: "Comment créer un compte ?",
         a: (
           <>
-            Rendez-vous sur la page{" "}
-            <FaqLink href="/signup">Inscription</FaqLink>, renseignez vos
-            informations et confirmez votre e-mail. La création du compte est
-            gratuite et ne prend qu&apos;une minute.
+            Avec votre numéro de téléphone : vous recevez un code par SMS et
+            votre compte est créé. Un compte est nécessaire pour publier une
+            annonce ou enregistrer des favoris — pas pour parcourir le catalogue
+            ni pour appeler un vendeur.
           </>
         ),
       },
       {
-        q: "Qu'est-ce que la vérification KYC et pourquoi est-elle obligatoire ?",
+        q: "Dois-je vérifier mon identité pour utiliser Mazed Auto ?",
         a: (
           <>
-            Le KYC (vérification d&apos;identité) garantit que chaque enchérisseur
-            et chaque vendeur est une personne réelle et identifiée. Il vous sera
-            demandé de photographier le <strong>recto et le verso de votre CIN</strong>{" "}
-            puis de réaliser un <strong>selfie de vérification</strong> — le tout
-            depuis votre téléphone, en deux minutes. Sans KYC validé, vous ne
-            pouvez ni enchérir ni vendre.
+            Non. Il n&apos;y a plus de vérification d&apos;identité à passer :
+            ce que nous vérifions, c&apos;est <strong>l&apos;annonce</strong>,
+            avant qu&apos;elle soit publiée. Les vendeurs professionnels peuvent
+            en plus obtenir le badge <strong>Vendeur vérifié</strong>, que nous
+            accordons à la main après contrôle.
           </>
         ),
       },
       {
-        q: "Combien de temps prend la validation du KYC ?",
+        q: "Où retrouver mes annonces et mes favoris ?",
         a: (
           <>
-            Notre équipe vérifie chaque dossier manuellement, généralement sous
-            quelques heures ouvrées. Vous pouvez suivre l&apos;état de votre
-            dossier à tout moment sur la page{" "}
-            <FaqLink href="/kyc">Vérification</FaqLink> et vous serez notifié dès
-            la validation.
-          </>
-        ),
-      },
-      {
-        q: "Où gérer mes informations et mon activité ?",
-        a: (
-          <>
-            Tout se passe dans votre espace{" "}
-            <FaqLink href="/account">Compte</FaqLink> : vos offres en cours, vos
-            lots remportés, vos paiements et vos favoris.
+            Vos annonces sont dans{" "}
+            <FaqLink href="/account/listings">Mes annonces</FaqLink> (statut,
+            date d&apos;expiration, renouvellement) et les annonces que vous avez
+            enregistrées dans{" "}
+            <FaqLink href="/account/favoris">Favoris</FaqLink>.
           </>
         ),
       },
     ],
   },
   {
-    id: "encheres-caution",
-    title: "Enchères & caution",
-    Icon: Gavel,
+    id: "acheter",
+    title: "Acheter",
+    Icon: Tag,
     items: [
       {
-        q: "Comment participer à une enchère ?",
+        q: "Comment se passe un achat ?",
         a: (
           <>
-            Trois conditions : un compte, un KYC validé et une caution réglée
-            pour le lot qui vous intéresse. Parcourez les{" "}
-            <FaqLink href="/properties">voitures aux enchères</FaqLink>, ouvrez la
-            fiche du lot et suivez le bouton d&apos;enchère — le détail des
-            conditions (caution, pas d&apos;enchère, échéance) y est toujours
-            affiché.
+            Le prix est affiché sur l&apos;annonce : il n&apos;y a ni enchère ni
+            délai. Vous affichez le numéro du vendeur, vous l&apos;appelez, vous
+            voyez le véhicule et vous convenez du prix entre vous.{" "}
+            <strong>Mazed Auto n&apos;intervient pas dans la transaction</strong>{" "}
+            et ne touche rien sur la vente.
           </>
         ),
       },
       {
-        q: "Qu'est-ce que la caution ?",
+        q: "Dois-je payer quelque chose pour acheter ?",
         a: (
           <>
-            La caution est un montant <strong>remboursable</strong> qui sécurise
-            l&apos;enchère : elle prouve le sérieux de chaque enchérisseur.
-            C&apos;est un <strong>montant unique, identique sur toutes les
-            enchères</strong> — il ne dépend ni du prix du véhicule ni de la
-            date. Elle n&apos;est bloquée qu&apos;<strong>une seule fois par
-            enchère</strong>, quel que soit le nombre d&apos;offres que vous
-            placez ensuite.
+            Non. Parcourir les annonces, afficher un numéro et contacter un
+            vendeur sont gratuits. Le seul paiement sur la plateforme est celui
+            de la <strong>publication</strong>, réglé par le vendeur.
           </>
         ),
       },
       {
-        q: "Que devient ma caution après l'enchère ?",
+        q: "Que veut dire le badge « Vérifié et approuvé » ?",
         a: (
           <>
-            Si vous ne remportez pas le lot, elle vous est{" "}
-            <strong>intégralement remboursée</strong> après la clôture définitive
-            de l&apos;enchère (fenêtre légale de surenchère comprise). Si vous
-            remportez le lot, elle est <strong>déduite du solde</strong> à régler.
-            En cas de non-paiement du solde dans les délais, la caution peut être
-            retenue.
+            Que <strong>nous avons inspecté ce véhicule nous-mêmes</strong>. La
+            fiche de diagnostic publiée sur l&apos;annonce détaille ce que nous
+            avons constaté, point par point, photos à l&apos;appui. Une annonce
+            sans ce badge n&apos;a pas été inspectée par nos équipes — elle a
+            seulement été relue avant publication.
           </>
         ),
       },
       {
-        q: "Qu'est-ce que l'offre du sixième (surenchère légale) ?",
+        q: "Comment trouver une pièce compatible avec ma voiture ?",
         a: (
           <>
-            Conformément au droit tunisien, pendant <strong>8 jours</strong> après
-            l&apos;adjudication provisoire, toute personne éligible peut déposer
-            une surenchère d&apos;au moins <strong>un sixième (1/6)</strong> du
-            prix adjugé. Si une telle offre est déposée, l&apos;enchère est
-            rouverte. L&apos;adjudication ne devient définitive qu&apos;à la
-            clôture de cette fenêtre.
+            Dans{" "}
+            <FaqLink href="/annonces?kind=part">Pièces de rechange</FaqLink>,
+            indiquez votre marque, votre modèle et votre année : seules les
+            pièces déclarées compatibles avec ce véhicule s&apos;affichent.
+            Vérifiez tout de même la référence avec le vendeur avant de vous
+            déplacer.
           </>
         ),
       },
       {
-        q: "Puis-je retirer une offre ?",
+        q: "Le vendeur ne répond pas, que faire ?",
         a: (
           <>
-            Non. Chaque offre est <strong>ferme et engageante</strong>. Vérifiez
-            bien le montant avant de confirmer. Vous retrouvez l&apos;historique
-            de vos offres dans{" "}
-            <FaqLink href="/account/activity">votre activité</FaqLink>.
+            Réessayez à un autre moment, puis signalez-nous l&apos;annonce via la
+            page <FaqLink href="/contact">Contact</FaqLink>. Un numéro qui ne
+            répond jamais est un motif de retrait.
+          </>
+        ),
+      },
+    ],
+  },
+  {
+    id: "vendre",
+    title: "Vendre",
+    Icon: Wallet,
+    items: [
+      {
+        q: "Comment publier une annonce ?",
+        a: (
+          <>
+            Depuis{" "}
+            <FaqLink href="/annonces/nouvelle">Publier une annonce</FaqLink> :
+            catégorie, photos, caractéristiques, prix et vos coordonnées. Vous
+            signez une attestation sur l&apos;exactitude des informations, vous
+            réglez la publication, puis notre équipe vérifie l&apos;annonce avant
+            de la mettre en ligne.
+          </>
+        ),
+      },
+      {
+        q: "Combien coûte une publication ?",
+        a: (
+          <>
+            Un montant fixe par annonce, affiché au moment de publier — le prix
+            peut différer selon la catégorie. Les{" "}
+            <strong>pièces de rechange sont gratuites</strong>. Si vous publiez
+            beaucoup, des forfaits permettent d&apos;acheter plusieurs
+            publications d&apos;avance ; écrivez-nous pour en obtenir un.
+          </>
+        ),
+      },
+      {
+        q: "Pourquoi mes coordonnées apparaissent-elles sur l'annonce ?",
+        a: (
+          <>
+            Parce que nous sommes l&apos;intermédiaire, pas le vendeur : les
+            acheteurs vous appellent directement et vous traitez avec qui vous
+            voulez. Le numéro n&apos;est affiché qu&apos;après une action de
+            l&apos;acheteur, pour limiter la collecte automatisée.
+          </>
+        ),
+      },
+      {
+        q: "Combien de temps mon annonce reste-t-elle en ligne ?",
+        a: (
+          <>
+            <strong>30 jours.</strong> Nous vous prévenons avant
+            l&apos;expiration, et une annonce expirée se renouvelle depuis{" "}
+            <FaqLink href="/account/listings">Mes annonces</FaqLink>. Une durée
+            limitée évite que le catalogue se remplisse de voitures vendues
+            depuis longtemps.
+          </>
+        ),
+      },
+      {
+        q: "Mon annonce a été refusée, pourquoi ?",
+        a: (
+          <>
+            Le motif vous est envoyé et s&apos;affiche sur l&apos;annonce :
+            photos inexploitables, informations contradictoires, numéro
+            injoignable, doublon. Corrigez et renvoyez-la —{" "}
+            <strong>un refus ne consomme pas votre publication</strong>, elle
+            vous est rendue.
+          </>
+        ),
+      },
+      {
+        q: "Que se passe-t-il si je déclare quelque chose de faux ?",
+        a: (
+          <>
+            En publiant, vous attestez que les informations sont exactes. Une
+            fausse déclaration nous autorise à retirer l&apos;annonce et à
+            conserver les frais déjà réglés — et l&apos;acheteur reste en droit
+            de se retourner contre vous.
           </>
         ),
       },
@@ -165,92 +224,30 @@ const GROUPS: Group[] = [
         q: "Quels moyens de paiement acceptez-vous ?",
         a: (
           <>
-            Deux moyens : le <strong>virement bancaire</strong> (vers le RIB
-            affiché au moment du paiement) et <strong>D17</strong> (La Poste
-            Tunisienne, vers le numéro affiché). Le paiement par carte en ligne
-            n&apos;est pas proposé pour le moment.
+            Pour les frais de publication : virement bancaire et D17. Vous
+            téléversez le reçu, et l&apos;annonce part en vérification dès que
+            notre équipe l&apos;a validé.
           </>
         ),
       },
       {
-        q: "Comment se déroule un paiement ?",
+        q: "Le prix de la voiture passe-t-il par Mazed Auto ?",
         a: (
           <>
-            Vous effectuez le virement depuis votre banque (ou l&apos;envoi depuis
-            votre application D17), puis vous téléversez une photo lisible du
-            reçu — capture e-banking, avis d&apos;agence ou confirmation D17.
-            Notre équipe vérifie chaque reçu <strong>manuellement</strong> et
-            valide votre paiement, généralement sous quelques heures ouvrées.
+            <strong>Non, jamais.</strong> Le paiement du véhicule se règle
+            directement entre l&apos;acheteur et le vendeur. Nous ne détenons
+            aucun fonds et ne prenons aucune commission sur la vente.
           </>
         ),
       },
       {
-        q: "Quand dois-je payer le solde d'un lot remporté ?",
+        q: "Puis-je obtenir une facture ?",
         a: (
           <>
-            Après l&apos;adjudication définitive (c&apos;est-à-dire une fois la
-            fenêtre de surenchère du 1/6 refermée), le solde vous est présenté
-            avec <strong>votre caution déjà déduite</strong>. Le délai de
-            règlement est indiqué sur la page du lot et dans vos notifications.
-          </>
-        ),
-      },
-      {
-        q: "Où suivre l'état de mes paiements ?",
-        a: (
-          <>
-            Dans <FaqLink href="/account/payments">Compte → Paiements</FaqLink> :
-            chaque paiement y apparaît avec son statut (en attente de
-            validation, validé, remboursé).
-          </>
-        ),
-      },
-    ],
-  },
-  {
-    id: "vendre",
-    title: "Vendre",
-    Icon: Tag,
-    items: [
-      {
-        q: "Comment mettre ma voiture aux enchères ?",
-        a: (
-          <>
-            Depuis la page <FaqLink href="/sell">Vendre</FaqLink> : décrivez le
-            véhicule (marque, modèle, année, kilométrage…), ajoutez des photos de
-            qualité et choisissez vos conditions de vente. Votre annonce est
-            relue par notre équipe avant publication.
-          </>
-        ),
-      },
-      {
-        q: "Y a-t-il des frais de mise en vente ?",
-        a: (
-          <>
-            Les frais dépendent de la formule choisie et des options de mise en
-            avant. Le détail est affiché avant toute confirmation, et nos offres
-            professionnelles sont présentées sur la page{" "}
-            <FaqLink href="/pricing">Tarifs Pro</FaqLink>.
-          </>
-        ),
-      },
-      {
-        q: "Mon véhicule peut-il être inspecté ?",
-        a: (
-          <>
-            Oui. Un inspecteur partenaire peut examiner le véhicule et publier un
-            rapport sur la fiche du lot. Un lot inspecté inspire confiance et
-            attire davantage d&apos;enchérisseurs.
-          </>
-        ),
-      },
-      {
-        q: "Quand suis-je payé en tant que vendeur ?",
-        a: (
-          <>
-            Une fois le paiement intégral de l&apos;acheteur validé par notre
-            équipe et la remise du véhicule confirmée. Vous suivez chaque étape
-            depuis votre espace <FaqLink href="/account">Compte</FaqLink>.
+            Oui, pour les frais de publication. Vos paiements sont listés dans{" "}
+            <FaqLink href="/account/payments">Mes paiements</FaqLink> ;
+            demandez la facture via la page{" "}
+            <FaqLink href="/contact">Contact</FaqLink>.
           </>
         ),
       },
@@ -258,22 +255,21 @@ const GROUPS: Group[] = [
   },
   {
     id: "remise",
-    title: "Livraison / Remise",
+    title: "Rendez-vous & remise",
     Icon: KeyRound,
     items: [
       {
         q: "Comment se passe la remise du véhicule ?",
         a: (
           <>
-            La remise se fait <strong>en main propre</strong> entre le vendeur et
-            l&apos;acheteur, une fois le paiement intégral validé. Les modalités
-            (lieu, date) sont convenues entre les deux parties, avec
-            l&apos;assistance de notre équipe si besoin.
+            En main propre, entre le vendeur et l&apos;acheteur, aux conditions
+            qu&apos;ils fixent ensemble. Voyez le véhicule avant de payer quoi
+            que ce soit, et privilégiez un lieu public en journée.
           </>
         ),
       },
       {
-        q: "Quels documents prévoir le jour de la remise ?",
+        q: "Quels documents prévoir ?",
         a: (
           <>
             Le vendeur apporte la carte grise et les documents du véhicule
@@ -284,13 +280,11 @@ const GROUPS: Group[] = [
         ),
       },
       {
-        q: "Proposez-vous une livraison à distance ?",
+        q: "Proposez-vous la livraison ?",
         a: (
           <>
-            Pas de service de livraison intégré pour le moment : si
-            l&apos;acheteur et le vendeur sont éloignés, le transport est convenu
-            entre eux. Contactez le support si vous avez besoin de conseils pour
-            organiser la remise.
+            Non. Si l&apos;acheteur et le vendeur sont éloignés, le transport se
+            convient entre eux.
           </>
         ),
       },
@@ -302,25 +296,25 @@ const GROUPS: Group[] = [
     Icon: LifeBuoy,
     items: [
       {
-        q: "J'ai un problème avec un lot ou un vendeur, que faire ?",
+        q: "J'ai un problème avec une annonce ou un vendeur, que faire ?",
         a: (
           <>
             Contactez-nous via la page{" "}
-            <FaqLink href="/contact">Contact</FaqLink> en précisant la référence
-            du lot. Notre équipe examine chaque signalement et revient vers vous
-            rapidement.
+            <FaqLink href="/contact">Contact</FaqLink> avec le lien de
+            l&apos;annonce. Nous examinons chaque signalement et retirons ce qui
+            doit l&apos;être.
           </>
         ),
       },
       {
-        q: "Ma caution n'a pas encore été remboursée, est-ce normal ?",
+        q: "L'annonce ne correspond pas au véhicule que j'ai vu.",
         a: (
           <>
-            Les cautions restent bloquées tant que l&apos;enchère n&apos;est pas
-            définitivement close — y compris pendant la fenêtre légale de
-            surenchère (8 jours). Passé ce délai, le remboursement est traité par
-            notre équipe. Si l&apos;attente vous semble anormale, écrivez-nous
-            avec la référence du lot.
+            Signalez-la : le vendeur a attesté de l&apos;exactitude de sa
+            description, et un écart avéré entraîne le retrait de
+            l&apos;annonce. Comme la vente se règle directement entre vous,
+            n&apos;engagez aucun paiement tant que le véhicule ne correspond pas
+            à ce qui est annoncé.
           </>
         ),
       },
@@ -328,7 +322,7 @@ const GROUPS: Group[] = [
         q: "Comment signaler une annonce suspecte ?",
         a: (
           <>
-            Envoyez-nous le lien de l&apos;annonce via la page{" "}
+            Envoyez-nous son lien via la page{" "}
             <FaqLink href="/contact">Contact</FaqLink>. Toutes les annonces sont
             relues avant publication, mais chaque signalement est vérifié en
             priorité.
@@ -356,8 +350,8 @@ export default function HelpPage() {
           Centre d&apos;aide
         </h1>
         <p className="mt-1.5 max-w-prose text-[13.5px] leading-relaxed text-muted">
-          Tout ce que vous devez savoir sur Mazed Auto : compte, enchères,
-          caution, paiements et remise du véhicule.
+          Tout ce que vous devez savoir sur Mazed Auto : compte,
+          achat, publication d&apos;annonces, paiements et remise du véhicule.
         </p>
       </header>
 

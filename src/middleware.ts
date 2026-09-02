@@ -149,6 +149,18 @@ export async function middleware(req: NextRequest) {
       mwLog.info(`auction-gate ${pathname} → ${target.pathname}`);
       return NextResponse.redirect(target, 307);
     }
+
+    // /sell is the v2 seller flow and it is ALL auction: "mise à prix",
+    // "caution", "dépôt", forty-odd mentions of "enchère". It was still live
+    // and still linked from the account page as "Tableau du vendeur", so a
+    // seller who tapped it landed straight back in the product we stopped
+    // selling. /annonces/nouvelle is the v3 flow that replaces it.
+    const sellMatch = pathname.match(/^\/(fr|ar|en)\/sell(?:\/.*)?$/);
+    if (sellMatch) {
+      const target = new URL(`/${sellMatch[1]}/annonces/nouvelle`, req.url);
+      mwLog.info(`auction-gate ${pathname} → ${target.pathname}`);
+      return NextResponse.redirect(target, 307);
+    }
   }
 
   // KYC is deleted (PIVOT-PLAN.md §2.1). The routes are gone, so this only

@@ -5,7 +5,7 @@ import { ChevronLeft, Target, Heart, Award, ArrowRight } from "lucide-react";
 export const metadata: Metadata = {
   title: "À propos — Mazed Auto",
   description:
-    "Mazed Auto est une plateforme tunisienne d'enchères automobiles : vendre et acheter des véhicules en toute confiance, avec transparence et sécurité.",
+    "Mazed Auto est une place de marché tunisienne pour les voitures et les pièces de rechange : prix affichés, contact direct avec le vendeur, chaque annonce vérifiée avant publication.",
 };
 
 // Pure static content — prerender at build and serve from the edge CDN.
@@ -28,9 +28,9 @@ export default function AboutPage() {
           À <span className="gradient-gold-text">propos</span>
         </h1>
         <p className="mx-auto max-w-xl text-[13.5px] leading-relaxed text-muted lg:text-[14.5px]">
-          Mazed Auto est une plateforme tunisienne d&apos;enchères automobiles,
-          créée pour transformer la vente et l&apos;achat de véhicules en
-          Tunisie en une expérience sûre et transparente.
+          Mazed Auto est une place de marché tunisienne pour les voitures et
+          les pièces de rechange. Le prix est affiché, vous parlez directement
+          au vendeur, et nous vérifions chaque annonce avant sa publication.
         </p>
       </header>
 
@@ -39,12 +39,12 @@ export default function AboutPage() {
         <ValueCard
           icon={<Target className="size-5" />}
           title="Notre vision"
-          text="Devenir la référence des enchères automobiles en Tunisie et en Afrique du Nord."
+          text="Devenir la référence de la voiture d'occasion et de la pièce détachée en Tunisie."
         />
         <ValueCard
           icon={<Heart className="size-5" />}
           title="Notre mission"
-          text="Bâtir la confiance entre vendeurs et acheteurs grâce à la vérification des annonces et des identités."
+          text="Bâtir la confiance entre vendeurs et acheteurs : des annonces vérifiées, et un vendeur que vous pouvez appeler."
         />
         <ValueCard
           icon={<Award className="size-5" />}
@@ -66,17 +66,18 @@ export default function AboutPage() {
             solution qui place la confiance au cœur de tout.
           </p>
           <p>
-            C&apos;est ainsi qu&apos;est née Mazed Auto — une plateforme qui
-            combine la vérification d&apos;identité, le contrôle des documents
-            du véhicule et une revue de chaque annonce avant publication. Nous
-            sommes convaincus que chaque vendeur mérite une chance équitable,
-            et chaque acheteur des informations sincères.
+            C&apos;est ainsi qu&apos;est née Mazed Auto : chaque annonce est
+            relue par notre équipe avant d&apos;être publiée, le vendeur signe
+            une attestation sur l&apos;exactitude de ce qu&apos;il déclare, et
+            les voitures que nous inspectons nous-mêmes portent le badge
+            « Vérifié et approuvé » avec la fiche de diagnostic qui va avec.
           </p>
           <p>
-            Aujourd&apos;hui, notre équipe travaille depuis la Tunisie pour
-            offrir des enchères équitables : caution remboursable, offres en
-            temps réel et protection anti-sniping pour que la meilleure offre
-            gagne, tout simplement.
+            Nous sommes l&apos;intermédiaire, pas le vendeur. L&apos;annonce
+            porte les coordonnées de son propriétaire : vous l&apos;appelez,
+            vous voyez la voiture, vous convenez du prix entre vous. Nous ne
+            prenons rien sur la vente — seule la publication est payante, et
+            elle est gratuite pour les pièces de rechange.
           </p>
         </div>
       </section>
@@ -84,10 +85,10 @@ export default function AboutPage() {
       {/* Closing CTA */}
       <div className="mt-10 text-center">
         <Link
-          href="/properties"
+          href="/annonces"
           className="batta-gold-fill inline-flex h-11 items-center justify-center gap-1.5 rounded-xl px-6 text-[13px] font-extrabold shadow-[var(--shadow-gold)] ring-1 ring-black/10 transition active:scale-[0.99] lg:text-sm"
         >
-          Parcourir les enchères
+          Parcourir les annonces
           <ArrowRight className="size-4" />
         </Link>
       </div>

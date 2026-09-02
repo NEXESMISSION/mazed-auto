@@ -5,16 +5,14 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { SignOutButton } from "@/components/auth/SignOutButton";
 import { DeleteAccountButton } from "@/components/account/DeleteAccountButton";
 import {
-  ClipboardCheck,
+  Plus,
   Wallet,
   ChevronRight,
   ChevronLeft,
   Building2,
   Heart,
-  LayoutGrid,
   LayoutDashboard,
   Briefcase,
-  UserCog,
   ArrowRight,
   ArrowUpRight,
 } from "lucide-react";
@@ -22,9 +20,9 @@ import {
 // Per-user, auth-gated — never static (env-less prerender would throw + fail the build).
 export const dynamic = "force-dynamic";
 
-/** Favoris live as a tab of the unified activity hub (/watchlist is a
- *  redirect to exactly this). Shared by the mobile card and the desktop
- *  banner so the two can't drift apart. */
+/** Favoris has its own page now (the old activity hub was auction-shaped and
+ *  is gone from the nav); /watchlist redirects here. Shared by the mobile card
+ *  and the desktop banner so the two cannot drift apart. */
 const FAVORIS_HREF = "/account/favoris" as const;
 
 /**
@@ -112,7 +110,7 @@ export default async function AccountPage() {
 
             <div className="border-t border-border bg-surface-2 px-7 py-4 text-center sm:px-8">
               <Link
-                href="/properties"
+                href="/annonces"
                 className="inline-flex items-center gap-1.5 text-[12px] font-bold text-muted transition hover:text-gold-bright"
               >
                 Explorer sans compte
@@ -130,33 +128,35 @@ export default async function AccountPage() {
 
   // Signed-in surface.
   const roleActions: ActionItem[] = [];
+  // The inspector branches that used to sit here were dead (`&& false`) from
+  // the day the network was deleted; they only kept their imports alive.
   if (role === "admin") {
-    roleActions.push({ href: "/admin", Icon: LayoutDashboard, title: "Console admin", body: "Annonces, KYC, experts." });
+    // Not "Annonces, KYC, experts" — KYC and the expert network are both gone.
+    roleActions.push({ href: "/admin", Icon: LayoutDashboard, title: "Console admin", body: "Annonces, tarifs, vendeurs." });
   } else if (role === "bank" || role === "agency" || role === "bailiff") {
     roleActions.push({ href: "/partners/dashboard", Icon: Briefcase, title: "Espace partenaire", body: "Portefeuille banque / agence." });
-  } else if (role === "inspector" && false) {
-    roleActions.push({ href: "/inspector", Icon: ClipboardCheck, title: "Espace inspecteur", body: "Vos missions d'expertise." });
-  } else if (false) {
-    roleActions.push({ href: "/inspectors/apply", Icon: UserCog, title: "Devenir inspecteur", body: "Rejoignez le réseau d'experts." });
   }
 
-  // Account hub grouped by journey so a buyer isn't handed a seller
-  // dashboard next to their bids (and vice-versa). Identity/KYC + the
-  // role-specific space sit under "Mon compte"; buyer surfaces under
-  // "Acheteur"; selling under "Vendeur".
-  // No identity row any more: KYC is deleted, and trust comes from the
-  // "Vendeur vérifié" badge, which an admin grants — there is nothing for a
-  // seller to start or check on here.
+  // Grouped by journey so a buyer is not handed a seller dashboard and vice
+  // versa: the role-specific space under "Mon compte", saved annonces and
+  // payments under "Acheteur", publishing under "Vendeur".
+  // No identity row: KYC is deleted, and trust comes from the "Vendeur
+  // vérifié" badge an admin grants — there is nothing for a seller to start
+  // or check on here.
   const accountActions: ActionItem[] = [...roleActions];
+  // v3: no "Mes activités" — that page is the auction one (bids, watch, wins)
+  // and its own card advertised "Enchères, achats et favoris". A buyer here has
+  // exactly two things of their own: what they saved, and what they paid.
   const buyerActions: ActionItem[] = [
-    { href: "/account/activity", Icon: LayoutGrid, title: "Mes activités", body: "Enchères, achats et favoris." },
+    { href: "/account/favoris", Icon: Heart, title: "Favoris", body: "Les annonces que vous avez enregistrées." },
     { href: "/account/payments", Icon: Wallet, title: t("sections.payments"), body: t("sections.paymentsBody") },
-    ...(false
-      ? [{ href: "/account/inspections", Icon: ClipboardCheck, title: t("sections.inspections"), body: t("sections.inspectionsBody") }]
-      : []),
   ];
+  // "Tableau du vendeur" pointed at /sell — the v2 auction form, complete with
+  // mise à prix and caution. Selling in v3 is: publish an annonce, then manage
+  // the ones you have.
   const sellerActions: ActionItem[] = [
-    { href: "/sell", Icon: Building2, title: "Tableau du vendeur", body: "Annonces, revenus, retraits." },
+    { href: "/annonces/nouvelle", Icon: Plus, title: "Publier une annonce", body: "Une voiture ou une pièce. Les pièces sont gratuites." },
+    { href: "/account/listings", Icon: Building2, title: "Mes annonces", body: "Statut, expiration et renouvellement." },
   ];
   const groups: { label: string; items: ActionItem[] }[] = [
     { label: "Mon compte", items: accountActions },

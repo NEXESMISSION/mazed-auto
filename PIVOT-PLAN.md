@@ -16,6 +16,47 @@ reason is recorded.
 
 Append here as phases land. Newest first.
 
+### Images, back-navigation, Favoris, and the copy sweep · **DONE** 2026-09-02
+
+**Images were sixty times too big.** Measured before changing anything:
+1280px webp files decoded into 166px boxes, ~79KB each, about 2MB for one
+screen of cards. The files were fine — the v3 surfaces used raw `<img>`, which
+goes straight to Supabase for the original and skips the image optimizer the
+logo three lines away was already using. `ListingImage` routes them through
+next/image with the real display width, so the same photo now costs 3,323
+bytes at 200px instead of 37,958. Nothing changed in storage, and nothing
+changes for a seller uploading a photo.
+
+**Back always landed at the top.** `/annonces` is force-dynamic, so going back
+refetched the whole payload and the browser restored scroll against a page
+with no content yet. `staleTimes` keeps a visited page in the client router
+cache for 30 seconds — long enough for "open a car, decide, come back".
+
+**Favoris replaced Activité** in the fourth tab. Activité pointed at
+/account/listings while its own page is the auction one (bids, watchlist,
+wins), and v3 has none of that. Saved annonces are what a buyer returns for.
+
+**The copy sweep found the product still selling itself as an auction house.**
+Counting only visible text, not the messages bundle: /help had 37 mentions of
+enchères, caution, KYC and inspecteurs — a FAQ instructing sellers to complete
+a KYC and buyers to pay a caution, both of which were deleted. /how-it-works
+had 12 and described a five-step auction listing flow. /about had 5. Worse,
+**`/sell` was still live** — the entire v2 auction form, forty-odd mentions of
+enchère, mise à prix, caution — and the account page linked to it as "Tableau
+du vendeur". It now redirects to /annonces/nouvelle. All three content pages
+were rewritten for the marketplace we run; the remaining hits are my own copy
+saying there is no enchère.
+
+**Fourteen annonces were invisible to the governorate filter.** The imports
+carried whatever the source site had in its location field — "Sahloul",
+"La Marsa", "Cité Ennasr 2", "Boumhel" — and `/annonces` filters against the
+24 real governorates, so a car in Sahloul could not be found under Sousse.
+`scripts/normalize-governorates.mjs` maps only unambiguous towns (each sits in
+exactly one governorate); two rows saying "Tunisie" were left alone and
+reported, because inventing a location for a car sends a buyer on a drive.
+Ben Arous went from 5 matches to 10, Ariana from 1 to 3.
+
+
 ### The home page lost its cover, and parts are now free · **DONE** 2026-09-02
 
 **The cover.** Reported as *"the top thing was nice and felt alive, now it

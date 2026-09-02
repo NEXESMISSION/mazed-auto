@@ -13,9 +13,9 @@ import { ShieldCheck, Eye, Zap, Star, Sparkles } from "lucide-react";
  * Rendered only inside the `hidden lg:grid` tree, so phones never load it.
  */
 const FEATURES = [
-  { Icon: ShieldCheck, title: "100% sécurisé", sub: "Transactions vérifiées" },
-  { Icon: Eye, title: "Transparence totale", sub: "Carte grise contrôlée" },
-  { Icon: Zap, title: "Simple et rapide", sub: "Enchérissez en quelques clics" },
+  { Icon: ShieldCheck, title: "Annonces vérifiées", sub: "Relues avant publication" },
+  { Icon: Eye, title: "Prix affiché", sub: "Ni enchère, ni attente" },
+  { Icon: Zap, title: "Contact direct", sub: "Vous appelez le vendeur" },
 ];
 
 export function AuthHeroPanel() {
@@ -54,14 +54,14 @@ export function AuthHeroPanel() {
         <div className="max-w-md">
           <div className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--gold)]">
             <Sparkles className="size-3.5" strokeWidth={2.2} />
-            Enchères vérifiées · Tunisie
+            Annonces vérifiées · Tunisie
           </div>
           <h2 className="mt-3 text-balance text-[34px] font-extrabold leading-[1.1] tracking-tight text-white">
-            La plateforme d&apos;<span className="gradient-gold-text">enchères automobiles</span>.
+            Voitures et <span className="gradient-gold-text">pièces de rechange</span>.
           </h2>
           <p className="mt-4 text-[14px] leading-relaxed text-white/70">
-            Achetez et vendez votre voiture en toute confiance — identités
-            vérifiées des deux côtés, carte grise contrôlée, dépôt sécurisé.
+            Achetez et vendez en toute confiance — chaque annonce est relue
+            avant sa publication, et vous traitez directement avec le vendeur.
           </p>
 
           <div className="mt-7 space-y-4">

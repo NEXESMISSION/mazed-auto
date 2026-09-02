@@ -46,7 +46,7 @@ export default async function SignupPage() {
                   Rejoignez <span className="gradient-gold-text">{t("brand.name")}</span>
                 </h1>
                 <p className="mt-2 text-[12.5px] text-muted">
-                  Commencez votre parcours dans l&apos;univers des enchères intelligentes
+                  Créez votre compte pour publier une annonce et enregistrer vos favoris
                 </p>
               </div>
 
@@ -96,7 +96,7 @@ export default async function SignupPage() {
                 Rejoignez <span className="gradient-gold-text">{t("brand.name")}</span>
               </h1>
               <p className="mt-2 text-[13px] text-muted">
-                Commencez votre parcours dans l&apos;univers des enchères intelligentes
+                Créez votre compte pour publier une annonce et enregistrer vos favoris
               </p>
             </div>
 

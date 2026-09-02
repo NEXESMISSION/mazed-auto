@@ -3,14 +3,14 @@ import { Link } from "@/i18n/navigation";
 import {
   ChevronLeft,
   Search,
-  Gavel,
-  Trophy,
+  Tag,
+  Phone,
+  Handshake,
   ShieldCheck,
   FileCheck,
   Camera,
   Wallet,
   Award,
-  Activity,
   Timer,
   ArrowRight,
 } from "lucide-react";
@@ -18,7 +18,7 @@ import {
 export const metadata: Metadata = {
   title: "Comment ça marche — Mazed Auto",
   description:
-    "Le parcours acheteur et vendeur sur Mazed Auto : caution remboursable, enchères en temps réel, vérification d'identité et des documents du véhicule.",
+    "Le parcours acheteur et vendeur sur Mazed Auto : prix affichés, contact direct avec le vendeur, diagnostic Mazed et vérification de chaque annonce avant publication.",
 };
 
 // Pure static content — prerender at build and serve from the edge CDN.
@@ -42,8 +42,8 @@ export default function HowItWorksPage() {
           <span className="gradient-gold-text">Mazed Auto</span> ?
         </h1>
         <p className="mx-auto max-w-xl text-[13.5px] leading-relaxed text-muted lg:text-[14.5px]">
-          Une plateforme transparente, sécurisée et rapide. Découvrez votre
-          parcours à chaque étape.
+          Des voitures et des pièces à prix affiché. Vous parlez directement au
+          vendeur ; nous vérifions chaque annonce avant qu&apos;elle soit en ligne.
         </p>
       </header>
 
@@ -51,32 +51,32 @@ export default function HowItWorksPage() {
       <section className="mt-12">
         <span className="batta-eyebrow block">Parcours acheteur</span>
         <h2 className="mb-5 mt-1.5 text-xl font-extrabold tracking-tight lg:text-2xl">
-          De la recherche à la victoire en 4 étapes
+          De la recherche à l&apos;appel, en 4 étapes
         </h2>
         <div className="space-y-3">
           <FlowStep
             num={1}
             icon={<Search className="size-5" />}
-            title="Rechercher et filtrer"
-            text="Parcourez les voitures vérifiées et affinez par carburant, année, kilométrage ou état pour trouver celle qui vous convient."
+            title="Cherchez la voiture ou la pièce"
+            text="Filtrez par gouvernorat, budget, marque ou état. Pour une pièce de rechange, indiquez votre marque, votre modèle et votre année : seules les pièces compatibles s'affichent."
           />
           <FlowStep
             num={2}
-            icon={<Wallet className="size-5" />}
-            title="Payer la caution"
-            text="Une caution remboursable, du même montant pour toutes les enchères, débloque la participation. Elle vous est intégralement restituée si vous ne remportez pas l'enchère."
+            icon={<Tag className="size-5" />}
+            title="Le prix est affiché"
+            text="Pas d'enchère et pas d'attente : le prix demandé est sur l'annonce, avec les photos, les caractéristiques et le gouvernorat du vendeur."
           />
           <FlowStep
             num={3}
-            icon={<Gavel className="size-5" />}
-            title="Enchérir en confiance"
-            text="Offres en temps réel avec incrément minimum clair. Auto-enchère et anti-sniping : toute offre dans les dernières minutes prolonge l'enchère."
+            icon={<Phone className="size-5" />}
+            title="Appelez le vendeur"
+            text="Affichez son numéro et contactez-le directement. Mazed Auto n'intervient ni dans la négociation ni dans le paiement : vous traitez avec le vendeur."
           />
           <FlowStep
             num={4}
-            icon={<Trophy className="size-5" />}
-            title="Payer et récupérer"
-            text="Si vous gagnez, réglez le solde dans le délai indiqué puis convenez de la remise du véhicule avec le vendeur."
+            icon={<Handshake className="size-5" />}
+            title="Voyez le véhicule, puis concluez"
+            text="Fixez un rendez-vous, examinez la voiture et convenez du prix entre vous. Quand une annonce porte le badge « Vérifié et approuvé », notre fiche de diagnostic vous dit ce que nous avons constaté."
           />
         </div>
       </section>
@@ -85,38 +85,38 @@ export default function HowItWorksPage() {
       <section className="mt-12">
         <span className="batta-eyebrow block">Parcours vendeur</span>
         <h2 className="mb-5 mt-1.5 text-xl font-extrabold tracking-tight lg:text-2xl">
-          Publiez votre enchère en 5 étapes
+          Publiez votre annonce en 5 étapes
         </h2>
         <div className="space-y-3">
           <FlowStep
             num={1}
-            icon={<ShieldCheck className="size-5" />}
-            title="Vérifiez votre identité"
-            text="KYC en quelques minutes : pièce d'identité et selfie. Une seule fois, pour sécuriser toute la communauté."
+            icon={<Camera className="size-5" />}
+            title="Photographiez et décrivez"
+            text="Jusqu'à 12 photos nettes, puis les caractéristiques : marque, modèle, année, kilométrage, état. Pour une pièce, indiquez les véhicules sur lesquels elle se monte."
           />
           <FlowStep
             num={2}
-            icon={<Camera className="size-5" />}
-            title="Photographiez votre voiture"
-            text="Ajoutez jusqu'à 10 photos nettes et renseignez les caractéristiques : marque, modèle, année, kilométrage, état."
+            icon={<Phone className="size-5" />}
+            title="Mettez vos coordonnées"
+            text="Votre numéro figure sur l'annonce : les acheteurs vous appellent directement, et vous décidez avec qui vous traitez."
           />
           <FlowStep
             num={3}
             icon={<FileCheck className="size-5" />}
-            title="Justifiez les documents du véhicule"
-            text="Téléversez la carte grise et les documents demandés. Notre équipe vérifie chaque annonce avant publication."
+            title="Signez l'attestation"
+            text="Vous confirmez que les informations sont exactes. Une fausse déclaration nous autorise à refuser ou à retirer l'annonce."
           />
           <FlowStep
             num={4}
-            icon={<Gavel className="size-5" />}
-            title="Définissez vos prix"
-            text="Mise à prix, prix de réserve optionnel et achat immédiat si vous le souhaitez. Vous gardez la main."
+            icon={<Wallet className="size-5" />}
+            title="Réglez la publication"
+            text="Un montant fixe par annonce, ou une publication décomptée de votre forfait. Les pièces de rechange sont publiées gratuitement."
           />
           <FlowStep
             num={5}
-            icon={<Trophy className="size-5" />}
-            title="Recevez les offres"
-            text="Votre enchère est publiée et les offres arrivent en direct jusqu'à la clôture. Le meilleur enchérisseur l'emporte."
+            icon={<ShieldCheck className="size-5" />}
+            title="Nous vérifions, puis c&apos;est en ligne"
+            text="Notre équipe contrôle l'annonce avant sa publication. Elle reste visible 30 jours, et vous pouvez la renouveler ensuite."
           />
         </div>
       </section>
@@ -130,34 +130,35 @@ export default function HowItWorksPage() {
             à chaque étape
           </h2>
           <p className="mx-auto mt-2 max-w-md text-[13px] leading-relaxed text-muted">
-            Chaque annonce et chaque participant passent par des contrôles
-            avant que la première offre ne soit placée.
+            Nous ne touchons pas à l&apos;argent de la vente. Ce que nous
+            garantissons, c&apos;est que l&apos;annonce que vous lisez a été
+            contrôlée avant d&apos;être publiée.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-          <TrustItem
-            icon={<ShieldCheck className="size-4" />}
-            text="KYC d'identité"
-          />
-          <TrustItem
-            icon={<FileCheck className="size-4" />}
-            text="Documents du véhicule"
-          />
           <TrustItem
             icon={<Search className="size-4" />}
             text="Revue avant publication"
           />
           <TrustItem
-            icon={<Wallet className="size-4" />}
-            text="Caution remboursable"
+            icon={<Award className="size-4" />}
+            text="Diagnostic Mazed"
+          />
+          <TrustItem
+            icon={<ShieldCheck className="size-4" />}
+            text="Badge vendeur vérifié"
+          />
+          <TrustItem
+            icon={<FileCheck className="size-4" />}
+            text="Attestation du vendeur"
+          />
+          <TrustItem
+            icon={<Phone className="size-4" />}
+            text="Contact direct"
           />
           <TrustItem
             icon={<Timer className="size-4" />}
-            text="Protection anti-sniping"
-          />
-          <TrustItem
-            icon={<Activity className="size-4" />}
-            text="Offres en temps réel"
+            text="Annonces à durée limitée"
           />
         </div>
       </section>
