@@ -313,7 +313,12 @@ function PhotoSlide({
           fill
           sizes="(min-width: 1024px) 1280px, (min-width: 640px) 640px, 100vw"
           priority={priority}
-          loading={priority ? "eager" : "lazy"}
+          // Eager on every slide, not just the first. The track lays the
+          // slides out side by side, so the ones queued to the right sit
+          // outside the viewport and a lazy image is still blank when the
+          // carousel slides to it — the banner showed its gold placeholder
+          // instead of the car. A handful of slides is worth loading up front.
+          loading="eager"
           onError={() => setImageBroken(true)}
           unoptimized={isStaticSeedPath(slide.imageUrl!)}
           className="object-cover transition-transform duration-[6000ms] ease-out group-hover:scale-105"

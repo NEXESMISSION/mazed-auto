@@ -6,6 +6,7 @@ import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { ListingImage } from "@/components/media/ListingImage";
 import { formatTND } from "@/lib/utils";
 import { AnnonceHeroCarousel } from "./AnnonceHeroCarousel";
+import { HeroBanner, type HeroSlide } from "./HeroBanner";
 import { ArrowUpRight, Gauge, MapPin, Sparkles, Wrench } from "lucide-react";
 
 /**
@@ -104,6 +105,23 @@ export async function AnnonceHero() {
   const runners = withPhoto.slice(1, 4);
   const backdrop = cover(featured)!;
 
+  // The sliding banner that used to head the desktop page. It was fed by
+  // `endingSoonSlides` — auctions — so it went dark with them and the top of
+  // the page became one static picture. Same component, same behaviour
+  // (auto-advance, drag, arrows, dots), now carrying real annonces.
+  const slides: HeroSlide[] = withPhoto.slice(0, 6).map((r) => {
+    const cat = one(r.category);
+    return {
+      id: r.id,
+      imageUrl: cover(r),
+      eyebrow: cat?.label_fr ?? "À vendre",
+      title: r.title,
+      subtitle: `${priceLabel(r, locale)} · ${r.governorate}`,
+      href: `/annonces/${r.id}`,
+      ctaLabel: "Voir l'annonce",
+    };
+  });
+
   return (
       <section className="hidden lg:block relative isolate overflow-hidden">
         {/* Atmospheric backdrop — the featured car, blurred under a heavy
@@ -125,6 +143,13 @@ export async function AnnonceHero() {
         </div>
 
         <div className="relative mx-auto max-w-[var(--max-w-wide)] px-8 pb-14 pt-10">
+          {/* The sliding banner, back at the top. */}
+          {slides.length > 1 && (
+            <div className="-mx-4 mb-8">
+              <HeroBanner slides={slides} />
+            </div>
+          )}
+
           {/* Top strip */}
           <div className="mb-9 flex items-center justify-between gap-4">
             <Link

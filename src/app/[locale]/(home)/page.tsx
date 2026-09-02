@@ -34,9 +34,6 @@ import {
   ArrowUpRight,
   ChevronRight,
   ChevronLeft,
-  Car,
-  Truck,
-  Wrench,
   Gavel,
   MapPin,
   Search,
@@ -645,46 +642,11 @@ export default async function LandingPage({
         </>
       )}
 
-      <section className="mt-10 px-4 lg:hidden">
-        <h3 className={`text-[15px] font-bold leading-tight ${isRTL ? "font-arabic" : ""}`}>
-          {t("home.browseByType")}
-        </h3>
-        <div className="snap-rail hide-scrollbar -mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1">
-          {PROPERTY_TYPES.map((pt) => (
-            <Link
-              key={pt.key}
-              href={`/properties?types=${pt.key}` as `/properties`}
-              className="tap-target inline-flex shrink-0 snap-start items-center gap-2 rounded-full bg-surface-2 px-4 py-2.5 transition active:scale-[0.97] hover:bg-surface"
-            >
-              <pt.Icon className="size-4 text-gold" strokeWidth={2} />
-              <span
-                className={`whitespace-nowrap text-[12px] font-bold leading-none text-foreground ${
-                  isRTL ? "font-arabic" : ""
-                }`}
-              >
-                {t(`property.types.${pt.key}`)}
-              </span>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="mt-7 px-4 lg:hidden">
-        <h3 className={`text-[15px] font-bold leading-tight ${isRTL ? "font-arabic" : ""}`}>
-          {t("home.browseByPrice")}
-        </h3>
-        <div className="snap-rail hide-scrollbar -mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1">
-          {PRICE_BUCKETS.map((b) => (
-            <Link
-              key={b.key}
-              href={`/properties?${b.query}` as `/properties`}
-              className="tap-target inline-flex shrink-0 snap-start items-center justify-center whitespace-nowrap rounded-full bg-surface-2 px-4 py-2.5 text-[12px] font-bold leading-none text-foreground transition active:scale-[0.97] hover:bg-surface"
-            >
-              {isRTL ? b.labelAr : b.labelEn}
-            </Link>
-          ))}
-        </div>
-      </section>
+      {/* "Parcourir par type" / "Parcourir par prix" used to sit here. Both
+          linked into /properties with filter query strings — the v2 explore
+          grid, which now only 307s to /annonces and drops the filter on the
+          way. Two rails of taps that all land on the same unfiltered page is
+          worse than not offering them. */}
 
       {/* Recently hammered — actual sold prices. Horizontal scroll rail
           so any count of real cards looks intentional (1 card scrolls,
@@ -1102,40 +1064,6 @@ function buildEndingSoonSlides(
   }
   return slides;
 }
-
-// ──────────────────────────────────────────────────────────────────────
-// Browse-by-type / browse-by-price tables.
-// ──────────────────────────────────────────────────────────────────────
-
-const PROPERTY_TYPES: {
-  key: string;
-  labelEn: string;
-  labelAr: string;
-  Icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
-}[] = [
-  { key: "sedan",     labelEn: "Sedan",     labelAr: "برلين",       Icon: Car },
-  { key: "suv",       labelEn: "SUV",       labelAr: "دفع رباعي",   Icon: Car },
-  { key: "hatchback", labelEn: "Hatchback", labelAr: "سيارة صغيرة", Icon: Car },
-  { key: "pickup",    labelEn: "Pickup",    labelAr: "بيك أب",      Icon: Truck },
-  { key: "van",       labelEn: "Van",       labelAr: "نفعية",       Icon: Truck },
-  { key: "coupe",     labelEn: "Coupé",     labelAr: "كوبيه",       Icon: Car },
-  // Not a body type — the parts category. Kept in the same row because it is
-  // what a buyer is choosing between: a car, or a part for the one they have.
-  { key: "spare_part", labelEn: "Pièces",    labelAr: "قطع غيار",   Icon: Wrench },
-];
-
-const PRICE_BUCKETS: {
-  key: string;
-  labelEn: string;
-  labelAr: string;
-  /** Maps to the params /properties actually reads (min_price/max_price). */
-  query: string;
-}[] = [
-  { key: "under-30k", labelEn: "Moins de 30k", labelAr: "أقل من 30 ألف",   query: "max_price=30000" },
-  { key: "30k-60k",   labelEn: "30k – 60k",    labelAr: "30 – 60 ألف",     query: "min_price=30000&max_price=60000" },
-  { key: "60k-120k",  labelEn: "60k – 120k",   labelAr: "60 – 120 ألف",    query: "min_price=60000&max_price=120000" },
-  { key: "120k-plus", labelEn: "120k+ TND",    labelAr: "أكثر من 120 ألف", query: "min_price=120000" },
-];
 
 // HOW_IT_WORKS + TRUST_PILLARS used to live here at the bottom of
 // the file. They were hoisted above LandingPage (alongside StatTile's
