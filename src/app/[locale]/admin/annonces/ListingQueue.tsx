@@ -145,7 +145,7 @@ export function ListingQueue({
                           triggerClassName="relative size-20 overflow-hidden rounded-xl bg-surface-2 ring-1 ring-border"
                         >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={propertyPhotoUrl(p)} alt="" className="size-full object-cover" />
+                          <img src={propertyPhotoUrl(p)} alt="" className="size-full bg-black object-contain" />
                         </ImageLightbox>
                       ))
                     )}

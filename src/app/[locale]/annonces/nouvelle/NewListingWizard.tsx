@@ -463,7 +463,7 @@ export function NewListingWizard({
             {photos.map((p, i) => (
               <div key={p.path} className="relative aspect-square overflow-hidden rounded-xl bg-surface-2 ring-1 ring-border">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={propertyPhotoUrl(p.path)} alt="" className="size-full object-cover" />
+                <img src={propertyPhotoUrl(p.path)} alt="" className="size-full bg-black object-contain" />
                 {i === 0 && (
                   <span className="absolute bottom-1 left-1 rounded-full bg-black/65 px-1.5 py-0.5 text-[8px] font-extrabold uppercase tracking-[0.12em] text-white">
                     Couverture

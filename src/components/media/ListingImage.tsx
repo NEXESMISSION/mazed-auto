@@ -18,6 +18,13 @@ import { propertyPhotoUrl } from "@/lib/imageUrl";
  * `sizes` is the whole game — it is what tells the optimizer which width to
  * generate. Every caller passes the CSS width the image really occupies, so a
  * thumbnail never fetches a hero-sized variant.
+ *
+ * Photos are CONTAINED, not cropped. Sellers shoot cars both ways — a portrait
+ * phone photo in a 4/3 card loses the roof and the wheels, and the buyer never
+ * knows what they did not see. Black bars are honest about the frame; a crop
+ * silently hides part of the thing being sold. `fit="cover"` stays available
+ * for decoration (the blurred hero backdrop), never for a photo someone is
+ * looking at.
  */
 export function ListingImage({
   path,
@@ -26,6 +33,7 @@ export function ListingImage({
   priority = false,
   className = "",
   quality = 72,
+  fit = "contain",
 }: {
   /** `storage_path` from listing_photos — absolute URL or bucket-relative. */
   path: string;
@@ -36,6 +44,12 @@ export function ListingImage({
   priority?: boolean;
   className?: string;
   quality?: number;
+  /**
+   * "contain" (default) shows the WHOLE photo, letterboxed on black.
+   * "cover" fills the frame and crops — only for decoration, never for a
+   * photo someone is trying to look at.
+   */
+  fit?: "contain" | "cover";
 }) {
   return (
     <Image
@@ -47,7 +61,13 @@ export function ListingImage({
       priority={priority}
       // Lazy by default; `priority` already implies eager when set.
       loading={priority ? undefined : "lazy"}
-      className={`object-cover ${className}`}
+      // `bg-black` on the image itself paints the bars: the element fills the
+      // frame while the picture is letterboxed inside it, so the gaps are
+      // black without every caller having to colour its own container.
+      className={
+        (fit === "contain" ? "object-contain bg-black" : "object-cover") +
+        (className ? ` ${className}` : "")
+      }
       draggable={false}
     />
   );

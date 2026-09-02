@@ -411,7 +411,7 @@ export function ManualListingForm({
             {photos.map((p, i) => (
               <div key={p.path} className="relative size-20 overflow-hidden rounded-xl ring-1 ring-border">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={propertyPhotoUrl(p.path)} alt="" className="size-full object-cover" />
+                <img src={propertyPhotoUrl(p.path)} alt="" className="size-full bg-black object-contain" />
                 <button
                   onClick={() => setPhotos((s) => s.filter((_, j) => j !== i))}
                   className="absolute end-1 top-1 rounded-md bg-black/60 p-1 text-white"

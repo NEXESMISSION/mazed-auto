@@ -113,7 +113,7 @@ export async function AnnonceHero() {
               so a 128px variant is visually identical to a 1280px one and
               costs about 1KB. */}
           <ListingImage path={backdrop} alt="" sizes="128px" quality={50}
-            className="scale-110 opacity-40 blur-3xl" />
+            fit="cover" className="scale-110 opacity-40 blur-3xl" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/85 to-background" />
           <div
             className="absolute inset-0 opacity-[0.12]"

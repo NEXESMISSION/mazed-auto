@@ -143,7 +143,7 @@ export function HeroCarousel({
                       placeholder={blur ? "blur" : "empty"}
                       blurDataURL={blur}
                       unoptimized={isStaticSeedPath(src)}
-                      className="object-cover"
+                      className="object-contain bg-black"
                     />
                   </div>
                 );
@@ -223,7 +223,7 @@ export function HeroCarousel({
                   fill
                   sizes="64px"
                   unoptimized={isStaticSeedPath(src)}
-                  className="object-cover"
+                  className="object-contain bg-black"
                 />
               </button>
             );
