@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getLocale } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
-import { NewListingWizard, type WizardCategory } from "./NewListingWizard";
+import { PublishWizard, type WizardCategory } from "./PublishWizard";
 import {
   PRODUCT_SELECT,
   resolveListingFee,
@@ -37,15 +37,11 @@ export default async function NewListingPage() {
     );
   }
 
-  const [catRes, attrRes, prodRes, creditRes, profRes] = await Promise.all([
+  const [catRes, prodRes, creditRes, profRes] = await Promise.all([
     admin
       .from("categories")
       .select("id, parent_id, slug, label_fr, kind, sort_order")
       .eq("is_active", true)
-      .order("sort_order"),
-    admin
-      .from("category_attributes")
-      .select("id, category_id, field_key, label, data_type, options, unit, required, sort_order")
       .order("sort_order"),
     admin.from("products").select(PRODUCT_SELECT).eq("is_active", true),
     admin
@@ -63,13 +59,10 @@ export default async function NewListingPage() {
   const catRows = (catRes.data ?? []) as CatRow[];
   const parents = catRows.filter((c) => c.parent_id == null);
 
-  type AttrRow = {
-    id: string; category_id: string; field_key: string; label: string;
-    data_type: string; options: { value: string; label: string }[] | null;
-    unit: string | null; required: boolean; sort_order: number;
-  };
-  const attrRows = (attrRes.data ?? []) as AttrRow[];
-
+  // `category_attributes` is no longer read here. The wizard asks structured
+  // questions of its own — make and model from a picker, fuel and box as chips
+  // — instead of rendering whatever rows that table happens to hold, which is
+  // what let free text into columns buyers filter on.
   const categories: WizardCategory[] = catRows
     .filter((c) => c.parent_id != null)
     .map((c) => ({
@@ -78,20 +71,6 @@ export default async function NewListingPage() {
       label: c.label_fr,
       kind: c.kind === "part" ? "part" : "vehicle",
       groupLabel: parents.find((p) => p.id === c.parent_id)?.label_fr ?? "Autres",
-      attributes: attrRows
-        .filter((a) => a.category_id === c.id)
-        .map((a) => ({
-          fieldKey: a.field_key,
-          label: a.label,
-          dataType: (["number", "text", "boolean", "select"] as const).includes(
-            a.data_type as "text",
-          )
-            ? (a.data_type as "number" | "text" | "boolean" | "select")
-            : "text",
-          options: a.options ?? null,
-          unit: a.unit,
-          required: a.required,
-        })),
     }));
 
   const products: Product[] = (prodRes.data ?? []).map((r) =>
@@ -115,12 +94,13 @@ export default async function NewListingPage() {
   }, 0);
 
   return (
-    <NewListingWizard
+    <PublishWizard
       categories={categories}
       feeByCategory={feeByCategory}
       creditsLeft={creditsLeft}
       defaultContactName={(profRes.data?.full_name as string | null) ?? ""}
       defaultContactPhone={(profRes.data?.phone as string | null) ?? ""}
+      userId={user.id}
       locale={locale}
     />
   );

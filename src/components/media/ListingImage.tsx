@@ -2,30 +2,31 @@ import Image from "next/image";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 
 /**
- * A listing photo, served at the size it is actually displayed.
+ * A listing photo: whole, sharp, and served at the size it is displayed.
  *
- * The v3 surfaces were built with raw `<img src={propertyPhotoUrl(...)}>`,
+ * Three problems, one component.
+ *
+ * SIZE. The v3 surfaces were built with raw `<img src={propertyPhotoUrl(...)}>`,
  * which sends the browser straight to Supabase for the original file. Measured
- * on the catalog: **1280px webp images decoded into 166px boxes** — about sixty
- * times the pixels needed, ~79KB each, ~2MB for one screen of cards. That is
- * the "images are slow" everyone was feeling; the files were never the problem.
+ * on the catalog: 1280px images decoded into 166px boxes, ~79KB each, ~2MB for
+ * one screen of cards. next/image resizes to the requested width and negotiates
+ * AVIF, taking the same photo to ~3KB. `sizes` is what decides which variant is
+ * generated, so every caller passes the width it really occupies.
  *
- * Going through next/image fixes it without touching the stored files or
- * asking a seller to upload anything differently: the optimizer resizes to the
- * requested width, negotiates AVIF (~25-30% under webp), and caches the variant
- * for 30 days (next.config.ts). A 166px card drops from ~79KB to a few KB.
+ * CROPPING. Sellers shoot cars both ways. A portrait phone photo cropped to
+ * fill a 4/3 card loses the roof and the wheels, and the buyer never learns
+ * what they did not see — the wrong trade for a photo of the thing being sold.
+ * So the photo is CONTAINED: all of it, always.
  *
- * `sizes` is the whole game — it is what tells the optimizer which width to
- * generate. Every caller passes the CSS width the image really occupies, so a
- * thumbnail never fetches a hero-sized variant.
- *
- * Photos are CONTAINED, not cropped. Sellers shoot cars both ways — a portrait
- * phone photo in a 4/3 card loses the roof and the wheels, and the buyer never
- * knows what they did not see. Black bars are honest about the frame; a crop
- * silently hides part of the thing being sold. `fit="cover"` stays available
- * for decoration (the blurred hero backdrop), never for a photo someone is
- * looking at.
+ * THE GAPS. Containing on flat black turned every card into a black slab with a
+ * small picture floating in it, and no two cards looked alike. So the leftover
+ * space is filled with a blurred, over-scaled copy of the same photo — the
+ * trick every serious classifieds site uses. Nothing is cropped, nothing is
+ * dead space, and the card reads as one image. The backdrop is fetched at 64px
+ * (about 1KB): it is blurred past recognition, so a larger one would only cost
+ * bandwidth.
  */
+
 export function ListingImage({
   path,
   alt,
@@ -45,30 +46,59 @@ export function ListingImage({
   className?: string;
   quality?: number;
   /**
-   * "contain" (default) shows the WHOLE photo, letterboxed on black.
-   * "cover" fills the frame and crops — only for decoration, never for a
-   * photo someone is trying to look at.
+   * "contain" (default) shows the whole photo over a blurred fill.
+   * "cover" fills the frame and crops — for decoration only (the hero's own
+   * blurred backdrop), never for a photo someone is trying to look at.
    */
   fit?: "contain" | "cover";
 }) {
+  const src = propertyPhotoUrl(path);
+
+  if (fit === "cover") {
+    return (
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        sizes={sizes}
+        quality={quality}
+        priority={priority}
+        loading={priority ? undefined : "lazy"}
+        className={`object-cover${className ? ` ${className}` : ""}`}
+        draggable={false}
+      />
+    );
+  }
+
   return (
-    <Image
-      src={propertyPhotoUrl(path)}
-      alt={alt}
-      fill
-      sizes={sizes}
-      quality={quality}
-      priority={priority}
-      // Lazy by default; `priority` already implies eager when set.
-      loading={priority ? undefined : "lazy"}
-      // `bg-black` on the image itself paints the bars: the element fills the
-      // frame while the picture is letterboxed inside it, so the gaps are
-      // black without every caller having to colour its own container.
-      className={
-        (fit === "contain" ? "object-contain bg-black" : "object-cover") +
-        (className ? ` ${className}` : "")
-      }
-      draggable={false}
-    />
+    <>
+      {/* Fill layer — same photo, tiny and blurred, cropped to cover. Purely
+          decorative: the sharp copy above carries the alt text. */}
+      <Image
+        src={src}
+        alt=""
+        aria-hidden
+        fill
+        sizes="64px"
+        // 50, not a lower number: next.config's `images.qualities` allowlist
+        // rejects anything not listed, and an unlisted quality is a 400 rather
+        // than a smaller file.
+        quality={50}
+        loading="lazy"
+        className="scale-125 object-cover blur-xl brightness-[0.55] saturate-150"
+        draggable={false}
+      />
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        sizes={sizes}
+        quality={quality}
+        priority={priority}
+        loading={priority ? undefined : "lazy"}
+        className={`object-contain${className ? ` ${className}` : ""}`}
+        draggable={false}
+      />
+    </>
   );
 }
