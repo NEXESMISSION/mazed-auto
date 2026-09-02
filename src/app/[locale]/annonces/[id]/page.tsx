@@ -125,8 +125,45 @@ export default async function AnnoncePage({
     })
     .filter(Boolean) as { label: string; value: string }[];
 
+  // Structured data: a plain Offer. The v2 pages emit an auction-shaped
+  // Product with bidding fields — wrong here, and the reason this is written
+  // fresh rather than reused. The seller's phone is deliberately NOT included:
+  // JSON-LD is the easiest thing on a page to scrape.
+  const siteUrl = (
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://mazed-auto.vercel.app")
+  ).replace(/\/$/, "");
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: l.title,
+    description: l.description ?? undefined,
+    image: photos.slice(0, 6).map((p) => propertyPhotoUrl(p.storage_path)),
+    category: category?.label_fr,
+    itemCondition:
+      l.condition === "new"
+        ? "https://schema.org/NewCondition"
+        : l.condition === "refurbished"
+          ? "https://schema.org/RefurbishedCondition"
+          : "https://schema.org/UsedCondition",
+    offers: {
+      "@type": "Offer",
+      url: `${siteUrl}/${locale}/annonces/${l.id}`,
+      priceCurrency: "TND",
+      ...(l.price != null && !l.price_on_request ? { price: Number(l.price) } : {}),
+      availability: "https://schema.org/InStock",
+      areaServed: l.governorate,
+      ...(l.expires_at ? { priceValidUntil: l.expires_at.slice(0, 10) } : {}),
+    },
+  };
+
   return (
     <main className="mx-auto max-w-3xl pb-16">
+      <script
+        type="application/ld+json"
+        // eslint-disable-next-line react/no-danger
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {photos.length > 0 && (
         <div className="overflow-hidden lg:mt-6 lg:rounded-2xl lg:border lg:border-border">
           <HeroCarousel photos={photos} alt={l.title} />

@@ -13,6 +13,7 @@ import { HomeSectionDivider } from "@/components/landing/HomeSectionDivider";
 import { BrandRail } from "@/components/landing/BrandRail";
 import { StatsBar } from "@/components/landing/StatsBar";
 import { CarRail } from "@/components/landing/CarRail";
+import { AnnonceRail } from "@/components/landing/AnnonceRail";
 import { PromoHero } from "@/components/landing/PromoHero";
 import { PropertyCard } from "@/components/property/PropertyCard";
 import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
@@ -337,6 +338,27 @@ export default async function LandingPage({
           repeated rail headers, no marketing-section dividers between
           listings — the cards themselves carry the page.
           ══════════════════════════════════════════════════════════════ */}
+
+      {/* ── ANNONCES (v3) ──
+          The catalog leads the page: fixed-price cars and spare parts, where
+          the buyer calls the seller. The auction blocks below stay for the lots
+          still running and retire with them (PIVOT-PLAN.md Phase 6). Each rail
+          renders nothing when its side of the catalog is empty, so this section
+          grows in as sellers publish rather than showing an empty shelf. */}
+      <AnnonceRail
+        kind="vehicle"
+        eyebrow="À vendre"
+        title="Voitures à prix fixe"
+        subtitle="Vous contactez le vendeur directement"
+        locale={locale}
+      />
+      <AnnonceRail
+        kind="part"
+        eyebrow="Pièces de rechange"
+        title="Pièces disponibles"
+        subtitle="Trouvez la pièce compatible avec votre véhicule"
+        locale={locale}
+      />
 
       {/* Trending rail — horizontal scroller of the top 8 hottest auctions. */}
       <StatsBar live={liveCount} sold={soldThisMonthCount} makes={topMakes.length} govs={coverageGovs} />
@@ -869,7 +891,7 @@ export default async function LandingPage({
                   // Two steps, not three: "vérifiez votre identité" is gone with
                   // KYC. The full home rebuild lands in Phase 4 of the pivot.
                   { num: "01", href: "/properties" as const, title: t("nav.properties"), body: t("home.step1Body") },
-                  { num: "02", href: "/sell"       as const, title: "Vendre",            body: t("home.step3Body") },
+                  { num: "02", href: "/annonces/nouvelle" as const, title: "Vendre",   body: t("home.step3Body") },
                 ].map((s) => (
                   <Link
                     key={s.num}

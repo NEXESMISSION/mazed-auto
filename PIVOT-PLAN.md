@@ -16,7 +16,7 @@ reason is recorded.
 
 Append here as phases land. Newest first.
 
-### Phase 4 — Public surfaces · **IN PROGRESS** 2026-09-02
+### Phase 4 — Public surfaces · **DONE** 2026-09-02
 
 The catalog is browsable and a buyer can reach a seller. Home rails, the
 /auctions → /annonces redirects and the sitemap/JSON-LD switch are still to do.
@@ -49,8 +49,23 @@ the rejection handler. supabase-js does not *reject* on a missing function — i
 the failure logged rather than swallowed, and the existing rows backfilled.
 Counter and log now agree (2 = 2).
 
-**Still to do in Phase 4:** home rebuilt around the two rails, 301s from
-`/auctions/*`, sitemap + JSON-LD switched from auction offers to plain offers.
+**Home now leads with the catalog.** Two rails — *Voitures à prix fixe* and
+*Pièces disponibles* — sit above the auction blocks, each rendering nothing when
+its side of the catalog is empty, so the section grows in as sellers publish
+instead of showing an empty shelf. The auction blocks stay below while 60 lots
+are still running and retire with them in Phase 6. "Vendre" now points at the v3
+wizard. Verified: both rails render the seeded car and part.
+
+**Sitemap + structured data.** `/fr/annonces` and every published annonce are in
+the sitemap; the listing page emits a plain `Offer` (price, condition,
+availability, area, validity) rather than the auction-shaped Product the v2
+pages use. **The phone number is deliberately absent from the JSON-LD** — it is
+the easiest thing on a page to scrape.
+
+**The `/auctions/*` → `/annonces` 301s are deliberately NOT done yet.** The plan
+put them here, but 60 lots are still live: redirecting their pages today would
+break auctions people are actively bidding in. They move with the auction
+decommission in Phase 6, which is where they belong.
 
 ### Phase 3 — Selling + moderation · **DONE** 2026-09-02
 
