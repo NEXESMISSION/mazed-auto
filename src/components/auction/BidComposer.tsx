@@ -562,6 +562,29 @@ function ActiveComposer({
   const [bidsCount, setBidsCount] = useState<number>(totalBids);
   const [recentBidFlash, setRecentBidFlash] = useState(false);
 
+  // ─── Adopt fresh SERVER numbers ──────────────────────────────────────
+  // `useState(...)` seeds ONCE. Every later server render — a pull-to-refresh,
+  // this component's own router.refresh() on a status change, a back/forward
+  // navigation — re-ran the page, fetched the real price, handed it down as a
+  // prop… and the composer ignored it, because state wins over props. That is
+  // why refreshing the bidding page did nothing: the screen kept whatever
+  // number it had when it first mounted, and only a realtime event could move
+  // it. If realtime was blocked (proxy, sleeping phone, dropped socket) the
+  // page was frozen with no way out but a hard reload.
+  //
+  // MONOTONIC on purpose: an English price only ever climbs, so taking the max
+  // means a late-arriving stale render can never walk the number backwards.
+  // If a DESCENDING format (Dutch) is ever reintroduced, this must become
+  // type-aware — there the local ticker owns the price, not the server.
+  useEffect(() => {
+    const serverPrice = Number(auction.current_price ?? auction.opening_price);
+    setCurrentPrice((prev) => (serverPrice > prev ? serverPrice : prev));
+  }, [auction.current_price, auction.opening_price]);
+
+  useEffect(() => {
+    setBidsCount((prev) => (totalBids > prev ? totalBids : prev));
+  }, [totalBids]);
+
   // Buy-now is only offered on auction-type listings that opted in with
   // a buy_now_price. Direct-sale listings have their own DirectSalePanel
   // on the detail page and never reach this composer.
