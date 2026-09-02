@@ -13,26 +13,31 @@
  * were violated: every tab lights for its own href, and no path lights two.
  */
 
-export type TabId = "home" | "browse" | "sell" | "activity" | "account";
+export type TabId = "home" | "browse" | "sell" | "favorites" | "account";
 
 /** Locale-less pathnames, as `usePathname` from `@/i18n/navigation` returns. */
 export const TAB_HREFS: Record<TabId, string> = {
   home: "/",
   browse: "/annonces",
   sell: "/annonces/nouvelle",
-  activity: "/account/listings",
+  favorites: "/account/favoris",
   account: "/account",
 };
 
 const under = (p: string, base: string) => p === base || p.startsWith(`${base}/`);
 
 /**
- * What "Activité" covers: the seller's own annonces, plus the legacy activity
- * page while it is still routed. Named because Compte has to defer to it.
+ * What the Favoris tab covers: the saved annonces, plus the legacy
+ * `/watchlist` path it replaced. Named because Compte has to defer to it.
+ *
+ * "Activité" used to sit in this slot pointing at /account/listings. It went
+ * because v3 has no activity to show — no bids, no watch-vs-win split — and
+ * "Mes annonces" belongs with the rest of the account, reachable from Compte
+ * and from the desktop header. Saved annonces are what a buyer comes back for.
  */
-const ACTIVITY_PATHS = ["/account/listings", "/account/activity"];
+const FAVORITE_PATHS = ["/account/favoris", "/watchlist"];
 
-export const isActivityPath = (p: string) => ACTIVITY_PATHS.some((b) => under(p, b));
+export const isFavoritePath = (p: string) => FAVORITE_PATHS.some((b) => under(p, b));
 
 const isSellPath = (p: string) => under(p, "/annonces/nouvelle") || under(p, "/sell");
 
@@ -54,13 +59,13 @@ export const TAB_MATCHERS: { id: TabId; match: (p: string) => boolean }[] = [
       !isSellPath(p) &&
       (under(p, "/annonces") || under(p, "/properties") || under(p, "/auctions")),
   },
-  { id: "activity", match: isActivityPath },
+  { id: "favorites", match: isFavoritePath },
   {
     id: "account",
     match: (p) =>
-      // Whatever Activité owns is not Compte's — this exclusion is the bug
-      // that made "Mes annonces" light the account tab instead.
-      !isActivityPath(p) &&
+      // Whatever Favoris owns is not Compte's. This exclusion is the bug that
+      // made the fourth tab light Compte instead of itself.
+      !isFavoritePath(p) &&
       (under(p, "/account") ||
         p === "/login" ||
         p === "/signup" ||

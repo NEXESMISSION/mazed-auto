@@ -18,7 +18,7 @@ describe("activeTabFor", () => {
     // would have been gold.
     const paths = [
       "/", "/annonces", "/annonces/abc", "/annonces/nouvelle",
-      "/account", "/account/listings", "/account/favoris", "/account/activity",
+      "/account", "/account/listings", "/account/favoris", "/watchlist",
       "/account/settings", "/account/notifications", "/login", "/signup",
       "/payment/123", "/admin/annonces", "/sell", "/properties/9", "/auctions/9",
     ];
@@ -28,15 +28,17 @@ describe("activeTabFor", () => {
     }
   });
 
-  it("puts the seller's own annonces under Activité, not Compte", () => {
-    expect(activeTabFor("/account/listings")).toBe("activity");
-    expect(activeTabFor("/account/listings/abc")).toBe("activity");
-    expect(activeTabFor("/account/activity")).toBe("activity");
+  it("gives the fourth tab to Favoris, not Compte", () => {
+    // "Activité" held this slot until v3 left it with nothing to show. The
+    // failure mode is the same either way: Compte's `startsWith("/account/")`
+    // swallowing whatever sits under it.
+    expect(activeTabFor("/account/favoris")).toBe("favorites");
+    expect(activeTabFor("/watchlist")).toBe("favorites");
   });
 
   it("keeps the rest of the account section under Compte", () => {
     expect(activeTabFor("/account")).toBe("account");
-    expect(activeTabFor("/account/favoris")).toBe("account");
+    expect(activeTabFor("/account/listings")).toBe("account");
     expect(activeTabFor("/account/settings")).toBe("account");
     expect(activeTabFor("/admin/annonces")).toBe("account");
   });

@@ -17,6 +17,15 @@ const nextConfig: NextConfig = {
   // compile. Safe, zero-behaviour-change.
   experimental: {
     optimizePackageImports: ["lucide-react"],
+    // Keep visited pages in the client router cache for a short while.
+    //
+    // Without this, going BACK to /annonces (force-dynamic) refetches the RSC
+    // payload from scratch: the browser tries to restore the scroll position
+    // against a page whose content does not exist yet, so it lands at the top
+    // and the user loses their place in the catalog every single time.
+    // Thirty seconds is enough to cover "open a car, decide, come back" while
+    // staying short enough that prices and availability stay fresh.
+    staleTimes: { dynamic: 30, static: 180 },
   },
   images: {
     // AVIF first, then WebP. AVIF is ~25–30 % smaller than WebP at the

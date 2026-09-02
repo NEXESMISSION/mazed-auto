@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
-import { Home, Search, Plus, LayoutGrid, User } from "lucide-react";
+import { Home, Search, Plus, Heart, User } from "lucide-react";
 import { activeTabFor, TAB_HREFS, type TabId } from "@/lib/nav/tabs";
 
 /**
@@ -21,7 +21,9 @@ import { activeTabFor, TAB_HREFS, type TabId } from "@/lib/nav/tabs";
 
 type Tab = {
   id: TabId;
-  labelKey: TabId;
+  /** Key under `shell.tabs` — not always the tab id (Favoris reuses
+   *  the existing `watchlist` string rather than duplicating it). */
+  labelKey: "home" | "browse" | "sell" | "watchlist" | "account";
   Icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
   /** Renders the floating gold "Sell" FAB instead of a regular cell. */
   isCenter?: boolean;
@@ -37,7 +39,7 @@ const TABS: Tab[] = [
   { id: "home", labelKey: "home", Icon: Home },
   { id: "browse", labelKey: "browse", Icon: Search },
   { id: "sell", labelKey: "sell", Icon: Plus, isCenter: true },
-  { id: "activity", labelKey: "activity", Icon: LayoutGrid },
+  { id: "favorites", labelKey: "watchlist", Icon: Heart },
   { id: "account", labelKey: "account", Icon: User },
 ];
 
