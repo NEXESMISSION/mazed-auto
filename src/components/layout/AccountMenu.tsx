@@ -8,35 +8,49 @@ import {
   User, Activity, Receipt, Heart, ClipboardCheck, ShieldCheck, Plus,
   Bell, Settings, LogOut, Loader2,
 } from "lucide-react";
+import { accountLabel } from "@/lib/identity";
 
 type Item = { href: string; label: string; sub?: string; Icon: typeof User };
 
 const ITEMS: Item[] = [
   { href: "/account", label: "Mon compte", sub: "Profil et vérification", Icon: User },
   { href: "/account/listings", label: "Mes annonces", sub: "Publiées, en attente, expirées", Icon: Activity },
-  { href: "/account/payments", label: "Mes paiements", sub: "Cautions et reçus", Icon: Receipt },
+  { href: "/account/payments", label: "Mes paiements", sub: "Frais de publication et reçus", Icon: Receipt },
   { href: "/account/favoris", label: "Favoris", sub: "Vos annonces enregistrées", Icon: Heart },
   ...(false
     ? [{ href: "/account/inspections", label: "Inspections", sub: "Rapports d'expertise", Icon: ClipboardCheck }]
     : []),
   { href: "/account/notifications", label: "Notifications", sub: "Alertes et activité", Icon: Bell },
-  { href: "/kyc/status", label: "Vérification (KYC)", sub: "Statut d'identité", Icon: ShieldCheck },
   { href: "/account/settings", label: "Paramètres", sub: "Mot de passe et compte", Icon: Settings },
-  { href: "/sell", label: "Vendre une voiture", sub: "Créer une annonce", Icon: Plus },
+  { href: "/annonces/nouvelle", label: "Publier une annonce", sub: "Voiture ou pièce de rechange", Icon: Plus },
 ];
 
-/** Name + email pulled from the Supabase session for the menu header. */
-type MenuUser = { email: string | null; name: string | null };
+/**
+ * Name + a line under it for the menu header.
+ *
+ * NOT the e-mail: accounts here are phone accounts, and `user.email` is the
+ * synthetic 216…@phone.mazedauto.app that signup mints because Supabase needs
+ * one. Printing it under someone's name tells them their address is something
+ * they never chose and cannot use. The phone lives on the user's metadata (set
+ * at signup) — fall back to a real e-mail only if the account actually has one.
+ */
+type MenuUser = { label: string | null; name: string | null };
 
 function toMenuUser(u: unknown): MenuUser | null {
   if (!u || typeof u !== "object") return null;
-  const user = u as { email?: string | null; user_metadata?: Record<string, unknown> };
+  const user = u as {
+    email?: string | null;
+    phone?: string | null;
+    user_metadata?: Record<string, unknown>;
+  };
   const meta = user.user_metadata ?? {};
   const name =
     (typeof meta.full_name === "string" && meta.full_name) ||
     (typeof meta.name === "string" && meta.name) ||
     null;
-  return { email: user.email ?? null, name };
+  const phone =
+    (typeof meta.phone === "string" && meta.phone) || user.phone || null;
+  return { label: accountLabel(user.email ?? null, phone), name };
 }
 
 /**
@@ -82,7 +96,7 @@ export function AccountMenu() {
 
   // Initial for the avatar disc — first letter of the name, falling back
   // to the email, like v1's ProfileMenu avatar.
-  const initial = (user?.name ?? user?.email ?? "").trim().charAt(0).toUpperCase();
+  const initial = (user?.name ?? user?.label ?? "").trim().charAt(0).toUpperCase();
 
   // Close on outside click / Escape.
   useEffect(() => {
@@ -205,8 +219,8 @@ export function AccountMenu() {
                     {user.name}
                   </span>
                 )}
-                {user.email && (
-                  <span className="block truncate text-[11.5px] text-muted">{user.email}</span>
+                {user.label && (
+                  <span className="block truncate text-[11.5px] text-muted">{user.label}</span>
                 )}
               </span>
             </div>

@@ -10,7 +10,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Mail,
-  ShieldCheck,
   LifeBuoy,
   AlertTriangle,
 } from "lucide-react";
@@ -41,7 +40,6 @@ export default async function SettingsPage() {
   let userId: string | null = null;
   let userEmail: string | null = null;
   let phoneLabel: string | null = null;
-  let kycStatus = "none";
   let smsEnabled = true;
   try {
     const supabase = await getServerSupabase();
@@ -53,10 +51,9 @@ export default async function SettingsPage() {
       userEmail = user.email ?? null;
       const { data: profile } = await supabase
         .from("profiles")
-        .select("kyc_status, sms_notifications_enabled, phone")
+        .select("sms_notifications_enabled, phone")
         .eq("id", user.id)
         .single();
-      kycStatus = profile?.kyc_status ?? "none";
       smsEnabled = profile?.sms_notifications_enabled ?? true;
       phoneLabel = formatPhone(profile?.phone ?? null);
     }
@@ -99,20 +96,6 @@ export default async function SettingsPage() {
     );
   }
 
-  const kycHref =
-    kycStatus === "verified" || kycStatus === "submitted" || kycStatus === "pending"
-      ? "/kyc/status"
-      : "/kyc/start";
-  const kycSub =
-    kycStatus === "verified"
-      ? "Identité vérifiée"
-      : kycStatus === "submitted"
-        ? "En cours de vérification"
-        : kycStatus === "pending"
-          ? "Vérification en attente"
-          : kycStatus === "rejected"
-            ? "Vérification refusée — soumettre à nouveau"
-            : "Vérification requise pour enchérir et vendre";
 
   return (
     <div className="mx-auto w-full max-w-[var(--max-w)] px-4 py-6 lg:max-w-3xl lg:px-8 lg:py-10">
@@ -185,28 +168,10 @@ export default async function SettingsPage() {
           <SmsNotificationsToggle initial={smsEnabled} />
         </Section>
 
-        {/* ── Compte ───────────────────────────────────────────────── */}
-        {/* The identity-verification row goes with the feature: /kyc/* is
-            bounced by middleware, so linking to it would be a dead end. */}
-        {(
-          <Section label="Compte">
-            <Link
-              href={kycHref as `/${string}`}
-              className="tap-target flex items-center gap-3 p-4 transition hover:bg-surface-2 active:bg-surface-2 lg:p-5"
-            >
-              <IconBadge>
-                <ShieldCheck className="size-5" strokeWidth={2} />
-              </IconBadge>
-              <div className="min-w-0 flex-1">
-                <div className="text-[14px] font-bold text-foreground">
-                  Vérification d&apos;identité
-                </div>
-                <div className="mt-0.5 truncate text-[12px] text-muted">{kycSub}</div>
-              </div>
-              <ChevronEnd className="size-5 shrink-0 text-muted" />
-            </Link>
-          </Section>
-        )}
+        {/* The identity-verification row is gone with the feature (0164).
+            The comment that used to sit here already said /kyc/* was a dead
+            end — the row was still rendered, so it promised a check that no
+            longer exists and dropped the user back on their account page. */}
 
         {/* ── Zone de danger ───────────────────────────────────────── */}
         <section>
