@@ -5,10 +5,11 @@ import { ListingImage } from "@/components/media/ListingImage";
 import { formatTND } from "@/lib/utils";
 import { GOVERNORATES } from "@/lib/governorates";
 import { listingIdsMatching } from "@/lib/fitment";
-import { AnnonceFilters } from "./AnnonceFilters";
+import { CatalogSidebar, CatalogToolbar } from "./CatalogFilters";
 import { FavoriteButton } from "@/components/property/FavoriteButton";
 import { getServerSupabase } from "@/lib/supabase/server";
-import { BadgeCheck, ImageOff, MapPin, Wrench, Car } from "lucide-react";
+import { BadgeCheck, ImageOff, Images, MapPin, SearchX, Wrench, Car } from "lucide-react";
+import { CONDITIONS, FUELS, TRANSMISSIONS } from "@/lib/vehicles";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +34,11 @@ type SearchParams = {
   make?: string;
   model?: string;
   year?: string;
+  min?: string;
   max?: string;
+  fuel?: string;
+  boite?: string;
+  sort?: string;
   page?: string;
 };
 
@@ -50,6 +55,7 @@ type ListingRow = {
   id: string; title: string; price: number | null; price_on_request: boolean;
   negotiable: boolean; governorate: string; condition: string | null;
   published_at: string | null; seller_id: string;
+  attributes: Record<string, unknown> | null;
   category: { label_fr: string; kind: string } | { label_fr: string; kind: string }[] | null;
   photos: { storage_path: string; sort_order: number }[] | null;
 };
@@ -110,7 +116,7 @@ export default async function AnnoncesPage({
   const page = Math.max(1, Math.floor(Number(sp.page)) || 1);
 
   const LISTING_SELECT = `id, title, price, price_on_request, negotiable, governorate,
-     condition, published_at, seller_id,
+     condition, published_at, seller_id, attributes,
      category:categories (label_fr, kind),
      photos:listing_photos (storage_path, sort_order)`;
 
@@ -120,6 +126,8 @@ export default async function AnnoncesPage({
     in: (column: string, values: readonly unknown[]) => Filterable;
     ilike: (column: string, pattern: string) => Filterable;
     lte: (column: string, value: unknown) => Filterable;
+    gte: (column: string, value: unknown) => Filterable;
+    contains: (column: string, value: unknown) => Filterable;
   };
 
   // One filter chain, applied to both the page read and the count-only read,
@@ -130,7 +138,12 @@ export default async function AnnoncesPage({
     else if (kind) q = q.in("category_id", visibleCats.map((c) => c.id));
     if (sp.gov) q = q.eq("governorate", sp.gov);
     if (sp.q) q = q.ilike("search_text", `%${sp.q.trim().toLowerCase()}%`);
+    if (sp.min && Number(sp.min) > 0) q = q.gte("price", Number(sp.min));
     if (sp.max && Number(sp.max) > 0) q = q.lte("price", Number(sp.max));
+    // Spec filters live in the jsonb the seller filled in. `contains` is an
+    // index-friendly @> rather than a text match on a rendered value.
+    if (sp.fuel) q = q.contains("attributes", { fuel: sp.fuel });
+    if (sp.boite) q = q.contains("attributes", { transmission: sp.boite });
     if (fitmentIds) {
       // No fitment matched → no results, without a pointless second query.
       if (fitmentIds.length === 0) q = q.eq("id", "00000000-0000-0000-0000-000000000000");
@@ -139,13 +152,18 @@ export default async function AnnoncesPage({
     return q as T;
   }
 
+  // Sorting by price puts "prix sur demande" (null) last either way — a row
+  // with no price is not the cheapest car on the site.
+  const sortColumn = sp.sort === "price_asc" || sp.sort === "price_desc" ? "price" : "published_at";
+  const sortAsc = sp.sort === "price_asc";
+
   const pagedQuery = (offset: number) =>
     applyFilters(
       admin
         .from("listings")
         .select(LISTING_SELECT, { count: "exact" })
         .eq("status", "published")
-        .order("published_at", { ascending: false })
+        .order(sortColumn, { ascending: sortAsc, nullsFirst: false })
         .range(offset, offset + PAGE_SIZE - 1),
     );
 
@@ -184,7 +202,10 @@ export default async function AnnoncesPage({
   // buyer back into the unfiltered catalog. Empty values are left out so the
   // URL stays readable.
   const pageQuery: Record<string, string> = {};
-  for (const k of ["kind", "cat", "gov", "q", "make", "model", "year", "max"] as const) {
+  for (const k of [
+    "kind", "cat", "gov", "q", "make", "model", "year",
+    "min", "max", "fuel", "boite", "sort",
+  ] as const) {
     const v = sp[k];
     if (v) pageQuery[k] = v;
   }
@@ -218,105 +239,167 @@ export default async function AnnoncesPage({
     }
   }
 
+  const filterState = {
+    kind: kind ?? "", cat: sp.cat ?? "", gov: sp.gov ?? "", q: sp.q ?? "",
+    make: sp.make ?? "", model: sp.model ?? "", year: sp.year ?? "",
+    min: sp.min ?? "", max: sp.max ?? "", fuel: sp.fuel ?? "",
+    boite: sp.boite ?? "", sort: sp.sort ?? "",
+  };
+  const filterProps = {
+    categories: visibleCats.map((c) => ({ id: c.id, label: c.label_fr, kind: c.kind })),
+    governorates: [...GOVERNORATES],
+    current: filterState,
+  };
+
   return (
-    <main className="mx-auto max-w-5xl px-4 py-6 lg:py-10">
-      <header>
-        <h1 className="text-[26px] font-extrabold tracking-tight">Annonces</h1>
+    <main className="mx-auto max-w-[var(--max-w-wide)] px-4 py-5 lg:px-6 lg:py-8">
+      <header className="lg:mb-6">
+        <h1 className="text-[24px] font-extrabold tracking-tight lg:text-[30px]">Annonces</h1>
         <p className="mt-1 text-[13px] text-muted">
-          Voitures et pièces de rechange. Vous contactez le vendeur directement.
+          Voitures et pi&egrave;ces de rechange. Le prix est affich&eacute;, vous appelez le vendeur.
         </p>
       </header>
 
-      <div className="mt-5">
-        <AnnonceFilters
-          categories={visibleCats.map((c) => ({ id: c.id, label: c.label_fr, kind: c.kind }))}
-          governorates={[...GOVERNORATES]}
-          current={{
-            kind: kind ?? "",
-            cat: sp.cat ?? "",
-            gov: sp.gov ?? "",
-            q: sp.q ?? "",
-            make: sp.make ?? "",
-            model: sp.model ?? "",
-            year: sp.year ?? "",
-            max: sp.max ?? "",
-          }}
-        />
-      </div>
+      {/* Rail beside the results on desktop. On a phone the rail becomes a
+          sheet and this collapses to one column. */}
+      <div className="mt-5 lg:mt-0 lg:grid lg:grid-cols-[272px_1fr] lg:gap-7">
+        <CatalogSidebar {...filterProps} />
 
-      <p className="mt-4 text-[12.5px] text-muted">
-        {total === 0
-          ? "Aucune annonce ne correspond."
-          : `${total} annonce${total > 1 ? "s" : ""}`}
-        {lastPage > 1 && <span> · page {shownPage} sur {lastPage}</span>}
-        {sp.make && (
-          <span>
-            {" "}· compatibles {sp.make}
-            {sp.model ? ` ${sp.model}` : ""}
-            {sp.year ? ` ${sp.year}` : ""}
-          </span>
-        )}
-      </p>
+        <div className="min-w-0">
+          <CatalogToolbar {...filterProps} total={total} />
 
-      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-        {rows.map((l) => {
-          const cat = one(l.category);
-          const cover = (l.photos ?? []).slice().sort((a, b) => a.sort_order - b.sort_order)[0];
-          return (
-            <Link
-              key={l.id}
-              href={`/annonces/${l.id}` as never}
-              className="group overflow-hidden rounded-2xl border border-border bg-surface transition hover:border-gold-soft"
-            >
-              <div className="relative aspect-[4/3] bg-surface-2">
-                {cover ? (
-                  <ListingImage
-                    path={cover.storage_path}
-                    alt={l.title}
-                    sizes="(min-width:1024px) 25vw, (min-width:640px) 33vw, 50vw"
-                    className="transition group-hover:scale-[1.02]"
-                  />
-                ) : (
-                  <span className="grid size-full place-items-center text-muted">
-                    <ImageOff className="size-6" />
-                  </span>
-                )}
-                {badged.has(l.seller_id) && (
-                  <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/70 px-2 py-0.5 text-[9.5px] font-extrabold uppercase tracking-[0.1em] text-white backdrop-blur-sm">
-                    <BadgeCheck className="size-3 text-gold" /> vérifié
-                  </span>
-                )}
-                <div className="absolute right-2 top-2">
-                  <FavoriteButton
-                    listingId={l.id}
-                    initialSaved={savedIds.has(l.id)}
-                    loggedIn={user !== null}
-                    size="sm"
-                  />
-                </div>
-              </div>
+          {rows.length === 0 ? (
+            <div className="mt-8 rounded-2xl border border-dashed border-border bg-surface-2/40 px-6 py-14 text-center">
+              <span className="mx-auto grid size-12 place-items-center rounded-full bg-surface text-muted">
+                <SearchX className="size-6" />
+              </span>
+              <p className="mt-4 text-[15px] font-bold text-foreground">
+                Aucune annonce ne correspond
+              </p>
+              <p className="mx-auto mt-1 max-w-sm text-[13px] leading-relaxed text-muted">
+                &Eacute;largissez le budget ou le gouvernorat, ou retirez un filtre ci-dessus.
+              </p>
+              <Link
+                href={"/annonces" as never}
+                className="batta-btn-luxe tap-target mt-5 inline-flex px-5 py-2.5 text-[13px]"
+              >
+                Voir toutes les annonces
+              </Link>
+            </div>
+          ) : (
+            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:gap-4 xl:grid-cols-4">
+              {rows.map((l) => {
+                const cat = one(l.category);
+                const photos = (l.photos ?? []).slice().sort((a, b) => a.sort_order - b.sort_order);
+                const cover = photos[0];
+                const at = (l.attributes ?? {}) as Record<string, unknown>;
+                const isPart = cat?.kind === "part";
 
-              <div className="p-3">
-                <span className="inline-flex items-center gap-1 text-[10.5px] font-bold uppercase tracking-[0.1em] text-muted">
-                  {cat?.kind === "part" ? <Wrench className="size-3" /> : <Car className="size-3" />}
-                  {cat?.label_fr ?? ""}
-                </span>
-                <h2 className="mt-1 line-clamp-2 text-[13.5px] font-bold leading-snug text-foreground">
-                  {l.title}
-                </h2>
-                <p className="batta-tabular mt-1 text-[14px] font-extrabold text-foreground">
-                  {l.price_on_request || l.price == null
-                    ? "Sur demande"
-                    : `${formatTND(Number(l.price), locale)} TND`}
-                </p>
-                <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-muted">
-                  <MapPin className="size-3" /> {l.governorate}
-                </p>
-              </div>
-            </Link>
-          );
-        })}
-      </div>
+                // The line every classifieds card has and this one did not:
+                // what the thing actually is, in the three or four facts a
+                // buyer scans before deciding to open it.
+                const specs: string[] = [];
+                if (!isPart) {
+                  const year = String(at.year ?? "").trim();
+                  const km = Number(at.mileage);
+                  const fuel = FUELS.find((x) => x.value === at.fuel)?.label;
+                  const box = TRANSMISSIONS.find((x) => x.value === at.transmission)?.label;
+                  if (year) specs.push(year);
+                  if (Number.isFinite(km) && km > 0) {
+                    specs.push(`${Intl.NumberFormat("fr-FR").format(km)} km`);
+                  }
+                  if (fuel) specs.push(fuel);
+                  if (box) specs.push(box);
+                } else {
+                  const brand = String(at.brand ?? "").trim();
+                  const cond = CONDITIONS.find((c) => c.value === l.condition)?.label;
+                  if (brand) specs.push(brand);
+                  if (cond) specs.push(cond);
+                }
+
+                return (
+                  <Link
+                    key={l.id}
+                    href={`/annonces/${l.id}` as never}
+                    className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-surface transition hover:border-gold-soft hover:shadow-[0_10px_30px_-16px_rgba(0,0,0,0.6)]"
+                  >
+                    <div className="relative aspect-[4/3] bg-surface-2">
+                      {cover ? (
+                        <ListingImage
+                          path={cover.storage_path}
+                          alt={l.title}
+                          sizes="(min-width:1280px) 22vw, (min-width:1024px) 28vw, (min-width:640px) 33vw, 50vw"
+                          className="transition group-hover:scale-[1.02]"
+                        />
+                      ) : (
+                        <span className="grid size-full place-items-center text-muted">
+                          <ImageOff className="size-6" />
+                        </span>
+                      )}
+
+                      {badged.has(l.seller_id) && (
+                        <span className="absolute start-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/70 px-2 py-0.5 text-[9.5px] font-extrabold uppercase tracking-[0.1em] text-white backdrop-blur-sm">
+                          <BadgeCheck className="size-3 text-gold" /> v&eacute;rifi&eacute;
+                        </span>
+                      )}
+
+                      {/* Photo count, the way every listing site shows it: it
+                          tells you whether the seller bothered. */}
+                      {photos.length > 1 && (
+                        <span className="absolute bottom-2 start-2 inline-flex items-center gap-1 rounded-md bg-black/65 px-1.5 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm">
+                          <Images className="size-3" /> {photos.length}
+                        </span>
+                      )}
+
+                      <div className="absolute end-2 top-2">
+                        <FavoriteButton
+                          listingId={l.id}
+                          initialSaved={savedIds.has(l.id)}
+                          loggedIn={user !== null}
+                          size="sm"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-1 flex-col p-3">
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.1em] text-muted">
+                        {isPart ? <Wrench className="size-3" /> : <Car className="size-3" />}
+                        {cat?.label_fr ?? ""}
+                      </span>
+
+                      <h2 className="mt-1 line-clamp-2 text-[13.5px] font-bold leading-snug text-foreground">
+                        {l.title}
+                      </h2>
+
+                      {specs.length > 0 && (
+                        // Two facts on a phone, three from sm up. A card this
+                        // narrow truncates the third mid-word ("Dies\u2026"), which
+                        // reads as broken rather than as "there is more".
+                        <p className="mt-1 line-clamp-1 text-[11.5px] text-muted">
+                          {specs.slice(0, 3).map((sp, i) => (
+                            <span key={sp} className={i > 1 ? "hidden sm:inline" : undefined}>
+                              {i > 0 ? " \u00b7 " : ""}
+                              {sp}
+                            </span>
+                          ))}
+                        </p>
+                      )}
+
+                      <p className="batta-tabular mt-auto pt-2 text-[15px] font-extrabold text-gold">
+                        {l.price_on_request || l.price == null
+                          ? "Sur demande"
+                          : `${formatTND(Number(l.price), locale)} TND`}
+                      </p>
+
+                      <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-muted">
+                        <MapPin className="size-3" /> {l.governorate}
+                      </p>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
 
       {lastPage > 1 && (
         <nav className="mt-6 flex items-center justify-center gap-2" aria-label="Pagination">
@@ -340,7 +423,9 @@ export default async function AnnoncesPage({
             </Link>
           )}
         </nav>
-      )}
+          )}
+        </div>
+      </div>
     </main>
   );
 }
