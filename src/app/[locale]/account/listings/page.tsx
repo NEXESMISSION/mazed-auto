@@ -6,7 +6,10 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { ListingImage } from "@/components/media/ListingImage";
 import { formatTND } from "@/lib/utils";
-import { Plus, Ticket, ImageOff, Clock } from "lucide-react";
+import {
+  Plus, Ticket, ImageOff, Clock, CreditCard, PencilLine,
+  ArrowRight, AlertTriangle, Inbox,
+} from "lucide-react";
 import { RenewButton } from "./RenewButton";
 import { PRODUCT_SELECT, isFree, resolveListingFee, toProduct, type Product } from "@/lib/products";
 import { formatTND as fmt } from "@/lib/utils";
@@ -16,23 +19,50 @@ export const dynamic = "force-dynamic";
 /**
  * Mes annonces — what the seller has, and what is waiting on whom.
  *
- * Every notification the v3 flow sends points here (submitted, published,
- * rejected, expiring, credits granted), so it exists now rather than in Phase 5:
- * a notification that leads to a 404 is worse than no notification.
+ * Rebuilt around the question this page is actually opened to answer: "is
+ * anything blocked on me?". The four counts at the top used to be decoration —
+ * you could read "2 à corriger" and then have to hunt for those two rows in a
+ * list of thirty. They are tabs now, so the number and the way to act on it
+ * are the same control.
+ *
+ * The second thing that was missing: a listing stuck at `pending_payment` had
+ * no way forward from here at all — the seller had to dig up the notification
+ * that carried the checkout link. Every row now offers the one action its
+ * status implies: pay, resume the draft, renew, or view.
  */
 
 const STATUS: Record<string, { label: string; tone: string; hint?: string }> = {
-  draft:           { label: "Brouillon",   tone: "bg-surface-2 text-muted ring-1 ring-border", hint: "Pas encore envoyée." },
-  pending_payment: { label: "À payer",     tone: "batta-tone-warn", hint: "Réglez les frais pour lancer la vérification." },
+  draft:           { label: "Brouillon",    tone: "bg-surface-2 text-muted ring-1 ring-border", hint: "Pas encore envoyée." },
+  pending_payment: { label: "À payer",      tone: "batta-tone-warn", hint: "Réglez les frais pour lancer la vérification." },
   pending_review:  { label: "Vérification", tone: "batta-tone-warn", hint: "Notre équipe la contrôle — moins de 24 h." },
-  published:       { label: "En ligne",    tone: "batta-tone-ok" },
-  rejected:        { label: "À corriger",  tone: "batta-tone-bad" },
-  expired:         { label: "Expirée",     tone: "bg-surface-2 text-muted ring-1 ring-border", hint: "Renouvelez-la pour la remettre en ligne." },
-  sold:            { label: "Vendue",      tone: "batta-tone-ok" },
-  archived:        { label: "Retirée",     tone: "bg-surface-2 text-muted ring-1 ring-border" },
+  published:       { label: "En ligne",     tone: "batta-tone-ok" },
+  rejected:        { label: "À corriger",   tone: "batta-tone-bad" },
+  expired:         { label: "Expirée",      tone: "bg-surface-2 text-muted ring-1 ring-border", hint: "Renouvelez-la pour la remettre en ligne." },
+  sold:            { label: "Vendue",       tone: "batta-tone-ok" },
+  archived:        { label: "Retirée",      tone: "bg-surface-2 text-muted ring-1 ring-border" },
 };
 
-export default async function MyListingsPage() {
+/**
+ * The tabs. `key` is what appears in the URL — French and readable, because a
+ * seller who bookmarks "mes annonces à corriger" should not be looking at
+ * `?statut=action_required`.
+ */
+const TABS = [
+  { key: "",             label: "Toutes",     statuses: null,                                   tone: "text-foreground" },
+  { key: "en-ligne",     label: "En ligne",   statuses: ["published"],                          tone: "text-emerald-400" },
+  { key: "verification", label: "En cours",   statuses: ["pending_payment", "pending_review"],  tone: "text-amber-400" },
+  { key: "a-corriger",   label: "À corriger", statuses: ["rejected", "draft"],                  tone: "text-[var(--danger)]" },
+  { key: "terminees",    label: "Terminées",  statuses: ["expired", "archived", "sold"],        tone: "text-muted" },
+] as const;
+
+const RENEWABLE = ["expired", "archived", "sold"];
+
+export default async function MyListingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ statut?: string }>;
+}) {
+  const sp = await searchParams;
   const locale = await getLocale();
   const supabase = await getServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
@@ -43,7 +73,7 @@ export default async function MyListingsPage() {
   const admin = getServiceSupabase();
   const db = admin ?? supabase;
 
-  const [listRes, creditRes, prodRes] = await Promise.all([
+  const [listRes, creditRes, prodRes, catRes, payRes] = await Promise.all([
     db
       .from("listings")
       .select(
@@ -59,6 +89,20 @@ export default async function MyListingsPage() {
       .eq("seller_id", user.id)
       .eq("status", "active"),
     db.from("products").select(PRODUCT_SELECT).eq("is_active", true),
+    db.from("categories").select("id, parent_id"),
+    // The open fee payment per listing, so "À payer" can be paid from this
+    // page instead of only from the notification that announced it.
+    //
+    // The link is metadata.listing_id, NOT property_id: `payments.property_id`
+    // is a foreign key to the auction-era `properties` table and cannot hold a
+    // listing id at all. Matching on it would have compiled, run, and silently
+    // never found a payment.
+    db
+      .from("payments")
+      .select("id, metadata, status")
+      .eq("user_id", user.id)
+      .eq("kind", "listing_fee")
+      .in("status", ["pending", "pending_review"]),
   ]);
 
   const products: Product[] = (prodRes.data ?? []).map((r) =>
@@ -68,10 +112,15 @@ export default async function MyListingsPage() {
 
   // Category → parent, so a price set on a parent (« Pièces de rechange » at 0)
   // resolves for its children the same way the API does it.
-  const { data: catRows } = await db.from("categories").select("id, parent_id");
   const parentOf = new Map(
-    (catRows ?? []).map((c) => [c.id as string, (c.parent_id as string | null) ?? null]),
+    (catRes.data ?? []).map((c) => [c.id as string, (c.parent_id as string | null) ?? null]),
   );
+
+  const payFor = new Map<string, string>();
+  for (const p of (payRes.data ?? []) as { id: string; metadata: unknown }[]) {
+    const listingId = (p.metadata as { listing_id?: string } | null)?.listing_id;
+    if (listingId && !payFor.has(listingId)) payFor.set(listingId, p.id);
+  }
 
   const now = Date.now();
   const creditsLeft = (creditRes.data ?? []).reduce((n, c) => {
@@ -87,19 +136,19 @@ export default async function MyListingsPage() {
     category_id: string;
     photos: { storage_path: string; sort_order: number; is_cover?: boolean | null }[] | null;
   };
-  const rows = (listRes.data ?? []) as Row[];
+  const all = (listRes.data ?? []) as Row[];
 
-  // The four numbers a seller opens this page to see.
-  const counts = {
-    published: rows.filter((r) => r.status === "published").length,
-    review: rows.filter((r) => r.status === "pending_review" || r.status === "pending_payment").length,
-    action: rows.filter((r) => r.status === "rejected" || r.status === "draft").length,
-    expired: rows.filter((r) => r.status === "expired" || r.status === "archived").length,
-  };
+  const active = TABS.find((t) => t.key === (sp.statut ?? "")) ?? TABS[0];
+  const countFor = (statuses: readonly string[] | null) =>
+    statuses === null ? all.length : all.filter((r) => statuses.includes(r.status)).length;
+  const rows =
+    active.statuses === null
+      ? all
+      : all.filter((r) => (active.statuses as readonly string[]).includes(r.status));
 
-  // What renewing this listing costs. Mirrors the renew route exactly,
-  // including its exception: a category that publishes for free renews for
-  // free, so a part is never quoted 15 TND.
+  // What renewing costs. Mirrors the renew route exactly, including its
+  // exception: a category that publishes for free renews for free, so a part
+  // is never quoted 15 TND.
   const renewLabel = (l: Row): string | null => {
     const categoryFee = resolveListingFee(products, l.category_id, parentOf.get(l.category_id) ?? null);
     const p = isFree(categoryFee) ? categoryFee : renewalProduct ?? categoryFee;
@@ -107,19 +156,71 @@ export default async function MyListingsPage() {
     return p.price <= 0 ? "Gratuit" : `${fmt(p.price, locale)} TND`;
   };
 
+  const priceOf = (l: Row) =>
+    l.price_on_request || l.price == null
+      ? "Sur demande"
+      : `${formatTND(Number(l.price), locale)} TND`;
+
+  const date = (v: string | null) =>
+    v ? new Date(v).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+
+  /** Days left before a published annonce expires — the only date that is urgent. */
+  const daysLeft = (l: Row) => {
+    if (l.status !== "published" || !l.expires_at) return null;
+    return Math.ceil((new Date(l.expires_at).getTime() - now) / 86_400_000);
+  };
+
+  /**
+   * The one action a row implies. Every branch points at a route that exists:
+   * resuming a draft relies on /annonces/nouvelle loading the seller's own
+   * draft, which is what it already does.
+   */
+  function Action({ l, block = false }: { l: Row; block?: boolean }) {
+    const cls = block
+      ? "batta-btn-luxe tap-target mt-2.5 flex w-full justify-center px-3 py-2.5 text-[12.5px]"
+      : "batta-btn-luxe tap-target inline-flex px-3 py-1.5 text-[12px]";
+
+    if (l.status === "pending_payment" && payFor.has(l.id)) {
+      return (
+        <Link href={`/payment/checkout?payment=${payFor.get(l.id)}` as never} className={cls}>
+          <CreditCard className="size-3.5" /> Payer
+        </Link>
+      );
+    }
+    if (l.status === "draft") {
+      return (
+        <Link href={"/annonces/nouvelle" as never} className={cls}>
+          <PencilLine className="size-3.5" /> Reprendre
+        </Link>
+      );
+    }
+    if (RENEWABLE.includes(l.status)) {
+      return <RenewButton listingId={l.id} usesCredit={creditsLeft > 0} feeLabel={renewLabel(l)} />;
+    }
+    return (
+      <Link
+        href={`/annonces/${l.id}` as never}
+        className={
+          block
+            ? "mt-2.5 flex w-full items-center justify-center gap-1 rounded-xl border border-border px-3 py-2.5 text-[12.5px] font-bold text-foreground hover:border-gold-soft hover:text-gold"
+            : "inline-flex items-center gap-1 text-[12.5px] font-bold text-gold hover:underline"
+        }
+      >
+        Voir <ArrowRight className="size-3.5" />
+      </Link>
+    );
+  }
+
   return (
-    <main className="mx-auto max-w-2xl px-4 py-6 lg:max-w-5xl lg:px-8 lg:py-10">
-      {/* ── Header ────────────────────────────────────────────────────────
-          Phone: title, count, and the one button that matters, stacked.
-          Desktop: the same row, but the button sits opposite the title
-          instead of under it, because there is room. */}
+    <main className="mx-auto max-w-2xl px-4 py-6 lg:max-w-6xl lg:px-8 lg:py-10">
+      {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-[24px] font-extrabold tracking-tight lg:text-[30px]">Mes annonces</h1>
-          <p className="mt-1 text-[13px] text-muted">
-            {rows.length === 0
+          <h1 className="text-[24px] font-extrabold tracking-tight lg:text-[32px]">Mes annonces</h1>
+          <p className="mt-1 text-[13px] text-muted lg:text-[14px]">
+            {all.length === 0
               ? "Vous n'avez pas encore publié."
-              : `${rows.length} annonce${rows.length > 1 ? "s" : ""}.`}
+              : `${all.length} annonce${all.length > 1 ? "s" : ""} · gérez-les ici.`}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -135,93 +236,111 @@ export default async function MyListingsPage() {
         </div>
       </div>
 
-      {/* ── What needs the seller ─────────────────────────────────────────
-          A seller opens this page to answer one question: is anything
-          waiting on me? Four counts answer it before they read a single
-          card. Two columns on a phone, four in a row from sm up. */}
-      {rows.length > 0 && (
-        <div className="mt-5 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-          {[
-            { label: "En ligne", n: counts.published, tone: "text-emerald-400" },
-            { label: "En vérification", n: counts.review, tone: "text-amber-400" },
-            { label: "À corriger", n: counts.action, tone: "text-[var(--danger)]" },
-            { label: "Expirées", n: counts.expired, tone: "text-muted" },
-          ].map((c) => (
-            <div key={c.label} className="rounded-2xl border border-border bg-surface px-3.5 py-3">
-              <div className={`batta-tabular text-[22px] font-extrabold leading-none ${c.tone}`}>{c.n}</div>
-              <div className="mt-1 text-[11px] font-semibold text-muted">{c.label}</div>
-            </div>
-          ))}
-        </div>
+      {/* ── Tabs ───────────────────────────────────────────────────────────
+          The count and the filter are one control. On a phone they scroll
+          sideways instead of wrapping into three ragged rows. */}
+      {all.length > 0 && (
+        <nav className="-mx-4 mt-5 overflow-x-auto px-4 [scrollbar-width:none] lg:mx-0 lg:overflow-visible lg:px-0">
+          <div className="flex min-w-max gap-2 lg:min-w-0">
+            {TABS.map((t) => {
+              const n = countFor(t.statuses);
+              const on = t.key === active.key;
+              // An empty tab is noise — unless you are standing in it, in which
+              // case removing it would strand you.
+              if (n === 0 && !on && t.key !== "") return null;
+              return (
+                <Link
+                  key={t.key || "all"}
+                  href={(t.key ? `/account/listings?statut=${t.key}` : "/account/listings") as never}
+                  aria-current={on ? "page" : undefined}
+                  className={[
+                    "tap-target flex items-center gap-2 rounded-xl border px-3.5 py-2.5 text-[13px] font-bold transition",
+                    on
+                      ? "border-gold-soft bg-gold-faint text-gold"
+                      : "border-border bg-surface text-muted hover:border-gold-soft hover:text-foreground",
+                  ].join(" ")}
+                >
+                  {t.label}
+                  <span className={`batta-tabular text-[13px] font-extrabold ${on ? "text-gold" : t.tone}`}>
+                    {n}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
       )}
 
-      {/* ── PHONE · one card per annonce ─────────────────────────────────
-          A thumbnail you can recognise at a glance, the status, and only
-          the action that applies. Everything else is noise on a 6" screen. */}
-      <div className="mt-5 space-y-3 lg:hidden">
+      {/* ── PHONE · one card per annonce ───────────────────────────────── */}
+      <div className="mt-4 space-y-3 lg:hidden">
         {rows.map((l) => {
           const st = STATUS[l.status] ?? { label: l.status, tone: "bg-surface-2 text-muted" };
           const cat = Array.isArray(l.category) ? l.category[0] : l.category;
           const cover = coverPhoto(l.photos);
+          const left = daysLeft(l);
           return (
-            <article key={l.id} className="flex gap-3 rounded-2xl border border-border bg-surface p-3">
-              <Link href={`/annonces/${l.id}` as never} className="size-20 shrink-0 overflow-hidden rounded-xl bg-surface-2 ring-1 ring-border">
-                {cover ? (
-                  <ListingImage path={cover.storage_path} alt="" sizes="80px" />
-                ) : (
-                  <span className="grid size-full place-items-center text-muted"><ImageOff className="size-5" /></span>
-                )}
-              </Link>
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className={`rounded-full px-2 py-0.5 text-[9.5px] font-extrabold uppercase tracking-[0.12em] ${st.tone}`}>
-                    {st.label}
-                  </span>
-                  <span className="text-[11px] text-muted">{cat?.label_fr ?? "—"}</span>
-                </div>
-                <Link href={`/annonces/${l.id}` as never} className="mt-1 block truncate text-[14.5px] font-bold text-foreground">
-                  {l.title}
+            <article key={l.id} className="rounded-2xl border border-border bg-surface p-3">
+              <div className="flex gap-3">
+                <Link
+                  href={`/annonces/${l.id}` as never}
+                  className="size-[74px] shrink-0 overflow-hidden rounded-xl bg-surface-2 ring-1 ring-border"
+                >
+                  {cover ? (
+                    <ListingImage path={cover.storage_path} alt="" sizes="74px" />
+                  ) : (
+                    <span className="grid size-full place-items-center text-muted"><ImageOff className="size-5" /></span>
+                  )}
                 </Link>
-                <p className="batta-tabular mt-0.5 text-[13px] font-semibold text-foreground">
-                  {l.price_on_request || l.price == null
-                    ? "Prix sur demande"
-                    : `${formatTND(Number(l.price), locale)} TND`}
-                </p>
-                {st.hint && <p className="mt-1 text-[11.5px] text-muted">{st.hint}</p>}
-                {l.rejection_reason && (
-                  <p className="mt-1 rounded-lg bg-[var(--accent-faint)] px-2 py-1 text-[11.5px] text-[var(--accent-deep)]">
-                    {l.rejection_reason}
-                  </p>
-                )}
-                {l.status === "published" && l.expires_at && (
-                  <p className="mt-1 inline-flex items-center gap-1 text-[11.5px] text-muted">
-                    <Clock className="size-3" />
-                    Jusqu&apos;au {new Date(l.expires_at).toLocaleDateString("fr-FR")}
-                  </p>
-                )}
-                {["expired", "archived", "sold"].includes(l.status) && (
-                  <RenewButton listingId={l.id} usesCredit={creditsLeft > 0} feeLabel={renewLabel(l)} />
-                )}
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className={`rounded-full px-2 py-0.5 text-[9.5px] font-extrabold uppercase tracking-[0.12em] ${st.tone}`}>
+                      {st.label}
+                    </span>
+                    <span className="truncate text-[11px] text-muted">{cat?.label_fr ?? "—"}</span>
+                  </div>
+                  <Link href={`/annonces/${l.id}` as never} className="mt-1 block truncate text-[14.5px] font-bold text-foreground">
+                    {l.title}
+                  </Link>
+                  <p className="batta-tabular mt-0.5 text-[14px] font-extrabold text-gold">{priceOf(l)}</p>
+                </div>
               </div>
+
+              {l.rejection_reason ? (
+                <p className="mt-2.5 flex items-start gap-1.5 rounded-lg bg-[var(--accent-faint)] px-2.5 py-1.5 text-[11.5px] leading-relaxed text-[var(--accent-deep)]">
+                  <AlertTriangle className="mt-px size-3.5 shrink-0" />
+                  <span>{l.rejection_reason}</span>
+                </p>
+              ) : st.hint ? (
+                <p className="mt-2.5 text-[11.5px] text-muted">{st.hint}</p>
+              ) : null}
+
+              {left !== null && (
+                <p className={`mt-2 inline-flex items-center gap-1 text-[11.5px] ${left <= 3 ? "font-bold text-amber-400" : "text-muted"}`}>
+                  <Clock className="size-3" />
+                  {left <= 0 ? "Expire aujourd'hui" : `Encore ${left} jour${left > 1 ? "s" : ""} en ligne`}
+                </p>
+              )}
+
+              <Action l={l} block />
             </article>
           );
         })}
       </div>
 
-      {/* ── DESKTOP · a table, because this is a management screen ────────
-          The card list stretched to 1400px was a ribbon of 80px thumbnails
-          with an ocean of empty space beside it. At this width the seller
-          wants to compare rows — status, price, dates — so they get
-          columns, aligned numbers, and a sticky header. */}
-      <div className="mt-6 hidden overflow-hidden rounded-2xl border border-border bg-surface lg:block">
+      {/* ── DESKTOP · a management table ────────────────────────────────────
+          At this width the seller compares rows — status, price, dates — so
+          they get columns and aligned numbers rather than a ribbon of cards
+          with an ocean of empty space beside it. */}
+      <div className="mt-5 hidden overflow-hidden rounded-2xl border border-border bg-surface lg:block">
         <table className="w-full text-[13px]">
-          <thead className="sticky top-0 bg-surface-2 text-[10px] uppercase tracking-[0.14em] text-muted">
+          <thead className="bg-surface-2 text-[10px] uppercase tracking-[0.14em] text-muted">
             <tr>
-              <th className="px-4 py-3 text-start font-extrabold">Annonce</th>
-              <th className="px-3 py-3 text-start font-extrabold">Statut</th>
-              <th className="px-3 py-3 text-end font-extrabold">Prix</th>
-              <th className="px-3 py-3 text-start font-extrabold">Expire</th>
-              <th className="px-4 py-3 text-end font-extrabold">Action</th>
+              <th className="px-5 py-3.5 text-start font-extrabold">Annonce</th>
+              <th className="px-3 py-3.5 text-start font-extrabold">Statut</th>
+              <th className="px-3 py-3.5 text-end font-extrabold">Prix</th>
+              <th className="px-3 py-3.5 text-start font-extrabold">Publiée</th>
+              <th className="px-3 py-3.5 text-start font-extrabold">Expire</th>
+              <th className="px-5 py-3.5 text-end font-extrabold">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -229,57 +348,61 @@ export default async function MyListingsPage() {
               const st = STATUS[l.status] ?? { label: l.status, tone: "bg-surface-2 text-muted" };
               const cat = Array.isArray(l.category) ? l.category[0] : l.category;
               const cover = coverPhoto(l.photos);
+              const left = daysLeft(l);
               return (
                 <tr key={l.id} className="align-middle transition hover:bg-surface-2/50">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <Link href={`/annonces/${l.id}` as never} className="size-12 shrink-0 overflow-hidden rounded-lg bg-surface-2 ring-1 ring-border">
+                  <td className="px-5 py-3.5">
+                    <div className="flex items-center gap-3.5">
+                      <Link
+                        href={`/annonces/${l.id}` as never}
+                        className="size-14 shrink-0 overflow-hidden rounded-xl bg-surface-2 ring-1 ring-border"
+                      >
                         {cover ? (
-                          <ListingImage path={cover.storage_path} alt="" sizes="48px" />
+                          <ListingImage path={cover.storage_path} alt="" sizes="56px" />
                         ) : (
                           <span className="grid size-full place-items-center text-muted"><ImageOff className="size-4" /></span>
                         )}
                       </Link>
                       <div className="min-w-0">
-                        <Link href={`/annonces/${l.id}` as never} className="block truncate font-bold text-foreground hover:text-gold">
+                        <Link
+                          href={`/annonces/${l.id}` as never}
+                          className="block max-w-[34ch] truncate text-[14px] font-bold text-foreground hover:text-gold"
+                        >
                           {l.title}
                         </Link>
                         <div className="truncate text-[11.5px] text-muted">{cat?.label_fr ?? "—"}</div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-3 py-3">
+                  <td className="px-3 py-3.5">
                     <span className={`inline-block rounded-full px-2 py-0.5 text-[9.5px] font-extrabold uppercase tracking-[0.12em] ${st.tone}`}>
                       {st.label}
                     </span>
-                    {l.rejection_reason && (
-                      <div className="mt-1 max-w-[22ch] truncate text-[11px] text-[var(--accent-deep)]" title={l.rejection_reason}>
+                    {l.rejection_reason ? (
+                      <div className="mt-1 max-w-[26ch] truncate text-[11px] text-[var(--accent-deep)]" title={l.rejection_reason}>
                         {l.rejection_reason}
                       </div>
-                    )}
-                    {!l.rejection_reason && st.hint && (
-                      <div className="mt-1 max-w-[24ch] text-[11px] text-muted">{st.hint}</div>
-                    )}
+                    ) : st.hint ? (
+                      <div className="mt-1 max-w-[26ch] text-[11px] leading-snug text-muted">{st.hint}</div>
+                    ) : null}
                   </td>
-                  <td className="batta-tabular px-3 py-3 text-end font-semibold text-foreground">
-                    {l.price_on_request || l.price == null
-                      ? "Sur demande"
-                      : `${formatTND(Number(l.price), locale)} TND`}
+                  <td className="batta-tabular whitespace-nowrap px-3 py-3.5 text-end font-extrabold text-gold">
+                    {priceOf(l)}
                   </td>
-                  <td className="px-3 py-3 text-muted">
-                    {l.status === "published" && l.expires_at
-                      ? new Date(l.expires_at).toLocaleDateString("fr-FR")
-                      : "—"}
-                  </td>
-                  <td className="px-4 py-3 text-end">
-                    {["expired", "archived", "sold"].includes(l.status) ? (
-                      <RenewButton listingId={l.id} usesCredit={creditsLeft > 0} feeLabel={renewLabel(l)} />
+                  <td className="whitespace-nowrap px-3 py-3.5 text-[12.5px] text-muted">{date(l.published_at)}</td>
+                  <td className="whitespace-nowrap px-3 py-3.5 text-[12.5px]">
+                    {left === null ? (
+                      <span className="text-muted">{l.status === "published" ? "—" : date(l.expires_at)}</span>
                     ) : (
-                      <Link href={`/annonces/${l.id}` as never} className="text-[12.5px] font-bold text-gold hover:underline">
-                        Voir →
-                      </Link>
+                      <span className={left <= 3 ? "font-bold text-amber-400" : "text-muted"}>
+                        {date(l.expires_at)}
+                        <span className="block text-[11px]">
+                          {left <= 0 ? "aujourd'hui" : `dans ${left} j`}
+                        </span>
+                      </span>
                     )}
                   </td>
+                  <td className="px-5 py-3.5 text-end"><Action l={l} /></td>
                 </tr>
               );
             })}
@@ -287,14 +410,38 @@ export default async function MyListingsPage() {
         </table>
       </div>
 
+      {/* ── Empty ──────────────────────────────────────────────────────────
+          Distinguishes "you have nothing" from "this tab has nothing" — two
+          different problems with two different ways out. */}
       {rows.length === 0 && (
-        <div className="mt-5 rounded-2xl border border-dashed border-border bg-surface-2/40 p-8 text-center lg:p-14">
-          <p className="text-[13px] text-muted">
-            Publiez votre première annonce — voiture ou pièce de rechange.
-          </p>
-          <Link href={"/annonces/nouvelle" as never} className="batta-btn-luxe tap-target mt-4 inline-flex px-5 py-2.5 text-[13px]">
-            <Plus className="size-4" /> Publier une annonce
-          </Link>
+        <div className="mt-4 rounded-2xl border border-dashed border-border bg-surface-2/40 p-8 text-center lg:p-14">
+          <span className="mx-auto grid size-12 place-items-center rounded-full bg-surface text-muted">
+            <Inbox className="size-6" />
+          </span>
+          {all.length === 0 ? (
+            <>
+              <p className="mt-4 text-[15px] font-bold text-foreground">Aucune annonce pour le moment</p>
+              <p className="mx-auto mt-1 max-w-sm text-[13px] leading-relaxed text-muted">
+                Publiez votre première annonce — voiture ou pièce de rechange.
+              </p>
+              <Link href={"/annonces/nouvelle" as never} className="batta-btn-luxe tap-target mt-5 inline-flex px-5 py-2.5 text-[13px]">
+                <Plus className="size-4" /> Publier une annonce
+              </Link>
+            </>
+          ) : (
+            <>
+              <p className="mt-4 text-[15px] font-bold text-foreground">Rien dans « {active.label} »</p>
+              <p className="mx-auto mt-1 max-w-sm text-[13px] leading-relaxed text-muted">
+                Vos autres annonces sont dans les onglets voisins.
+              </p>
+              <Link
+                href={"/account/listings" as never}
+                className="mt-5 inline-flex items-center gap-1 text-[13px] font-bold text-gold hover:underline"
+              >
+                Voir toutes les annonces <ArrowRight className="size-3.5" />
+              </Link>
+            </>
+          )}
         </div>
       )}
     </main>

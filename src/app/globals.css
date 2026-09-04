@@ -963,12 +963,73 @@ html[dir="rtl"] .batta-marquee-reverse { animation-name: batta-marquee; }
   100% { transform: scaleX(0.92); opacity: 1; }
 }
 
-[data-filtering] [data-catalog-results] {
+[data-catalog-results] { position: relative; }
+
+[data-filtering] [data-catalog-results] > *:not([data-catalog-skeleton]) {
   opacity: 0.42;
   pointer-events: none;
   transition: opacity 140ms ease-out;
 }
 
+/* The skeleton sits in the markup permanently and costs nothing until the
+   attribute appears — no context plumbing between the client filter controls
+   and the server-rendered grid, and no extra JavaScript.
+
+   It fades in after 140ms rather than instantly: most filter changes now land
+   in ~0.3 s, and a placeholder that flashes for two frames on a fast change is
+   worse than no placeholder at all. Slow changes — a cold cache, 3G — are the
+   ones that get it. */
+[data-catalog-skeleton] { display: none; }
+
+[data-filtering] [data-catalog-skeleton] {
+  display: block;
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  overflow: hidden;
+  /* Opaque, so the stale results do not show through the placeholder. The
+     token is --background; there is no --bg, and naming it that made the
+     declaration invalid and the overlay transparent. */
+  background: var(--background);
+  opacity: 0;
+  animation: catalog-skeleton-in 200ms ease-out 140ms forwards;
+}
+
+@keyframes catalog-skeleton-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* A travelling highlight rather than a pulse. This deliberately does NOT use
+   .batta-skeleton: that class is switched off at lg+ by the rule above, where a
+   full-page load shows one centred spinner instead. Filtering is not a page
+   load — the spinner would be wrong, and desktop is exactly where the
+   complaint about silent filtering came from. */
+.catalog-skel {
+  /* #141414 → #1c1c1c is an 8-point step: correct in theory, invisible in
+     practice on a near-black page. The highlight is a translucent white over
+     the base tone instead, which reads as motion without turning the
+     placeholder into a light-coloured slab. */
+  background-color: var(--surface-2);
+  background-image:
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 20%,
+      rgba(255, 255, 255, 0.07) 48%,
+      rgba(255, 255, 255, 0) 76%
+    );
+  background-size: 280% 100%;
+  background-repeat: no-repeat;
+  animation: catalog-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes catalog-shimmer {
+  0%   { background-position: 120% 0; }
+  100% { background-position: -40% 0; }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  [data-filtering] [data-catalog-results] { transition: none; }
+  [data-filtering] [data-catalog-results] > *:not([data-catalog-skeleton]) { transition: none; }
+  [data-filtering] [data-catalog-skeleton] { animation: none; opacity: 1; }
+  .catalog-skel { animation: none; background-image: none; }
 }

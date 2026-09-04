@@ -35,6 +35,17 @@ const fetchCategories = unstable_cache(
   { revalidate: 3600, tags: ["categories"] },
 );
 
+/**
+ * One definition, used by the results AND by the loading skeleton, so the
+ * placeholder can never drift out of step with the thing it stands in for.
+ *
+ * Four across at 1280 put 250px cards on a 15" laptop — a thumbnail, not a
+ * listing. The rail already takes 272px, so the count now steps 2 → 3 → 4 with
+ * the space actually available, and the cards grow instead of multiplying.
+ */
+const GRID =
+  "grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-2 lg:gap-5 xl:grid-cols-3 2xl:grid-cols-4";
+
 export const dynamic = "force-dynamic";
 
 /**
@@ -329,6 +340,25 @@ export default async function AnnoncesPage({
           {/* `data-catalog-results` is what globals.css dims while a filter
               transition is in flight — see the RouteProgress bar. */}
           <div data-catalog-results>
+          {/* Shown by CSS while `data-filtering` is on the document — see
+              globals.css. Eight cards is enough to fill the fold at any width;
+              the container clips the rest. */}
+          <div data-catalog-skeleton aria-hidden>
+            <div className={`mt-4 lg:mt-5 ${GRID}`}>
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="overflow-hidden rounded-2xl border border-border bg-surface">
+                  <div className="catalog-skel aspect-[4/3]" />
+                  <div className="space-y-2 p-3 lg:p-4">
+                    <div className="catalog-skel h-2 w-1/3 rounded-full" />
+                    <div className="catalog-skel h-3 w-11/12 rounded-full" />
+                    <div className="catalog-skel h-2.5 w-2/3 rounded-full" />
+                    <div className="catalog-skel h-4 w-1/2 rounded-full" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {rows.length === 0 ? (
             <div className="mt-8 rounded-2xl border border-dashed border-border bg-surface-2/40 px-6 py-14 text-center">
               <span className="mx-auto grid size-12 place-items-center rounded-full bg-surface text-muted">
@@ -348,7 +378,7 @@ export default async function AnnoncesPage({
               </Link>
             </div>
           ) : (
-            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:gap-4 xl:grid-cols-4">
+            <div className={`mt-4 lg:mt-5 ${GRID}`}>
               {rows.map((l) => {
                 const cat = one(l.category);
                 const photos = (l.photos ?? []).slice().sort((a, b) => a.sort_order - b.sort_order);
@@ -384,21 +414,29 @@ export default async function AnnoncesPage({
                   <Link
                     key={l.id}
                     href={`/annonces/${l.id}` as never}
-                    className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-surface transition hover:border-gold-soft hover:shadow-[0_10px_30px_-16px_rgba(0,0,0,0.6)]"
+                    className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-surface transition duration-300 hover:border-gold-soft hover:shadow-[0_10px_30px_-16px_rgba(0,0,0,0.6)] lg:rounded-[20px] lg:hover:-translate-y-1 lg:hover:shadow-[0_22px_50px_-24px_rgba(0,0,0,0.85)]"
                   >
-                    <div className="relative aspect-[4/3] bg-surface-2">
+                    <div className="relative aspect-[4/3] overflow-hidden bg-surface-2">
                       {cover ? (
                         <ListingImage
                           path={cover.storage_path}
                           alt={l.title}
-                          sizes="(min-width:1280px) 22vw, (min-width:1024px) 28vw, (min-width:640px) 33vw, 50vw"
-                          className="transition group-hover:scale-[1.02]"
+                          sizes="(min-width:1536px) 20vw, (min-width:1280px) 26vw, (min-width:1024px) 34vw, (min-width:640px) 33vw, 50vw"
+                          className="transition duration-500 group-hover:scale-[1.06]"
                         />
                       ) : (
                         <span className="grid size-full place-items-center text-muted">
                           <ImageOff className="size-6" />
                         </span>
                       )}
+
+                      {/* Badges sit on whatever the seller photographed. A
+                          bottom-up scrim keeps them legible on a white car in
+                          full sun without dimming the picture itself. */}
+                      <span
+                        aria-hidden
+                        className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/45 to-transparent"
+                      />
 
                       {badged.has(l.seller_id) && (
                         <span className="absolute start-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/70 px-2 py-0.5 text-[9.5px] font-extrabold uppercase tracking-[0.1em] text-white backdrop-blur-sm">
@@ -424,13 +462,13 @@ export default async function AnnoncesPage({
                       </div>
                     </div>
 
-                    <div className="flex flex-1 flex-col p-3">
+                    <div className="flex flex-1 flex-col p-3 lg:p-4">
                       <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.1em] text-muted">
                         {isPart ? <Wrench className="size-3" /> : <Car className="size-3" />}
                         {cat?.label_fr ?? ""}
                       </span>
 
-                      <h2 className="mt-1 line-clamp-2 text-[13.5px] font-bold leading-snug text-foreground">
+                      <h2 className="mt-1 line-clamp-2 text-[13.5px] font-bold leading-snug text-foreground lg:mt-1.5 lg:text-[15.5px]">
                         {l.title}
                       </h2>
 
@@ -438,7 +476,7 @@ export default async function AnnoncesPage({
                         // Two facts on a phone, three from sm up. A card this
                         // narrow truncates the third mid-word ("Dies\u2026"), which
                         // reads as broken rather than as "there is more".
-                        <p className="mt-1 line-clamp-1 text-[11.5px] text-muted">
+                        <p className="mt-1 line-clamp-1 text-[11.5px] text-muted lg:text-[12.5px]">
                           {specs.slice(0, 3).map((sp, i) => (
                             <span key={sp} className={i > 1 ? "hidden sm:inline" : undefined}>
                               {i > 0 ? " \u00b7 " : ""}
@@ -448,13 +486,13 @@ export default async function AnnoncesPage({
                         </p>
                       )}
 
-                      <p className="batta-tabular mt-auto pt-2 text-[15px] font-extrabold text-gold">
+                      <p className="batta-tabular mt-auto pt-2 text-[15px] font-extrabold text-gold lg:pt-3 lg:text-[18px]">
                         {l.price_on_request || l.price == null
                           ? "Sur demande"
                           : `${formatTND(Number(l.price), locale)} TND`}
                       </p>
 
-                      <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-muted">
+                      <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-muted lg:text-[12px]">
                         <MapPin className="size-3" /> {l.governorate}
                       </p>
                     </div>
