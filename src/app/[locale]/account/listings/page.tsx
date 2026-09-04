@@ -283,7 +283,7 @@ export default async function MyListingsPage({
               <div className="flex gap-3">
                 <Link
                   href={`/annonces/${l.id}` as never}
-                  className="size-[74px] shrink-0 overflow-hidden rounded-xl bg-surface-2 ring-1 ring-border"
+                  className="relative size-[74px] shrink-0 overflow-hidden rounded-xl bg-surface-2 ring-1 ring-border"
                 >
                   {cover ? (
                     <ListingImage path={cover.storage_path} alt="" sizes="74px" />
@@ -355,7 +355,7 @@ export default async function MyListingsPage({
                     <div className="flex items-center gap-3.5">
                       <Link
                         href={`/annonces/${l.id}` as never}
-                        className="size-14 shrink-0 overflow-hidden rounded-xl bg-surface-2 ring-1 ring-border"
+                        className="relative size-14 shrink-0 overflow-hidden rounded-xl bg-surface-2 ring-1 ring-border"
                       >
                         {cover ? (
                           <ListingImage path={cover.storage_path} alt="" sizes="56px" />

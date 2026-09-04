@@ -93,7 +93,7 @@ export default async function FavorisPage() {
             >
               <Link
                 href={`/annonces/${l.id}` as never}
-                className="size-20 shrink-0 overflow-hidden rounded-xl bg-surface-2 ring-1 ring-border"
+                className="relative size-20 shrink-0 overflow-hidden rounded-xl bg-surface-2 ring-1 ring-border"
               >
                 {cover ? (
                   <ListingImage path={cover.storage_path} alt="" sizes="80px" />

@@ -25,6 +25,15 @@ import { propertyPhotoUrl } from "@/lib/imageUrl";
  * dead space, and the card reads as one image. The backdrop is fetched at 64px
  * (about 1KB): it is blurred past recognition, so a larger one would only cost
  * bandwidth.
+ *
+ * **The parent must be positioned** — `relative`, `absolute` or `fixed`.
+ * Every layer here is `<Image fill>`, which is `position:absolute; inset:0`,
+ * so without a positioned ancestor the photo resolves against the initial
+ * containing block and covers the whole page instead of its box. It fails
+ * silently: no error, no warning, just one listing thumbnail rendered at
+ * viewport size on top of everything else. That is exactly what happened on
+ * /account/listings and /account/favoris, where the wrapper was
+ * `size-[74px] shrink-0 overflow-hidden …` with no `relative`.
  */
 
 export function ListingImage({
