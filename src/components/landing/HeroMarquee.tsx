@@ -72,7 +72,14 @@ export function HeroMarquee({ cards }: { cards: MarqueeCard[] }) {
       <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-[280px] bg-gradient-to-r from-[#0a0a0a] via-[#0a0a0a]/85 to-transparent" />
       <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-[280px] bg-gradient-to-l from-[#0a0a0a] via-[#0a0a0a]/85 to-transparent" />
 
-      <ul className="batta-marquee">
+      {/* The shared marquee runs at 40s, which was written for a strip of text
+          chips. Across a ~3 000px track of photographs that is about 75px a
+          second — brisk enough that the eye tracks it instead of resting, and
+          it read as restless rather than as ambient. The duration is overridden
+          per row rather than in the shared rule, which the ticker and the
+          partners strip also use; the two rows differ so they do not lock into
+          a single mechanical rhythm. */}
+      <ul className="batta-marquee" style={{ animationDuration: "96s" }}>
         {top.map((c, i) => (
           <Card key={`t-a-${i}-${c.id}`} card={c} />
         ))}
@@ -81,7 +88,7 @@ export function HeroMarquee({ cards }: { cards: MarqueeCard[] }) {
         ))}
       </ul>
 
-      <ul className="batta-marquee-reverse mt-3">
+      <ul className="batta-marquee-reverse mt-3" style={{ animationDuration: "124s" }}>
         {bottom.map((c, i) => (
           <Card key={`b-a-${i}-${c.id}`} card={c} />
         ))}

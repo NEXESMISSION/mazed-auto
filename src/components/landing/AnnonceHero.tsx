@@ -245,13 +245,6 @@ export async function AnnonceHero() {
         </div>
 
         <div className="relative mx-auto max-w-[var(--max-w-wide)] px-8 pb-14 pt-10">
-          {/* The catalogue drifting past, rather than one car at a time. */}
-          {marqueeCards.length > 0 && (
-            <div className="-mx-8 mb-9">
-              <HeroMarquee cards={marqueeCards} />
-            </div>
-          )}
-
           {/* Top strip */}
           <div className="mb-9 flex items-center justify-between gap-4">
             <Link
@@ -306,6 +299,16 @@ export async function AnnonceHero() {
               </div>
             )}
           </div>
+
+          {/* The rest of the catalogue, drifting past. It sat ABOVE the
+              headline, so the page opened on movement and the sentence that
+              explains what Mazed is came second. The claim leads now; the
+              stock follows it. */}
+          {marqueeCards.length > 0 && (
+            <div className="-mx-8 mt-12">
+              <HeroMarquee cards={marqueeCards} />
+            </div>
+          )}
         </div>
       </section>
   );
@@ -333,10 +336,19 @@ function FeaturedCard({
         alt={headline}
         sizes={compact ? "100vw" : "(min-width:1280px) 55vw, 60vw"}
         priority
+        fit="cover"
         className="transition-transform duration-[900ms] ease-out group-hover:scale-[1.04]"
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/55 to-black/15" />
-      <div className="absolute inset-0 bg-gradient-to-r from-black/35 via-transparent to-transparent" />
+      {/* One smooth ramp instead of two crossed three-stop gradients. The old
+          pair darkened the middle of the photo twice over and left a visible
+          seam across it. */}
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundImage:
+            "linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.78) 18%, rgba(0,0,0,0.5) 38%, rgba(0,0,0,0.22) 58%, rgba(0,0,0,0.06) 78%, transparent 100%)",
+        }}
+      />
 
       <div className={"absolute inset-x-0 top-0 flex items-start justify-between gap-3 " + (compact ? "p-3" : "p-6")}>
         <span className={
@@ -452,15 +464,34 @@ function RunnerCard({ row, locale }: { row: Row; locale: string }) {
       href={`/annonces/${row.id}` as never}
       className="group relative block overflow-hidden rounded-[22px] ring-1 ring-white/10 transition-all hover:ring-[var(--gold)]"
     >
+      {/* `cover`. These cards are wide and short, and the default `contain`
+          fitted portrait photos to the HEIGHT — so the car became a narrow
+          vertical strip down the middle with a blurred smear either side. */}
       <ListingImage
         path={img}
         alt={row.title}
         sizes="(min-width:1280px) 28vw, 32vw"
+        fit="cover"
         className="transition-transform duration-700 ease-out group-hover:scale-[1.05]"
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/45 to-transparent" />
+      {/* Darkened from the LEFT, not from the bottom.
 
-      <div className="relative flex h-full min-h-[132px] flex-col justify-end p-5">
+          These cards are wide and short — about 480 by 150 — so a bottom-up
+          ramp has to cover most of the card to reach the text, which buries the
+          photo and still leaves the eyebrow sitting where the gradient has run
+          out. Going sideways matches the shape: the words get a solid ground on
+          the left, the car keeps the right half of the frame, and neither is
+          fighting the other. Many stops, because three over a photograph show
+          their own edges as bands. */}
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundImage:
+            "linear-gradient(to right, rgba(0,0,0,0.94) 0%, rgba(0,0,0,0.9) 26%, rgba(0,0,0,0.72) 44%, rgba(0,0,0,0.42) 62%, rgba(0,0,0,0.16) 80%, transparent 100%)",
+        }}
+      />
+
+      <div className="relative flex h-full min-h-[132px] max-w-[68%] flex-col justify-center p-5">
         {cat && (
           <span className="mb-1 text-[9.5px] font-bold uppercase tracking-[0.18em] text-[var(--gold)]">
             {cat.label_fr}
