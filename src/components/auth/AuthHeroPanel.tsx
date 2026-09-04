@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
-import { ShieldCheck, Eye, Zap, Star, Sparkles } from "lucide-react";
+import { ShieldCheck, Eye, Zap, Sparkles } from "lucide-react";
 
 /**
  * Desktop-only split-screen brand panel for the auth pages.
@@ -78,26 +78,21 @@ export function AuthHeroPanel() {
             ))}
           </div>
 
-          <div className="mt-8 flex items-center gap-3">
-            <div className="flex -space-x-2.5">
-              {["#d4af37", "#b8941f", "#e8c668", "#8a6d18"].map((c, i) => (
-                <span
-                  key={i}
-                  aria-hidden
-                  className="size-8 rounded-full ring-2 ring-[#141414]"
-                  style={{ background: c }}
-                />
-              ))}
-            </div>
+          {/* No invented social proof. This said "Plus de 12 000 utilisateurs
+              nous font confiance" above five gold stars, on a site with 22
+              accounts — a number nobody counted, next to reviews nobody left.
+              It is the first thing a new seller reads, and it is the kind of
+              claim that costs more when someone checks it than it ever earned.
+              What IS true: every annonce is read by a person before it goes
+              live. Say that instead. */}
+          <div className="mt-8 flex items-center gap-3 rounded-2xl bg-surface/40 p-3.5 ring-1 ring-gold/15">
+            <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--gold)]/15 text-gold">
+              <ShieldCheck className="size-4.5" strokeWidth={2.2} />
+            </span>
             <div className="leading-tight text-white">
-              <div className="text-[12.5px] font-extrabold">Plus de 12 000 utilisateurs</div>
-              <div className="mt-0.5 flex items-center gap-1.5">
-                <span className="flex gap-0.5">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star key={i} className="size-3 fill-amber-400 text-amber-400" strokeWidth={0} />
-                  ))}
-                </span>
-                <span className="text-[11px] text-white/60">nous font confiance</span>
+              <div className="text-[12.5px] font-extrabold">Chaque annonce est vérifiée</div>
+              <div className="mt-0.5 text-[11px] text-white/60">
+                Relue par notre équipe avant publication
               </div>
             </div>
           </div>
