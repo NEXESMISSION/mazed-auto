@@ -6,7 +6,6 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { ListingImage } from "@/components/media/ListingImage";
 import { formatTND } from "@/lib/utils";
-import { AnnonceHeroCarousel } from "./AnnonceHeroCarousel";
 import { HeroMarquee, type MarqueeCard } from "./HeroMarquee";
 import { ArrowUpRight, Gauge, MapPin, Sparkles, Wrench } from "lucide-react";
 
@@ -115,46 +114,106 @@ const featuredAnnonces = cache(async (): Promise<Row[]> => {
 });
 
 /** The mobile cover. Renders nothing when no annonce has a photo. */
-export async function AnnonceHeroMobile() {
-  const rows = await featuredAnnonces();
-  if (rows.length === 0) return null;
-  return (
-    <div className="lg:hidden">
-      <AnnonceHeroCarousel photos={rows.map((r) => cover(r)!)} />
-    </div>
-  );
-}
-
 /**
- * The same À-la-une block, for phones.
+ * The cover, on a phone.
  *
- * The mobile page had the cycling cover and then went straight to rails of
- * small cards — one featured annonce with its specs and price never appeared,
- * even though that is the card that sells the page. This is the desktop
- * spread's featured card plus two runners, stacked instead of side by side.
+ * The phone and the desktop were telling different stories. Desktop opened
+ * with the claim — "Le prix est affiché, le vendeur au bout du fil" — then the
+ * featured annonce, its runners-up, and the catalogue drifting past. The phone
+ * opened on a carousel of photographs with no words on them at all, so the one
+ * sentence that says what Mazed IS never reached the readers who are most of
+ * the traffic. It is the same story here now, in the order a phone reads.
+ *
+ * Not the same LAYOUT, though, which is the point:
+ *
+ *   • the headline drops from 44px to 28px and loses its `max-w-[20ch]`, which
+ *     on a 375px screen was breaking it into five ragged lines;
+ *   • the two calls to action are a full-width pair rather than a strip with a
+ *     button pushed to the far edge;
+ *   • the featured card is 4/3 rather than 16/10 — a wide crop on a narrow
+ *     screen is a letterbox, and a car is taller than that;
+ *   • the runners-up are thumbnail-beside-text rows, not posters with the
+ *     title written over the photograph. Full-width on a phone that became
+ *     white text on a blurred dashboard: the photo won and the words lost;
+ *   • the drifting catalogue is ONE row, not two. A second row costs a third
+ *     of the screen to say the same thing.
  */
-export async function AnnonceFeaturedMobile() {
+export async function AnnonceCoverMobile() {
   const locale = await getLocale();
   const rows = await featuredAnnonces();
   if (rows.length === 0) return null;
 
   const featured = rows[0];
   const runners = rows.slice(1, 3);
+  const marqueeCards: MarqueeCard[] = rows.map((r) => {
+    const p = coverPhoto(r.photos)!;
+    return {
+      id: r.id,
+      title: r.title,
+      imagePath: p.storage_path,
+      categoryLabel: one(r.category)?.label_fr ?? "À vendre",
+      priceLabel: priceLabel(r, locale),
+      governorate: r.governorate,
+    };
+  });
 
   return (
-    <section className="mt-8 px-4 lg:hidden">
-      <span className="batta-eyebrow inline-flex items-center gap-1.5">
-        <Sparkles className="size-3" /> À la une
-      </span>
-      <div className="mt-2.5">
-        <FeaturedCard row={featured} locale={locale} compact />
+    <section className="lg:hidden">
+      <div className="px-4 pt-5">
+        <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--gold)]">
+          <Sparkles className="size-3" />
+          Mazed Auto
+        </span>
+        <h1 className="mt-2 text-[28px] font-black leading-[1.08] tracking-tight text-foreground">
+          Le prix est affiché,{" "}
+          <span className="gradient-gold-text">le vendeur au bout du fil</span>
+        </h1>
+        <p className="mt-2.5 text-[13.5px] leading-relaxed text-muted">
+          Voitures et pièces de rechange partout en Tunisie. Vous appelez le vendeur
+          directement — nous vérifions l&apos;annonce avant qu&apos;elle soit en ligne.
+        </p>
+
+        <div className="mt-4 flex gap-2">
+          <Link
+            href={"/annonces" as never}
+            className="batta-btn-luxe tap-target inline-flex h-11 flex-1 items-center justify-center gap-1.5 text-[13.5px]"
+          >
+            Parcourir le catalogue
+            <ArrowUpRight className="size-4" />
+          </Link>
+          <Link
+            href={"/annonces?kind=part" as never}
+            className="tap-target inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-full bg-gold-faint px-4 text-[12.5px] font-bold text-gold ring-1 ring-gold-soft"
+          >
+            <Wrench className="size-3.5" />
+            Pièces
+          </Link>
+        </div>
+        <p className="mt-1.5 text-[11px] text-muted">
+          Pièces de rechange : publication gratuite.
+        </p>
       </div>
-      {runners.length > 0 && (
-        <ul className="mt-3 space-y-2.5">
-          {runners.map((r) => (
-            <MobileRow key={r.id} row={r} locale={locale} />
-          ))}
-        </ul>
+
+      <div className="mt-5 px-4">
+        <span className="batta-eyebrow inline-flex items-center gap-1.5">
+          <Sparkles className="size-3" /> À la une
+        </span>
+        <div className="mt-2.5">
+          <FeaturedCard row={featured} locale={locale} compact />
+        </div>
+        {runners.length > 0 && (
+          <ul className="mt-3 space-y-2.5">
+            {runners.map((r) => (
+              <MobileRow key={r.id} row={r} locale={locale} />
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {marqueeCards.length > 0 && (
+        <div className="mt-6">
+          <HeroMarquee cards={marqueeCards} rows={1} />
+        </div>
       )}
     </section>
   );
@@ -178,8 +237,11 @@ function MobileRow({ row, locale }: { row: Row; locale: string }) {
         href={`/annonces/${row.id}` as never}
         className="flex items-stretch gap-3 overflow-hidden rounded-2xl border border-border bg-surface transition active:scale-[0.995]"
       >
-        <span className="relative size-[92px] shrink-0 bg-black">
-          <ListingImage path={img} alt="" sizes="92px" />
+        {/* Cover, like the rest of the cover block. At 92px square a contained
+            portrait is a stamp between two dark bars, and next to a row that
+            fills its square it just looks like the odd one out. */}
+        <span className="relative size-[92px] shrink-0 bg-[#0f0f0f]">
+          <ListingImage path={img} alt="" sizes="92px" fit="cover" />
         </span>
         <span className="flex min-w-0 flex-1 flex-col justify-center py-2.5 pe-3">
           <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-muted">

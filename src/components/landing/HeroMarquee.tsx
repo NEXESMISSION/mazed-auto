@@ -54,14 +54,26 @@ function fill(cards: MarqueeCard[]): MarqueeCard[] {
   return Array.from({ length: reps }, () => cards).flat();
 }
 
-export function HeroMarquee({ cards }: { cards: MarqueeCard[] }) {
+export function HeroMarquee({
+  cards,
+  rows = 2,
+}: {
+  cards: MarqueeCard[];
+  /**
+   * Two rows on a desktop, where there is width to spare and two of them
+   * moving against each other read as a lot of stock. One on a phone: a second
+   * row there costs a third of the screen to say the same thing.
+   */
+  rows?: 1 | 2;
+}) {
   if (cards.length === 0) return null;
 
-  // Two rows going opposite ways. One row of everything reads as a conveyor;
-  // two moving against each other reads as a lot of stock.
-  const half = Math.ceil(cards.length / 2);
+  const half = rows === 1 ? cards.length : Math.ceil(cards.length / 2);
   const top = fill(cards.slice(0, half));
-  const bottom = fill(cards.slice(half).length > 0 ? cards.slice(half) : cards.slice(0, half));
+  const bottom =
+    rows === 1
+      ? []
+      : fill(cards.slice(half).length > 0 ? cards.slice(half) : cards.slice(0, half));
 
   return (
     <div className="relative overflow-hidden py-1">
@@ -69,8 +81,8 @@ export function HeroMarquee({ cards }: { cards: MarqueeCard[] }) {
           card be sliced off mid-air at the boundary. Wider than one card, so a
           card fades out over its whole width instead of being half-dimmed and
           half-bright — which read as a broken card rather than as a fade. */}
-      <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-[280px] bg-gradient-to-r from-[#0a0a0a] via-[#0a0a0a]/85 to-transparent" />
-      <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-[280px] bg-gradient-to-l from-[#0a0a0a] via-[#0a0a0a]/85 to-transparent" />
+      <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-14 bg-gradient-to-r from-[#0a0a0a] to-transparent sm:w-[280px] sm:via-[#0a0a0a]/85" />
+      <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-14 bg-gradient-to-l from-[#0a0a0a] to-transparent sm:w-[280px] sm:via-[#0a0a0a]/85" />
 
       {/* The shared marquee runs at 40s, which was written for a strip of text
           chips. Across a ~3 000px track of photographs that is about 75px a
@@ -88,21 +100,23 @@ export function HeroMarquee({ cards }: { cards: MarqueeCard[] }) {
         ))}
       </ul>
 
-      <ul className="batta-marquee-reverse mt-3" style={{ animationDuration: "124s" }}>
-        {bottom.map((c, i) => (
-          <Card key={`b-a-${i}-${c.id}`} card={c} />
-        ))}
-        {bottom.map((c, i) => (
-          <Card key={`b-b-${i}-${c.id}`} card={c} clone />
-        ))}
-      </ul>
+      {bottom.length > 0 && (
+        <ul className="batta-marquee-reverse mt-3" style={{ animationDuration: "124s" }}>
+          {bottom.map((c, i) => (
+            <Card key={`b-a-${i}-${c.id}`} card={c} />
+          ))}
+          {bottom.map((c, i) => (
+            <Card key={`b-b-${i}-${c.id}`} card={c} clone />
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
 
 function Card({ card, clone = false }: { card: MarqueeCard; clone?: boolean }) {
   return (
-    <li className="w-[248px] shrink-0 px-1.5" aria-hidden={clone || undefined}>
+    <li className="w-[172px] shrink-0 px-1.5 sm:w-[248px]" aria-hidden={clone || undefined}>
       <Link
         href={`/annonces/${card.id}` as never}
         tabIndex={clone ? -1 : undefined}
@@ -122,7 +136,7 @@ function Card({ card, clone = false }: { card: MarqueeCard; clone?: boolean }) {
           <ListingImage
             path={card.imagePath}
             alt={clone ? "" : card.title}
-            sizes="248px"
+            sizes="(min-width: 640px) 248px, 172px"
             fit="cover"
             className="transition duration-500 group-hover:scale-[1.04]"
           />
