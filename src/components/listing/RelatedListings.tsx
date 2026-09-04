@@ -49,6 +49,32 @@ const SELECT = `
   photos:listing_photos (storage_path, sort_order, is_cover)
 `;
 
+/**
+ * Which of these sellers currently hold a verified badge.
+ *
+ * One query for the whole rail rather than one per card. Kept out of the
+ * component body because it reads the clock, and a component body has to be
+ * pure — `react-hooks/purity` is right to object even though a server
+ * component renders once.
+ */
+async function badgedSellers(
+  admin: NonNullable<ReturnType<typeof getServiceSupabase>>,
+  sellerIds: string[],
+): Promise<Set<string>> {
+  const out = new Set<string>();
+  if (sellerIds.length === 0) return out;
+  const { data } = await admin
+    .from("seller_badges")
+    .select("seller_id, expires_at, revoked_at")
+    .in("seller_id", sellerIds)
+    .is("revoked_at", null);
+  const now = Date.now();
+  for (const b of data ?? []) {
+    if (new Date(b.expires_at as string).getTime() > now) out.add(b.seller_id as string);
+  }
+  return out;
+}
+
 /** The seller's own word for what it is: a car's marque, a part's brand. */
 function makeOf(attrs: Record<string, unknown> | null, isPart: boolean): string {
   const v = (attrs ?? {})[isPart ? "brand" : "make"];
@@ -134,20 +160,7 @@ export async function RelatedListings({
     .slice(0, limit)
     .map((x) => x.row);
 
-  // One query for every badge on the rail, not one per card.
-  const badged = new Set<string>();
-  const sellerIds = [...new Set(scored.map((r) => r.seller_id))];
-  if (sellerIds.length > 0) {
-    const { data: badges } = await admin
-      .from("seller_badges")
-      .select("seller_id, expires_at, revoked_at")
-      .in("seller_id", sellerIds)
-      .is("revoked_at", null);
-    const now = Date.now();
-    for (const b of badges ?? []) {
-      if (new Date(b.expires_at as string).getTime() > now) badged.add(b.seller_id as string);
-    }
-  }
+  const badged = await badgedSellers(admin, [...new Set(scored.map((r) => r.seller_id))]);
 
   return (
     <section className="mt-10 border-t border-border pt-7">
