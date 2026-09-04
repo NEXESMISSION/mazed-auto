@@ -19,26 +19,16 @@ const ROLES: { v: string; label: string }[] = [
   { v: "admin", label: "Admin" },
 ];
 
-const KYCS: { v: string; label: string }[] = [
-  { v: "none", label: "Non vérifié" },
-  { v: "submitted", label: "Soumis" },
-  { v: "pending", label: "En attente" },
-  { v: "verified", label: "Vérifié" },
-  { v: "rejected", label: "Rejeté" },
-];
-
 const SELECT =
   "h-8 rounded-lg border border-border bg-surface-2 px-2 text-[11px] font-bold text-foreground outline-none transition-colors focus:border-gold-soft disabled:cursor-not-allowed disabled:opacity-50";
 
 export function UserRowActions({
   id,
   role,
-  kycStatus,
   isSelf,
 }: {
   id: string;
   role: string;
-  kycStatus: string;
   isSelf: boolean;
 }) {
   const router = useRouter();
@@ -87,20 +77,9 @@ export function UserRowActions({
             </option>
           ))}
         </select>
-        <select
-          aria-label="Statut KYC"
-          value={kycStatus}
-          disabled={disabled}
-          title="Changer le statut KYC"
-          onChange={(e) => patch({ kyc_status: e.target.value })}
-          className={SELECT}
-        >
-          {KYCS.map((k) => (
-            <option key={k.v} value={k.v}>
-              {k.label}
-            </option>
-          ))}
-        </select>
+        {/* The KYC dropdown is gone with the feature (0164): the endpoint it
+            called, admin_set_kyc_status, no longer exists, so every use of it
+            failed with "set_kyc_failed" and left the admin guessing. */}
       </div>
       {err && <span className="text-[10px] font-semibold text-red-400">{err}</span>}
     </div>

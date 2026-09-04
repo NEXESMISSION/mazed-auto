@@ -69,9 +69,16 @@ export async function PATCH(
     if (authErr) return fail("set_role_auth_failed", 500, authErr);
   }
 
+  // No KYC branch any more. 0164 dropped `admin_set_kyc_status` along with the
+  // rest of the machinery, so this call could only ever 500 — an admin using
+  // the control on /admin/users got "set_kyc_failed" and no explanation. The
+  // control is gone from UserRowActions; this rejects a stale client politely
+  // instead of failing at the database.
   if (kyc !== undefined) {
-    const { error } = await admin.rpc("admin_set_kyc_status", { p_user_id: id, p_status: kyc });
-    if (error) return fail("set_kyc_failed", 500, error);
+    return NextResponse.json(
+      { error: "kyc_removed", detail: "La vérification d'identité n'existe plus." },
+      { status: 410 },
+    );
   }
 
   logAction(req, user, "user.admin_update", { targetId: id, role, kyc });

@@ -57,7 +57,7 @@ export async function PATCH(
   // Fetch the payment so we can build a meaningful notification body.
   const { data: payment } = await admin
     .from("payments")
-    .select("id, user_id, kind, amount, auction_id, property_id, status")
+    .select("id, user_id, kind, amount, auction_id, property_id, status, metadata")
     .eq("id", paymentId)
     .single();
   if (!payment) {
@@ -76,7 +76,24 @@ export async function PATCH(
   // property promotion + flag/duration application + notification in one
   // transaction. The buyer-side notification for accept/reject is
   // enqueued inside the RPC, so we return early.
-  if (payment.kind === "listing_fee") {
+  // A v3 publication fee is NOT a property fee. It carries the listing in
+  // `metadata.listing_id` and has no property_id at all, so handing it to
+  // accept_listing_payment — which is the old property flow — raises
+  // `payment_missing_property` and the admin gets a 500 on a seller who has
+  // already paid and uploaded a receipt. The listing is then stuck in
+  // pending_payment with no way forward.
+  //
+  // These fees need no RPC: `_listing_fee_captured` (0160) fires on the
+  // status flip and moves the listing into moderation, notification included.
+  // So let them fall through to the generic capture below.
+  const listingIdInMeta =
+    (payment.metadata as { listing_id?: unknown } | null)?.listing_id;
+  const isV3ListingFee =
+    payment.kind === "listing_fee" &&
+    typeof listingIdInMeta === "string" &&
+    listingIdInMeta.length > 0;
+
+  if (payment.kind === "listing_fee" && !isV3ListingFee) {
     // The accept/reject RPCs guard themselves with `is_admin()`, which
     // reads auth.uid() / auth.jwt() from the caller's session. Service-
     // role has no JWT user, so calling via `admin` always fails the

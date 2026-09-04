@@ -93,7 +93,14 @@ export default async function BidPage({
 
   // Server-truth pre-flight: KYC + deposit. The composer needs these
   // synchronously so the right gate renders without a client-side flash.
-  let kycVerified = false;
+  // KYC was removed from the product in 0164: the pages, the 8 functions, the
+  // triggers and admin_set_kyc_status are all gone, and nothing can set
+  // profiles.kyc_status to 'verified' any more. Gating on it therefore meant
+  // every user who signed up after the removal saw "Vérifiez votre identité"
+  // for ever, with a CTA to /kyc/start that middleware bounces to /account.
+  // Treat identity as satisfied here; the caution is what gates bidding now.
+  // (The matching DB gate inside place_bid is removed by migration 0168.)
+  const kycVerified = true;
   let kycStatus: string | null = null;
   let hasActiveDeposit = false;
   // Receipt uploaded, waiting on an admin to validate the caution. While
@@ -121,9 +128,6 @@ export default async function BidPage({
         .limit(1),
     ]);
     kycStatus = (profileRes.data?.kyc_status as string | null) ?? null;
-    // KYC off → the identity gate passes for everyone, so the 60 lots still
-    // running stay biddable instead of stranding anyone who never verified.
-    kycVerified = kycStatus === "verified";
     hasActiveDeposit = !!depositRes.data;
     depositUnderReview = (pendRes.data?.length ?? 0) > 0;
   }

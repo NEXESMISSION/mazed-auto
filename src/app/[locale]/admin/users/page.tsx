@@ -147,7 +147,6 @@ export default async function AdminUsers({
                   <UserRowActions
                     id={u.id}
                     role={u.role}
-                    kycStatus={u.kyc_status}
                     isSelf={u.id === me?.id}
                   />
                 </li>

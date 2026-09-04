@@ -255,13 +255,21 @@ export default async function AuctionDetail({
   // without a client-side round-trip. KYC + active deposit are
   // server-truth; the panel uses these to choose between "Sign in",
   // "Verify identity", "Pay deposit", and the actual bid form.
-  let kycVerified = false;
+  // KYC was removed from the product in 0164: the pages, the 8 functions, the
+  // triggers and admin_set_kyc_status are all gone, and nothing can set
+  // profiles.kyc_status to 'verified' any more. Gating on it therefore meant
+  // every user who signed up after the removal saw "Vérifiez votre identité"
+  // for ever, with a CTA to /kyc/start that middleware bounces to /account.
+  // Treat identity as satisfied here; the caution is what gates bidding now.
+  // (The matching DB gate inside place_bid is removed by migration 0168.)
+  const kycVerified = true;
   let hasActiveDeposit = false;
   let depositUnderReview = false;
   let myInspection: { id: string; status: string } | null = null;
   if (userId) {
-    const [profileRes, depositRes, pendRes, insRes] = await Promise.all([
-      supabase.from("profiles").select("kyc_status").eq("id", userId).single(),
+    // The profiles read went with the KYC gate — nothing here needs it now,
+    // so the page makes one fewer query per authenticated view.
+    const [depositRes, pendRes, insRes] = await Promise.all([
       supabase
         .from("auction_deposits")
         .select("id")
@@ -290,7 +298,6 @@ export default async function AuctionDetail({
         .limit(1)
         .maybeSingle(),
     ]);
-    kycVerified = profileRes.data?.kyc_status === "verified";
     hasActiveDeposit = !!depositRes.data;
     depositUnderReview = (pendRes.data?.length ?? 0) > 0;
     myInspection = (insRes.data as { id: string; status: string } | null) ?? null;
