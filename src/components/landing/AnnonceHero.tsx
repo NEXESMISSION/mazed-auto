@@ -212,7 +212,7 @@ export async function AnnonceCoverMobile() {
 
       {marqueeCards.length > 0 && (
         <div className="mt-6">
-          <HeroMarquee cards={marqueeCards} rows={1} />
+          <HeroMarquee cards={marqueeCards} />
         </div>
       )}
     </section>

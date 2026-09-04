@@ -54,26 +54,16 @@ function fill(cards: MarqueeCard[]): MarqueeCard[] {
   return Array.from({ length: reps }, () => cards).flat();
 }
 
-export function HeroMarquee({
-  cards,
-  rows = 2,
-}: {
-  cards: MarqueeCard[];
-  /**
-   * Two rows on a desktop, where there is width to spare and two of them
-   * moving against each other read as a lot of stock. One on a phone: a second
-   * row there costs a third of the screen to say the same thing.
-   */
-  rows?: 1 | 2;
-}) {
+export function HeroMarquee({ cards }: { cards: MarqueeCard[] }) {
   if (cards.length === 0) return null;
 
-  const half = rows === 1 ? cards.length : Math.ceil(cards.length / 2);
+  // Two rows going opposite ways, on every screen. A phone briefly had one —
+  // a second row costs real height there — but one row reads as a conveyor
+  // belt and two reads as a lot of stock, and that is the whole job of this
+  // block. The phone gets its height back from narrower cards instead.
+  const half = Math.ceil(cards.length / 2);
   const top = fill(cards.slice(0, half));
-  const bottom =
-    rows === 1
-      ? []
-      : fill(cards.slice(half).length > 0 ? cards.slice(half) : cards.slice(0, half));
+  const bottom = fill(cards.slice(half).length > 0 ? cards.slice(half) : cards.slice(0, half));
 
   return (
     <div className="relative overflow-hidden py-1">
@@ -100,23 +90,24 @@ export function HeroMarquee({
         ))}
       </ul>
 
-      {bottom.length > 0 && (
-        <ul className="batta-marquee-reverse mt-3" style={{ animationDuration: "124s" }}>
-          {bottom.map((c, i) => (
-            <Card key={`b-a-${i}-${c.id}`} card={c} />
-          ))}
-          {bottom.map((c, i) => (
-            <Card key={`b-b-${i}-${c.id}`} card={c} clone />
-          ))}
-        </ul>
-      )}
+      <ul
+        className="batta-marquee-reverse mt-2 sm:mt-3"
+        style={{ animationDuration: "124s" }}
+      >
+        {bottom.map((c, i) => (
+          <Card key={`b-a-${i}-${c.id}`} card={c} />
+        ))}
+        {bottom.map((c, i) => (
+          <Card key={`b-b-${i}-${c.id}`} card={c} clone />
+        ))}
+      </ul>
     </div>
   );
 }
 
 function Card({ card, clone = false }: { card: MarqueeCard; clone?: boolean }) {
   return (
-    <li className="w-[172px] shrink-0 px-1.5 sm:w-[248px]" aria-hidden={clone || undefined}>
+    <li className="w-[156px] shrink-0 px-1 sm:w-[248px] sm:px-1.5" aria-hidden={clone || undefined}>
       <Link
         href={`/annonces/${card.id}` as never}
         tabIndex={clone ? -1 : undefined}
@@ -136,20 +127,23 @@ function Card({ card, clone = false }: { card: MarqueeCard; clone?: boolean }) {
           <ListingImage
             path={card.imagePath}
             alt={clone ? "" : card.title}
-            sizes="(min-width: 640px) 248px, 172px"
+            sizes="(min-width: 640px) 248px, 156px"
             fit="cover"
             className="transition duration-500 group-hover:scale-[1.04]"
           />
         </div>
-        <div className="p-3">
+        <div className="p-2.5 sm:p-3">
           <span className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-[var(--gold)]">
             {card.categoryLabel}
           </span>
           <h3 className="mt-1 truncate text-[13px] font-bold leading-snug text-white">
             {card.title}
           </h3>
-          <div className="mt-1.5 flex items-baseline justify-between gap-2">
-            <span className="batta-tabular text-[14px] font-extrabold text-white">
+          {/* Stacked on a phone, side by side from sm. On a 156px card the
+              price and the town do not both fit on one line, and the price is
+              what broke: "46 500" on one line and "TND" on the next. */}
+          <div className="mt-1.5 flex flex-col items-start gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-2">
+            <span className="batta-tabular whitespace-nowrap text-[13.5px] font-extrabold text-white sm:text-[14px]">
               {card.priceLabel}
             </span>
             <span className="inline-flex shrink-0 items-center gap-0.5 text-[10px] text-white/45">
