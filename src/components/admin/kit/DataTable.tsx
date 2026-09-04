@@ -1,32 +1,31 @@
 import { Link } from "@/i18n/navigation";
-import { ChevronRight } from "lucide-react";
+import { RowChevron } from "./LinkPending";
+import { COLHEAD, FLAG, ROW_FOCUS } from "./surface";
 
 /**
- * The one list in the console.
+ * The console's list — flat.
  *
- * Twenty admin sections currently render their rows twenty different ways —
- * two `<table>`s and eighteen sets of hand-built cards — so column alignment,
- * row height, hover, and what an empty list looks like all differ per screen.
- * Everything goes through this now.
+ * It was a bordered, rounded, filled card with a sticky tinted header. Twenty
+ * screens each drawing that same box is what made the console read as a page
+ * of widgets rather than as one tool, so the box is gone: a hairline under the
+ * column names, a hairline under each row, and nothing else. Structure comes
+ * from the rules and the spacing.
  *
- * Three decisions worth recording:
+ * Two things it keeps, because they are load-bearing rather than decorative:
  *
  * - **It is a grid, not a `<table>`.** The whole row has to be clickable, and
  *   an anchor cannot wrap a `<tr>`. A CSS grid lets each row *be* the link:
  *   one tab stop, one focus ring, keyboard-navigable for free. ARIA roles
  *   carry the table semantics a screen reader needs.
  * - **It stays a server component.** Cells arrive as already-rendered
- *   `ReactNode`s and rows carry an `href`, so no callback ever has to cross
- *   the server/client boundary and no queue needs `"use client"` just to list
- *   things. Row selection (Phase 2) wraps this rather than replacing it.
- * - **Detail lives in the URL.** A row links to `?panel=<id>`; the server
- *   reads that param and renders the side panel. Back closes the panel, and a
- *   half-reviewed row can be sent to someone as a link.
+ *   `ReactNode`s and rows carry an `href`, so no callback has to cross the
+ *   server/client boundary and no queue needs `"use client"` to list things.
  */
 
 export type Column = {
   key: string;
-  label: string;
+  /** Usually a string; a node when the header itself is a control. */
+  label: React.ReactNode;
   /** Grid track. Defaults to `minmax(0,1fr)`; use `120px` for fixed columns. */
   width?: string;
   align?: "left" | "right";
@@ -49,11 +48,6 @@ const HIDE: Record<NonNullable<Column["hideBelow"]>, string> = {
   lg: "hidden lg:block",
 };
 
-const FLAG: Record<NonNullable<Row["flag"]>, string> = {
-  warn: "before:bg-[rgba(245,158,11,0.75)]",
-  bad: "before:bg-[rgba(239,68,68,0.8)]",
-};
-
 export function DataTable({
   columns,
   rows,
@@ -67,32 +61,26 @@ export function DataTable({
   /** Screen-reader name for the list. */
   caption?: string;
 }) {
-  if (rows.length === 0) return <div className="mt-4">{empty}</div>;
+  if (rows.length === 0) return <div className="mt-5">{empty}</div>;
 
-  // One track per column, plus a trailing chevron gutter when rows link out.
   const linkable = rows.some((r) => r.href);
   const template =
-    columns.map((c) => c.width ?? "minmax(0,1fr)").join(" ") + (linkable ? " 20px" : "");
+    columns.map((c) => c.width ?? "minmax(0,1fr)").join(" ") + (linkable ? " 16px" : "");
 
   return (
-    <div
-      role="table"
-      aria-label={caption}
-      className="mt-4 overflow-hidden rounded-xl border border-border bg-surface"
-    >
-      {/* Header. Sticky so the columns stay named while a long queue scrolls. */}
+    <div role="table" aria-label={caption} className="mt-5">
       <div
         role="row"
         style={{ gridTemplateColumns: template }}
-        className="sticky top-0 z-10 grid gap-3 border-b border-border bg-surface-2/95 px-4 py-2.5 backdrop-blur-sm"
+        className={`grid gap-3 border-b border-border pb-2 ${COLHEAD}`}
       >
         {columns.map((c) => (
           <div
             key={c.key}
             role="columnheader"
-            className={`truncate text-[10px] font-extrabold uppercase tracking-[0.13em] text-muted ${
-              c.align === "right" ? "text-right" : ""
-            } ${c.hideBelow ? HIDE[c.hideBelow] : ""}`}
+            className={`truncate ${c.align === "right" ? "text-right" : ""} ${
+              c.hideBelow ? HIDE[c.hideBelow] : ""
+            }`}
           >
             {c.label}
           </div>
@@ -115,29 +103,28 @@ export function DataTable({
                   {row.cells[c.key] ?? <span className="text-subtle">—</span>}
                 </div>
               ))}
-              {linkable && (
-                <ChevronRight
-                  aria-hidden
-                  className="size-4 self-center text-subtle transition group-hover:text-gold"
-                  strokeWidth={2}
-                />
-              )}
+              {/* Only inside a real <Link> — a static row has no pending state
+                  to report, and useLinkStatus would have no provider. */}
+              {linkable && (row.href ? <RowChevron /> : <span aria-hidden />)}
             </>
           );
 
-          const shared = `group relative grid items-center gap-3 border-b border-border/60 px-4 py-3 text-start last:border-b-0 ${
-            row.flag
-              ? `before:absolute before:inset-y-0 before:start-0 before:w-[3px] ${FLAG[row.flag]}`
-              : ""
+          const shared = `group relative grid items-center gap-3 border-b border-border/70 py-2.5 text-start ${
+            row.flag ? FLAG[row.flag] : ""
           }`;
 
           return row.href ? (
             <Link
               key={row.id}
               role="row"
+              data-row-id={row.id}
               href={row.href as "/admin"}
+              // 25 rows each prefetching the same segment is 25 wasted RSC
+              // requests: a row link only changes ?panel=, so there is no new
+              // route to warm.
+              prefetch={false}
               style={{ gridTemplateColumns: template }}
-              className={`${shared} transition hover:bg-surface-2 focus-visible:bg-surface-2 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[var(--gold)]`}
+              className={`${shared} transition hover:bg-[rgba(255,255,255,0.025)] ${ROW_FOCUS}`}
             >
               {inner}
             </Link>
@@ -145,6 +132,7 @@ export function DataTable({
             <div
               key={row.id}
               role="row"
+              data-row-id={row.id}
               style={{ gridTemplateColumns: template }}
               className={shared}
             >
@@ -170,9 +158,9 @@ export function Stacked({
 }) {
   return (
     <div className="min-w-0">
-      <div className="truncate font-semibold text-foreground">{top}</div>
+      <div className="truncate font-medium text-foreground">{top}</div>
       {bottom != null && (
-        <div className="truncate text-[11.5px] text-muted">{bottom}</div>
+        <div className="truncate text-[11.5px] text-subtle">{bottom}</div>
       )}
     </div>
   );

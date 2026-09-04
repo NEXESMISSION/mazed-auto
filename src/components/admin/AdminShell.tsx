@@ -7,6 +7,7 @@ import {
   SlidersHorizontal, ExternalLink, Menu, X, Car,
   type LucideIcon,
 } from "lucide-react";
+import { NavIcon } from "./kit/LinkPending";
 
 /**
  * Console navigation.
@@ -53,26 +54,26 @@ const NAV: Item[] = [
   },
   {
     label: "Paiements",
-    href: "/admin/payments",
+    href: "/admin/paiements",
     Icon: Receipt,
     hint: "Reçus à valider",
     countKey: "paiements",
   },
   {
     label: "Offres & prix",
-    href: "/admin/pricing",
+    href: "/admin/offres",
     Icon: Tag,
     hint: "Annonces, packs, mises en avant, badge",
   },
   {
     label: "Vendeurs",
-    href: "/admin/users",
+    href: "/admin/vendeurs",
     Icon: Users,
     hint: "Comptes, rôles, badges",
   },
   {
     label: "Catalogue",
-    href: "/admin/characteristics",
+    href: "/admin/catalogue",
     Icon: FolderTree,
     hint: "Catégories et caractéristiques",
   },
@@ -90,14 +91,9 @@ export type AdminCounts = Partial<Record<"annonces" | "paiements", number>>;
 function BrandMark({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <Link href="/admin" onClick={onNavigate} className="flex items-center gap-2.5">
-      <span className="batta-gradient-gold grid size-9 place-items-center rounded-xl text-black shadow-[var(--shadow-gold)]">
-        <Car className="size-4" strokeWidth={2.2} />
-      </span>
-      <span className="flex flex-col leading-tight">
-        <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-muted">
-          Mazed Auto
-        </span>
-        <span className="gradient-gold-text text-[15px] font-extrabold">Console</span>
+      <Car className="size-4 text-[var(--gold)]" strokeWidth={2.2} />
+      <span className="text-[12px] font-bold uppercase tracking-[0.16em] text-foreground">
+        Mazed<span className="text-[var(--gold)]"> Console</span>
       </span>
     </Link>
   );
@@ -129,23 +125,20 @@ function NavList({
           onClick={onNavigate}
           aria-current={active ? "page" : undefined}
           title={item.hint}
-          className={`flex items-center gap-3 rounded-lg px-2.5 py-2 text-[13px] font-semibold transition ${
+          className={`relative flex items-center gap-2.5 py-[7px] ps-4 pe-3 text-[13px] font-medium transition ${
             active
-              ? "bg-[var(--gold)] text-black"
-              : "text-muted hover:bg-surface-2 hover:text-foreground"
+              ? "text-[var(--gold)] before:absolute before:inset-y-0 before:start-0 before:w-[2px] before:bg-[var(--gold)]"
+              : "text-muted hover:text-foreground"
           }`}
         >
-          <item.Icon
-            className={`size-4 shrink-0 ${active ? "text-black" : "text-muted"}`}
-            strokeWidth={2}
-          />
+          {/* Swaps to a spinner while this destination loads — the item you
+              clicked is the one that shows it is working. */}
+          <NavIcon Icon={item.Icon} active={active} />
           <span className="truncate">{item.label}</span>
           {count > 0 && (
             <span
-              className={`batta-tabular ms-auto rounded px-1.5 py-0.5 text-[10.5px] font-extrabold ${
-                active
-                  ? "bg-black/15 text-black"
-                  : "bg-[rgba(245,158,11,0.14)] text-[#e0a029]"
+              className={`batta-tabular ms-auto text-[11px] font-bold ${
+                active ? "text-[var(--gold)]" : "text-[#e0a029]"
               }`}
             >
               {count}
@@ -157,9 +150,9 @@ function NavList({
   };
 
   return (
-    <nav className="flex-1 overflow-y-auto px-3 py-5">
-      <ul className="space-y-0.5">{NAV.map(render)}</ul>
-      <ul className="mt-6 space-y-0.5 border-t border-border pt-5">{render(SITE)}</ul>
+    <nav className="min-h-0 flex-1 overflow-y-auto py-3">
+      <ul>{NAV.map(render)}</ul>
+      <ul className="mt-3 border-t border-border pt-3">{render(SITE)}</ul>
     </nav>
   );
 }
@@ -169,7 +162,7 @@ function ExitLink({ onNavigate }: { onNavigate?: () => void }) {
     <Link
       href="/"
       onClick={onNavigate}
-      className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-[12.5px] font-semibold text-muted transition hover:bg-surface-2 hover:text-foreground"
+      className="flex items-center gap-2.5 px-4 py-[7px] text-[12.5px] font-medium text-subtle transition hover:text-foreground"
     >
       <ExternalLink className="size-4 shrink-0" strokeWidth={2} />
       Quitter l&apos;admin
@@ -180,12 +173,12 @@ function ExitLink({ onNavigate }: { onNavigate?: () => void }) {
 /** Sticky rail — desktop only. */
 export function AdminRail({ counts }: { counts: AdminCounts }) {
   return (
-    <aside className="sticky top-0 hidden h-screen w-[236px] shrink-0 flex-col border-e border-border bg-surface lg:flex">
-      <header className="flex items-center border-b border-border px-5 py-5">
+    <aside className="hidden h-dvh w-[196px] shrink-0 flex-col border-e border-border lg:flex">
+      <header className="flex h-12 items-center border-b border-border px-4">
         <BrandMark />
       </header>
       <NavList counts={counts} />
-      <footer className="border-t border-border px-3 py-3">
+      <footer className="border-t border-border py-2">
         <ExitLink />
       </footer>
     </aside>
@@ -215,14 +208,14 @@ export function AdminMobileBar({ counts }: { counts: AdminCounts }) {
 
   return (
     <div className="lg:hidden">
-      <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-surface/95 px-4 backdrop-blur-md">
+      <header className="flex h-12 shrink-0 items-center justify-between border-b border-border bg-background px-4">
         <BrandMark />
         <button
           type="button"
           onClick={() => setOpen(true)}
           aria-label="Ouvrir le menu"
           aria-expanded={open}
-          className="tap-target grid size-10 place-items-center rounded-lg text-muted transition hover:bg-surface-2 hover:text-foreground"
+          className="tap-target grid size-9 place-items-center rounded text-muted transition hover:text-foreground"
         >
           <Menu className="size-5" strokeWidth={2.2} />
         </button>
@@ -235,20 +228,20 @@ export function AdminMobileBar({ counts }: { counts: AdminCounts }) {
             onClick={() => setOpen(false)}
             aria-hidden
           />
-          <div className="absolute inset-y-0 start-0 flex w-[272px] max-w-[85vw] flex-col border-e border-border bg-surface shadow-[var(--shadow-lg)] animate-fade-in">
-            <header className="flex items-center justify-between border-b border-border px-4 py-4">
+          <div className="absolute inset-y-0 start-0 flex w-[240px] max-w-[85vw] flex-col border-e border-border bg-background animate-fade-in">
+            <header className="flex h-12 items-center justify-between border-b border-border px-4">
               <BrandMark onNavigate={() => setOpen(false)} />
               <button
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label="Fermer le menu"
-                className="tap-target grid size-9 place-items-center rounded-full text-muted transition hover:bg-surface-2 hover:text-foreground"
+                className="tap-target grid size-8 place-items-center rounded text-muted transition hover:text-foreground"
               >
                 <X className="size-5" strokeWidth={2.2} />
               </button>
             </header>
             <NavList counts={counts} onNavigate={() => setOpen(false)} />
-            <footer className="border-t border-border px-3 py-3">
+            <footer className="border-t border-border py-2">
               <ExitLink onNavigate={() => setOpen(false)} />
             </footer>
           </div>

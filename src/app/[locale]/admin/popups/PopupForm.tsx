@@ -1,4 +1,5 @@
 "use client";
+import { TONE_CLASS } from "@/components/admin/kit/tones";
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "@/i18n/navigation";
@@ -170,7 +171,7 @@ export function PopupForm({
             <button
               type="button"
               onClick={onDelete}
-              className="inline-flex items-center gap-1.5 rounded-full bg-red-500/10 px-3 py-2 text-[11.5px] font-bold text-red-700 ring-1 ring-red-500/30 transition hover:bg-red-500/20"
+              className="inline-flex items-center gap-1.5 rounded-full border border-[rgba(239,68,68,0.35)] px-3 py-2 text-[11.5px] font-bold text-[#ef8681] transition hover:border-[#ef8681] hover:bg-[rgba(239,68,68,0.07)]"
             >
               <Trash2 className="size-4" strokeWidth={2.2} />
               Supprimer
@@ -189,7 +190,7 @@ export function PopupForm({
       </div>
 
       {error && (
-        <div className="mb-5 flex items-center gap-2 rounded-xl bg-red-500/10 px-4 py-3 text-[12.5px] font-semibold text-red-700 ring-1 ring-red-500/30">
+        <div className={`mb-5 flex items-center gap-2 rounded-xl px-4 py-3 text-[12.5px] font-semibold ring-1 ${TONE_CLASS.bad}`}>
           <AlertCircle className="size-4" strokeWidth={2.2} />
           {humanError(error)}
         </div>
@@ -613,7 +614,7 @@ function Field({
     <label className="block">
       <div className="mb-1 flex items-center gap-1 text-[10.5px] font-bold uppercase tracking-[0.14em] text-muted">
         {label}
-        {required && <span className="text-red-600">*</span>}
+        {required && <span className="text-[#ef8681]">*</span>}
       </div>
       {children}
       {hint && <div className="mt-1 text-[10.5px] text-muted">{hint}</div>}
@@ -639,7 +640,7 @@ function LocalisedInputs({
     <div>
       <div className="mb-1.5 flex items-center justify-between">
         <div className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-muted">
-          {label}{required && <span className="text-red-600">*</span>}
+          {label}{required && <span className="text-[#ef8681]">*</span>}
         </div>
         <div className="flex gap-1">
           {(["fr", "ar", "en"] as const).map((l) => (

@@ -44,14 +44,21 @@ type Fitment = { make: string; model: string; yearFrom: string; yearTo: string }
 export function ManualListingForm({
   sellers,
   categories,
+  /**
+   * On its own page (`/admin/annonces/nouvelle`) the form is the whole point,
+   * so it opens expanded and drops the collapse control. Inline — where it
+   * still has to share a screen — it stays a teaser until asked for.
+   */
+  standalone = false,
 }: {
   sellers: AdminSeller[];
   categories: AdminCategory[];
+  standalone?: boolean;
 }) {
   const router = useRouter();
   const { toast } = useToast();
 
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(standalone);
   const [busy, setBusy] = useState(false);
 
   const [sellerQuery, setSellerQuery] = useState("");
@@ -214,13 +221,15 @@ export function ManualListingForm({
             Publiée au nom du vendeur, sans frais. La gratuité est enregistrée à votre nom.
           </p>
         </div>
-        <button
-          onClick={() => setOpen(false)}
-          className="rounded-lg p-1.5 text-muted hover:bg-surface-2 hover:text-foreground"
-          aria-label="Fermer"
-        >
-          <X className="size-4" />
-        </button>
+        {!standalone && (
+          <button
+            onClick={() => setOpen(false)}
+            className="rounded-lg p-1.5 text-muted hover:bg-surface-2 hover:text-foreground"
+            aria-label="Fermer"
+          >
+            <X className="size-4" />
+          </button>
+        )}
       </header>
 
       <div className="mt-4 space-y-4">

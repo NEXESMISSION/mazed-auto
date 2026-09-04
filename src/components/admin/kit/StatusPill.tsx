@@ -1,44 +1,54 @@
-import { statusLabel, statusTone, TONE_CLASS, type Tone } from "./tones";
+import { statusLabel, statusTone, TONE_TEXT, type Tone } from "./tones";
 
 /**
- * The console's one pill. Two ways in:
+ * Status, as a dot and a word.
  *
- *   <StatusPill status={listing.status} />     — looks up label + tone
- *   <StatusPill tone="warn">3 en retard</StatusPill>  — free text, chosen tone
- *
- * `StatusBadge` (the old one) took a tone and a label and left every caller
- * to decide both, which is how "published" ended up green here and gold
- * there. Passing the raw DB status is the path of least resistance now.
+ * It used to be a filled pill — a coloured rectangle with a border, repeated
+ * on every row. Twenty-five of those down a list is twenty-five competing
+ * blocks of colour, and the eye has nowhere to rest. A 5px dot carries the
+ * same information at a fraction of the visual weight, which is what lets a
+ * dense list stay readable.
  */
+
+const DOT: Record<Tone, string> = {
+  ok: "bg-[#5cc98a]",
+  warn: "bg-[#e0a029]",
+  bad: "bg-[#ef8681]",
+  info: "bg-[var(--gold)]",
+  neutral: "bg-[var(--foreground-subtle)]",
+};
+
 export function StatusPill({
   status,
   tone,
-  icon,
-  size = "sm",
   children,
+  /** Dot only — for a dense row where the column header already says what it is. */
+  dotOnly = false,
   className = "",
 }: {
-  /** Raw DB value — `published`, `pending_review`, `captured`… */
   status?: string | null;
-  /** Overrides the tone derived from `status`. Required when there is no status. */
   tone?: Tone;
-  icon?: React.ReactNode;
-  size?: "xs" | "sm";
   children?: React.ReactNode;
+  dotOnly?: boolean;
   className?: string;
 }) {
   const resolved: Tone = tone ?? statusTone(status);
   const label = children ?? statusLabel(status);
-  const dims =
-    size === "xs"
-      ? "px-1.5 py-0.5 text-[9px] tracking-[0.1em]"
-      : "px-2 py-0.5 text-[10px] tracking-[0.11em]";
+
+  if (dotOnly) {
+    return (
+      <span
+        title={typeof label === "string" ? label : undefined}
+        className={`inline-block size-[5px] shrink-0 rounded-full ${DOT[resolved]} ${className}`}
+      />
+    );
+  }
 
   return (
     <span
-      className={`inline-flex shrink-0 items-center gap-1 rounded-md font-bold uppercase ring-1 ${dims} ${TONE_CLASS[resolved]} ${className}`}
+      className={`inline-flex shrink-0 items-center gap-1.5 text-[11.5px] font-semibold ${TONE_TEXT[resolved]} ${className}`}
     >
-      {icon}
+      <span className={`size-[5px] shrink-0 rounded-full ${DOT[resolved]}`} />
       {label}
     </span>
   );

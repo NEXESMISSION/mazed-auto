@@ -1,78 +1,56 @@
-import { getServerSupabase } from "@/lib/supabase/server";
-import { parseMonetizationSettings, parseAntiSnipe, parseFinalPaymentDays } from "@/lib/pricing";
-import { SettingsForm, type SettingsValues } from "./SettingsForm";
-import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { getServiceSupabase } from "@/lib/supabase/admin";
+import { AdminPage, EYEBROW } from "@/components/admin/kit";
+import { SiteTabs } from "@/components/admin/kit/SiteTabs";
+import { SettingsForm, type PayeeSettings } from "./SettingsForm";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const KEYS = [
-  "fee_listing_auction",
-  "fee_listing_direct",
-  "promo_home",
-  "promo_top",
-  "promo_banner",
-  "deposit",
-  "auction_antisnipe",
-  "final_payment_days",
-  "payee_name",
-  "payee_bank",
-  "payee_rib",
-  "payee_iban",
-  "payee_d17",
-] as const;
+/**
+ * Réglages — what is left once prices moved out.
+ *
+ * This screen used to carry the publication fee, the three promo prices, the
+ * caution, the commission and the final-payment delay. Every one of those was
+ * either a price or auction machinery, and the price half was worse than
+ * useless: it wrote `app_settings` keys that only a legacy endpoint reads,
+ * while the sell flow reads the `products` table that Offres & prix writes.
+ * They disagreed — 20 TND here, 15 TND there — so changing the fee on this
+ * screen changed nothing a seller would ever see.
+ *
+ * What remains is the payee block: the bank details a buyer is told to
+ * transfer to. Getting those wrong sends real money to the wrong place.
+ */
+const KEYS = ["payee_name", "payee_bank", "payee_rib", "payee_iban", "payee_d17"] as const;
 
 export default async function AdminSettingsPage() {
-  const supabase = await getServerSupabase();
-  const { data } = await supabase
-    .from("app_settings")
-    .select("key, value")
-    .in("key", KEYS as unknown as string[]);
-
-  const map = new Map<string, unknown>();
-  for (const row of data ?? []) map.set(row.key as string, row.value);
-
-  const mon = parseMonetizationSettings(map);
-  const antiSnipe = parseAntiSnipe(map.get("auction_antisnipe"));
-  const finalPaymentDays = parseFinalPaymentDays(map.get("final_payment_days"));
-
-  const initial: SettingsValues = {
-    // Auctions are restricted to free/fixed (no price at posting time).
-    feeListingAuction: {
-      mode: mon.feeListingAuction.mode === "percent" ? "fixed" : mon.feeListingAuction.mode,
-      value: mon.feeListingAuction.value,
-    },
-    feeListingDirect: mon.feeListingDirect,
-    promoHome: mon.promoHome,
-    promoTop: mon.promoTop,
-    promoBanner: mon.promoBanner,
-    deposit: { amount: mon.deposit.amount },
-    antiSnipe: { window_min: antiSnipe.windowMin, extend_min: antiSnipe.extendMin },
-    finalPaymentDays,
-    payee_name: strFrom(map.get("payee_name")),
-    payee_bank: strFrom(map.get("payee_bank")),
-    payee_rib: strFrom(map.get("payee_rib")),
-    payee_iban: strFrom(map.get("payee_iban")),
-    payee_d17: strFrom(map.get("payee_d17")),
+  const admin = getServiceSupabase();
+  const settings: PayeeSettings = {
+    payee_name: "", payee_bank: "", payee_rib: "", payee_iban: "", payee_d17: "",
   };
 
+  if (admin) {
+    const { data } = await admin.from("app_settings").select("key, value").in("key", [...KEYS]);
+    for (const row of data ?? []) {
+      const key = row.key as (typeof KEYS)[number];
+      if (!KEYS.includes(key)) continue;
+      // app_settings stores jsonb, so a plain string arrives quoted.
+      const v = row.value;
+      settings[key] = typeof v === "string" ? v : String(v ?? "");
+    }
+  }
+
   return (
-    <div>
-      <AdminPageHeader
-        eyebrow="Monétisation & paiement"
-        title="Réglages"
-        description="Contrôlez ce que les vendeurs paient pour publier, les options, et la caution pour enchérir — un montant unique valable sur toutes les enchères. Modifiable à tout moment."
-      />
-
-      <div className="mt-5">
-        <SettingsForm initial={initial} />
-      </div>
-    </div>
+    <AdminPage>
+      <SiteTabs />
+      <header>
+        <span className={EYEBROW}>Site</span>
+        <h1 className="mt-1 text-[22px] font-semibold tracking-tight text-foreground">Réglages</h1>
+        <p className="mt-1.5 max-w-xl text-[12.5px] text-subtle">
+          Les coordonnées que le vendeur voit au moment de payer. Les prix ne sont pas ici — ils
+          vivent dans Offres &amp; prix, et nulle part ailleurs.
+        </p>
+      </header>
+      <SettingsForm initial={settings} />
+    </AdminPage>
   );
-}
-
-function strFrom(v: unknown): string {
-  if (typeof v === "string") return v;
-  if (v == null) return "";
-  return String(v);
 }

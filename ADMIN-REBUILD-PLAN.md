@@ -14,6 +14,321 @@ doesn't, because there is nothing behind it.
 
 ---
 
+## Progress log
+
+Newest first. Append as phases land.
+
+### Phases 3–8 — the rest of the console · **DONE** 2026-09-04
+
+Every remaining screen rebuilt on the flat split-pane kit, and the dead ones
+deleted. The console is now **13 sections instead of 20**, six of them
+reachable from the rail.
+
+**Paiements** (`/admin/paiements`) — replaces `/admin/payments`. The old screen
+could not work: it called `admin_payment_boxes`, which groups receipts *by
+auction*, and `auctions` has held zero rows since the pivot, so it returned an
+empty list forever while **three real `listing_fee` receipts sat in
+`pending_review`**. Two things found while building it:
+
+- **The database RPC could not have saved it either.**
+  `accept_listing_payment` requires `payments.property_id is not null`, and
+  every v3 fee carries its subject in `metadata.listing_id` instead — it raises
+  `payment_missing_property` on all of them. So accepting is a plain status
+  write, and the existing `_listing_fee_captured` trigger does the cascade it
+  already knows how to do: move the listing to `pending_review`, notify the
+  seller.
+- **Rejection goes through `reject_listing_payment`**, which writes the
+  notification and enforces a real motif — but it is SECURITY DEFINER checking
+  `is_admin()` against `auth.uid()`, so it must be called with the *admin's*
+  client, never the service client (which has no `auth.uid()` and is refused).
+
+Accepting a `listing_pack` now creates the `seller_credits` row and a `badge`
+payment creates the `seller_badges` row: nothing in the database did that, so a
+pack would have been paid for and granted nothing.
+
+**Offres & prix** (`/admin/offres`) — products CRUD, grouped by kind, with the
+warning that actually matters: *N offres en vente sans prix configuré*. The
+existing `/api/admin/products` route was already good and is reused unchanged.
+
+**Vendeurs** (`/admin/vendeurs`) — merges `/admin/users` (a role dropdown) and
+`/admin/sellers` (packs and badges), which were two screens answering one
+question. One consolidated API replaces both, with two guards worth naming: an
+admin cannot remove their own admin role (locking themselves out of the console
+with no way back), and cannot suspend their own account.
+
+**Catalogue** (`/admin/catalogue`) — the screen `/admin/characteristics` was
+supposed to be. That one wrote `property_attribute_kinds`: 64 rows keyed to
+`properties`, a dead table nothing reads. The live definitions are
+`category_attributes` — 90 rows across 17 categories — and they had **no admin
+screen at all**, so the seller's form could only be changed by a developer.
+Two guards: `field_key` is never patched on an existing attribute (it is the
+jsonb key already written into every listing in that category), and deleting an
+attribute is refused while any listing still carries a value under it —
+otherwise the values survive with nothing left to say what they mean.
+
+**Réglages** stripped to the payee block. It used to write
+`fee_listing_auction`, `fee_listing_direct`, `promo_*`, `deposit`, `commission`
+and `final_payment_days` — all prices or auction machinery, and the price half
+was the split brain: `app_settings` said 20 TND while `products` said 15, and
+only `products` is read by the sell flow. The screen now warns when
+`payee_name` still reads "Batta Tunisia SARL" — the twin project's name, on the
+bank details a buyer copies into their banking app.
+
+**Journal** defaults to `action is not null`. Page views are still reachable in
+their own tab, just no longer the 98.8 % of rows you have to dig through.
+
+**Site** is six tabs rather than six sidebar entries.
+
+**Deleted** (Phase 8): 13 page sections, 8 API route groups and 6 components —
+`properties`, `auctions`, `deposits`, `payouts`, `manual-payment`,
+`inspectors`, `fraud`, `waitlist`, plus the renamed `payments`, `pricing`,
+`users`, `sellers`, `characteristics`. Every old path redirects in
+`next.config.ts` — 308 where it was a rename, 307 where the feature itself is
+gone — so a bookmark never lands on "page not found".
+
+**Totals:** 16 243 → **14 111 lines**, and the remaining count is misleading in
+the right direction: ~2 000 of it is the not-yet-rebuilt Diffusions and Popups
+forms. Palette warnings 37 → **18**, all in those same two screens. `tsc`
+clean · ESLint **0 errors** · 199 tests pass · `next build` compiles.
+
+**Still on the old design:** Diffusions (1 226 l), Popups (785 l), Accueil and
+Documents. They work, they sit inside the new shell and inherit the flat
+buttons and pills, but their internals are untouched.
+
+### Redesign + performance · **DONE** 2026-09-04
+
+Two complaints, one session: *"everything should be completely different — the
+boxes, the buttons, the workflow"*, and *"routing is super slow and feels like
+it's not working right"*. They turned out to be unrelated problems.
+
+#### The slowness was measured, not guessed
+
+The database is **~75 ms per round trip** from here (measured: `select 1`
+twice, 75 / 70 ms). What mattered was how many round trips a single admin
+navigation made, and how many of them were serialized:
+
+| | Before | After |
+|---|---|---|
+| Annonces tab counts | 7 head-only COUNTs, **499 ms** median | 1 query, **111 ms** median |
+| Layout badge counts | 199 ms, *after* the gate | 199 ms, *overlapping* the gate |
+| Identity check | `getUser()` in middleware **and** again in the layout, then a profile row — all sequential | one memoized resolution per request |
+| `activity_log` write | one INSERT per admin click | none |
+
+- **`src/lib/admin/session.ts`** wraps the gate in React's `cache()`, so the
+  layout and the page it wraps share one `auth.getUser()` + profile lookup.
+  It is a per-*request* memo, not a cross-request cache — a revoked session is
+  still caught on the next navigation, which is the property that matters.
+  `getUser()` stays (it validates the token with the auth server rather than
+  trusting a cookie); deduplicating it is safe, skipping it would not be.
+- **The layout fires its badge counts before awaiting the gate**, against the
+  service client, so they overlap the ~225 ms identity check instead of
+  queueing behind it. A non-admin simply gets two discarded COUNTs.
+- **Seven tab counts became one query.** Selecting `status, expires_at` for the
+  matching rows and tallying them in JS is one round trip instead of seven —
+  measured 499 ms → 111 ms, and that cost was paid on every tab click and
+  every keystroke of the debounced search. The ceiling is real but distant:
+  past ~50 000 listings this wants a `group by` RPC.
+- **Admin navigation no longer writes `page_view` rows.** It was a DB write on
+  the critical path of every click, and it is the same thing that made the
+  audit journal unreadable (16 836 of 17 034 rows). Admin *actions* are still
+  logged deliberately, by the routes that perform them.
+
+**"Feels like it's not working" was a separate bug: nothing moved on click.**
+Every admin route is `force-dynamic`, so a click is a full server render, and
+for all of it the old page just sat there — the natural read is that the click
+did not register, and the natural response is to click again. `useLinkStatus`
+now drives a spinner on the nav item or row that was clicked
+(`kit/LinkPending.tsx`).
+
+**Still outstanding, and it is a judgement call, not a bug:**
+`next.config.ts` sets `staleTimes: { dynamic: 30 }`, added deliberately for the
+public catalog ("open a car, decide, come back"). It also means going Annonces
+→ Paiements → Annonces inside 30 s serves the *cached* Annonces — so an
+annonce you just approved can still look pending. Mutations call
+`router.refresh()`, which covers the current page but not that path. The knob
+is global; lowering it fixes the console and un-tunes the catalog.
+
+#### The redesign: split-pane inbox, flat
+
+Chosen from three directions offered. **No cards, no rounded tiles, no
+shadows, no filled panels anywhere** — structure comes from 1px rules and
+spacing. Gold is spent in exactly two places: the row you are on, and the one
+primary action on screen.
+
+- **`kit/surface.ts`** is the contract — the rules, row states and pane
+  behaviour every screen shares.
+- **The shell is an application viewport**, not a document: `h-dvh`,
+  `overflow-hidden`, and scrolling happens inside panes. That is what lets the
+  annonces list keep its scroll position while the detail beside it changes.
+  Document-shaped screens opt into a measure with `<AdminPage>`; the annonces
+  console cancels the shell padding with `<FullBleed>`.
+- **`/admin/annonces` is now two panes**: a dense queue on the left (360–400 px),
+  the selected annonce always open on the right. The drawer is gone —
+  a drawer covers the list it came from, so every decision cost an open and a
+  close. Below `lg` there is no room for two, so the list hands over full-width
+  and a back link returns.
+- **Status became a dot**, not a filled pill: twenty-five coloured rectangles
+  down a list is twenty-five competing blocks and the eye has nowhere to rest.
+- **One filled button per screen.** The old set had seven filled variants, so a
+  screen with four actions had four competing blocks of colour and no way to
+  tell which one to press. Legacy variant names (`success`, `dangerSoft`,
+  `ghost`…) still resolve, so un-rebuilt screens compile and inherit the flat
+  look.
+- **Selection is off by default and toggled on.** A moderator's normal loop is
+  "read one, decide, next"; a column of empty checkboxes down the left of that
+  is noise for the common case.
+- The dashboard and `/admin/site` lost their card grids for figures-and-rules
+  and a plain list.
+
+Deleted as superseded: `ListingPanel.tsx`, `kit/Selection.tsx`.
+
+Verified: `tsc` clean · ESLint **0 errors** · 199 tests pass · `next build`
+compiles. **Not yet seen in a browser** — the dev session on :3001 expired and
+I will not type credentials; the anonymous render was checked instead and
+leaks nothing (RLS returns empty, and the payload carries the redirect to
+`/fr/login`).
+
+### Phase 2 — Annonces console · **DONE** 2026-09-04
+
+The core screen. `ListingQueue.tsx` (352 l) is gone; the queue is now a
+`DataTable` with server-side tabs, search and paging, and a drawer.
+
+**Seven tabs, ordered by what the work costs us**, not by enum order:
+À valider · Paiement attendu · En ligne · **Expirent bientôt** · Expirées ·
+Refusées · Toutes. "Expirent bientôt" (published, `expires_at` inside 7 days)
+is new and is the one with money in it — an annonce that lapses unnoticed is a
+renewal nobody was offered.
+
+**Paging is real.** The old page fetched 120 rows with every photo joined, on
+every visit, plus every profile and every category attribute for the creation
+form sitting on top of it. It now takes 25 rows, and the drawer fetches the
+one open annonce's attributes and payment separately.
+
+**Five actions that did not exist** — the queue could only approve, reject,
+mark-paid, waive and archive:
+
+- `republish` — an expired or archived annonce had **no way back online**. The
+  only publishing path required `pending_review`, so a seller ringing to say
+  "it's still for sale" had to recreate the whole thing.
+- `extend` — counted from the later of *now* and the current expiry, so
+  prolonging an annonce with a week left adds to it rather than quietly
+  shortening it to today + 30.
+- `feature` / `unfeature` — writes `featured_rank` + `featured_until`
+  (migration 0171), so a home-page placement lapses on its own instead of
+  freezing the home page in whatever month someone last touched it.
+- `mark_sold` — deliberately distinct from archived: "vendue" is the outcome
+  the platform exists to produce, and counting it is how we ever answer
+  "does this work?".
+- `edit` — a short allow-list (titre, prix, négociable, prix sur demande,
+  téléphone, nom, description). Category and attributes are **not** editable
+  here: those change what the annonce *is*, and belong in the seller's form.
+- `delete` — guarded twice. A **published** annonce must be archived first
+  (deleting one breaks links a buyer may hold); one whose fee was actually
+  **captured** is never deletable at all, because the payment row would point
+  at nothing and that is the record we need most when a seller asks what they
+  paid for. Storage objects are left in place: orphaned bytes are cheap, and a
+  delete that also wipes files cannot be undone.
+
+**Bulk actions** (`POST /api/admin/annonces/bulk`, max 50). Approve, extend and
+archive only — **reject and delete are deliberately not bulk actions**: a
+refusal needs a motif written for that seller, and a delete is irreversible.
+It returns per-row outcomes rather than a boolean, so the operator sees
+"18 publiées, 2 sans numéro" instead of a success toast that silently skipped
+two. Selection state clears whenever the filter or page changes, since a
+selection that outlives its rows acts on rows you can no longer see.
+
+**Keyboard**: `j`/`k` and arrows move between rows, Enter opens — free, because
+a `DataTable` row *is* a link. It reads the DOM (`data-row-id`) rather than a
+prop, so it keeps working across filtering and paging, and it never fires while
+the operator is typing in the search box.
+
+**Creation moved** to `/admin/annonces/nouvelle`. `ManualListingForm` gained a
+`standalone` prop and is otherwise untouched — its decisions were right and
+were verified against the live database (annonce belongs to the seller,
+`fee_waived_by` records who comped it, attestation stamped `v1-admin`).
+
+**Two type problems worth remembering.** `applyTab(query, tab)` as a generic
+over the PostgREST builder makes TypeScript re-infer the builder at every
+chained call until it gives up (TS2589, "type instantiation is excessively
+deep"); describing the filters as data and applying them in a plain loop keeps
+one shared definition and compiles. And `category_attributes.data_type` is a
+free-text column feeding a closed union — unrecognised values now degrade to a
+text box instead of failing the build.
+
+Verified: `tsc` clean · ESLint **0 errors** · 199 tests pass · `next build`
+completes with `/admin/annonces`, `/admin/annonces/nouvelle` and
+`/api/admin/annonces/bulk` registered.
+
+**Not yet visually verified**: the dev session on :3001 expired mid-pass and I
+cannot sign in. Needs one look at the queue, the drawer and a bulk approve.
+
+### Phase 1 — Foundation · **DONE** 2026-09-04
+
+The kit exists and the console has six entries instead of twenty-four.
+
+**New — `src/components/admin/kit/`** (10 files): `tones.ts` (the single
+status → label → colour map), `StatusPill`, `EmptyState`, `PageHeader`,
+`DataTable` + `Stacked`, `Toolbar`, `SidePanel` + `PanelRow`/`PanelSection`,
+`Confirm`, `Field` (Text / Textarea / Number / Select / Toggle / FieldGrid),
+`useAdminAction`.
+
+Three decisions worth recording:
+
+- **`DataTable` is a grid, not a `<table>`.** The whole row has to be
+  clickable and an anchor cannot wrap a `<tr>`; a CSS grid lets each row *be*
+  the link — one tab stop, one focus ring — with ARIA roles carrying the table
+  semantics. It also stays a **server** component: cells arrive as rendered
+  `ReactNode`s and rows carry an `href`, so no callback crosses the
+  server/client boundary and no queue needs `"use client"` just to list things.
+- **Detail opens from the URL** (`?panel=<id>`), read by the server. Back
+  closes the panel, and a half-reviewed row is a link you can send to someone.
+- **`NumberField` reports an empty box as `null`, never `0`.** `lib/products.ts`
+  already carries a test for exactly this — "no price configured" must not
+  resolve to free — and a field that coerces `""` to `0` is how a paid product
+  silently becomes free.
+
+**Nav: 24 → 6 (+ Site).** `AdminSidebar.tsx` (244 l) deleted, replaced by
+`AdminShell.tsx`. The eight dead-table entries and the KYC tile are gone from
+the menu; their routes still exist and still work — Phase 8 deletes them with
+redirects. `/admin/site` is a new hub over the six monthly screens (accueil,
+popups, documents, diffusions, réglages, journal), which becomes tabs in
+Phase 7. The rail carries live badge counts for annonces and paiements, as
+head-only COUNTs in the layout.
+
+**The dashboard was rebuilt** because it could not be left alone: five of its
+six tiles counted empty tables and the sixth linked to `/admin/kyc-queue`,
+deleted in Phase 6a — a live-looking "2" pointing at a 404. It now counts four
+real queues, and carries an eight-row audit strip filtered to
+`action is not null` (16 836 of the 17 034 rows in `activity_log` are page
+views; without that filter the journal shows nothing an admin did).
+
+**Contrast fixes, beyond the console.** `.batta-tone-warn` was `#b45309`
+(amber-700) and `.batta-tone-bad` was `--accent-deep` (red-700) — dark text on
+a `#0a0a0a` ground, inherited from the light-mode twin repo. Both were
+unreadable, and they are used **108 times across the app**, not just in the
+admin: account, sell, auctions, partners. Fixed at the token, so every surface
+improves. `AdminButton`'s `dangerSoft`/`warnSoft` carried the same bug in
+arbitrary values and were fixed with them; `primary` now uses black-on-gold,
+which passes where white-on-gold did not.
+
+**The lint rule is in, staged.** `no-restricted-syntax` bans Tailwind's
+light-mode palette classes (`bg-red-50`, `text-amber-700`, …) under the admin.
+It is an **error** in the kit, `AdminShell`, the dashboard and `/admin/site` —
+which start clean and stay clean — and a **warning** across the legacy console,
+where the AST rule currently flags **37** occurrences. Each phase removes a
+batch with the screen that carried them; Phase 8 promotes the second block to
+`error` when the count reaches zero.
+
+Verified: `tsc` clean · ESLint 0 errors · **199 unit tests pass** · `next build`
+compiles · dashboard, `/admin/site` and the legacy `/admin/annonces` all render
+correctly inside the new shell at 1440 px and at phone width.
+
+**Not done, deliberately:** nothing was deleted except the superseded sidebar,
+no migration was written, and no data was touched. D1 (drop the empty auction
+tables) and D4 (purge the two KYC rows) are still yours to authorise.
+
+---
+
 ## 0. TL;DR
 
 | | Today | After |

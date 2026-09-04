@@ -209,7 +209,7 @@ export function LegalDocsEditor({
               {isDirty && (
                 <span
                   aria-label="non enregistré"
-                  className="inline-block size-1.5 rounded-full bg-orange-400"
+                  className="inline-block size-1.5 rounded-full bg-[#e0a029]"
                 />
               )}
             </button>

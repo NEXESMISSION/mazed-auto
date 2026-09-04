@@ -6,6 +6,8 @@ import {
   MessageSquare, PlusCircle, Eye, MousePointerClick,
   Calendar, ShieldAlert, ChevronRight,
 } from "lucide-react";
+import { SiteTabs } from "@/components/admin/kit/SiteTabs";
+import { TONE_CLASS } from "@/components/admin/kit/tones";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -58,6 +60,7 @@ export default async function AdminPopupsPage() {
 
   return (
     <div>
+      <SiteTabs />
       <AdminPageHeader
         eyebrow="Diffusion"
         title="Popups"
@@ -111,9 +114,9 @@ function StatTile({
 }) {
   const accent =
     tone === "ok"
-      ? "bg-emerald-500"
+      ? "bg-[#5cc98a]"
       : tone === "info"
-        ? "bg-amber-500"
+        ? "bg-[#e0a029]"
         : "bg-foreground/30";
   return (
     <div className="relative overflow-hidden rounded-2xl bg-surface p-4 ring-1 ring-border">
@@ -156,7 +159,7 @@ function PopupRow({
             <StatusPill status={popup.status} />
             <VariantPill variant={popup.variant} />
             {popup.force_action && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 px-1.5 py-0.5 text-[9.5px] font-extrabold uppercase tracking-wider text-red-700 ring-1 ring-red-500/30">
+              <span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9.5px] font-extrabold uppercase tracking-wider ring-1 ${TONE_CLASS.bad}`}>
                 <ShieldAlert className="size-2.5" strokeWidth={2.5} />
                 Bloquant
               </span>
@@ -193,8 +196,8 @@ function PopupRow({
 function StatusPill({ status }: { status: PopupStatus }) {
   const map: Record<PopupStatus, { label: string; tone: string }> = {
     draft:    { label: "Brouillon",   tone: "bg-surface-2 text-muted ring-1 ring-border" },
-    live:     { label: "En ligne",    tone: "bg-emerald-500/15 text-emerald-700 ring-1 ring-emerald-500/30" },
-    paused:   { label: "En pause",    tone: "bg-amber-500/15 text-amber-700 ring-1 ring-amber-500/30" },
+    live:     { label: "En ligne",    tone: `${TONE_CLASS.ok} ring-1` },
+    paused:   { label: "En pause",    tone: `${TONE_CLASS.warn} ring-1` },
     archived: { label: "Archivé",     tone: "bg-surface-2 text-muted ring-1 ring-border" },
   };
   const v = map[status];

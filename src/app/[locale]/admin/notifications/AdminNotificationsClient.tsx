@@ -1,4 +1,5 @@
 "use client";
+import { TONE_CLASS } from "@/components/admin/kit/tones";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -343,8 +344,8 @@ function ComposeTab() {
           <div
             className={`rounded-lg p-3 text-[12px] ${
               result.ok
-                ? "bg-emerald-50 text-emerald-900 ring-1 ring-emerald-200"
-                : "bg-red-50 text-red-900 ring-1 ring-red-200"
+                ? `${TONE_CLASS.ok} ring-1`
+                : `${TONE_CLASS.bad} ring-1`
             }`}
           >
             {result.ok ? (
@@ -537,7 +538,7 @@ function Field({
   return (
     <div>
       <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.14em] text-muted">
-        {label} {required && <span className="text-red-600">*</span>}
+        {label} {required && <span className="text-[#ef8681]">*</span>}
       </label>
       {children}
     </div>
@@ -895,7 +896,7 @@ function QueueTab() {
               type="button"
               onClick={() => setConfirmingSelection(true)}
               disabled={busy}
-              className="inline-flex items-center gap-1.5 rounded-full bg-red-600 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-white transition hover:bg-red-700 disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 rounded-full border border-[rgba(239,68,68,0.35)] px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-[#ef8681] transition hover:border-[#ef8681] hover:bg-[rgba(239,68,68,0.07)] disabled:opacity-60"
             >
               <Trash2 className="size-3.5" strokeWidth={2.4} />
               Supprimer la sélection
@@ -906,7 +907,7 @@ function QueueTab() {
               type="button"
               onClick={() => setConfirmingFiltered(true)}
               disabled={busy}
-              className="inline-flex items-center gap-1.5 rounded-full border border-red-300 bg-red-50 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-red-700 transition hover:bg-red-100 disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 rounded-full border border-[rgba(239,68,68,0.35)] bg-[rgba(239,68,68,0.10)] px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-[#ef8681] transition hover:bg-[rgba(239,68,68,0.16)] disabled:opacity-60"
             >
               <AlertTriangle className="size-3.5" strokeWidth={2.4} />
               Supprimer tout (filtré)
@@ -1005,13 +1006,13 @@ function ConfirmStrip({
   busy: boolean;
 }) {
   return (
-    <div className="mb-3 flex items-center justify-between gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-[13px] text-red-900">
+    <div className="mb-3 flex items-center justify-between gap-2 rounded-xl border border-[rgba(239,68,68,0.30)] bg-[rgba(239,68,68,0.10)] px-3 py-2.5 text-[13px] text-[#ef8681]">
       <span className="font-semibold">{message}</span>
       <div className="flex gap-1.5">
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-lg px-2.5 py-1 text-[12px] font-bold text-red-900 hover:bg-red-100"
+          className="rounded-lg px-2.5 py-1 text-[12px] font-bold text-muted hover:text-foreground"
         >
           Annuler
         </button>
@@ -1019,7 +1020,7 @@ function ConfirmStrip({
           type="button"
           onClick={onConfirm}
           disabled={busy}
-          className="rounded-lg bg-red-600 px-2.5 py-1 text-[12px] font-bold text-white hover:bg-red-700 disabled:opacity-60"
+          className="rounded-lg border border-[rgba(239,68,68,0.35)] px-2.5 py-1 text-[12px] font-bold text-[#ef8681] transition hover:border-[#ef8681] hover:bg-[rgba(239,68,68,0.07)] disabled:opacity-60"
         >
           Confirmer
         </button>

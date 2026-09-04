@@ -255,8 +255,16 @@ export async function middleware(req: NextRequest) {
   // but SAMPLE anonymous views — those are the unbounded bulk and Vercel
   // Analytics already covers anonymous traffic. Cuts the write amplification
   // by ~an order of magnitude at scale.
+  //
+  // ADMIN IS EXEMPT. Console navigation is not product analytics: an admin
+  // clicking through six queues generated six page_view rows, which is both a
+  // write on the critical path of every click and the reason the activity
+  // journal is unusable — 16 836 of its 17 034 rows are page views, burying
+  // the 198 rows that record what an admin actually decided. Admin *actions*
+  // are logged deliberately, by the routes that perform them.
+  const isAdminPath = /^\/(fr|ar|en)\/admin(?:\/|$)/.test(pathname);
   const pvSample = authUserId !== null ? PAGEVIEW_AUTH_SAMPLE : PAGEVIEW_ANON_SAMPLE;
-  if (req.method === "GET" && Math.random() < pvSample) {
+  if (req.method === "GET" && !isAdminPath && Math.random() < pvSample) {
     logActivity({
       type: "page_view",
       userId: authUserId,

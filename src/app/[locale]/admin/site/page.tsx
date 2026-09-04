@@ -1,9 +1,9 @@
 import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
-import { PageHeader } from "@/components/admin/kit";
+import { AdminPage, EYEBROW } from "@/components/admin/kit";
 import {
   LayoutTemplate, MessageSquare, FileText, Bell, Settings2, Activity,
-  ArrowUpRight, type LucideIcon,
+  ArrowRight, type LucideIcon,
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -97,39 +97,43 @@ export default async function AdminSiteHub() {
   ];
 
   return (
-    <div>
-      <PageHeader
-        eyebrow="Console"
-        title="Site"
-        description="Le contenu et la configuration du site public. Ce que l'on règle une fois, puis rarement."
-      />
+    <AdminPage>
+      <header>
+        <span className={EYEBROW}>Console</span>
+        <h1 className="mt-1 text-[22px] font-semibold tracking-tight text-foreground">Site</h1>
+        <p className="mt-1.5 max-w-xl text-[12.5px] text-subtle">
+          Le contenu et la configuration du site public. Ce que l'on règle une fois, puis rarement.
+        </p>
+      </header>
 
-      <div className="mt-7 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <ul className="mt-7 border-t border-border">
         {cards.map((c) => (
-          <Link
-            key={c.href}
-            href={c.href as "/admin"}
-            className="group flex flex-col rounded-xl border border-border bg-surface p-5 transition hover:border-[var(--gold-soft)] hover:bg-surface-2"
-          >
-            <div className="flex items-start justify-between">
-              <span className="grid size-9 place-items-center rounded-lg bg-surface-2 text-muted transition group-hover:text-gold">
-                <c.Icon className="size-4" strokeWidth={2} />
-              </span>
-              <ArrowUpRight
-                className="size-4 text-subtle transition group-hover:text-gold"
+          <li key={c.href}>
+            <Link
+              href={c.href as "/admin"}
+              className="group flex items-start gap-4 border-b border-border py-3.5 transition hover:bg-[rgba(255,255,255,0.025)]"
+            >
+              <c.Icon
+                className="mt-0.5 size-4 shrink-0 text-subtle transition group-hover:text-[var(--gold)]"
                 strokeWidth={2}
               />
-            </div>
-            <div className="mt-3.5 text-[14px] font-bold text-foreground">{c.label}</div>
-            <p className="mt-1 text-[12px] leading-relaxed text-muted">{c.description}</p>
-            {c.count != null && (
-              <div className="batta-tabular mt-3 text-[11.5px] font-semibold text-subtle">
-                {c.count.toLocaleString("fr-FR")} {c.unit}
-              </div>
-            )}
-          </Link>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[13px] font-medium text-foreground">{c.label}</span>
+                <span className="mt-0.5 block text-[11.5px] text-subtle">{c.description}</span>
+              </span>
+              {c.count != null && (
+                <span className="batta-tabular hidden shrink-0 text-[11.5px] text-subtle sm:block">
+                  {c.count.toLocaleString("fr-FR")} {c.unit}
+                </span>
+              )}
+              <ArrowRight
+                className="mt-0.5 size-3.5 shrink-0 text-subtle transition group-hover:translate-x-0.5 group-hover:text-[var(--gold)]"
+                strokeWidth={2}
+              />
+            </Link>
+          </li>
         ))}
-      </div>
-    </div>
+      </ul>
+    </AdminPage>
   );
 }

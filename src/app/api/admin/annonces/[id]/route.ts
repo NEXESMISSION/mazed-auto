@@ -5,11 +5,20 @@ import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 
 /**
- * Moderation, and the only door to `published`.
+ * Everything an admin can do to one annonce.
  *
- *   POST { action: "approve" }            → live for `duration_days`
- *   POST { action: "reject", reason }     → back to the seller, credit returned
- *   POST { action: "archive" }            → taken down, no refund
+ *   POST { action: "approve" }              → live for `duration_days`
+ *   POST { action: "reject", reason }       → back to the seller, credit returned
+ *   POST { action: "archive" }              → taken down, no refund
+ *   POST { action: "mark_paid" }            → capture the receipt, queue for review
+ *   POST { action: "waive_fee" }            → comp it, queue for review
+ *   POST { action: "republish" }            → expired/archived/rejected → live again
+ *   POST { action: "extend", days? }        → push `expires_at` out (default 30)
+ *   POST { action: "feature", days? }       → put it on the home page
+ *   POST { action: "unfeature" }            → take it off
+ *   POST { action: "mark_sold" }            → the car is gone, keep the record
+ *   POST { action: "edit", fields }         → fix what the seller typed
+ *   POST { action: "delete" }               → remove it entirely (guarded)
  *
  * Approving is where a listing gets its `published_at` / `expires_at`, taken
  * from the product that paid for it — so changing the standard duration in
@@ -21,6 +30,40 @@ import { fail } from "@/lib/http/errors";
  */
 
 const DEFAULT_DURATION_DAYS = 30;
+const DEFAULT_FEATURE_DAYS = 30;
+
+type Admin = NonNullable<ReturnType<typeof getServiceSupabase>>;
+
+/** How long a publication lasts: what its payment bought, else the active
+ *  `listing_single` product, else 30 days. Never a constant in a caller. */
+async function publicationDays(admin: Admin, feePaymentId: string | null): Promise<number> {
+  if (feePaymentId) {
+    const { data: pay } = await admin
+      .from("payments")
+      .select("metadata")
+      .eq("id", feePaymentId)
+      .maybeSingle();
+    const d = Number((pay?.metadata as { duration_days?: unknown } | null)?.duration_days);
+    if (Number.isFinite(d) && d > 0) return d;
+  }
+  const { data: prod } = await admin
+    .from("products")
+    .select("duration_days")
+    .eq("kind", "listing_single")
+    .eq("is_active", true)
+    .limit(1)
+    .maybeSingle();
+  const d = Number(prod?.duration_days);
+  return Number.isFinite(d) && d > 0 ? d : DEFAULT_DURATION_DAYS;
+}
+
+/** Clamp a caller-supplied day count. Unbounded input here would let a typo
+ *  put an annonce online until 2124. */
+function days(raw: unknown, fallback: number): number {
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(365, Math.max(1, Math.round(n)));
+}
 
 export async function POST(
   req: NextRequest,
@@ -37,18 +80,22 @@ export async function POST(
   const body = (await req.json().catch(() => ({}))) as {
     action?: unknown;
     reason?: unknown;
+    days?: unknown;
+    fields?: unknown;
   };
   const action = typeof body.action === "string" ? body.action : "";
 
   const { data: listing } = await admin
     .from("listings")
-    .select("id, seller_id, title, status, seller_credit_id, fee_payment_id, contact_phone")
+    .select(
+      "id, seller_id, title, status, seller_credit_id, fee_payment_id, contact_phone, expires_at, featured_rank",
+    )
     .eq("id", id)
     .maybeSingle();
   if (!listing) return NextResponse.json({ error: "listing_not_found" }, { status: 404 });
 
   // ── Settle the publication fee ────────────────────────────────────────────
-  // Two ways a fee stops being owed, and both were missing:
+  // Two ways a fee stops being owed:
   //
   //   "paid"   — the seller sent a receipt and it checks out. The payment is
   //              captured here rather than in the payments console, because
@@ -111,39 +158,28 @@ export async function POST(
     return NextResponse.json({ ok: true, status: "pending_review" });
   }
 
-  // ── Approve ───────────────────────────────────────────────────────────────
-  if (action === "approve") {
+  // ── Approve / republish ───────────────────────────────────────────────────
+  // Same transition, two starting points. `republish` exists because an
+  // expired or archived annonce had no way back online: the only publishing
+  // path required `pending_review`, so a seller who rang up to say "it's still
+  // for sale" had to create the whole thing again.
+  if (action === "approve" || action === "republish") {
     if (!listing.contact_phone) {
       return NextResponse.json(
         { error: "contact_required", detail: "Cette annonce n'a pas de numéro : elle ne peut pas être publiée." },
         { status: 400 },
       );
     }
-
-    // How long it stays up comes from the product that paid for it.
-    let days = DEFAULT_DURATION_DAYS;
-    if (listing.fee_payment_id) {
-      const { data: pay } = await admin
-        .from("payments")
-        .select("metadata")
-        .eq("id", listing.fee_payment_id)
-        .maybeSingle();
-      const d = Number((pay?.metadata as { duration_days?: unknown } | null)?.duration_days);
-      if (Number.isFinite(d) && d > 0) days = d;
-    } else {
-      const { data: prod } = await admin
-        .from("products")
-        .select("duration_days")
-        .eq("kind", "listing_single")
-        .eq("is_active", true)
-        .limit(1)
-        .maybeSingle();
-      const d = Number(prod?.duration_days);
-      if (Number.isFinite(d) && d > 0) days = d;
+    if (action === "republish" && listing.status === "published") {
+      return NextResponse.json(
+        { error: "already_published", detail: "Cette annonce est déjà en ligne." },
+        { status: 409 },
+      );
     }
 
+    const d = await publicationDays(admin, listing.fee_payment_id);
     const now = new Date();
-    const expires = new Date(now.getTime() + days * 86_400_000);
+    const expires = new Date(now.getTime() + d * 86_400_000);
 
     const { error } = await admin
       .from("listings")
@@ -168,7 +204,7 @@ export async function POST(
       })
       .then(() => {}, () => {});
 
-    logAction(req, user, "admin.listing.approve", { id, days });
+    logAction(req, user, `admin.listing.${action}`, { id, days: d });
     return NextResponse.json({ ok: true, status: "published", expires_at: expires.toISOString() });
   }
 
@@ -230,6 +266,188 @@ export async function POST(
 
     logAction(req, user, "admin.listing.archive", { id });
     return NextResponse.json({ ok: true, status: "archived" });
+  }
+
+  // ── Extend ────────────────────────────────────────────────────────────────
+  // Counted from whichever is later — now, or the current expiry — so
+  // extending an annonce that still has a week left adds to it instead of
+  // quietly shortening it to today + N.
+  if (action === "extend") {
+    if (listing.status !== "published") {
+      return NextResponse.json(
+        { error: "not_published", detail: "Seule une annonce en ligne peut être prolongée." },
+        { status: 409 },
+      );
+    }
+    const d = days(body.days, DEFAULT_DURATION_DAYS);
+    const from = Math.max(Date.now(), new Date(listing.expires_at ?? 0).getTime());
+    const expires = new Date(from + d * 86_400_000);
+
+    const { error } = await admin
+      .from("listings")
+      .update({ expires_at: expires.toISOString() })
+      .eq("id", id);
+    if (error) return fail("listing_extend_failed", 500, error);
+
+    logAction(req, user, "admin.listing.extend", { id, days: d });
+    return NextResponse.json({ ok: true, expires_at: expires.toISOString() });
+  }
+
+  // ── Feature on the home page ──────────────────────────────────────────────
+  // `featured_rank` orders the home rail (lower first) and `featured_until`
+  // makes the placement lapse on its own — a promo nobody remembers to remove
+  // is a home page frozen in whatever month someone last touched it.
+  if (action === "feature") {
+    if (listing.status !== "published") {
+      return NextResponse.json(
+        { error: "not_published", detail: "Seule une annonce en ligne peut être mise en avant." },
+        { status: 409 },
+      );
+    }
+    const d = days(body.days, DEFAULT_FEATURE_DAYS);
+    const { data: top } = await admin
+      .from("listings")
+      .select("featured_rank")
+      .not("featured_rank", "is", null)
+      .order("featured_rank", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const rank = (Number(top?.featured_rank) || 0) + 1;
+    const until = new Date(Date.now() + d * 86_400_000);
+
+    const { error } = await admin
+      .from("listings")
+      .update({ featured_rank: rank, featured_until: until.toISOString() })
+      .eq("id", id);
+    if (error) return fail("listing_feature_failed", 500, error);
+
+    logAction(req, user, "admin.listing.feature", { id, days: d, rank });
+    return NextResponse.json({ ok: true, featured_until: until.toISOString() });
+  }
+
+  if (action === "unfeature") {
+    const { error } = await admin
+      .from("listings")
+      .update({ featured_rank: null, featured_until: null })
+      .eq("id", id);
+    if (error) return fail("listing_unfeature_failed", 500, error);
+
+    logAction(req, user, "admin.listing.unfeature", { id });
+    return NextResponse.json({ ok: true });
+  }
+
+  // ── Sold ──────────────────────────────────────────────────────────────────
+  // Distinct from archived on purpose: "vendue" is the outcome the platform
+  // exists to produce, and counting it is how we ever answer "does this work?".
+  if (action === "mark_sold") {
+    if (listing.status !== "published" && listing.status !== "expired") {
+      return NextResponse.json(
+        { error: "not_sellable", detail: `Une annonce « ${listing.status} » ne peut pas être marquée vendue.` },
+        { status: 409 },
+      );
+    }
+    const { error } = await admin
+      .from("listings")
+      .update({
+        status: "sold",
+        featured_rank: null,
+        featured_until: null,
+        reviewed_by: user.id,
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq("id", id);
+    if (error) return fail("listing_sold_failed", 500, error);
+
+    logAction(req, user, "admin.listing.mark_sold", { id });
+    return NextResponse.json({ ok: true, status: "sold" });
+  }
+
+  // ── Edit ──────────────────────────────────────────────────────────────────
+  // The corrections a moderator actually makes: a price typed with a zero too
+  // many, a title in capitals, a wrong phone number. Deliberately a short
+  // allow-list — category and attributes change what the annonce *is*, and
+  // that belongs in the seller's own form, not in a moderation drawer.
+  if (action === "edit") {
+    const f = (body.fields ?? {}) as Record<string, unknown>;
+    const patch: Record<string, unknown> = {};
+
+    if (typeof f.title === "string" && f.title.trim()) patch.title = f.title.trim().slice(0, 200);
+    if (typeof f.description === "string") patch.description = f.description.trim().slice(0, 5000) || null;
+    if (typeof f.contact_name === "string") patch.contact_name = f.contact_name.trim().slice(0, 120) || null;
+    if (typeof f.contact_phone === "string") patch.contact_phone = f.contact_phone.trim().slice(0, 40) || null;
+    if (typeof f.governorate === "string" && f.governorate.trim()) patch.governorate = f.governorate.trim();
+    if (typeof f.negotiable === "boolean") patch.negotiable = f.negotiable;
+    if (typeof f.price_on_request === "boolean") patch.price_on_request = f.price_on_request;
+    if (f.price === null) patch.price = null;
+    else if (typeof f.price === "number" && Number.isFinite(f.price) && f.price >= 0) {
+      patch.price = f.price;
+    }
+
+    if (Object.keys(patch).length === 0) {
+      return NextResponse.json({ error: "nothing_to_update" }, { status: 400 });
+    }
+
+    // A published annonce with no phone is unreachable — the same rule the
+    // publish path enforces, applied to the edit that could break it.
+    if (
+      listing.status === "published" &&
+      "contact_phone" in patch &&
+      !patch.contact_phone
+    ) {
+      return NextResponse.json(
+        { error: "contact_required", detail: "Une annonce en ligne doit garder un numéro." },
+        { status: 400 },
+      );
+    }
+
+    const { error } = await admin.from("listings").update(patch).eq("id", id);
+    if (error) return fail("listing_edit_failed", 500, error);
+
+    logAction(req, user, "admin.listing.edit", { id, fields: Object.keys(patch) });
+    return NextResponse.json({ ok: true });
+  }
+
+  // ── Delete ────────────────────────────────────────────────────────────────
+  // Guarded twice. A published annonce is archived instead — deleting one
+  // breaks the link a buyer may be holding, and "archived" is reversible.
+  // An annonce whose fee was actually paid is never deleted at all: the
+  // payment row would point at nothing, and that is the record we need most
+  // when a seller asks what they paid for.
+  if (action === "delete") {
+    if (listing.status === "published") {
+      return NextResponse.json(
+        {
+          error: "published_not_deletable",
+          detail: "Archivez d'abord : supprimer une annonce en ligne casse les liens partagés.",
+        },
+        { status: 409 },
+      );
+    }
+    if (listing.fee_payment_id) {
+      const { data: pay } = await admin
+        .from("payments")
+        .select("status")
+        .eq("id", listing.fee_payment_id)
+        .maybeSingle();
+      if (pay?.status === "captured") {
+        return NextResponse.json(
+          {
+            error: "paid_not_deletable",
+            detail: "Cette annonce a été payée. Archivez-la — la trace du paiement doit rester.",
+          },
+          { status: 409 },
+        );
+      }
+    }
+
+    // Photos and fitments cascade from the FK; the storage objects are left in
+    // place deliberately — orphaned bytes are cheap, and a delete that also
+    // wipes files is one that cannot be undone by re-inserting the row.
+    const { error } = await admin.from("listings").delete().eq("id", id);
+    if (error) return fail("listing_delete_failed", 500, error);
+
+    logAction(req, user, "admin.listing.delete", { id, title: listing.title });
+    return NextResponse.json({ ok: true, deleted: true });
   }
 
   return NextResponse.json({ error: "unknown_action" }, { status: 400 });

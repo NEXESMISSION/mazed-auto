@@ -43,6 +43,41 @@ const nextConfig: NextConfig = {
     // staying short enough that prices and availability stay fresh.
     staleTimes: { dynamic: 30, static: 180 },
   },
+  /**
+   * Retired admin routes.
+   *
+   * The console went from twenty sections to six. Eight of the removed ones
+   * read tables that have held zero rows since the pivot (properties,
+   * auctions, auction_deposits, seller_payouts, inspectors, waitlist); the
+   * rest were renamed as they were rebuilt. Landing on "page not found" reads
+   * as a broken site rather than a retired screen, so every old path is sent
+   * to whatever replaced it — permanently where it was a rename (308), and
+   * to the console where the feature itself is gone (307, since that is a
+   * decision we could revisit).
+   */
+  async redirects() {
+    const gone = [
+      "properties", "auctions", "deposits", "payouts",
+      "manual-payment", "inspectors", "fraud", "waitlist", "kyc-queue",
+    ];
+    const renamed: [string, string][] = [
+      ["payments", "paiements"],
+      ["pricing", "offres"],
+      ["users", "vendeurs"],
+      ["sellers", "vendeurs"],
+      ["characteristics", "catalogue"],
+    ];
+    return [
+      ...renamed.flatMap(([from, to]) => [
+        { source: `/:locale/admin/${from}`, destination: `/:locale/admin/${to}`, permanent: true },
+        { source: `/:locale/admin/${from}/:path*`, destination: `/:locale/admin/${to}`, permanent: true },
+      ]),
+      ...gone.flatMap((from) => [
+        { source: `/:locale/admin/${from}`, destination: "/:locale/admin", permanent: false },
+        { source: `/:locale/admin/${from}/:path*`, destination: "/:locale/admin", permanent: false },
+      ]),
+    ];
+  },
   images: {
     // AVIF first, then WebP. AVIF is ~25–30 % smaller than WebP at the
     // same perceptual quality; next/image negotiates per request based

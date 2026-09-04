@@ -1,153 +1,57 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidateTag } from "next/cache";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
-import { cleanDurationDays } from "@/lib/pricing";
-import { APP_SETTINGS_TAG } from "@/lib/settings";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 
-const TEXT_KEYS = [
-  "payee_name",
-  "payee_bank",
-  "payee_rib",
-  "payee_iban",
-  "payee_d17",
-] as const;
-
-type Mode = "free" | "fixed" | "percent";
-
-function cleanValue(mode: Mode, raw: unknown): number {
-  const n = Number(raw);
-  if (!Number.isFinite(n) || n < 0) return 0;
-  return mode === "percent" ? Math.min(100, n) : Math.min(1_000_000, n);
-}
-
 /**
- * PUT /api/admin/settings — admin-only. Persists the structured
- * monetization config (listing fees, promos, deposit) + payee fields into
- * app_settings as jsonb. Validates modes/values; ignores anything off the
- * allowlist to keep the surface tight.
+ * Réglages — the settings that are NOT prices.
+ *
+ * This route used to write `fee_listing_auction`, `fee_listing_direct`,
+ * `promo_home`, `promo_top`, `promo_banner`, `deposit`, `commission` and
+ * `final_payment_days`. Every one of those was either a price or auction
+ * machinery, and the price half was actively harmful: `/admin/pricing` writes
+ * the `products` table, which the sell flow actually reads, while this route
+ * wrote `app_settings` keys that only a legacy endpoint reads. They held
+ * different numbers — 20 TND against 15 — so an admin who changed the
+ * publication fee here changed nothing a seller would ever see.
+ *
+ * Prices live in `products` and nowhere else (PIVOT-PLAN §2.2). What is left
+ * here is the payee block: the bank details a buyer is told to transfer to.
+ * Getting those wrong sends real money to the wrong place, which is why they
+ * are the one thing this screen still owns.
  */
-export async function PUT(req: NextRequest) {
+
+/** The only keys this route may write. Anything else is a price or is dead. */
+const TEXT_KEYS = ["payee_name", "payee_bank", "payee_rib", "payee_iban", "payee_d17"] as const;
+
+const MAX = 120;
+
+export async function POST(req: NextRequest) {
   const gate = await requireAdmin(req);
   if (gate instanceof NextResponse) return gate;
   const { user } = gate;
 
-  const body = await req.json().catch(() => ({} as Record<string, unknown>));
+  const admin = getServiceSupabase();
+  if (!admin) return fail("server_misconfigured", 500);
+
+  const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
   const rows: { key: string; value: unknown; updated_by: string }[] = [];
 
-  // ── Listing fees ─────────────────────────────────────────────────────
-  // Auctions: free | fixed only (no price at posting time for a percent).
-  function listingFee(key: string, allowPercent: boolean) {
-    const v = body[key] as { mode?: unknown; value?: unknown } | undefined;
-    if (!v || typeof v !== "object") return;
-    let m = (["free", "fixed", "percent"] as const).includes(v.mode as Mode)
-      ? (v.mode as Mode) : "fixed";
-    if (m === "percent" && !allowPercent) m = "fixed";
-    rows.push({ key, value: { mode: m, value: cleanValue(m, v.value) }, updated_by: user!.id });
-  }
-  listingFee("fee_listing_auction", false);
-  listingFee("fee_listing_direct", true);
-
-  // ── Promo add-ons ────────────────────────────────────────────────────
-  for (const key of ["promo_home", "promo_top", "promo_banner"]) {
-    const v = body[key] as { enabled?: unknown; value?: unknown; duration_days?: unknown } | undefined;
-    if (!v || typeof v !== "object") continue;
-    rows.push({
-      key,
-      value: {
-        enabled: v.enabled === true,
-        value: cleanValue("fixed", v.value),
-        duration_days: cleanDurationDays(v.duration_days),
-      },
-      updated_by: user.id,
-    });
-  }
-
-  // ── Deposit ──────────────────────────────────────────────────────────
-  // One flat TND caution for every lot (0 = bidding is free). Modes and the
-  // "free until" date are gone: the caution must read the same on every
-  // listing, so there is nothing left to vary. `cleanValue("fixed", …)`
-  // clamps to a non-negative, 2-decimal number.
-  {
-    const v = body.deposit as { amount?: unknown } | undefined;
-    if (v && typeof v === "object") {
-      rows.push({
-        key: "deposit",
-        value: { amount: cleanValue("fixed", v.amount) },
-        updated_by: user.id,
-      });
-    }
-  }
-
-  // ── Anti-snipe (auction time extension), stored in minutes ───────────
-  let antiSnipeSec: { window: number; by: number } | null = null;
-  {
-    const v = body.auction_antisnipe as { window_min?: unknown; extend_min?: unknown } | undefined;
-    if (v && typeof v === "object") {
-      const clampMin = (raw: unknown) => {
-        const n = Math.floor(Number(raw));
-        return Number.isFinite(n) && n >= 0 ? Math.min(120, n) : 0;
-      };
-      const windowMin = clampMin(v.window_min);
-      const extendMin = clampMin(v.extend_min);
-      rows.push({
-        key: "auction_antisnipe",
-        value: { window_min: windowMin, extend_min: extendMin },
-        updated_by: user.id,
-      });
-      antiSnipeSec = { window: windowMin * 60, by: extendMin * 60 };
-    }
-  }
-
-  // ── Winner's final-payment deadline (days, 1..90) ────────────────────
-  {
-    const v = body.final_payment_days as { days?: unknown } | undefined;
-    if (v && typeof v === "object") {
-      const n = Math.round(Number(v.days));
-      const days = Number.isFinite(n) && n >= 1 ? Math.min(90, n) : 14;
-      rows.push({ key: "final_payment_days", value: { days }, updated_by: user.id });
-    }
-  }
-
-  // ── Payee text ───────────────────────────────────────────────────────
   for (const key of TEXT_KEYS) {
     if (!(key in body)) continue;
     const raw = body[key];
-    if (typeof raw !== "string") {
-      return NextResponse.json({ error: "invalid_text", key }, { status: 400 });
-    }
-    rows.push({ key, value: raw.trim().slice(0, 200), updated_by: user.id });
+    if (typeof raw !== "string") continue;
+    rows.push({ key, value: raw.trim().slice(0, MAX), updated_by: user.id });
   }
 
-  if (rows.length === 0) return NextResponse.json({ ok: true, updated: 0 });
-
-  const admin = getServiceSupabase();
-  if (!admin) {
-    return NextResponse.json({ error: "server_misconfigured" }, { status: 500 });
+  if (rows.length === 0) {
+    return NextResponse.json({ ok: true, updated: 0 });
   }
+
   const { error } = await admin.from("app_settings").upsert(rows, { onConflict: "key" });
   if (error) return fail("settings_update_failed", 500, error);
 
-  // Bust the cached app_settings read so the new fees/deposit/anti-snipe take
-  // effect immediately across the app instead of waiting out the 300s TTL.
-  // Next 16 requires the cache-life profile arg; "max" fully purges the tag.
-  revalidateTag(APP_SETTINGS_TAG, "max");
-
-  // Push the anti-snipe change onto auctions that are still open, so the
-  // setting governs live + scheduled lots immediately — not just ones
-  // created afterwards. (New auctions also read these values at creation.)
-  if (antiSnipeSec) {
-    await admin
-      .from("auctions")
-      .update({
-        extend_window_seconds: antiSnipeSec.window,
-        extend_by_seconds: antiSnipeSec.by,
-      })
-      .in("status", ["scheduled", "live", "extending"]);
-  }
-
-  logAction(req, user, "settings.update", { keys: rows.map((r) => r.key) });
+  logAction(req, user, "admin.settings.update", { keys: rows.map((r) => r.key) });
   return NextResponse.json({ ok: true, updated: rows.length });
 }

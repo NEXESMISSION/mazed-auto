@@ -1,6 +1,7 @@
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { HomeCurator, type CuratorRow } from "./HomeCurator";
+import { SiteTabs } from "@/components/admin/kit/SiteTabs";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -19,6 +20,7 @@ export default async function AdminHomePage() {
   if (!admin) {
     return (
       <div>
+        <SiteTabs />
         <AdminPageHeader eyebrow="Accueil" title="Mise en avant" description="Service indisponible." />
       </div>
     );

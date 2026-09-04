@@ -1,249 +1,448 @@
+import { Link } from "@/i18n/navigation";
 import { getServiceSupabase } from "@/lib/supabase/admin";
-import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
-import { ListingQueue, type QueueListing } from "./ListingQueue";
-import {
-  ManualListingForm,
-  type AdminCategory,
-  type AdminSeller,
-} from "./ManualListingForm";
-import { DIAGNOSTIC_SELECT, toDiagnostic, type Diagnostic } from "@/lib/diagnostics";
+import { AdminPager } from "@/components/admin/AdminPager";
+import { adminBtn } from "@/components/admin/AdminButton";
+import { FullBleed, Toolbar, EmptyState, QueueKeys, type Tab } from "@/components/admin/kit";
+import { QueueList, type QueueRow } from "./QueueList";
+import { ListingDetail, type PanelListing } from "./ListingDetail";
+import { DIAGNOSTIC_SELECT, toDiagnostic } from "@/lib/diagnostics";
+import { formatTND } from "@/lib/utils";
+import { Inbox, Plus } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 /**
- * Annonces — the v3 moderation queue.
+ * Annonces — the console's core screen.
  *
- * Ordered by what is waiting on US, not by date: listings in review first,
- * then paid-but-unpaid-for, then everything else. A queue sorted by creation
- * date makes the admin do the triage the page should have done.
+ * What changed from the first version: the moderation queue no longer renders
+ * a 421-line creation form above itself (it moved to `/admin/annonces/nouvelle`,
+ * where it does not compete with the list you came for), it pages server-side
+ * instead of pulling 120 rows with every photo attached, and the detail opens
+ * in a drawer keyed off `?panel=` rather than expanding the row and reflowing
+ * the list under the cursor.
+ *
+ * The tab order is the order the work matters in, not the order the enum is
+ * declared in: what a seller is waiting on first, what we are about to lose
+ * second, everything else after.
  */
+
+const PAGE_SIZE = 25;
+const EXPIRING_DAYS = 7;
+
+type TabKey =
+  | "pending_review" | "pending_payment" | "published"
+  | "expiring" | "expired" | "rejected" | "all";
+
+const TAB_LABEL: Record<TabKey, string> = {
+  pending_review: "À valider",
+  pending_payment: "Paiement attendu",
+  published: "En ligne",
+  expiring: "Expirent bientôt",
+  expired: "Expirées",
+  rejected: "Refusées",
+  all: "Toutes",
+};
+const TAB_ORDER: TabKey[] = [
+  "pending_review", "pending_payment", "published", "expiring", "expired", "rejected", "all",
+];
+
+/**
+ * A tab, expressed as data rather than as a function over the query builder.
+ *
+ * The obvious version — a generic `applyTab(query, tab)` — makes TypeScript
+ * re-infer PostgREST's builder type at every chained call and it gives up
+ * ("type instantiation is excessively deep"). Describing the filters and
+ * applying them in a plain loop keeps one definition shared by the counts and
+ * the list, so a tab can never count one thing and list another.
+ */
+type Filter =
+  | { op: "eq"; col: string; val: string }
+  | { op: "gte" | "lte"; col: string; val: string }
+  | { op: "notNull"; col: string };
+
+function tabFilters(tab: TabKey): Filter[] {
+  const now = new Date();
+  const soon = new Date(now.getTime() + EXPIRING_DAYS * 86_400_000);
+  switch (tab) {
+    case "expiring":
+      return [
+        { op: "eq", col: "status", val: "published" },
+        { op: "notNull", col: "expires_at" },
+        { op: "gte", col: "expires_at", val: now.toISOString() },
+        { op: "lte", col: "expires_at", val: soon.toISOString() },
+      ];
+    case "all":
+      return [];
+    default:
+      return [{ op: "eq", col: "status", val: tab }];
+  }
+}
+
+const LIST_SELECT = `
+  id, title, price, negotiable, price_on_request, governorate, status,
+  created_at, published_at, expires_at, featured_rank, featured_until,
+  seller_credit_id, fee_payment_id, fee_waived_by, contact_phone,
+  seller:profiles!listings_seller_id_fkey (full_name, phone),
+  category:categories (label_fr),
+  photos:listing_photos (storage_path, sort_order, is_cover)
+`;
+
 export default async function AdminAnnoncesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; q?: string; page?: string; a?: string }>;
 }) {
-  const { status } = await searchParams;
+  const sp = await searchParams;
   const admin = getServiceSupabase();
 
   if (!admin) {
-    return (
-      <div className="pb-16">
-        <AdminPageHeader eyebrow="Catalogue" title="Annonces" />
-        <p className="mt-6 text-[13px] text-muted">Service non configuré.</p>
-      </div>
-    );
+    return <p className="text-[13px] text-muted">Service non configuré.</p>;
   }
 
-  let query = admin
-    .from("listings")
-    .select(
-      `id, title, description, price, negotiable, governorate, status, condition,
-       contact_name, contact_phone, attributes, rejection_reason,
-       seller_credit_id, fee_payment_id, created_at, published_at, expires_at,
-       seller:profiles!listings_seller_id_fkey (id, full_name, phone),
-       category:categories (label_fr, kind),
-       photos:listing_photos (storage_path, sort_order, is_cover)`,
-    )
-    .order("created_at", { ascending: false })
-    .limit(120);
+  const tab: TabKey = TAB_ORDER.includes(sp.status as TabKey)
+    ? (sp.status as TabKey)
+    : "pending_review";
+  // PostgREST `or()` takes a comma-separated filter string, so the characters
+  // that delimit it have to leave the search term or they change the query.
+  const q = (sp.q ?? "").trim().slice(0, 60).replace(/[,()*%]/g, " ").trim();
+  const page = Math.max(1, Number(sp.page) || 1);
+  const from = (page - 1) * PAGE_SIZE;
 
-  if (status && status !== "all") query = query.eq("status", status);
+  const OR = `title.ilike.%${q}%,contact_phone.ilike.%${q}%,governorate.ilike.%${q}%`;
 
-  // Everything the "créer une annonce" panel needs: who we can publish for,
-  // and what a listing in each category is made of.
-  const [{ data }, profRes, catRes, attrRes] = await Promise.all([
-    query,
-    admin.from("profiles").select("id, full_name, phone").order("full_name"),
-    admin
-      .from("categories")
-      .select("id, parent_id, label_fr, kind, sort_order")
-      .eq("is_active", true)
-      .order("sort_order"),
-    admin
-      .from("category_attributes")
-      .select("category_id, field_key, label, data_type, options, unit, required, sort_order")
-      .order("sort_order"),
-  ]);
-
-  const sellers: AdminSeller[] = (profRes.data ?? []).map((p) => ({
-    id: p.id as string,
-    name: (p.full_name as string | null) ?? "Sans nom",
-    phone: (p.phone as string | null) ?? null,
-  }));
-
-  type CatRow = { id: string; parent_id: string | null; label_fr: string; kind: string };
-  type AttrRow = {
-    category_id: string; field_key: string; label: string; data_type: string;
-    options: { value: string; label: string }[] | null;
-    unit: string | null; required: boolean;
+  /**
+   * All seven tab counts in ONE round trip.
+   *
+   * The obvious implementation is seven head-only COUNTs, and that is what
+   * this was. Each one is a separate HTTP request to PostgREST at ~75 ms, so
+   * the tab strip alone cost more than the page it labels — on every click,
+   * every keystroke of the debounced search, and every filter change.
+   *
+   * Two columns for every matching row is a far smaller payload than it
+   * sounds (66 rows today; ~40 bytes each), and the counting is free. The
+   * ceiling is real but distant: past roughly 50 000 listings this should
+   * become a `group by status` RPC. It is one query either way — the point is
+   * that it stops being seven.
+   */
+  const countsQuery = () => {
+    let query = admin.from("listings").select("status, expires_at");
+    if (q) query = query.or(OR);
+    return query;
   };
-  const catRows = (catRes.data ?? []) as CatRow[];
-  const attrRows = (attrRes.data ?? []) as AttrRow[];
-  const parents = catRows.filter((c) => c.parent_id == null);
 
-  const formCategories: AdminCategory[] = catRows
-    .filter((c) => c.parent_id != null)
-    .map((c) => ({
-      id: c.id,
-      label: c.label_fr,
-      kind: c.kind === "part" ? "part" : "vehicle",
-      groupLabel: parents.find((p) => p.id === c.parent_id)?.label_fr ?? "Autres",
-      attributes: attrRows
-        .filter((a) => a.category_id === c.id)
-        .map((a) => ({
-          fieldKey: a.field_key,
-          label: a.label,
-          dataType: (["number", "text", "boolean", "select"] as const).includes(
-            a.data_type as "text",
-          )
-            ? (a.data_type as "number" | "text" | "boolean" | "select")
-            : "text",
-          options: a.options ?? null,
-          unit: a.unit,
-          required: a.required,
-        })),
-    }));
+  const listQuery = () => {
+    let query = admin.from("listings").select(LIST_SELECT, { count: "exact" });
+    for (const f of tabFilters(tab)) {
+      if (f.op === "eq") query = query.eq(f.col, f.val);
+      else if (f.op === "gte") query = query.gte(f.col, f.val);
+      else if (f.op === "lte") query = query.lte(f.col, f.val);
+      else query = query.not(f.col, "is", null);
+    }
+    if (q) query = query.or(OR);
+    return query.order("created_at", { ascending: false }).range(from, from + PAGE_SIZE - 1);
+  };
 
-  // Existing diagnostics for the listings on screen, drafts included — one read
-  // rather than one per row.
-  const listingIds = (data ?? []).map((r) => (r as { id: string }).id);
-  const diagnostics = new Map<string, Diagnostic>();
-  if (listingIds.length > 0) {
-    const { data: diagRows } = await admin
-      .from("vehicle_diagnostics")
-      .select(DIAGNOSTIC_SELECT)
-      .in("listing_id", listingIds);
-    for (const row of diagRows ?? []) {
-      const d = toDiagnostic(row as Parameters<typeof toDiagnostic>[0]);
-      const key = (row as { listing_id: string | null }).listing_id;
-      if (key) diagnostics.set(key, d);
+  const [countsRes, listRes] = await Promise.all([countsQuery(), listQuery()]);
+
+  // One pass over the statuses fills every tab. `expiring` is the only tab
+  // that is not just a status, so it is the only one that needs the date.
+  const now = Date.now();
+  const soonMs = now + EXPIRING_DAYS * 86_400_000;
+  const tally: Record<TabKey, number> = {
+    pending_review: 0, pending_payment: 0, published: 0,
+    expiring: 0, expired: 0, rejected: 0, all: 0,
+  };
+  for (const row of (countsRes.data ?? []) as { status: string; expires_at: string | null }[]) {
+    tally.all += 1;
+    if (row.status in tally) tally[row.status as TabKey] += 1;
+    if (row.status === "published" && row.expires_at) {
+      const t = new Date(row.expires_at).getTime();
+      if (t >= now && t <= soonMs) tally.expiring += 1;
     }
   }
 
-  type Row = {
-    id: string; title: string; description: string | null; price: number | null;
-    negotiable: boolean; governorate: string; status: string; condition: string | null;
-    contact_name: string | null; contact_phone: string | null;
-    attributes: Record<string, unknown> | null; rejection_reason: string | null;
-    seller_credit_id: string | null; fee_payment_id: string | null;
+  const tabs: Tab[] = TAB_ORDER.map((t) => ({
+    value: t,
+    label: TAB_LABEL[t],
+    count: tally[t],
+  }));
+
+  type ListRow = {
+    id: string; title: string; price: number | null; negotiable: boolean;
+    price_on_request: boolean; governorate: string; status: string;
     created_at: string; published_at: string | null; expires_at: string | null;
-    seller: { id: string; full_name: string | null; phone: string | null } | { id: string; full_name: string | null; phone: string | null }[] | null;
-    category: { label_fr: string; kind: string } | { label_fr: string; kind: string }[] | null;
-    photos: { storage_path: string; sort_order: number; is_cover?: boolean | null }[] | null;
+    featured_rank: number | null; featured_until: string | null;
+    seller_credit_id: string | null; fee_payment_id: string | null;
+    fee_waived_by: string | null; contact_phone: string | null;
+    seller: { full_name: string | null; phone: string | null } | null;
+    category: { label_fr: string } | null;
+    photos: { storage_path: string; sort_order: number; is_cover: boolean }[] | null;
   };
 
-  const one = <T,>(v: T | T[] | null): T | null => (Array.isArray(v) ? v[0] ?? null : v);
+  const rows = (listRes.data ?? []) as unknown as ListRow[];
+  const total = listRes.count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
-  // The fee payment behind each annonce, with its receipt.
-  //
-  // These were invisible: the payments console groups by auction_id and only
-  // covers deposit_lock / buy_now / final_payment (0081), so a seller could
-  // send a receipt for a listing fee and nobody would ever see it. The annonce
-  // queue is where an admin already is when deciding about that annonce, so
-  // the money belongs here.
-  const payIds = ((data ?? []) as Row[]).map((r) => r.fee_payment_id).filter(Boolean) as string[];
-  const payById = new Map<string, {
-    amount: number; status: string; receipts: string[]; uploadedAt: string | null;
-  }>();
-  if (payIds.length > 0) {
-    const { data: pays } = await admin
-      .from("payments")
-      .select("id, amount, status, receipt_url, receipt_urls, receipt_uploaded_at")
-      .in("id", payIds);
-    await Promise.all(
-      (pays ?? []).map(async (p) => {
-        const many = Array.isArray(p.receipt_urls) ? (p.receipt_urls as string[]) : [];
-        const one = typeof p.receipt_url === "string" && p.receipt_url ? [p.receipt_url] : [];
-        const paths = [...new Set([...many, ...one])];
+  const queueRows: QueueRow[] = rows.map((r) => ({
+    id: r.id,
+    title: r.title,
+    meta: `${r.seller?.full_name ?? "Sans nom"} · ${r.category?.label_fr ?? "—"} · ${r.governorate}`,
+    value: r.price_on_request
+      ? "Sur demande"
+      : r.price != null
+        ? `${formatTND(r.price, "fr")} TND`
+        : "—",
+    hint: ageLabel(r.status === "published" ? r.expires_at : r.created_at, r.status),
+    status: r.status,
+    // Flag what needs a human before it can move: an annonce with no phone can
+    // never be published, and one waiting on money is waiting on us to look.
+    flag:
+      r.status === "pending_review" && !r.contact_phone
+        ? "bad"
+        : r.status === "pending_payment"
+          ? "warn"
+          : undefined,
+  }));
 
-        // The receipts bucket is private, so the stored path renders as a
-        // black square on its own. Signed for an hour, the same way the
-        // deposits console does it.
-        const signed = await Promise.all(
-          paths.map(async (path) => {
-            if (path.startsWith("http")) return path;
-            const { data: sig } = await admin.storage
-              .from("receipts")
-              .createSignedUrl(path, 3600);
-            return sig?.signedUrl ?? null;
-          }),
-        );
+  // The open annonce. Fetched only when asked for — the list query has no
+  // business carrying every attribute of every row.
+  const openId = sp.a ?? null;
+  const detail = openId ? await loadPanel(admin, openId) : null;
 
-        payById.set(p.id as string, {
-          amount: Number(p.amount ?? 0),
-          status: (p.status as string) ?? "",
-          receipts: signed.filter((u): u is string => Boolean(u)),
-          uploadedAt: (p.receipt_uploaded_at as string | null) ?? null,
-        });
-      }),
-    );
-  }
-
-  const listings: QueueListing[] = ((data ?? []) as Row[]).map((r) => {
-    const seller = one(r.seller);
-    const category = one(r.category);
-    return {
-      id: r.id,
-      title: r.title,
-      description: r.description,
-      price: r.price != null ? Number(r.price) : null,
-      negotiable: r.negotiable,
-      governorate: r.governorate,
-      status: r.status,
-      condition: r.condition,
-      category: category?.label_fr ?? "—",
-      categoryKind: category?.kind ?? "other",
-      sellerName: seller?.full_name ?? "—",
-      sellerPhone: seller?.phone ?? null,
-      contactName: r.contact_name,
-      // The queue is the one screen that legitimately shows the number: the
-      // admin has to be able to call the seller about their own listing.
-      contactPhone: r.contact_phone,
-      attributes: (r.attributes ?? {}) as Record<string, unknown>,
-      rejectionReason: r.rejection_reason,
-      paidWith: r.seller_credit_id ? "credit" : r.fee_payment_id ? "payment" : "waived",
-      createdAt: r.created_at,
-      publishedAt: r.published_at,
-      expiresAt: r.expires_at,
-      diagnostic: diagnostics.get(r.id) ?? null,
-      payment: r.fee_payment_id ? payById.get(r.fee_payment_id) ?? null : null,
-      photos: (r.photos ?? [])
-        .slice()
-        .sort((a, b) => a.sort_order - b.sort_order)
-        .map((p) => p.storage_path),
-    };
-  });
-
-  const rank: Record<string, number> = {
-    pending_review: 0, pending_payment: 1, rejected: 2, draft: 3,
-    published: 4, expired: 5, sold: 6, archived: 7,
-  };
-  listings.sort((a, b) => (rank[a.status] ?? 9) - (rank[b.status] ?? 9));
-
-  const counts = listings.reduce<Record<string, number>>((acc, l) => {
-    acc[l.status] = (acc[l.status] ?? 0) + 1;
-    return acc;
-  }, {});
+  // Current filters, as a prefix a row can append its own id to.
+  const base = new URLSearchParams();
+  if (sp.status) base.set("status", sp.status);
+  if (sp.q) base.set("q", sp.q);
+  if (sp.page) base.set("page", sp.page);
+  const hrefBase = `/admin/annonces?${base.toString()}${base.toString() ? "&" : ""}`;
+  const listHref = `/admin/annonces${base.toString() ? `?${base.toString()}` : ""}`;
 
   return (
-    <div className="pb-16">
-      <AdminPageHeader
-        eyebrow="Catalogue"
-        title="Annonces"
-        description={
-          <>
-            La file de modération v3. Valider met l&apos;annonce en ligne pour la durée
-            achetée ; refuser la renvoie au vendeur avec un motif — et lui <strong>rend sa
-            publication</strong>, parce qu&apos;un refus n&apos;est pas une parution. Vous pouvez
-            aussi <strong>créer une annonce vous-même</strong> pour un vendeur, sans frais.
-          </>
-        }
-      />
-      <div className="mt-6 space-y-4">
-        <ManualListingForm sellers={sellers} categories={formCategories} />
-        <ListingQueue listings={listings} counts={counts} activeStatus={status ?? "all"} />
+    <FullBleed>
+      {/* One header line: what this is, what is filtered, what you can add. */}
+      <header className="flex h-12 shrink-0 items-center gap-4 border-b border-border px-4">
+        <h1 className="shrink-0 text-[13px] font-semibold tracking-tight text-foreground">
+          Annonces
+        </h1>
+        <Toolbar
+          tabs={tabs}
+          defaultTab="pending_review"
+          searchPlaceholder="Titre, téléphone, gouvernorat…"
+          resetParams={["page", "a"]}
+        />
+        <Link href="/admin/annonces/nouvelle" className={`${adminBtn("primary", "sm")} shrink-0`}>
+          <Plus className="size-3.5" strokeWidth={2.8} />
+          <span className="hidden sm:inline">Créer</span>
+        </Link>
+      </header>
+
+      <QueueKeys />
+
+      <div className="flex min-h-0 flex-1">
+        {/* Left pane — the queue. Below lg it is the whole screen until an
+            annonce is opened, because there is no room for two panes. */}
+        <div
+          className={`flex min-h-0 w-full flex-col border-border lg:w-[360px] lg:shrink-0 lg:border-e xl:w-[400px] ${
+            detail ? "hidden lg:flex" : "flex"
+          }`}
+        >
+          {queueRows.length === 0 ? (
+            <div className="p-5">
+              <EmptyState
+                Icon={Inbox}
+                tone={q ? "filtered" : "idle"}
+                title={q ? "Aucune annonce ne correspond" : `Rien dans « ${TAB_LABEL[tab]} »`}
+                hint={
+                  q
+                    ? "Essayez un autre terme, ou changez d'onglet."
+                    : "Rien n'attend de décision dans cette file."
+                }
+              />
+            </div>
+          ) : (
+            <QueueList rows={queueRows} selectedId={openId} hrefBase={hrefBase} />
+          )}
+
+          {totalPages > 1 && (
+            <div className="shrink-0 border-t border-border px-4 py-2">
+              <AdminPager page={page} totalPages={totalPages} />
+            </div>
+          )}
+        </div>
+
+        {/* Right pane — the annonce. */}
+        <div className={`min-w-0 flex-1 ${detail ? "flex" : "hidden lg:flex"}`}>
+          {detail ? (
+            <div className="w-full">
+              <ListingDetail listing={detail} backHref={listHref} />
+            </div>
+          ) : (
+            <div className="grid w-full place-items-center px-6">
+              <p className="max-w-xs text-center text-[12.5px] text-subtle">
+                Choisissez une annonce à gauche.
+                <br />
+                <span className="text-[11.5px]">j / k pour parcourir, Entrée pour ouvrir.</span>
+              </p>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </FullBleed>
   );
+}
+
+/** "il y a 3 j" for what is waiting, "expire dans 5 j" for what is live. */
+function ageLabel(iso: string | null, status: string): string {
+  if (!iso) return "—";
+  const diff = new Date(iso).getTime() - Date.now();
+  const days = Math.round(Math.abs(diff) / 86_400_000);
+  if (status === "published") {
+    if (diff < 0) return "expirée";
+    return days === 0 ? "aujourd'hui" : `dans ${days} j`;
+  }
+  if (days === 0) return "aujourd'hui";
+  return `il y a ${days} j`;
+}
+
+type Admin = NonNullable<ReturnType<typeof getServiceSupabase>>;
+
+/**
+ * Everything the drawer shows, for one annonce.
+ *
+ * The attribute labels are resolved here against `category_attributes` rather
+ * than shipped as raw jsonb keys: a moderator reading `boite: auto` has to
+ * translate it in their head, and `attributes` holds field keys, not labels.
+ */
+async function loadPanel(admin: Admin, id: string): Promise<PanelListing | null> {
+  const { data } = await admin
+    .from("listings")
+    .select(
+      `id, title, description, price, negotiable, price_on_request, condition,
+       governorate, delegation, status, rejection_reason, category_id,
+       contact_name, contact_phone, show_phone, attributes,
+       created_at, published_at, expires_at, featured_rank, featured_until,
+       view_count, contact_reveal_count, renewed_count,
+       seller_attestation_version, seller_attestation_at,
+       seller_credit_id, fee_payment_id, fee_waived_by,
+       seller:profiles!listings_seller_id_fkey (full_name, phone),
+       category:categories (label_fr, kind),
+       photos:listing_photos (storage_path, sort_order, is_cover)`,
+    )
+    .eq("id", id)
+    .maybeSingle();
+
+  if (!data) return null;
+  const r = data as unknown as {
+    id: string; title: string; description: string | null; price: number | null;
+    negotiable: boolean; price_on_request: boolean; condition: string | null;
+    governorate: string; delegation: string | null; status: string;
+    rejection_reason: string | null; category_id: string;
+    contact_name: string | null; contact_phone: string | null; show_phone: boolean;
+    attributes: Record<string, unknown>;
+    created_at: string; published_at: string | null; expires_at: string | null;
+    featured_rank: number | null; featured_until: string | null;
+    view_count: number; contact_reveal_count: number; renewed_count: number;
+    seller_attestation_version: string | null; seller_attestation_at: string | null;
+    seller_credit_id: string | null; fee_payment_id: string | null; fee_waived_by: string | null;
+    seller: { full_name: string | null; phone: string | null } | null;
+    category: { label_fr: string; kind: string } | null;
+    photos: { storage_path: string; sort_order: number; is_cover: boolean }[] | null;
+  };
+
+  const [attrRes, payRes, diagRes] = await Promise.all([
+    admin
+      .from("category_attributes")
+      .select("field_key, label, unit, options, sort_order")
+      .eq("category_id", r.category_id)
+      .order("sort_order"),
+    r.fee_payment_id
+      ? admin
+          .from("payments")
+          .select("amount, status, kind, receipt_uploaded_at")
+          .eq("id", r.fee_payment_id)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+    admin
+      .from("vehicle_diagnostics")
+      .select(DIAGNOSTIC_SELECT)
+      .eq("listing_id", r.id)
+      .maybeSingle(),
+  ]);
+
+  type Attr = {
+    field_key: string; label: string; unit: string | null;
+    options: { value: string; label: string }[] | null;
+  };
+  const defs = (attrRes.data ?? []) as Attr[];
+  const attributes = defs
+    .map((d) => {
+      const raw = r.attributes?.[d.field_key];
+      if (raw == null || raw === "") return null;
+      // Options carry their own display label; a select stored as `auto`
+      // should read "Automatique", not "auto".
+      const opt = d.options?.find((o) => o.value === String(raw));
+      const value = opt?.label ?? (typeof raw === "boolean" ? (raw ? "Oui" : "Non") : String(raw));
+      return { label: d.label, value: d.unit ? `${value} ${d.unit}` : value };
+    })
+    .filter((a): a is { label: string; value: string } => a !== null);
+
+  const pay = payRes.data as
+    | { amount: number; status: string; kind: string; receipt_uploaded_at: string | null }
+    | null;
+
+  const paidWith: PanelListing["paidWith"] = r.fee_waived_by
+    ? "waived"
+    : r.seller_credit_id
+      ? "credit"
+      : r.fee_payment_id
+        ? "payment"
+        : "none";
+
+  const photos = [...(r.photos ?? [])]
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .map((p) => ({ path: p.storage_path, isCover: p.is_cover }));
+
+  return {
+    id: r.id,
+    title: r.title,
+    description: r.description,
+    price: r.price,
+    negotiable: r.negotiable,
+    priceOnRequest: r.price_on_request,
+    condition: r.condition,
+    governorate: r.governorate,
+    delegation: r.delegation,
+    status: r.status,
+    rejectionReason: r.rejection_reason,
+    categoryLabel: r.category?.label_fr ?? "—",
+    categoryKind: r.category?.kind ?? "vehicle",
+    sellerName: r.seller?.full_name ?? "Sans nom",
+    sellerPhone: r.seller?.phone ?? null,
+    contactName: r.contact_name,
+    contactPhone: r.contact_phone,
+    showPhone: r.show_phone,
+    attributes,
+    photos,
+    createdAt: r.created_at,
+    publishedAt: r.published_at,
+    expiresAt: r.expires_at,
+    featuredUntil: r.featured_until,
+    viewCount: r.view_count,
+    contactRevealCount: r.contact_reveal_count,
+    renewedCount: r.renewed_count,
+    attestation: r.seller_attestation_version
+      ? { version: r.seller_attestation_version, at: r.seller_attestation_at }
+      : null,
+    payment: pay
+      ? {
+          amount: Number(pay.amount),
+          status: pay.status,
+          kind: pay.kind,
+          uploadedAt: pay.receipt_uploaded_at,
+        }
+      : null,
+    paidWith,
+    diagnostic: diagRes.data ? toDiagnostic(diagRes.data as Parameters<typeof toDiagnostic>[0]) : null,
+  };
 }
