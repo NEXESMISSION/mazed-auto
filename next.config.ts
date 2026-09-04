@@ -74,6 +74,21 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: "https", hostname: "*.supabase.co", pathname: "/storage/v1/object/public/**" },
     ],
+    /**
+     * Next refuses to fetch an upstream image whose hostname resolves to a
+     * private IP (SSRF protection), and it resolves with family:0 + ALL — so it
+     * sees AAAA records too. On a network that runs DNS64, supabase.co comes
+     * back as NAT64 addresses (64:ff9b::6812:260a — the well-known RFC 6052
+     * prefix with 104.18.38.10 embedded). Next classifies 64:ff9b::/96 as
+     * private, so EVERY remote image 400s with `"url" parameter is not allowed`
+     * and the whole site renders imageless. It is not a config or data problem:
+     * the URLs match remotePatterns and the objects return 200.
+     *
+     * Development only. In production the guard stays fully armed — Vercel does
+     * not do DNS64, and this is the flag that stops /_next/image being pointed
+     * at a metadata endpoint.
+     */
+    dangerouslyAllowLocalIP: process.env.NODE_ENV !== "production",
   },
   async headers() {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
