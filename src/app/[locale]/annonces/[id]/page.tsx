@@ -189,193 +189,239 @@ export default async function AnnoncePage({
     },
   };
 
+  // ── The pieces that appear in both layouts ───────────────────────────────
+  //
+  // A phone reads this page as one column. A desktop should not: at 1280px the
+  // single 768px column left half the screen empty and pushed the price and the
+  // seller's number below the fold — the one thing the buyer came for. So the
+  // desktop puts them in a rail that follows you down the page, the way every
+  // classifieds site of any size does.
+  //
+  // Written once here and placed twice rather than duplicated by hand. Only one
+  // copy is ever visible (the other is display:none at that width), so the
+  // second never reaches the screen.
+  const priceBlock = (
+    <div>
+      <div className="batta-tabular gradient-gold-text text-[34px] font-extrabold leading-none">
+        {l.price_on_request || l.price == null
+          ? "Prix sur demande"
+          : `${formatTND(Number(l.price), locale)} `}
+        {!l.price_on_request && l.price != null && (
+          <span className="text-[13px] font-bold uppercase tracking-[0.16em] text-gold/80">TND</span>
+        )}
+      </div>
+      {l.negotiable && !l.price_on_request && (
+        <p className="mt-1 text-[12px] text-muted">Prix négociable</p>
+      )}
+    </div>
+  );
+
+  const sellerCard = (
+    <section className="rounded-2xl border border-border bg-surface p-4">
+      <div className="flex items-center gap-3">
+        <span className="size-11 shrink-0 overflow-hidden rounded-full bg-surface-2 ring-1 ring-border">
+          {avatarUrl(sellerProfile?.avatar_path as string | null) ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={avatarUrl(sellerProfile?.avatar_path as string | null) as string}
+              alt=""
+              className="size-full object-cover"
+            />
+          ) : (
+            <span className="grid size-full place-items-center text-[15px] font-extrabold text-muted">
+              {(l.contact_name ?? "?").trim().charAt(0).toUpperCase() || "?"}
+            </span>
+          )}
+        </span>
+
+        <div className="min-w-0 flex-1">
+          <div className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-muted">
+            Vendeur
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="truncate text-[14.5px] font-bold text-foreground">
+              {l.contact_name ?? "Particulier"}
+            </span>
+            {/* A tick, not a second "Vendeur vérifié" chip — that claim is
+                already made at the top of the page. Here it answers the
+                question being asked at this exact moment: do I call? */}
+            {badge === true && (
+              <BadgeCheck
+                className="size-4 shrink-0 text-gold"
+                strokeWidth={2.4}
+                aria-label="Vendeur vérifié"
+              />
+            )}
+          </div>
+        </div>
+
+        <FavoriteButton listingId={l.id} initialSaved={saved} loggedIn={user !== null} />
+      </div>
+
+      <div className="mt-4">
+        <ContactReveal listingId={l.id} revealCount={l.contact_reveal_count} />
+      </div>
+    </section>
+  );
+
+  const safetyNote = (
+    <section className="flex items-start gap-2.5 rounded-2xl bg-surface-2 p-4 ring-1 ring-border">
+      <ShieldAlert className="mt-0.5 size-4 shrink-0 text-muted" />
+      <p className="text-[11.5px] leading-relaxed text-muted">
+        Mazed publie et vérifie les annonces, mais n&apos;intervient pas dans la
+        transaction : le paiement et la remise se font directement entre vous et le
+        vendeur. Ne versez jamais d&apos;acompte avant d&apos;avoir vu le véhicule ou la
+        pièce et ses papiers.
+      </p>
+    </section>
+  );
+
   return (
-    <main className="mx-auto max-w-3xl pb-16">
+    // max-w-3xl up to lg so tablets keep a readable measure; the wider frame
+    // only appears where there are two columns to put in it.
+    <main className="mx-auto max-w-3xl pb-16 lg:max-w-6xl">
       <script
         type="application/ld+json"
-        // eslint-disable-next-line react/no-danger
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      {photos.length > 0 && (
-        <div className="overflow-hidden lg:mt-6 lg:rounded-2xl lg:border lg:border-border">
-          <HeroCarousel photos={photos} alt={l.title} />
-        </div>
-      )}
 
-      <div className="px-4 lg:px-0">
-        {/* ── Heading ── */}
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-2.5 py-1 text-[11px] font-bold text-muted ring-1 ring-border">
-            {isPart ? <Wrench className="size-3" /> : <Car className="size-3" />}
-            {category?.label_fr ?? "Annonce"}
-          </span>
-          {l.condition && (
-            <span className="rounded-full bg-surface-2 px-2.5 py-1 text-[11px] font-bold text-muted ring-1 ring-border">
-              {CONDITION_LABEL[l.condition] ?? l.condition}
-            </span>
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-8 lg:px-6 lg:pt-6">
+        {/* ── Left: the thing being sold ── */}
+        <div className="min-w-0">
+          {photos.length > 0 && (
+            <div className="overflow-hidden lg:rounded-2xl lg:border lg:border-border">
+              <HeroCarousel photos={photos} alt={l.title} />
+            </div>
           )}
-          {badge === true && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-gold-faint px-2.5 py-1 text-[11px] font-extrabold text-gold ring-1 ring-gold-soft">
-              <BadgeCheck className="size-3.5" strokeWidth={2.4} /> Vendeur vérifié
-            </span>
-          )}
-          {/* Two different claims, deliberately distinct: the badge above is
-              about the SELLER, this one is about THIS vehicle. */}
-          <DiagnosticBadge diagnostic={diagnostic} />
-        </div>
 
-        <h1 className="mt-2 text-[24px] font-extrabold leading-tight tracking-tight">{l.title}</h1>
-
-        <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px] text-muted">
-          <span className="inline-flex items-center gap-1">
-            <MapPin className="size-3.5" /> {l.governorate}
-            {l.delegation ? ` · ${l.delegation}` : ""}
-          </span>
-          {l.published_at && (
-            <span className="inline-flex items-center gap-1">
-              <Clock className="size-3.5" />
-              publiée le {new Date(l.published_at).toLocaleDateString("fr-FR")}
-            </span>
-          )}
-        </div>
-
-        <div className="batta-tabular gradient-gold-text mt-3 text-[34px] font-extrabold leading-none">
-          {l.price_on_request || l.price == null
-            ? "Prix sur demande"
-            : `${formatTND(Number(l.price), locale)} `}
-          {!l.price_on_request && l.price != null && (
-            <span className="text-[13px] font-bold uppercase tracking-[0.16em] text-gold/80">TND</span>
-          )}
-        </div>
-        {l.negotiable && !l.price_on_request && (
-          <p className="mt-1 text-[12px] text-muted">Prix négociable</p>
-        )}
-
-        {/* ── Contact ── */}
-        {/* Who you are calling, and the button that calls them.
-
-            The card used to spend a whole row on the heart alone, which left a
-            band of empty space across the top; the seller's name was printed
-            twice, once under the avatar and again under the button; and the
-            panel was gold-tinted with a gold border around a gold button, so
-            the one thing meant to stand out had nothing to stand out from.
-            Neutral surface, one row for the identity with the heart at its
-            end, and the gold spent only on the action. */}
-        <section className="mt-5 rounded-2xl border border-border bg-surface p-4">
-          <div className="flex items-center gap-3">
-            <span className="size-11 shrink-0 overflow-hidden rounded-full bg-surface-2 ring-1 ring-border">
-              {avatarUrl(sellerProfile?.avatar_path as string | null) ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img
-                  src={avatarUrl(sellerProfile?.avatar_path as string | null) as string}
-                  alt=""
-                  className="size-full object-cover"
-                />
-              ) : (
-                <span className="grid size-full place-items-center text-[15px] font-extrabold text-muted">
-                  {(l.contact_name ?? "?").trim().charAt(0).toUpperCase() || "?"}
+          <div className="px-4 lg:px-0">
+            {/* ── Heading ── */}
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-2.5 py-1 text-[11px] font-bold text-muted ring-1 ring-border">
+                {isPart ? <Wrench className="size-3" /> : <Car className="size-3" />}
+                {category?.label_fr ?? "Annonce"}
+              </span>
+              {l.condition && (
+                <span className="rounded-full bg-surface-2 px-2.5 py-1 text-[11px] font-bold text-muted ring-1 ring-border">
+                  {CONDITION_LABEL[l.condition] ?? l.condition}
                 </span>
               )}
-            </span>
-
-            <div className="min-w-0 flex-1">
-              <div className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-muted">
-                Vendeur
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="truncate text-[14.5px] font-bold text-foreground">
-                  {l.contact_name ?? "Particulier"}
+              {badge === true && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-gold-faint px-2.5 py-1 text-[11px] font-extrabold text-gold ring-1 ring-gold-soft">
+                  <BadgeCheck className="size-3.5" strokeWidth={2.4} /> Vendeur vérifié
                 </span>
-                {/* A tick, not a second "Vendeur vérifié" chip — that claim is
-                    already made at the top of the page. Here it answers the
-                    question being asked at this exact moment: do I call? */}
-                {badge === true && (
-                  <BadgeCheck
-                    className="size-4 shrink-0 text-gold"
-                    strokeWidth={2.4}
-                    aria-label="Vendeur vérifié"
-                  />
-                )}
-              </div>
+              )}
+              {/* Two different claims, deliberately distinct: the badge above is
+                  about the SELLER, this one is about THIS vehicle. */}
+              <DiagnosticBadge diagnostic={diagnostic} />
             </div>
 
-            <FavoriteButton listingId={l.id} initialSaved={saved} loggedIn={user !== null} />
+            {/* break-words: a title can arrive as one unbroken string. */}
+            <h1 className="mt-2 break-words text-[24px] font-extrabold leading-tight tracking-tight lg:text-[28px]">
+              {l.title}
+            </h1>
+
+            <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px] text-muted">
+              <span className="inline-flex items-center gap-1">
+                <MapPin className="size-3.5" /> {l.governorate}
+                {l.delegation ? ` · ${l.delegation}` : ""}
+              </span>
+              {l.published_at && (
+                <span className="inline-flex items-center gap-1">
+                  <Clock className="size-3.5" />
+                  publiée le {new Date(l.published_at).toLocaleDateString("fr-FR")}
+                </span>
+              )}
+            </div>
+
+            {/* On a phone the price and the seller sit here, in reading order.
+                On a desktop they are in the rail instead. */}
+            <div className="mt-3 lg:hidden">{priceBlock}</div>
+            <div className="mt-5 lg:hidden">{sellerCard}</div>
+
+            {/* ── Specs ── */}
+            {specs.length > 0 && (
+              <section className="mt-6">
+                <h2 className="batta-eyebrow">Caractéristiques</h2>
+                <dl className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {specs.map((s) => (
+                    <div
+                      key={s.label}
+                      className="min-w-0 rounded-xl bg-surface-2 p-3 ring-1 ring-border"
+                    >
+                      <dt className="text-[10.5px] uppercase tracking-[0.1em] text-muted">
+                        {s.label}
+                      </dt>
+                      <dd className="mt-0.5 break-words text-[13.5px] font-bold text-foreground">
+                        {s.value}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </section>
+            )}
+
+            {/* ── Fitments: the reason a part is findable ── */}
+            {isPart && (l.fitments ?? []).length > 0 && (
+              <section className="mt-6">
+                <h2 className="batta-eyebrow">Compatible avec</h2>
+                <ul className="mt-2 flex flex-wrap gap-2">
+                  {(l.fitments ?? []).map((f, i) => (
+                    <li
+                      key={i}
+                      className="rounded-full bg-surface-2 px-3 py-1.5 text-[12.5px] font-semibold text-foreground ring-1 ring-border"
+                    >
+                      {f.make}
+                      {f.model ? ` ${f.model}` : ""}
+                      {f.year_from || f.year_to
+                        ? ` · ${f.year_from ?? "…"}–${f.year_to ?? "…"}`
+                        : ""}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            {l.description && (
+              <section className="mt-6">
+                <h2 className="batta-eyebrow">Description</h2>
+                {/* Sellers paste links, and a URL is one unbreakable word. With
+                    nothing to break it, the paragraph set its own minimum width
+                    and pushed the whole page sideways. `anywhere` breaks it and,
+                    unlike `break-word`, also stops it inflating the column's
+                    min-content width inside the grid. */}
+                <p className="mt-2 whitespace-pre-line text-[14px] leading-relaxed text-foreground/85 [overflow-wrap:anywhere]">
+                  {l.description}
+                </p>
+              </section>
+            )}
+
+            {/* Our own inspection — renders nothing when we haven't done one. */}
+            <div className="mt-6">
+              <DiagnosticSheet listingId={l.id} diagnostic={diagnostic} />
+            </div>
+
+            <div className="mt-8 lg:hidden">{safetyNote}</div>
+
+            <div className="mt-6">
+              <Link
+                href={"/annonces" as never}
+                className="text-[13px] font-bold text-gold hover:underline"
+              >
+                ← Toutes les annonces
+              </Link>
+            </div>
           </div>
-
-          <div className="mt-4">
-            <ContactReveal listingId={l.id} revealCount={l.contact_reveal_count} />
-          </div>
-        </section>
-
-        {/* ── Specs ── */}
-        {specs.length > 0 && (
-          <section className="mt-6">
-            <h2 className="batta-eyebrow">Caractéristiques</h2>
-            <dl className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {specs.map((s) => (
-                <div key={s.label} className="rounded-xl bg-surface-2 p-3 ring-1 ring-border">
-                  <dt className="text-[10.5px] uppercase tracking-[0.1em] text-muted">{s.label}</dt>
-                  <dd className="mt-0.5 text-[13.5px] font-bold text-foreground">{s.value}</dd>
-                </div>
-              ))}
-            </dl>
-          </section>
-        )}
-
-        {/* ── Fitments: the reason a part is findable ── */}
-        {isPart && (l.fitments ?? []).length > 0 && (
-          <section className="mt-6">
-            <h2 className="batta-eyebrow">Compatible avec</h2>
-            <ul className="mt-2 flex flex-wrap gap-2">
-              {(l.fitments ?? []).map((f, i) => (
-                <li
-                  key={i}
-                  className="rounded-full bg-surface-2 px-3 py-1.5 text-[12.5px] font-semibold text-foreground ring-1 ring-border"
-                >
-                  {f.make}
-                  {f.model ? ` ${f.model}` : ""}
-                  {f.year_from || f.year_to
-                    ? ` · ${f.year_from ?? "…"}–${f.year_to ?? "…"}`
-                    : ""}
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-
-        {l.description && (
-          <section className="mt-6">
-            <h2 className="batta-eyebrow">Description</h2>
-            <p className="mt-2 whitespace-pre-line text-[14px] leading-relaxed text-foreground/85">
-              {l.description}
-            </p>
-          </section>
-        )}
-
-        {/* Our own inspection — renders nothing when we haven't done one. */}
-        <div className="mt-6">
-          <DiagnosticSheet listingId={l.id} diagnostic={diagnostic} />
         </div>
 
-        {/* ── The honest disclaimer ── */}
-        <section className="mt-8 flex items-start gap-2.5 rounded-2xl bg-surface-2 p-4 ring-1 ring-border">
-          <ShieldAlert className="mt-0.5 size-4 shrink-0 text-muted" />
-          <p className="text-[11.5px] leading-relaxed text-muted">
-            Mazed publie et vérifie les annonces, mais n&apos;intervient pas dans la
-            transaction : le paiement et la remise se font directement entre vous et le
-            vendeur. Ne versez jamais d&apos;acompte avant d&apos;avoir vu le véhicule ou la
-            pièce et ses papiers.
-          </p>
-        </section>
-
-        <div className="mt-6">
-          <Link
-            href={"/annonces" as never}
-            className="text-[13px] font-bold text-gold hover:underline"
-          >
-            ← Toutes les annonces
-          </Link>
-        </div>
+        {/* ── Right: what you do about it. It follows you down the page because
+               the decision to call is made while reading the specs, not after
+               scrolling back up to find the button. ── */}
+        <aside className="hidden lg:sticky lg:top-24 lg:block">
+          {priceBlock}
+          <div className="mt-4">{sellerCard}</div>
+          <div className="mt-4">{safetyNote}</div>
+        </aside>
       </div>
     </main>
   );
