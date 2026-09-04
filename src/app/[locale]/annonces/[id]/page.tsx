@@ -252,10 +252,16 @@ export default async function AnnoncePage({
         )}
 
         {/* ── Contact ── */}
-        <section className="mt-5 rounded-2xl border border-gold-soft bg-gold-faint/30 p-4">
-          <div className="mb-3 flex justify-end">
-            <FavoriteButton listingId={l.id} initialSaved={saved} loggedIn={user !== null} />
-          </div>
+        {/* Who you are calling, and the button that calls them.
+
+            The card used to spend a whole row on the heart alone, which left a
+            band of empty space across the top; the seller's name was printed
+            twice, once under the avatar and again under the button; and the
+            panel was gold-tinted with a gold border around a gold button, so
+            the one thing meant to stand out had nothing to stand out from.
+            Neutral surface, one row for the identity with the heart at its
+            end, and the gold spent only on the action. */}
+        <section className="mt-5 rounded-2xl border border-border bg-surface p-4">
           <div className="flex items-center gap-3">
             <span className="size-11 shrink-0 overflow-hidden rounded-full bg-surface-2 ring-1 ring-border">
               {avatarUrl(sellerProfile?.avatar_path as string | null) ? (
@@ -271,22 +277,33 @@ export default async function AnnoncePage({
                 </span>
               )}
             </span>
-            <div className="min-w-0">
+
+            <div className="min-w-0 flex-1">
               <div className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-muted">
                 Vendeur
               </div>
-              <div className="truncate text-[14px] font-bold text-foreground">
-                {l.contact_name ?? "Particulier"}
+              <div className="flex items-center gap-1.5">
+                <span className="truncate text-[14.5px] font-bold text-foreground">
+                  {l.contact_name ?? "Particulier"}
+                </span>
+                {/* A tick, not a second "Vendeur vérifié" chip — that claim is
+                    already made at the top of the page. Here it answers the
+                    question being asked at this exact moment: do I call? */}
+                {badge === true && (
+                  <BadgeCheck
+                    className="size-4 shrink-0 text-gold"
+                    strokeWidth={2.4}
+                    aria-label="Vendeur vérifié"
+                  />
+                )}
               </div>
             </div>
+
+            <FavoriteButton listingId={l.id} initialSaved={saved} loggedIn={user !== null} />
           </div>
 
-          <div className="mt-3">
-            <ContactReveal
-              listingId={l.id}
-              sellerName={l.contact_name}
-              revealCount={l.contact_reveal_count}
-            />
+          <div className="mt-4">
+            <ContactReveal listingId={l.id} revealCount={l.contact_reveal_count} />
           </div>
         </section>
 
