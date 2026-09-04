@@ -5,7 +5,7 @@ import { compressImage } from "@/lib/imageCompress";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { useToast } from "@/components/ui/Toast";
 import {
-  ArrowLeft, ArrowRight, Camera, CircleAlert, Loader2, RotateCw, Star, Trash2,
+  ArrowLeft, ArrowRight, Camera, CircleAlert, Loader2, RotateCw, Star, Trash2, X,
 } from "lucide-react";
 
 /**
@@ -69,6 +69,22 @@ export function PhotoUploader({
   const [pending, setPending] = useState<Pending[]>([]);
   const [dragOver, setDragOver] = useState(false);
 
+  // One AbortController per photo in flight, so a single photo can be dropped
+  // without touching the others. `cancelled` is what tells the rest of the
+  // pipeline that an abort was deliberate: the send must not report an error,
+  // and the queue must skip a photo cancelled while it was still waiting its
+  // turn behind another.
+  const controllers = useRef(new Map<string, AbortController>());
+  const cancelled = useRef(new Set<string>());
+
+  const cancel = useCallback((id: string) => {
+    cancelled.current.add(id);
+    controllers.current.get(id)?.abort();
+    controllers.current.delete(id);
+    setPending((p) => p.filter((x) => x.id !== id));
+    URL.revokeObjectURL(id);
+  }, []);
+
   // Report the in-flight count from an EFFECT, not from inside the state
   // updater. It used to be done in the `setPending` callback, which React is
   // free to run during render — so telling the parent from there was a
@@ -91,6 +107,26 @@ export function PhotoUploader({
       const mark = (patch: Partial<Pending>) =>
         setPending((p) => p.map((x) => (x.id === tempId ? { ...x, ...patch } : x)));
 
+      // One controller for the whole send, aborted either by the seller or by
+      // a timeout. Built by hand rather than with AbortSignal.any(), which is
+      // too new for some of the phones this is used on.
+      const ac = new AbortController();
+      controllers.current.set(tempId, ac);
+      let timedOut = false;
+      let timer: number | undefined;
+      const arm = (ms: number) => {
+        timer = window.setTimeout(() => { timedOut = true; ac.abort(); }, ms);
+      };
+      const disarm = () => {
+        if (timer !== undefined) window.clearTimeout(timer);
+        timer = undefined;
+      };
+      const done = () => {
+        disarm();
+        controllers.current.delete(tempId);
+        cancelled.current.delete(tempId);
+      };
+
       let out = file;
       try {
         out = await compressImage(file, { maxEdge: 1600, quality: 0.8, format: "webp" });
@@ -102,12 +138,14 @@ export function PhotoUploader({
 
       const ext = out.name.split(".").pop()?.toLowerCase() || "webp";
       try {
+        arm(20_000);
         const urlRes = await fetch("/api/annonces/photo-url", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ exts: [ext] }),
-          signal: AbortSignal.timeout(20_000),
+          signal: ac.signal,
         });
+        disarm();
         if (!urlRes.ok) {
           mark({ phase: "failed", error: "Le serveur a refusé l'envoi." });
           return null;
@@ -127,26 +165,35 @@ export function PhotoUploader({
         form.append("cacheControl", "3600");
         form.append("", out);
 
+        arm(timeoutFor(out.size));
         const put = await fetch(target.signedUrl, {
           method: "PUT",
           body: form,
-          signal: AbortSignal.timeout(timeoutFor(out.size)),
+          signal: ac.signal,
         });
+        disarm();
         if (!put.ok) {
           mark({ phase: "failed", error: `Envoi refusé (${put.status}).` });
           return null;
         }
 
+        // Cancelled after the bytes landed: the seller asked for it gone, so
+        // it does not join the annonce even though the upload succeeded.
+        if (cancelled.current.has(tempId)) return null;
+
         setPending((p) => p.filter((x) => x.id !== tempId));
         URL.revokeObjectURL(tempId);
         return target.path;
-      } catch (e) {
-        const slow = e instanceof DOMException && e.name === "TimeoutError";
+      } catch {
+        // A deliberate cancel is not a failure — the tile is already gone.
+        if (cancelled.current.has(tempId)) return null;
         mark({
           phase: "failed",
-          error: slow ? "Connexion trop lente." : "Échec de l'envoi.",
+          error: timedOut ? "Connexion trop lente." : "Échec de l'envoi.",
         });
         return null;
+      } finally {
+        done();
       }
     },
     [],
@@ -180,6 +227,9 @@ export function PhotoUploader({
       // One at a time: a phone pushing six photos at once on 3G finishes them
       // all late instead of the first one early.
       for (const m of marks) {
+        // Cancelled while it was still queued behind another photo: never send
+        // it at all.
+        if (cancelled.current.delete(m.id)) continue;
         const path = await send(m.file, m.id);
         if (path) onChange((prev) => [...prev, { path }]);
       }
@@ -359,12 +409,25 @@ export function PhotoUploader({
                   </button>
                 </div>
               ) : (
-                <div className="absolute inset-0 grid place-items-center gap-1">
-                  <Loader2 className="size-5 animate-spin text-gold" />
-                  <span className="text-[9px] font-bold uppercase tracking-wider text-white/80">
-                    {p.phase === "preparing" ? "Préparation" : "Envoi"}
-                  </span>
-                </div>
+                <>
+                  <div className="absolute inset-0 grid place-items-center gap-1">
+                    <Loader2 className="size-5 animate-spin text-gold" />
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-white/80">
+                      {p.phase === "preparing" ? "Préparation" : "Envoi"}
+                    </span>
+                  </div>
+                  {/* Waiting for an upload you no longer want is not a state
+                      anyone should be stuck in. This aborts the request. */}
+                  <button
+                    type="button"
+                    onClick={() => cancel(p.id)}
+                    aria-label="Annuler l'envoi de cette photo"
+                    title="Annuler"
+                    className="absolute end-1 top-1 grid size-6 place-items-center rounded-full bg-black/75 text-white ring-1 ring-white/25 transition hover:bg-[var(--accent-deep)]"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                </>
               )}
             </li>
           ))}

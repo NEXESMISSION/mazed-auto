@@ -547,8 +547,14 @@ export function CheckoutClient({
     return (
       // Centred: this screen is one card and nothing else, and left at the top
       // of a tall phone it sat above a half-screen of empty black.
-      <div className="grid min-h-screen place-items-center bg-background">
-        <main className="mx-auto w-full max-w-md px-4 py-12">
+      //
+      // min-h-dvh, not min-h-screen: 100vh on a phone is the viewport WITHOUT
+      // the browser's own bars, so a box that tall overflows the part you can
+      // actually see and its centre lands below the middle of the screen —
+      // which reads as "still not centred". dvh is the height that is really
+      // there.
+      <div className="grid min-h-dvh place-items-center bg-background">
+        <main className="mx-auto w-full max-w-md px-4 py-10">
           <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-[0_12px_40px_rgba(0,0,0,0.35)]">
             <div className="flex flex-col items-center bg-gradient-to-b from-emerald-500/10 to-transparent px-6 pt-8 pb-6 text-center">
               <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-500/30">

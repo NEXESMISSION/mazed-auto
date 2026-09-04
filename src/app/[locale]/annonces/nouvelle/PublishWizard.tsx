@@ -994,17 +994,54 @@ export function PublishWizard({
             top to bottom and submitted at the end; a panel parked beside it is
             something you have to notice, and the first report about it was
             simply not being able to find the button at all. */}
-        <div className="mt-4 rounded-2xl border border-border bg-surface p-4 sm:p-5">
-          <span className="text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-muted">
-            Avant de publier
-          </span>
+        <div className="mt-4 overflow-hidden rounded-2xl border border-border bg-surface">
+          {/* A footer, laid out as one: the label and where the seller stands
+              on the left, the action on the right, and — only when there is
+              something to fix — the list of it under a rule.
 
-          {missing.length === 0 ? (
-            <p className="mt-2 inline-flex items-center gap-2 rounded-xl bg-gold-faint px-3 py-2 text-[13px] font-bold text-gold ring-1 ring-gold-soft">
-              <Check className="size-4" /> Tout est prêt.
-            </p>
-          ) : (
-            <ul className="mt-2 grid gap-1 sm:grid-cols-2">
+              "Tout est prêt" used to be an `inline-flex` pill, which is
+              inline-LEVEL, so it ran up beside the "AVANT DE PUBLIER" label as
+              if it had landed there by accident, above a button stretched the
+              whole width of the column. */}
+          <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-3 p-4 sm:p-5">
+            <div className="min-w-0">
+              <span className="block text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-muted">
+                Avant de publier
+              </span>
+              {missing.length === 0 ? (
+                <p className="mt-1 flex items-center gap-1.5 text-[14.5px] font-extrabold text-foreground">
+                  <Check className="size-4 shrink-0 text-gold" strokeWidth={3} />
+                  Tout est prêt.
+                </p>
+              ) : (
+                <p className="mt-1 text-[14.5px] font-extrabold text-foreground">
+                  {missing.length} élément{missing.length > 1 ? "s" : ""} à compléter
+                </p>
+              )}
+            </div>
+
+            {/* lg only: below it the floating bar carries this button, and two
+                "Publier" buttons on one screen is a question, not a
+                convenience. Sized to its label rather than stretched — a
+                700px-wide button is not more clickable, only louder. */}
+            <button
+              type="button"
+              onClick={publishNow}
+              disabled={busy || photosUploading > 0}
+              className="batta-btn-luxe tap-target hidden h-11 shrink-0 items-center justify-center gap-1.5 px-7 text-[13.5px] disabled:opacity-60 lg:inline-flex"
+            >
+              {busy ? (
+                <><Loader2 className="size-4 animate-spin" /> Un instant…</>
+              ) : photosUploading > 0 ? (
+                <><Loader2 className="size-4 animate-spin" /> Envoi des photos…</>
+              ) : (
+                <>Publier mon annonce</>
+              )}
+            </button>
+          </div>
+
+          {missing.length > 0 && (
+            <ul className="grid border-t border-border p-2 sm:grid-cols-2 sm:p-3">
               {missing.map((m) => (
                 <li key={m.label}>
                   <button
@@ -1029,26 +1066,6 @@ export function PublishWizard({
               ))}
             </ul>
           )}
-
-          {/* The fee is stated in the section just above, and on phones the
-              floating bar already carries it — so this row is the action
-              alone. Hidden under lg because that floating bar owns the button
-              there; two "Publier" buttons on one screen is a question, not a
-              convenience. */}
-          <button
-            type="button"
-            onClick={publishNow}
-            disabled={busy || photosUploading > 0}
-            className="batta-btn-luxe tap-target mt-4 hidden h-12 w-full items-center justify-center gap-1.5 text-[14px] disabled:opacity-60 lg:inline-flex"
-          >
-            {busy ? (
-              <><Loader2 className="size-4 animate-spin" /> Un instant…</>
-            ) : photosUploading > 0 ? (
-              <><Loader2 className="size-4 animate-spin" /> Envoi des photos…</>
-            ) : (
-              <>Publier mon annonce</>
-            )}
-          </button>
         </div>
 
         </div>
