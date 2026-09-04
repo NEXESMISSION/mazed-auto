@@ -120,13 +120,53 @@ export async function AnnonceFeaturedMobile() {
         <FeaturedCard row={featured} locale={locale} compact />
       </div>
       {runners.length > 0 && (
-        <div className="mt-3 grid gap-3">
+        <ul className="mt-3 space-y-2.5">
           {runners.map((r) => (
-            <RunnerCard key={r.id} row={r} locale={locale} />
+            <MobileRow key={r.id} row={r} locale={locale} />
           ))}
-        </div>
+        </ul>
       )}
     </section>
+  );
+}
+
+/**
+ * The runner-up, as a ROW rather than a poster.
+ *
+ * RunnerCard writes the title over the photo. That reads fine in a narrow
+ * desktop column, where the image is small and dark; full-width on a phone it
+ * became white text on a blurred dashboard — the photo won and the words lost.
+ * A thumbnail beside solid-background text is the pattern every mobile
+ * marketplace settled on, for this reason.
+ */
+function MobileRow({ row, locale }: { row: Row; locale: string }) {
+  const cat = one(row.category);
+  const img = cover(row)!;
+  return (
+    <li>
+      <Link
+        href={`/annonces/${row.id}` as never}
+        className="flex items-stretch gap-3 overflow-hidden rounded-2xl border border-border bg-surface transition active:scale-[0.995]"
+      >
+        <span className="relative size-[92px] shrink-0 bg-black">
+          <ListingImage path={img} alt="" sizes="92px" />
+        </span>
+        <span className="flex min-w-0 flex-1 flex-col justify-center py-2.5 pe-3">
+          <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-muted">
+            {cat?.label_fr ?? ""}
+          </span>
+          <span className="mt-0.5 line-clamp-2 text-[13.5px] font-bold leading-snug text-foreground">
+            {row.title}
+          </span>
+          <span className="batta-tabular mt-1 text-[14px] font-extrabold text-gold">
+            {priceLabel(row, locale)}
+          </span>
+          <span className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-muted">
+            <MapPin className="size-3" /> {row.governorate}
+          </span>
+        </span>
+      </Link>
+    </li>
   );
 }
 
