@@ -15,7 +15,7 @@ import { StatsBar } from "@/components/landing/StatsBar";
 import { CarRail } from "@/components/landing/CarRail";
 import { AnnonceRail } from "@/components/landing/AnnonceRail";
 import { AUCTIONS_VISIBLE } from "@/lib/features";
-import { AnnonceHeroMobile } from "@/components/landing/AnnonceHero";
+import { AnnonceHeroMobile, AnnonceFeaturedMobile } from "@/components/landing/AnnonceHero";
 import { PropertyCard } from "@/components/property/PropertyCard";
 import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
 import { formatTND } from "@/lib/utils";
@@ -324,6 +324,11 @@ export default async function LandingPage({
           home opened straight onto a rail of cards. AnnonceHeroMobile is the
           same carousel rebuilt on the annonces catalog. */}
       <AnnonceHeroMobile />
+
+      {/* À la une, on phones. The mobile page went from the cover straight to
+          rails of small cards; the one annonce with its specs and price — the
+          card that actually sells the page — only existed on desktop. */}
+      <AnnonceFeaturedMobile />
 
       {/* LIVE TICKER — streamed in its own Suspense boundary so the page
           shell + hero paint immediately instead of blocking on this query. */}

@@ -95,6 +95,41 @@ export async function AnnonceHeroMobile() {
   );
 }
 
+/**
+ * The same À-la-une block, for phones.
+ *
+ * The mobile page had the cycling cover and then went straight to rails of
+ * small cards — one featured annonce with its specs and price never appeared,
+ * even though that is the card that sells the page. This is the desktop
+ * spread's featured card plus two runners, stacked instead of side by side.
+ */
+export async function AnnonceFeaturedMobile() {
+  const locale = await getLocale();
+  const rows = await featuredAnnonces();
+  if (rows.length === 0) return null;
+
+  const featured = rows[0];
+  const runners = rows.slice(1, 3);
+
+  return (
+    <section className="mt-8 px-4 lg:hidden">
+      <span className="batta-eyebrow inline-flex items-center gap-1.5">
+        <Sparkles className="size-3" /> À la une
+      </span>
+      <div className="mt-2.5">
+        <FeaturedCard row={featured} locale={locale} compact />
+      </div>
+      {runners.length > 0 && (
+        <div className="mt-3 grid gap-3">
+          {runners.map((r) => (
+            <RunnerCard key={r.id} row={r} locale={locale} />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
 /** The desktop magazine spread. */
 export async function AnnonceHero() {
   const locale = await getLocale();
@@ -209,7 +244,9 @@ export async function AnnonceHero() {
   );
 }
 
-function FeaturedCard({ row, locale }: { row: Row; locale: string }) {
+function FeaturedCard({
+  row, locale, compact = false,
+}: { row: Row; locale: string; compact?: boolean }) {
   const { headline, year, color, mileage } = spec(row);
   const cat = one(row.category);
   const img = cover(row)!;
@@ -217,36 +254,53 @@ function FeaturedCard({ row, locale }: { row: Row; locale: string }) {
   return (
     <Link
       href={`/annonces/${row.id}` as never}
-      className="group relative block aspect-[16/10] overflow-hidden rounded-[28px] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.65)] ring-1 ring-white/10 transition-all hover:ring-[var(--gold)]"
+      className={
+        "group relative block overflow-hidden ring-1 ring-white/10 transition-all hover:ring-[var(--gold)] " +
+        (compact
+          ? "aspect-[4/3] rounded-2xl shadow-[0_16px_40px_-16px_rgba(0,0,0,0.7)]"
+          : "aspect-[16/10] rounded-[28px] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.65)]")
+      }
     >
       <ListingImage
         path={img}
         alt={headline}
-        sizes="(min-width:1280px) 55vw, 60vw"
+        sizes={compact ? "100vw" : "(min-width:1280px) 55vw, 60vw"}
         priority
         className="transition-transform duration-[900ms] ease-out group-hover:scale-[1.04]"
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/55 to-black/15" />
       <div className="absolute inset-0 bg-gradient-to-r from-black/35 via-transparent to-transparent" />
 
-      <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-4 p-6">
-        <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-[var(--gold)] px-3 text-[11px] font-extrabold uppercase tracking-wider text-black shadow-[var(--shadow-gold)]">
-          <Sparkles className="h-3.5 w-3.5" />
+      <div className={"absolute inset-x-0 top-0 flex items-start justify-between gap-3 " + (compact ? "p-3" : "p-6")}>
+        <span className={
+          "inline-flex items-center gap-1.5 rounded-full bg-[var(--gold)] font-extrabold uppercase tracking-wider text-black shadow-[var(--shadow-gold)] " +
+          (compact ? "h-7 px-2.5 text-[10px]" : "h-8 px-3 text-[11px]")
+        }>
+          <Sparkles className={compact ? "size-3" : "h-3.5 w-3.5"} />
           À la une
         </span>
         {cat && (
-          <span className="inline-flex h-9 items-center rounded-full bg-black/60 px-3.5 text-[12px] font-bold text-white ring-1 ring-white/15 backdrop-blur-md">
+          <span className={
+            "inline-flex items-center rounded-full bg-black/60 font-bold text-white ring-1 ring-white/15 backdrop-blur-md " +
+            (compact ? "h-7 px-2.5 text-[10.5px]" : "h-9 px-3.5 text-[12px]")
+          }>
             {cat.label_fr}
           </span>
         )}
       </div>
 
-      <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-6 p-7 xl:p-8">
-        <div className="min-w-0">
-          <h2 className="text-[34px] font-black leading-[1.02] tracking-tight text-white xl:text-[42px]">
+      <div className={"absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 " + (compact ? "p-3.5" : "gap-6 p-7 xl:p-8")}>
+        <div className="min-w-0 flex-1">
+          <h2 className={
+            "font-black leading-[1.02] tracking-tight text-white " +
+            (compact ? "text-[22px]" : "text-[34px] xl:text-[42px]")
+          }>
             {headline}
           </h2>
-          <div className="mt-2 flex items-center gap-3 text-base font-light text-white/75 xl:text-lg">
+          <div className={
+            "mt-1.5 flex items-center font-light text-white/75 " +
+            (compact ? "flex-wrap gap-x-2 gap-y-1 text-[12px]" : "mt-2 gap-3 text-base xl:text-lg")
+          }>
             {year && <span>{year}</span>}
             {color && (
               <>
@@ -257,22 +311,37 @@ function FeaturedCard({ row, locale }: { row: Row; locale: string }) {
             {mileage > 0 && (
               <>
                 <span className="h-1 w-1 rounded-full bg-white/40" />
-                <span className="inline-flex items-center gap-1.5">
-                  <Gauge className="h-4 w-4" />
+                <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                  <Gauge className={compact ? "size-3.5" : "h-4 w-4"} />
                   {Intl.NumberFormat("fr-FR").format(mileage)} km
+                </span>
+              </>
+            )}
+            {compact && (
+              <>
+                <span className="h-1 w-1 rounded-full bg-white/40" />
+                <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                  <MapPin className="size-3.5 text-[var(--gold)]" />
+                  {row.governorate}
                 </span>
               </>
             )}
           </div>
 
-          <div className="mt-5 flex items-end gap-7">
+          <div className={compact ? "mt-3 flex items-end gap-4" : "mt-5 flex items-end gap-7"}>
             <div>
-              <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/60">
+              <div className={
+                "font-bold uppercase tracking-[0.18em] text-white/60 " +
+                (compact ? "text-[9px]" : "text-[10px]")
+              }>
                 Prix
               </div>
-              <div className="gradient-gold-text mt-1 text-4xl font-black leading-none tabular-nums xl:text-[44px]">
+              <div className={
+                "gradient-gold-text mt-1 font-black leading-none tabular-nums " +
+                (compact ? "text-[26px]" : "text-4xl xl:text-[44px]")
+              }>
                 {row.price_on_request || row.price == null ? (
-                  <span className="text-3xl xl:text-4xl">Sur demande</span>
+                  <span className={compact ? "text-[20px]" : "text-3xl xl:text-4xl"}>Sur demande</span>
                 ) : (
                   <>
                     {formatTND(Number(row.price), locale)}
@@ -283,18 +352,24 @@ function FeaturedCard({ row, locale }: { row: Row; locale: string }) {
                 )}
               </div>
             </div>
-            <div className="hidden items-center gap-5 pb-1.5 text-sm text-white/85 xl:flex">
+            <div className={
+              "items-center gap-5 pb-1.5 text-white/85 " +
+              (compact ? "hidden" : "hidden text-sm xl:flex")
+            }>
               <span className="inline-flex items-center gap-1.5">
-                <MapPin className="h-4 w-4 text-[var(--gold)]" />
+                <MapPin className={compact ? "size-3.5 text-[var(--gold)]" : "h-4 w-4 text-[var(--gold)]"} />
                 {row.governorate}
               </span>
             </div>
           </div>
         </div>
 
-        <span className="inline-flex h-12 shrink-0 items-center gap-2 rounded-full bg-[var(--gold)] px-6 text-sm font-extrabold text-black shadow-[var(--shadow-gold)] transition-transform group-hover:scale-[1.04] active:scale-[0.99]">
+        <span className={
+          "inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[var(--gold)] font-extrabold text-black shadow-[var(--shadow-gold)] transition-transform group-hover:scale-[1.04] active:scale-[0.99] " +
+          (compact ? "h-10 px-4 text-[12.5px]" : "h-12 gap-2 px-6 text-sm")
+        }>
           Voir l&apos;annonce
-          <ArrowUpRight className="h-4 w-4" />
+          <ArrowUpRight className={compact ? "size-3.5" : "h-4 w-4"} />
         </span>
       </div>
     </Link>

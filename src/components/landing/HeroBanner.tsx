@@ -296,14 +296,29 @@ function PhotoSlide({
       href={slide.href as `/${string}`}
       aria-hidden={!active}
       tabIndex={active ? 0 : -1}
-      className="group relative block aspect-[16/11] w-full shrink-0 overflow-hidden bg-surface-2 lg:aspect-[4/1]"
+      className="group relative block aspect-[16/11] w-full shrink-0 overflow-hidden bg-black lg:aspect-[21/8]"
       style={{ minWidth: "100%" }}
       draggable={false}
     >
-      {showImage ? (
+      {/* Gold only while there is nothing to show. Once the photo is there it
+          gets its own blurred copy behind it, so a portrait shot fills the
+          frame without being cropped to a strip. */}
+      {!showImage && (
         <div className="absolute inset-0 bg-gradient-to-br from-[var(--gold-deep)] via-[var(--gold)] to-[var(--gold-deep)]" />
-      ) : (
-        <div className="absolute inset-0 bg-gradient-to-br from-[var(--gold-deep)] via-[var(--gold)] to-[var(--gold-deep)]" />
+      )}
+
+      {showImage && (
+        <Image
+          src={slide.imageUrl!}
+          alt=""
+          aria-hidden
+          fill
+          sizes="64px"
+          quality={50}
+          loading="eager"
+          className="scale-125 object-cover blur-2xl brightness-[0.5]"
+          draggable={false}
+        />
       )}
 
       {showImage && (
@@ -321,12 +336,12 @@ function PhotoSlide({
           loading="eager"
           onError={() => setImageBroken(true)}
           unoptimized={isStaticSeedPath(slide.imageUrl!)}
-          className="object-cover transition-transform duration-[6000ms] ease-out group-hover:scale-105"
+          className="object-contain transition-transform duration-[6000ms] ease-out group-hover:scale-[1.02]"
           draggable={false}
         />
       )}
 
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-black/15" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
 
       <div
         className={`absolute inset-0 z-[1] flex flex-col justify-end p-5 lg:p-8 ${
