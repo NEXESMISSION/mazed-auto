@@ -16,6 +16,28 @@ reason is recorded.
 
 Append here as phases land. Newest first.
 
+### The publish summary now closes the form · 2026-09-04
+
+It lived in a rail down the right of the wizard. That drew two reports in a
+row — first that the publish button was impossible to find ("i have been
+lokgin for it ???"), then that the panel belongs at the bottom. Both are the
+same complaint: a form is read top to bottom and submitted at the end, and a
+panel parked beside it is something you have to notice.
+
+The rail is gone; the wizard is a single centred column (`max-w-3xl`). After
+"Contact et publication" comes **Avant de publier**: the checklist of what is
+still missing, each line a button that jumps to its field, then the publish
+action.
+
+The fee is not repeated there — the review section states it directly above,
+and on phones the floating bar carries it. That bar keeps the button under
+`lg`, so the panel's own button is `lg`-only; two "Publier" buttons on one
+screen is a question, not a convenience.
+
+Verified in a clean worktree at the commit: `pnpm install --frozen-lockfile`,
+`pnpm run build` green, eslint 0 errors, 199 unit tests pass. (The nine RPC
+suites still need a local `supabase start` and skip themselves here.)
+
 ### Nothing had actually deployed since 2 September · **FIXED** 2026-09-04
 
 Eight production deploys in a row failed on Vercel, each in about five
