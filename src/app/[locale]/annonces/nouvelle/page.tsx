@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getLocale } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
-import { PublishWizard, type WizardCategory } from "./PublishWizard";
+import { PublishWizard, type InitialDraft, type WizardCategory } from "./PublishWizard";
 import {
   PRODUCT_SELECT,
   resolveListingFee,
@@ -37,7 +37,7 @@ export default async function NewListingPage() {
     );
   }
 
-  const [catRes, prodRes, creditRes, profRes] = await Promise.all([
+  const [catRes, prodRes, creditRes, profRes, draftRes] = await Promise.all([
     admin
       .from("categories")
       .select("id, parent_id, slug, label_fr, kind, sort_order")
@@ -50,6 +50,22 @@ export default async function NewListingPage() {
       .eq("seller_id", user.id)
       .eq("status", "active"),
     admin.from("profiles").select("full_name, phone").eq("id", user.id).maybeSingle(),
+    // The draft this seller left behind, if any. Publishing a car takes long
+    // enough that a phone call, a dead battery or a mistaken back gesture will
+    // interrupt it — and until now that threw the whole form away.
+    admin
+      .from("listings")
+      .select(
+        `id, category_id, title, description, price, price_on_request, negotiable,
+         condition, governorate, attributes, contact_name, contact_phone, updated_at,
+         photos:listing_photos (storage_path, sort_order),
+         fitments:listing_fitments (make, model, year_from, year_to)`,
+      )
+      .eq("seller_id", user.id)
+      .eq("status", "draft")
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   type CatRow = {
@@ -100,6 +116,7 @@ export default async function NewListingPage() {
       creditsLeft={creditsLeft}
       defaultContactName={(profRes.data?.full_name as string | null) ?? ""}
       defaultContactPhone={(profRes.data?.phone as string | null) ?? ""}
+      initialDraft={(draftRes.data as unknown as InitialDraft | null) ?? null}
       locale={locale}
     />
   );
