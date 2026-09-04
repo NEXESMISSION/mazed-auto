@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { compressImage } from "@/lib/imageCompress";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { useToast } from "@/components/ui/Toast";
@@ -69,16 +69,19 @@ export function PhotoUploader({
   const [pending, setPending] = useState<Pending[]>([]);
   const [dragOver, setDragOver] = useState(false);
 
-  const setPendingTracked = useCallback(
-    (fn: (p: Pending[]) => Pending[]) => {
-      setPending((prev) => {
-        const next = fn(prev);
-        onPendingChange?.(next.filter((x) => x.phase !== "failed").length);
-        return next;
-      });
-    },
-    [onPendingChange],
-  );
+  // Report the in-flight count from an EFFECT, not from inside the state
+  // updater. It used to be done in the `setPending` callback, which React is
+  // free to run during render — so telling the parent from there was a
+  // setState during another component's render, and React said so:
+  //
+  //   Cannot update a component (PublishWizard) while rendering a different
+  //   component (PhotoUploader)
+  //
+  // Updater functions have to be pure. This one only computes the next list;
+  // the parent hears about it afterwards.
+  useEffect(() => {
+    onPendingChange?.(pending.filter((x) => x.phase !== "failed").length);
+  }, [pending, onPendingChange]);
 
   const room = max - photos.length - pending.length;
 
@@ -86,7 +89,7 @@ export function PhotoUploader({
   const send = useCallback(
     async (file: File, tempId: string) => {
       const mark = (patch: Partial<Pending>) =>
-        setPendingTracked((p) => p.map((x) => (x.id === tempId ? { ...x, ...patch } : x)));
+        setPending((p) => p.map((x) => (x.id === tempId ? { ...x, ...patch } : x)));
 
       let out = file;
       try {
@@ -134,7 +137,7 @@ export function PhotoUploader({
           return null;
         }
 
-        setPendingTracked((p) => p.filter((x) => x.id !== tempId));
+        setPending((p) => p.filter((x) => x.id !== tempId));
         URL.revokeObjectURL(tempId);
         return target.path;
       } catch (e) {
@@ -146,7 +149,7 @@ export function PhotoUploader({
         return null;
       }
     },
-    [setPendingTracked],
+    [],
   );
 
   const accept = useCallback(
@@ -172,7 +175,7 @@ export function PhotoUploader({
         const url = URL.createObjectURL(f);
         return { id: url, file: f, preview: url, phase: "preparing" as const };
       });
-      setPendingTracked((p) => [...p, ...marks]);
+      setPending((p) => [...p, ...marks]);
 
       // One at a time: a phone pushing six photos at once on 3G finishes them
       // all late instead of the first one early.
@@ -181,13 +184,13 @@ export function PhotoUploader({
         if (path) onChange((prev) => [...prev, { path }]);
       }
     },
-    [disabled, room, max, toast, send, onChange, setPendingTracked],
+    [disabled, room, max, toast, send, onChange, ],
   );
 
   function retry(id: string) {
     const item = pending.find((p) => p.id === id);
     if (!item) return;
-    setPendingTracked((p) =>
+    setPending((p) =>
       p.map((x) => (x.id === id ? { ...x, phase: "preparing", error: undefined } : x)),
     );
     void (async () => {
@@ -347,7 +350,7 @@ export function PhotoUploader({
                   <button
                     type="button"
                     onClick={() => {
-                      setPendingTracked((s) => s.filter((x) => x.id !== p.id));
+                      setPending((s) => s.filter((x) => x.id !== p.id));
                       URL.revokeObjectURL(p.id);
                     }}
                     className="text-[9.5px] font-bold text-white/70 underline"
