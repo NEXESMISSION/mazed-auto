@@ -117,6 +117,9 @@ export function NotificationBell() {
   // rebuilding the poll interval AND the realtime subscription below (both
   // keyed on `refresh`) each time.
   const itemsLenRef = useRef(0);
+  // The live list, for callbacks registered once (the cross-instance read
+  // listener) that must not close over a stale `items`.
+  const itemsRef = useRef<NotificationRow[]>([]);
   /**
    * Bumped by every local read/delete. `refresh` captures it before it fetches
    * and drops the response if it changed meanwhile.
@@ -144,7 +147,8 @@ export function NotificationBell() {
   // Keep the latest loaded count in a ref so `refresh` can stay dependency-free.
   useEffect(() => {
     itemsLenRef.current = items.length;
-  }, [items.length]);
+    itemsRef.current = items;
+  }, [items]);
 
   // Refresh the head of the list. Re-fetches as many rows as are already
   // shown (so a poll doesn't shrink an expanded list back to one page),
@@ -389,42 +393,76 @@ export function NotificationBell() {
         return;
       }
       const ids = new Set(detail.ids);
-      setItems((arr) => {
-        let cleared = 0;
-        const next = arr.map((n) => {
-          if (!ids.has(n.id) || n.read_at) return n;
-          cleared += 1;
-          return { ...n, read_at: stamp };
-        });
-        if (cleared > 0) setUnread((u) => Math.max(0, u - cleared));
-        return next;
-      });
+      // Count first, from the ref — a state updater must be pure. Calling
+      // setUnread from inside setItems' updater made React warn ("state update
+      // on a component that hasn't mounted yet") and would double-decrement
+      // whenever React re-ran the updater.
+      const cleared = itemsRef.current.filter((n) => ids.has(n.id) && !n.read_at).length;
+      setItems((arr) =>
+        arr.map((n) => (ids.has(n.id) && !n.read_at ? { ...n, read_at: stamp } : n)),
+      );
+      if (cleared > 0) setUnread((u) => Math.max(0, u - cleared));
     }
     window.addEventListener(READ_EVENT, onRead);
     return () => window.removeEventListener(READ_EVENT, onRead);
   }, []);
 
+  /**
+   * PATCH the read state, once, then once more.
+   *
+   * The old code fired this and swallowed every failure, so a request that
+   * timed out (a cold serverless start, a dropped connection, a dev-mode route
+   * compile that outran the 10s abort) left the badge locally cleared and the
+   * database untouched — the count was back on the next load, which is exactly
+   * what "marking read doesn't work" looks like from outside.
+   *
+   * The second attempt gets a longer budget, because the usual cause of the
+   * first failure is a cold path that is now warm.
+   */
+  async function patchRead(body: { all: true } | { ids: string[] }): Promise<boolean> {
+    for (const timeout of [10000, 20000]) {
+      try {
+        const res = await fetch("/api/notifications", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+          signal: AbortSignal.timeout(timeout),
+        });
+        if (res.ok) return true;
+        // 4xx will not be fixed by retrying.
+        if (res.status < 500) return false;
+      } catch {
+        // timeout or network error — fall through to the retry
+      }
+    }
+    return false;
+  }
+
   async function markAllRead() {
     if (unread === 0) return;
+    // Snapshot BEFORE the optimistic clear: if the server never records the
+    // read, the badge has to come back rather than lie about it.
+    const snapshot = { items, unread };
     genRef.current += 1;
     setUnread(0);
     setItems((arr) =>
       arr.map((n) => ({ ...n, read_at: n.read_at ?? new Date().toISOString() })),
     );
-    try {
-      await fetch("/api/notifications", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ all: true }),
-        signal: AbortSignal.timeout(10000),
-      });
+
+    if (await patchRead({ all: true })) {
       broadcastRead({ ids: "all" });
-    } catch {
-      // best-effort
+      return;
     }
+
+    // Invalidate anything in flight, then put the truth back on screen.
+    genRef.current += 1;
+    setItems(snapshot.items);
+    setUnread(snapshot.unread);
+    toast("Impossible de marquer les notifications comme lues. Vérifiez la connexion.", "error");
   }
 
   async function markOneRead(id: string) {
+    const snapshot = { items, unread };
     genRef.current += 1;
     setItems((arr) =>
       arr.map((n) =>
@@ -432,17 +470,14 @@ export function NotificationBell() {
       ),
     );
     setUnread((n) => Math.max(0, n - 1));
-    try {
-      await fetch("/api/notifications", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: [id] }),
-        signal: AbortSignal.timeout(10000),
-      });
+
+    if (await patchRead({ ids: [id] })) {
       broadcastRead({ ids: [id] });
-    } catch {
-      // best-effort
+      return;
     }
+    genRef.current += 1;
+    setItems(snapshot.items);
+    setUnread(snapshot.unread);
   }
 
   // Delete = optimistic → roll back ONLY if the server confirmed 0 rows

@@ -73,9 +73,16 @@ export async function PATCH(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const now = new Date().toISOString();
 
+  // `.eq("user_id")` as well as RLS, matching the DELETE sibling below.
+  // RLS alone is correct but not cheap: without the column filter the planner
+  // has to consider every unread row in the table and apply the policy to each,
+  // instead of going straight down notifications_user_unread_idx
+  // (user_id, created_at DESC) WHERE read_at IS NULL. Defence in depth, and a
+  // tenth of the cost.
   let update = supabase
     .from("notifications")
     .update({ read_at: now })
+    .eq("user_id", user.id)
     .is("read_at", null);
 
   if (Array.isArray(body.ids) && body.ids.length > 0) {
@@ -92,9 +99,11 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "bad_request" }, { status: 400 });
   }
 
-  const { error } = await update;
+  // Report the row count so a silent zero-row write is visible in the client
+  // and in logs rather than looking like success.
+  const { data, error } = await update.select("id");
   if (error) return NextResponse.json({ error: "update_failed" }, { status: 500 });
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, updatedCount: data?.length ?? 0 });
 }
 
 /**
