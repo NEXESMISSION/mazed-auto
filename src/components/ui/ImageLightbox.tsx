@@ -148,7 +148,7 @@ function Viewer({ src, alt, onClose }: { src: string; alt: string; onClose: () =
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-sm"
+      className="fixed inset-0 z-[120] flex items-center justify-center bg-black/90 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       aria-label="Image en plein écran"

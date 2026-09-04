@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
+import { Overlay, LAYER } from "@/components/ui/Overlay";
 import { CAR_MAKES, FUELS, TRANSMISSIONS, modelsFor } from "@/lib/vehicles";
 import {
   ArrowDownWideNarrow, Car, Check, LayoutGrid, Search, SlidersHorizontal, Wrench, X,
@@ -447,14 +448,11 @@ export function CatalogToolbar({ categories, governorates, current, total }: Pro
       )}
 
       {/* ── Mobile sheet ── */}
+      {/* Centred like every other layer in the app, instead of a panel
+          anchored to the bottom edge — see components/ui/Overlay. */}
       {sheet && (
-        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Filtres">
-          <button
-            aria-label="Fermer les filtres"
-            onClick={() => setSheet(false)}
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-          />
-          <div className="absolute inset-x-0 bottom-0 top-14 flex flex-col rounded-t-3xl border-t border-border bg-background">
+        <Overlay open onClose={() => setSheet(false)} z={LAYER.modal} className="max-w-lg p-0 lg:hidden">
+          <div className="flex max-h-[calc(100dvh-4rem)] flex-col">
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
               <span className="text-[15px] font-extrabold">Filtres</span>
               <button
@@ -485,7 +483,7 @@ export function CatalogToolbar({ categories, governorates, current, total }: Pro
               </button>
             </div>
           </div>
-        </div>
+        </Overlay>
       )}
     </>
   );

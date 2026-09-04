@@ -52,7 +52,7 @@ export function DocumentViewerModal({
       role="dialog"
       aria-modal="true"
       aria-label={title}
-      className="fixed inset-0 z-[100] flex flex-col bg-black"
+      className="fixed inset-0 z-[120] flex flex-col bg-black/95 backdrop-blur-sm"
     >
       <header className="flex items-center gap-2 border-b border-white/10 bg-black/85 px-3 py-2 backdrop-blur">
         <FileText className="size-4 shrink-0 text-white/70" strokeWidth={2.2} />
