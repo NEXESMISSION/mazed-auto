@@ -65,10 +65,12 @@ export function HeroMarquee({ cards }: { cards: MarqueeCard[] }) {
 
   return (
     <div className="relative overflow-hidden py-1">
-      {/* The rows run edge to edge; these fade them out rather than letting a
-          card be sliced off mid-air at the boundary. */}
-      <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-24 bg-gradient-to-r from-background to-transparent" />
-      <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-24 bg-gradient-to-l from-background to-transparent" />
+      {/* The rows run edge to edge; these dissolve them rather than letting a
+          card be sliced off mid-air at the boundary. Wider than one card, so a
+          card fades out over its whole width instead of being half-dimmed and
+          half-bright — which read as a broken card rather than as a fade. */}
+      <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-[280px] bg-gradient-to-r from-[#0a0a0a] via-[#0a0a0a]/85 to-transparent" />
+      <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-[280px] bg-gradient-to-l from-[#0a0a0a] via-[#0a0a0a]/85 to-transparent" />
 
       <ul className="batta-marquee">
         {top.map((c, i) => (
@@ -97,29 +99,42 @@ function Card({ card, clone = false }: { card: MarqueeCard; clone?: boolean }) {
       <Link
         href={`/annonces/${card.id}` as never}
         tabIndex={clone ? -1 : undefined}
-        className="group block overflow-hidden rounded-2xl bg-white/[0.05] ring-1 ring-white/10 backdrop-blur-sm transition hover:ring-[var(--gold)]"
+        className="group block overflow-hidden rounded-2xl bg-[#141414] shadow-[0_10px_30px_-12px_rgba(0,0,0,0.9)] ring-1 ring-white/[0.07] transition duration-300 hover:ring-[var(--gold-soft)]"
       >
-        <div className="relative aspect-[4/3] bg-black/40">
+        {/* `cover`, not the site-wide `contain`.
+
+            Everywhere a buyer is studying a car the photo is shown whole, over
+            a blurred copy of itself, because cropping loses what they came to
+            see. Here that was the wrong call and it looked it: sellers shoot
+            both ways, so a row of contained photos is a row of portraits
+            floating in smeared orange and grey bands, no two cards alike. This
+            is a cover — decoration, one click from the real thing — so every
+            card fills its frame identically and the row reads as one surface.
+            Nothing is lost: the photo is shown whole on the annonce itself. */}
+        <div className="relative aspect-[4/3] overflow-hidden bg-[#0f0f0f]">
           <ListingImage
             path={card.imagePath}
             alt={clone ? "" : card.title}
             sizes="248px"
-            className="transition duration-500 group-hover:scale-[1.03]"
+            fit="cover"
+            className="transition duration-500 group-hover:scale-[1.04]"
           />
         </div>
-        <div className="p-2.5">
-          <span className="text-[9.5px] font-extrabold uppercase tracking-[0.14em] text-[var(--gold)]">
+        <div className="p-3">
+          <span className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-[var(--gold)]">
             {card.categoryLabel}
           </span>
-          <h3 className="mt-0.5 truncate text-[13px] font-bold leading-snug text-white">
+          <h3 className="mt-1 truncate text-[13px] font-bold leading-snug text-white">
             {card.title}
           </h3>
-          <p className="batta-tabular mt-1 text-[13.5px] font-extrabold text-white">
-            {card.priceLabel}
-          </p>
-          <p className="mt-0.5 inline-flex items-center gap-1 text-[10.5px] text-white/55">
-            <MapPin className="size-3" /> {card.governorate}
-          </p>
+          <div className="mt-1.5 flex items-baseline justify-between gap-2">
+            <span className="batta-tabular text-[14px] font-extrabold text-white">
+              {card.priceLabel}
+            </span>
+            <span className="inline-flex shrink-0 items-center gap-0.5 text-[10px] text-white/45">
+              <MapPin className="size-2.5" /> {card.governorate}
+            </span>
+          </div>
         </div>
       </Link>
     </li>
