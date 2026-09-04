@@ -1,8 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "crons": [
-    { "path": "/api/cron/listings/expire", "schedule": "0 3 * * *" },
-    { "path": "/api/cron/notify-sms", "schedule": "*/15 * * * *" },
-    { "path": "/api/cron/notifications/cleanup", "schedule": "30 3 * * 0" }
+    { "path": "/api/cron/listings/expire", "schedule": "0 3 * * *" }
   ]
 }
