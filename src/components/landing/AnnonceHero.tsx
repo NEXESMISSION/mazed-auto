@@ -7,7 +7,7 @@ import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { ListingImage } from "@/components/media/ListingImage";
 import { formatTND } from "@/lib/utils";
 import { AnnonceHeroCarousel } from "./AnnonceHeroCarousel";
-import { HeroBanner, type HeroSlide } from "./HeroBanner";
+import { HeroMarquee, type MarqueeCard } from "./HeroMarquee";
 import { ArrowUpRight, Gauge, MapPin, Sparkles, Wrench } from "lucide-react";
 
 /**
@@ -210,20 +210,17 @@ export async function AnnonceHero() {
   const runners = withPhoto.slice(1, 4);
   const backdrop = cover(featured)!;
 
-  // The sliding banner that used to head the desktop page. It was fed by
-  // `endingSoonSlides` — auctions — so it went dark with them and the top of
-  // the page became one static picture. Same component, same behaviour
-  // (auto-advance, drag, arrows, dots), now carrying real annonces.
-  const slides: HeroSlide[] = withPhoto.slice(0, 6).map((r) => {
-    const cat = one(r.category);
+  // Everything with a photo, not the first six: the banner this replaces showed
+  // one annonce at a time, so eleven of the twelve were behind a timer.
+  const marqueeCards: MarqueeCard[] = withPhoto.map((r) => {
+    const p = coverPhoto(r.photos)!;
     return {
       id: r.id,
-      imageUrl: cover(r),
-      eyebrow: cat?.label_fr ?? "À vendre",
       title: r.title,
-      subtitle: `${priceLabel(r, locale)} · ${r.governorate}`,
-      href: `/annonces/${r.id}`,
-      ctaLabel: "Voir l'annonce",
+      imagePath: p.storage_path,
+      categoryLabel: one(r.category)?.label_fr ?? "À vendre",
+      priceLabel: priceLabel(r, locale),
+      governorate: r.governorate,
     };
   });
 
@@ -248,10 +245,10 @@ export async function AnnonceHero() {
         </div>
 
         <div className="relative mx-auto max-w-[var(--max-w-wide)] px-8 pb-14 pt-10">
-          {/* The sliding banner, back at the top. */}
-          {slides.length > 1 && (
-            <div className="-mx-4 mb-8">
-              <HeroBanner slides={slides} />
+          {/* The catalogue drifting past, rather than one car at a time. */}
+          {marqueeCards.length > 0 && (
+            <div className="-mx-8 mb-9">
+              <HeroMarquee cards={marqueeCards} />
             </div>
           )}
 
