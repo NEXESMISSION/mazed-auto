@@ -1,4 +1,5 @@
 import { Link } from "@/i18n/navigation";
+import { accountLabelFromEmail } from "@/lib/identity";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { AdminPage, EYEBROW } from "@/components/admin/kit";
 import { actionLabel } from "@/lib/admin/actions";
@@ -56,9 +57,19 @@ export default async function AdminDashboard() {
     // telemetry — 16 836 of the 17 034 rows in this table were the latter,
     // which is why the journal was unreadable without it. Admin navigation no
     // longer writes page views at all (see middleware), so the gap closes.
+    //
+    // Not-null was necessary but not sufficient: with it, the panel still read
+    // "client.window.onerror · server.render · server.render" — browser error
+    // reports and render traces, which are observability, not gestures. An
+    // admin opens "Derniers gestes" to see who approved, refused or refunded
+    // what. The `client.` and `server.` namespaces are the telemetry ones;
+    // everything else (listing.*, payment.*, home.*, user.*, kyc.*) is a
+    // decision somebody made.
     sb.from("activity_log")
       .select("id, created_at, action, user_email")
       .not("action", "is", null)
+      .not("action", "like", "client.%")
+      .not("action", "like", "server.%")
       .order("created_at", { ascending: false })
       .limit(10),
   ]);
@@ -186,7 +197,7 @@ export default async function AdminDashboard() {
                   {actionLabel(r.action as string)}
                 </span>
                 <span className="hidden shrink-0 text-[11.5px] text-subtle sm:block">
-                  {(r.user_email as string | null) ?? "—"}
+                  {accountLabelFromEmail(r.user_email as string | null) ?? "—"}
                 </span>
               </li>
             ))}

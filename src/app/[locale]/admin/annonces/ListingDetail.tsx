@@ -10,6 +10,7 @@ import {
   ToggleField, FieldGrid, useAdminAction, paymentKindLabel, EYEBROW,
 } from "@/components/admin/kit";
 import { formatTND } from "@/lib/utils";
+import { CONDITIONS } from "@/lib/vehicles";
 import type { Diagnostic } from "@/lib/diagnostics";
 import {
   Check, X, Archive, Trash2, Star, StarOff, CalendarPlus, BadgeCheck,
@@ -188,10 +189,19 @@ export function ListingDetail({
                   ? `${formatTND(l.price, "fr")} TND${l.negotiable ? " · négociable" : ""}`
                   : "—"}
             </Row>
-            {l.condition && <Row label="État">{l.condition}</Row>}
+            {/* The raw enum was going straight to screen: the panel read
+                "État: used". Same label map the public listing page uses, so
+                the console and the site cannot disagree about what a value
+                means. Falls back to the raw value rather than hiding it — an
+                unlabelled status is a bug report. */}
+            {l.condition && (
+              <Row label="État">
+                {CONDITIONS.find((c) => c.value === l.condition)?.label ?? l.condition}
+              </Row>
+            )}
             {l.description && (
               <Row label="Description">
-                <span className="whitespace-pre-wrap">{l.description}</span>
+                <span className="whitespace-pre-wrap break-words">{l.description}</span>
               </Row>
             )}
           </Group>

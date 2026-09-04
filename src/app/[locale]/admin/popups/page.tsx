@@ -147,7 +147,12 @@ function PopupRow({
   return (
     <li>
       <Link
-        href={{ pathname: "/admin/popups/[id]/edit", params: { id: popup.id } } as never}
+        // The object form with `params` is next-intl's localized-pathnames
+        // API, and this project does not configure `pathnames` — so the raw
+        // "[id]" reached the router, which refuses a dynamic href and threw.
+        // The whole Popups screen died in its error boundary as a result:
+        // "Quelque chose s'est mal passé", every time it was opened.
+        href={`/admin/popups/${popup.id}/edit` as never}
         className="flex items-center gap-3 rounded-2xl bg-surface p-4 ring-1 ring-border transition hover:ring-gold-soft/50"
       >
         <span className="batta-monogram size-10 shrink-0">

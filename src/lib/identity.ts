@@ -45,3 +45,18 @@ export function accountLabel(
 ): string | null {
   return formatPhone(phone) ?? realEmail(email);
 }
+
+/**
+ * The same question, when a synthetic address is all you have.
+ *
+ * The admin journal stores `user_email` and nothing else, so every row about a
+ * phone-signup account read `21658415520@phone.mazedauto.app` — the exact
+ * string the rest of the interface goes out of its way never to show. The
+ * local part of a synthetic address IS the phone number, so it can be
+ * recovered and formatted rather than printed raw.
+ */
+export function accountLabelFromEmail(email: string | null | undefined): string | null {
+  if (!email) return null;
+  if (!isSyntheticEmail(email)) return email;
+  return formatPhone(email.split("@")[0]);
+}

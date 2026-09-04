@@ -309,7 +309,7 @@ export function PopupForm({
             <input
               value={ctaPrimaryHref}
               onChange={(e) => setCtaPrimaryHref(e.target.value)}
-              placeholder="/properties"
+              placeholder="/annonces"
               className="batta-input"
             />
           </Field>

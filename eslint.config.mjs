@@ -81,10 +81,12 @@ const eslintConfig = [
     rules: { "no-restricted-syntax": ["error", ...NO_LIGHT_PALETTE] },
   },
   {
-    // Warn across the legacy console. 84 of these exist today; each phase
-    // removes a batch with the screen that carried them, and Phase 8 promotes
-    // this block to "error" once the count reaches zero. Warning rather than
-    // erroring keeps the build green while the debt is visible and shrinking.
+    // The count reached zero — Diffusions, Popups and the legal-docs editor
+    // were the last 18 — so this is now an error, as planned. The light-mode
+    // swatches were not merely untidy: `bg-emerald-50 text-emerald-900` renders
+    // a near-white block on a #0a0a0a ground, and `text-red-700` on the same
+    // ground fails contrast outright. Erroring is what stops them coming back
+    // one convenient copy-paste at a time.
     files: ["src/components/admin/**/*.{ts,tsx}", "src/app/**/admin/**/*.{ts,tsx}"],
     ignores: [
       "src/components/admin/kit/**",
@@ -92,7 +94,7 @@ const eslintConfig = [
       "src/app/**/admin/page.tsx",
       "src/app/**/admin/site/**",
     ],
-    rules: { "no-restricted-syntax": ["warn", ...NO_LIGHT_PALETTE] },
+    rules: { "no-restricted-syntax": ["error", ...NO_LIGHT_PALETTE] },
   },
   {
     ignores: [".next/**", "node_modules/**", "desing/**", "scripts/**"],

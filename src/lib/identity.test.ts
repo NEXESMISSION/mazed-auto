@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { accountLabel, formatPhone, isSyntheticEmail, realEmail } from "./identity";
+import {
+  accountLabel,
+  accountLabelFromEmail,
+  formatPhone,
+  isSyntheticEmail,
+  realEmail,
+} from "./identity";
 
 describe("synthetic phone emails", () => {
   it("recognises the address signup mints for a phone account", () => {
@@ -44,5 +50,21 @@ describe("accountLabel", () => {
 
   it("shows nothing rather than the plumbing when both are missing", () => {
     expect(accountLabel("21658415520@phone.mazedauto.app", null)).toBeNull();
+  });
+});
+
+describe("accountLabelFromEmail", () => {
+  it("recovers the phone number from a synthetic address", () => {
+    expect(accountLabelFromEmail("21658415520@phone.mazedauto.app")).toBe("58 415 520");
+    expect(accountLabelFromEmail("21620000000@phone.mazed.tn")).toBe("20 000 000");
+  });
+
+  it("passes a real address through untouched", () => {
+    expect(accountLabelFromEmail("admin@mazed.tn")).toBe("admin@mazed.tn");
+  });
+
+  it("has nothing to show for nothing", () => {
+    expect(accountLabelFromEmail(null)).toBeNull();
+    expect(accountLabelFromEmail("")).toBeNull();
   });
 });

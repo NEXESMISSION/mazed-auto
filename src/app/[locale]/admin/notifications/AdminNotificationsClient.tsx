@@ -87,7 +87,7 @@ function TabButton({
       onClick={onClick}
       className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] transition ${
         active
-          ? "bg-foreground text-background"
+          ? "bg-[var(--gold-faint)] text-[var(--gold)] ring-1 ring-[rgba(212,175,55,0.28)]"
           : "text-muted hover:text-foreground"
       }`}
     >
@@ -232,7 +232,7 @@ function ComposeTab() {
                 onClick={() => switchKind(k.value)}
                 className={`rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.1em] ring-1 transition ${
                   kind === k.value
-                    ? "bg-foreground text-background ring-foreground"
+                    ? "bg-[var(--gold-faint)] text-[var(--gold)] ring-[rgba(212,175,55,0.35)]"
                     : "bg-surface text-muted ring-border hover:text-foreground"
                 }`}
               >
@@ -265,7 +265,7 @@ function ComposeTab() {
                 onClick={() => setAudienceType(t)}
                 className={`rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.1em] ring-1 transition ${
                   audienceType === t
-                    ? "bg-foreground text-background ring-foreground"
+                    ? "bg-[var(--gold-faint)] text-[var(--gold)] ring-[rgba(212,175,55,0.35)]"
                     : "bg-surface text-muted ring-border hover:text-foreground"
                 }`}
               >
@@ -328,7 +328,7 @@ function ComposeTab() {
             type="button"
             onClick={() => send(false)}
             disabled={!canSend}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-foreground px-4 py-2.5 text-[12px] font-bold uppercase tracking-[0.12em] text-background transition hover:bg-gold-bright disabled:opacity-50"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[var(--gold)] px-4 py-2.5 text-[12px] font-bold uppercase tracking-[0.12em] text-black transition hover:bg-[var(--gold-bright)] disabled:opacity-40 disabled:hover:bg-[var(--gold)]"
           >
             <Send className="size-3.5" strokeWidth={2.4} />
             {sending ? "Envoi..." : "Diffuser"}
@@ -831,7 +831,7 @@ function QueueTab() {
           }}
           className={`rounded-full px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] ring-1 transition ${
             filters.unread
-              ? "bg-foreground text-background ring-foreground"
+              ? "bg-[var(--gold-faint)] text-[var(--gold)] ring-[rgba(212,175,55,0.35)]"
               : "bg-surface text-muted ring-border hover:text-foreground"
           }`}
         >
