@@ -37,6 +37,9 @@ type SearchParams = {
   min?: string;
   max?: string;
   fuel?: string;
+  year_min?: string;
+  year_max?: string;
+  km_max?: string;
   boite?: string;
   sort?: string;
   page?: string;
@@ -128,6 +131,8 @@ export default async function AnnoncesPage({
     lte: (column: string, value: unknown) => Filterable;
     gte: (column: string, value: unknown) => Filterable;
     contains: (column: string, value: unknown) => Filterable;
+    // jsonb range comparisons go through the generic filter()
+    filter: (column: string, operator: string, value: unknown) => Filterable;
   };
 
   // One filter chain, applied to both the page read and the count-only read,
@@ -142,6 +147,16 @@ export default async function AnnoncesPage({
     if (sp.max && Number(sp.max) > 0) q = q.lte("price", Number(sp.max));
     // Spec filters live in the jsonb the seller filled in. `contains` is an
     // index-friendly @> rather than a text match on a rendered value.
+    // Ranges over the jsonb the seller filled in. `->` (not `->>`) keeps the
+    // comparison numeric — as text, "9" would sort after "10 000".
+    const num = (v: string | undefined) => {
+      const n = Number(v);
+      return Number.isFinite(n) && n > 0 ? n : null;
+    };
+    const yMin = num(sp.year_min), yMax = num(sp.year_max), kMax = num(sp.km_max);
+    if (yMin) q = q.filter("attributes->year", "gte", yMin);
+    if (yMax) q = q.filter("attributes->year", "lte", yMax);
+    if (kMax) q = q.filter("attributes->mileage", "lte", kMax);
     if (sp.fuel) q = q.contains("attributes", { fuel: sp.fuel });
     if (sp.boite) q = q.contains("attributes", { transmission: sp.boite });
     // `make` means two different things depending on what you are browsing.
@@ -252,6 +267,7 @@ export default async function AnnoncesPage({
     make: sp.make ?? "", model: sp.model ?? "", year: sp.year ?? "",
     min: sp.min ?? "", max: sp.max ?? "", fuel: sp.fuel ?? "",
     boite: sp.boite ?? "", sort: sp.sort ?? "",
+    year_min: sp.year_min ?? "", year_max: sp.year_max ?? "", km_max: sp.km_max ?? "",
   };
   const filterProps = {
     categories: visibleCats.map((c) => ({ id: c.id, label: c.label_fr, kind: c.kind })),

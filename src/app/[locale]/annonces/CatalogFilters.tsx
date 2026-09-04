@@ -35,11 +35,13 @@ export type FilterState = {
   kind: string; cat: string; gov: string; q: string;
   make: string; model: string; year: string;
   min: string; max: string; fuel: string; boite: string; sort: string;
+  year_min: string; year_max: string; km_max: string;
 };
 
 export const EMPTY: FilterState = {
   kind: "", cat: "", gov: "", q: "", make: "", model: "", year: "",
   min: "", max: "", fuel: "", boite: "", sort: "",
+  year_min: "", year_max: "", km_max: "",
 };
 
 export const SORTS = [
@@ -75,6 +77,18 @@ function chipsFor(f: FilterState, categories: Props["categories"]): {
   if (f.min) out.push({ key: "min", label: `à partir de ${f.min} TND` });
   if (f.max) out.push({ key: "max", label: `jusqu'à ${f.max} TND` });
   if (f.fuel) out.push({ key: "fuel", label: FUELS.find((x) => x.value === f.fuel)?.label ?? f.fuel });
+  if (f.year_min || f.year_max) {
+    out.push({
+      key: "year_min",
+      label:
+        f.year_min && f.year_max
+          ? `${f.year_min}–${f.year_max}`
+          : f.year_min
+            ? `Depuis ${f.year_min}`
+            : `Jusqu'à ${f.year_max}`,
+    });
+  }
+  if (f.km_max) out.push({ key: "km_max", label: `≤ ${Number(f.km_max).toLocaleString("fr-FR")} km` });
   if (f.boite) {
     out.push({ key: "boite", label: TRANSMISSIONS.find((x) => x.value === f.boite)?.label ?? f.boite });
   }
@@ -250,6 +264,32 @@ function FilterBody({
               </select>
             </Group>
           )}
+
+          {/* Année and kilométrage decide as much as the marque on a used car,
+              and neither existed. Ranges, because "2015 or newer under
+              150 000 km" is how people actually shop. */}
+          <Group label="Année">
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                inputMode="numeric" placeholder="De" value={f.year_min}
+                onChange={(e) => pushDebounced({ year_min: e.target.value.replace(/\D/g, "").slice(0, 4) })}
+                className={INPUT}
+              />
+              <input
+                inputMode="numeric" placeholder="À" value={f.year_max}
+                onChange={(e) => pushDebounced({ year_max: e.target.value.replace(/\D/g, "").slice(0, 4) })}
+                className={INPUT}
+              />
+            </div>
+          </Group>
+
+          <Group label="Kilométrage max">
+            <input
+              inputMode="numeric" placeholder="150000" value={f.km_max}
+              onChange={(e) => pushDebounced({ km_max: e.target.value.replace(/\D/g, "").slice(0, 7) })}
+              className={INPUT}
+            />
+          </Group>
 
           <Group label="Carburant">
             <Pills
