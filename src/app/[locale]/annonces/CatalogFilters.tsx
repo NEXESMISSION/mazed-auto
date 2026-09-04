@@ -216,6 +216,40 @@ function FilterBody({
 
       {!isPart && (
         <>
+          {/* Marque and modèle existed ONLY in the parts branch, as
+              "compatible avec ma voiture" — so someone browsing cars, which is
+              most of the catalogue, had no way to filter by make at all. They
+              were also <datalist> inputs writing to local state, which is why
+              picking one appeared to do nothing: the value changed and the
+              results never moved. Selects, and they commit. */}
+          <Group label="Marque">
+            <select
+              value={f.make}
+              onChange={(e) => push({ make: e.target.value, model: "" })}
+              className={INPUT}
+            >
+              <option value="">Toutes les marques</option>
+              {CAR_MAKES.map((m) => (
+                <option key={m.name} value={m.name}>{m.name}</option>
+              ))}
+            </select>
+          </Group>
+
+          {f.make && modelsFor(f.make).length > 0 && (
+            <Group label="Modèle">
+              <select
+                value={f.model}
+                onChange={(e) => push({ model: e.target.value })}
+                className={INPUT}
+              >
+                <option value="">Tous les modèles</option>
+                {modelsFor(f.make).map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+            </Group>
+          )}
+
           <Group label="Carburant">
             <Pills
               value={f.fuel}
@@ -245,7 +279,7 @@ function FilterBody({
           <div className="mt-2.5 space-y-2">
             <input
               list="cf-makes" placeholder="Marque" value={f.make}
-              onChange={(e) => setF({ ...f, make: e.target.value, model: "" })}
+              onChange={(e) => pushDebounced({ make: e.target.value, model: "" })}
               className={INPUT}
             />
             <datalist id="cf-makes">
@@ -254,7 +288,7 @@ function FilterBody({
             <div className="grid grid-cols-2 gap-2">
               <input
                 list="cf-models" placeholder="Modèle" value={f.model}
-                onChange={(e) => setF({ ...f, model: e.target.value })}
+                onChange={(e) => pushDebounced({ model: e.target.value })}
                 className={INPUT}
               />
               <datalist id="cf-models">

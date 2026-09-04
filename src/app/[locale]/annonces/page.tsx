@@ -94,7 +94,7 @@ export default async function AnnoncesPage({
   // — lives in src/lib/fitment.ts, where it is unit-tested. Two places deciding
   // what "compatible" means is how a buyer ends up with parts for another car.
   let fitmentIds: string[] | null = null;
-  if (sp.make) {
+  if (sp.make && kind === "part") {
     const { data: fits } = await admin
       .from("listing_fitments")
       .select("listing_id, make, model, year_from, year_to")
@@ -144,10 +144,18 @@ export default async function AnnoncesPage({
     // index-friendly @> rather than a text match on a rendered value.
     if (sp.fuel) q = q.contains("attributes", { fuel: sp.fuel });
     if (sp.boite) q = q.contains("attributes", { transmission: sp.boite });
+    // `make` means two different things depending on what you are browsing.
+    // On a PART it is compatibility, resolved through listing_fitments above.
+    // On a VEHICLE it is the car's own marque, which lives in the attributes
+    // the seller filled in — filtering a car through the fitments table
+    // returned nothing at all, which is why the marque filter looked dead.
     if (fitmentIds) {
       // No fitment matched → no results, without a pointless second query.
       if (fitmentIds.length === 0) q = q.eq("id", "00000000-0000-0000-0000-000000000000");
       else q = q.in("id", fitmentIds);
+    } else if (sp.make) {
+      q = q.contains("attributes", { make: sp.make });
+      if (sp.model) q = q.contains("attributes", { model: sp.model });
     }
     return q as T;
   }
