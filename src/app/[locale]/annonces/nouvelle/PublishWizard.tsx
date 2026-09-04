@@ -453,7 +453,7 @@ export function PublishWizard({
         </div>
       )}
 
-      <div className="mt-5 lg:grid lg:grid-cols-[1fr_320px] lg:items-start lg:gap-7">
+      <div className="mx-auto mt-5 max-w-3xl">
         <div className="space-y-4">
       {/* ── Category ── */}
               <section id="f-category" className="scroll-mt-24 rounded-2xl border border-border bg-surface p-4 sm:p-5">
@@ -921,113 +921,61 @@ export function PublishWizard({
           </div>
         </section>
 
-        {/* The publish button, at the end of the form.
+        {/* Everything you need before publishing, at the END of the form.
 
-            It lived only in the sidebar, and the report was simply "I have
-            been looking for it" — which is fair: the end of a form is where
-            everyone looks for the button that submits it, and a panel off to
-            one side is a summary, not a destination. Desktop-only because the
-            phone already has it pinned to the bottom bar. */}
-        <div className="hidden rounded-2xl border border-border bg-surface p-4 lg:block">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-[13.5px] font-bold text-foreground">
-                {missing.length === 0
-                  ? "Tout est prêt."
-                  : `Il reste ${missing.length} chose${missing.length > 1 ? "s" : ""} à compléter.`}
-              </p>
-              <p className="mt-0.5 text-[12px] text-muted">
-                {usingCredit
-                  ? `Utilise 1 de vos ${creditsLeft} publications.`
-                  : free
-                    ? "Publication gratuite dans cette catégorie."
-                    : fee != null
-                      ? `Frais de publication : ${formatTND(fee, locale)} TND.`
-                      : "Choisissez une catégorie pour voir le prix."}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={publishNow}
-              disabled={busy || photosUploading > 0}
-              className="batta-btn-luxe tap-target inline-flex h-12 items-center justify-center gap-1.5 px-7 text-[14px] disabled:opacity-60"
-            >
-              {busy ? (
-                <><Loader2 className="size-4 animate-spin" /> Un instant…</>
-              ) : photosUploading > 0 ? (
-                <><Loader2 className="size-4 animate-spin" /> Envoi des photos…</>
-              ) : (
-                <>Publier mon annonce</>
-              )}
-            </button>
-          </div>
-        </div>
+            It lived in a rail down the right-hand side, and the report was
+            "I should be in the bottom man" — which is right. A form is read
+            top to bottom and submitted at the end; a panel parked beside it is
+            something you have to notice, and the first report about it was
+            simply not being able to find the button at all. */}
+        <div className="mt-4 rounded-2xl border border-border bg-surface p-4 sm:p-5">
+          <span className="text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-muted">
+            Avant de publier
+          </span>
 
-        </div>
+          {missing.length === 0 ? (
+            <p className="mt-2 inline-flex items-center gap-2 rounded-xl bg-gold-faint px-3 py-2 text-[13px] font-bold text-gold ring-1 ring-gold-soft">
+              <Check className="size-4" /> Tout est prêt.
+            </p>
+          ) : (
+            <ul className="mt-2 grid gap-1 sm:grid-cols-2">
+              {missing.map((m) => (
+                <li key={m.label}>
+                  <button
+                    type="button"
+                    onClick={() => goToField(m.fieldId)}
+                    className="flex w-full items-start gap-2 rounded-lg px-2 py-1.5 text-start text-[12.5px] text-muted transition hover:bg-surface-2 hover:text-foreground"
+                  >
+                    <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-[var(--gold)]" />
+                    {m.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
 
-        {/* What is left, what it costs, and the button — beside the form on
-            desktop, so the seller never scrolls to find out where they stand.
-            The numbered headings this replaces implied an order the form does
-            not actually have: you can fill it in any sequence you like. */}
-        <aside className="mt-4 hidden lg:mt-0 lg:block">
-          <div className="sticky top-[calc(var(--desktop-nav-h,64px)+1rem)] space-y-3 rounded-2xl border border-border bg-surface p-4">
-            <span className="text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-muted">
-              Avant de publier
-            </span>
-
-            {missing.length === 0 ? (
-              <p className="inline-flex items-center gap-2 rounded-xl bg-gold-faint px-3 py-2 text-[12.5px] font-bold text-gold ring-1 ring-gold-soft">
-                <Check className="size-4" /> Tout est prêt.
-              </p>
+          {/* The fee is stated in the section just above, and on phones the
+              floating bar already carries it — so this row is the action
+              alone. Hidden under lg because that floating bar owns the button
+              there; two "Publier" buttons on one screen is a question, not a
+              convenience. */}
+          <button
+            type="button"
+            onClick={publishNow}
+            disabled={busy || photosUploading > 0}
+            className="batta-btn-luxe tap-target mt-4 hidden h-12 w-full items-center justify-center gap-1.5 text-[14px] disabled:opacity-60 lg:inline-flex"
+          >
+            {busy ? (
+              <><Loader2 className="size-4 animate-spin" /> Un instant…</>
+            ) : photosUploading > 0 ? (
+              <><Loader2 className="size-4 animate-spin" /> Envoi des photos…</>
             ) : (
-              <ul className="space-y-1">
-                {missing.map((m) => (
-                  <li key={m.label}>
-                    <button
-                      type="button"
-                      onClick={() => goToField(m.fieldId)}
-                      className="flex w-full items-start gap-2 rounded-lg px-2 py-1.5 text-start text-[12.5px] text-muted transition hover:bg-surface-2 hover:text-foreground"
-                    >
-                      <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-[var(--gold)]" />
-                      {m.label}
-                    </button>
-                  </li>
-                ))}
-              </ul>
+              <>Publier mon annonce</>
             )}
+          </button>
+        </div>
 
-            <div className="border-t border-border pt-3">
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-[12.5px] text-muted">
-                  {usingCredit ? "Depuis votre forfait" : free ? "Publication" : "Frais"}
-                </span>
-                <span className="batta-tabular text-[16px] font-extrabold text-foreground">
-                  {usingCredit
-                    ? `1 / ${creditsLeft}`
-                    : fee == null
-                      ? "—"
-                      : free
-                        ? "Gratuit"
-                        : `${formatTND(fee, locale)} TND`}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={publishNow}
-                disabled={busy || photosUploading > 0}
-                className="batta-btn-luxe tap-target mt-3 inline-flex h-12 w-full items-center justify-center gap-1.5 text-[14px] disabled:opacity-60"
-              >
-                {busy ? (
-                  <><Loader2 className="size-4 animate-spin" /> Un instant…</>
-                ) : photosUploading > 0 ? (
-                  <><Loader2 className="size-4 animate-spin" /> Envoi des photos…</>
-                ) : (
-                  <>Publier mon annonce</>
-                )}
-              </button>
-            </div>
-          </div>
-        </aside>
+        </div>
       </div>
 
       <div className="fixed inset-x-0 bottom-[calc(var(--batta-bottombar-h,64px)+env(safe-area-inset-bottom))] z-20 border-t border-border bg-background/95 px-4 py-3 backdrop-blur-md lg:hidden">
