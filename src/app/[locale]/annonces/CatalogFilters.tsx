@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { CAR_MAKES, FUELS, TRANSMISSIONS, modelsFor } from "@/lib/vehicles";
@@ -91,33 +91,69 @@ function chipsFor(f: FilterState, categories: Props["categories"]): {
 function useFilters(current: FilterState) {
   const router = useRouter();
   const [f, setF] = useState<FilterState>(current);
-  useEffect(() => setF(current), [current]);
+  // `pending` is true while the server is fetching the next page of results.
+  // React keeps the CURRENT results on screen for the whole transition, which
+  // is the point: changing a filter used to blank the grid and throw you back
+  // to the top of the page before anything arrived.
+  const [pending, startTransition] = useTransition();
+  const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  function push(next: Partial<FilterState>) {
+  useEffect(() => setF(current), [current]);
+  useEffect(() => () => { if (debounce.current) clearTimeout(debounce.current); }, []);
+
+  function commit(merged: FilterState) {
+    const qs = toQuery(merged);
+    startTransition(() => {
+      // replace, not push: a filter is not a page you meant to visit, and
+      // pushing meant Back walked you through every checkbox you had ticked.
+      // scroll:false keeps you where you were reading instead of yanking the
+      // page to the top on every change.
+      router.replace(`/annonces${qs ? `?${qs}` : ""}` as never, { scroll: false });
+    });
+  }
+
+  function merge(next: Partial<FilterState>): FilterState {
     const merged = { ...f, ...next };
     // Switching kind keeps a category from the other branch, which would return
     // nothing and read as a broken page.
     if (next.kind !== undefined && next.kind !== f.kind) merged.cat = "";
     if (next.make !== undefined && next.make !== f.make) merged.model = "";
-    setF(merged);
-    const qs = toQuery(merged);
-    router.push(`/annonces${qs ? `?${qs}` : ""}` as never);
+    return merged;
   }
 
-  return { f, setF, push, router };
+  function push(next: Partial<FilterState>) {
+    if (debounce.current) clearTimeout(debounce.current);
+    const merged = merge(next);
+    setF(merged);
+    commit(merged);
+  }
+
+  /**
+   * For things people TYPE. A round trip per keystroke made the price boxes
+   * feel broken — each digit queued another query and the results churned
+   * under the cursor. One request, 400 ms after they stop.
+   */
+  function pushDebounced(next: Partial<FilterState>) {
+    const merged = merge(next);
+    setF(merged);
+    if (debounce.current) clearTimeout(debounce.current);
+    debounce.current = setTimeout(() => commit(merged), 400);
+  }
+
+  return { f, setF, push, pushDebounced, pending, router };
 }
 
 /** The filter controls themselves — shared by the desktop rail and the sheet. */
 function FilterBody({
   categories, governorates, current,
 }: Omit<Props, "total">) {
-  const { f, setF, push, router } = useFilters(current);
+  const { f, setF, push, pushDebounced, pending, router } = useFilters(current);
   const isPart = f.kind === "part";
   const activeCount = chipsFor(f, categories).length;
   const visibleCats = categories.filter((c) => !f.kind || c.kind === f.kind);
 
   return (
-    <div className="space-y-5">
+    <div className={cn("space-y-5 transition-opacity", pending && "opacity-60")}>
       <Group label="Je cherche">
         <div className="grid grid-cols-3 gap-1.5">
           {[
@@ -162,7 +198,7 @@ function FilterBody({
           <input
             type="number" inputMode="numeric" placeholder="Min"
             value={f.min}
-            onChange={(e) => setF({ ...f, min: e.target.value })}
+            onChange={(e) => pushDebounced({ min: e.target.value })}
             onBlur={() => push({})}
             onKeyDown={(e) => e.key === "Enter" && push({})}
             className={INPUT}
@@ -170,7 +206,7 @@ function FilterBody({
           <input
             type="number" inputMode="numeric" placeholder="Max"
             value={f.max}
-            onChange={(e) => setF({ ...f, max: e.target.value })}
+            onChange={(e) => pushDebounced({ max: e.target.value })}
             onBlur={() => push({})}
             onKeyDown={(e) => e.key === "Enter" && push({})}
             className={INPUT}
@@ -270,7 +306,7 @@ export function CatalogSidebar(props: Omit<Props, "total">) {
  * results — plus the mobile filter sheet, whose trigger lives here.
  */
 export function CatalogToolbar({ categories, governorates, current, total }: Props) {
-  const { f, setF, push } = useFilters(current);
+  const { f, push, pushDebounced, pending } = useFilters(current);
   const [sheet, setSheet] = useState(false);
   const isPart = f.kind === "part";
   const chips = chipsFor(f, categories);
@@ -292,9 +328,9 @@ export function CatalogToolbar({ categories, governorates, current, total }: Pro
           <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
           <input
             value={f.q}
-            onChange={(e) => setF({ ...f, q: e.target.value })}
+            onChange={(e) => pushDebounced({ q: e.target.value })}
+            // Enter still commits immediately for anyone who expects it to.
             onKeyDown={(e) => e.key === "Enter" && push({})}
-            onBlur={() => f.q !== current.q && push({})}
             placeholder={isPart ? "Plaquettes, alternateur, phare…" : "Clio, Golf, Hilux…"}
             className="h-12 w-full rounded-xl border border-border bg-surface ps-9 pe-3 text-[14px] text-foreground placeholder:text-muted focus:border-gold focus:outline-none"
           />
@@ -323,8 +359,23 @@ export function CatalogToolbar({ categories, governorates, current, total }: Pro
 
       {/* ── Count + sort ── */}
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-[13px] font-semibold text-foreground">
-          {total === 0 ? "Aucun résultat" : `${total} annonce${total > 1 ? "s" : ""}`}
+        {/* The count doubles as the progress indicator. During a transition the
+            results below stay on screen — telling the user something is
+            happening here is what stops a 400 ms wait reading as a dead click. */}
+        <p className="inline-flex items-center gap-2 text-[13px] font-semibold text-foreground">
+          {pending && (
+            <span
+              aria-hidden
+              className="inline-block size-3.5 shrink-0 animate-spin rounded-full border-2 border-[var(--border)] border-t-[var(--gold)]"
+            />
+          )}
+          <span className={pending ? "text-muted" : undefined}>
+            {pending
+              ? "Mise à jour…"
+              : total === 0
+                ? "Aucun résultat"
+                : `${total} annonce${total > 1 ? "s" : ""}`}
+          </span>
         </p>
         <label className="inline-flex items-center gap-1.5 text-[12.5px] text-muted">
           <ArrowDownWideNarrow className="size-3.5" />
