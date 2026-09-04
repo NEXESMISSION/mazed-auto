@@ -8,6 +8,7 @@ import { formatTND } from "@/lib/utils";
 import { HeroCarousel } from "@/components/auction/HeroCarousel";
 import { ContactReveal } from "./ContactReveal";
 import { FavoriteButton } from "@/components/property/FavoriteButton";
+import { RelatedListings } from "@/components/listing/RelatedListings";
 import { getServerSupabase } from "@/lib/supabase/server";
 import {
   DiagnosticSheet,
@@ -423,6 +424,18 @@ export default async function AnnoncePage({
           <div className="mt-4">{safetyNote}</div>
         </aside>
       </div>
+
+      {/* Below both columns, full width: reaching the end of an annonce used to
+          be a dead end, with the back button as the only way on. */}
+      <RelatedListings
+        listingId={l.id}
+        categoryId={category?.id ?? null}
+        categoryKind={category?.kind ?? null}
+        governorate={l.governorate}
+        price={l.price == null ? null : Number(l.price)}
+        attributes={l.attributes}
+        locale={locale}
+      />
     </main>
   );
 }
