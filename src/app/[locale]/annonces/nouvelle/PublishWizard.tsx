@@ -12,7 +12,7 @@ import {
   modelsFor, modelYears,
 } from "@/lib/vehicles";
 import {
-  Car, Wrench, Truck, Bike, Tractor, Check, Tag, Camera, Wallet, Phone,
+  Car, Wrench, Check, Tag, Camera, Wallet, Phone,
   ClipboardList, Loader2, MapPin, Plus, Trash2, Gift, Ticket, ImageOff,
 } from "lucide-react";
 
@@ -93,14 +93,6 @@ export type InitialDraft = {
 };
 
 
-/** Icon per category slug, falling back by kind. */
-function iconFor(slug: string, kind: "vehicle" | "part") {
-  if (slug === "motos") return Bike;
-  if (slug === "camions") return Truck;
-  if (slug === "utilitaires") return Truck;
-  if (slug === "engins") return Tractor;
-  return kind === "part" ? Wrench : Car;
-}
 
 export function PublishWizard({
   categories,
@@ -164,6 +156,12 @@ export function PublishWizard({
   const [contactPhone, setContactPhone] = useState(d?.contact_phone ?? defaultContactPhone);
   const [attested, setAttested] = useState(false);
   const [resumed, setResumed] = useState(Boolean(d));
+  // Which half of the segmented control is open. Seeded from the draft so a
+  // resumed parts listing does not come back showing the vehicle side.
+  const [pickKind, setPickKind] = useState<"vehicle" | "part">(() => {
+    const c = categories.find((x) => x.id === (d?.category_id ?? null));
+    return c?.kind === "part" ? "part" : "vehicle";
+  });
 
   const category = categories.find((c) => c.id === categoryId) ?? null;
   const isPart = category?.kind === "part";
@@ -188,14 +186,6 @@ export function PublishWizard({
   const title = titleTouched ? typedTitle : suggestedTitle;
   const setTitle = (v: string) => { setTitleTouched(true); setTypedTitle(v); };
 
-  const grouped = useMemo(() => {
-    const m = new Map<string, WizardCategory[]>();
-    for (const c of categories) {
-      if (!m.has(c.groupLabel)) m.set(c.groupLabel, []);
-      m.get(c.groupLabel)!.push(c);
-    }
-    return [...m.entries()];
-  }, [categories]);
 
   // ─── What is still missing, and where ────────────────────────────────────
   // Each entry knows the section it belongs to, so the dialog can take the
@@ -479,53 +469,104 @@ export function PublishWizard({
             </p>
           )}
 
-          {grouped.map(([group, cats]) => (
-            <div key={group} className="mt-6">
-              <span className="batta-eyebrow">{group}</span>
-              <div className="mt-2 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-                {cats.map((c) => {
-                  const Icon = iconFor(c.slug, c.kind);
-                  const f = feeByCategory[c.id];
+          {/* Kind first, then the category — two small rows instead of a
+              wall of twelve tiles.
+
+              The tiles were the size of buttons you tick, laid out in a grid
+              under two headings, which is exactly how a multi-select looks. It
+              is one choice. A segmented control says "one of these" the way
+              every OS does, and the chips under it are radio buttons in
+              everything but paint — so the shape of the control now matches
+              what it actually does, in about a fifth of the height. */}
+          <div className="mt-4">
+            <div
+              role="radiogroup"
+              aria-label="Type d'annonce"
+              className="grid grid-cols-2 gap-1 rounded-xl bg-surface-2 p-1"
+            >
+              {([
+                { k: "vehicle" as const, label: "Un véhicule", Icon: Car },
+                { k: "part" as const, label: "Une pièce", Icon: Wrench },
+              ]).map(({ k, label, Icon }) => {
+                const on = pickKind === k;
+                return (
+                  <button
+                    key={k}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
+                    onClick={() => {
+                      setPickKind(k);
+                      // Keep a category only while it still belongs to the
+                      // kind on screen, or the form asks for a gearbox on a
+                      // brake pad.
+                      if (category && category.kind !== k) {
+                        setCategoryId(null);
+                        setAttrs({});
+                      }
+                    }}
+                    className={cn(
+                      "inline-flex h-10 items-center justify-center gap-2 rounded-lg text-[13.5px] font-bold transition",
+                      on
+                        ? "bg-[var(--gold)] text-black shadow-[var(--shadow-gold)]"
+                        : "text-muted hover:text-foreground",
+                    )}
+                  >
+                    <Icon className="size-4" />
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div
+              role="radiogroup"
+              aria-label="Catégorie"
+              className="mt-2.5 flex flex-wrap gap-1.5"
+            >
+              {categories
+                .filter((c) => c.kind === pickKind)
+                .map((c) => {
                   const active = categoryId === c.id;
                   return (
                     <button
                       key={c.id}
                       type="button"
+                      role="radio"
+                      aria-checked={active}
                       onClick={() => { setCategoryId(c.id); setAttrs({}); }}
                       className={cn(
-                        "flex flex-col items-start gap-2 rounded-2xl border p-3.5 text-start transition",
+                        "inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[13px] font-bold transition",
                         active
-                          ? "border-gold bg-gold-faint"
-                          : "border-border bg-surface hover:border-gold-soft",
+                          ? "bg-gold-faint text-gold ring-1 ring-gold"
+                          : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground",
                       )}
                     >
-                      <span
-                        className={cn(
-                          "grid size-9 place-items-center rounded-xl",
-                          active ? "bg-[var(--gold)] text-black" : "bg-surface-2 text-muted",
-                        )}
-                      >
-                        <Icon className="size-4.5" />
-                      </span>
-                      <span className={cn("text-[13.5px] font-bold", active ? "text-gold" : "text-foreground")}>
-                        {c.label}
-                      </span>
-                      {f != null && (
-                        <span
-                          className={cn(
-                            "inline-flex items-center gap-1 text-[10.5px] font-bold",
-                            f <= 0 ? "text-[var(--success,#4ade80)]" : "text-muted",
-                          )}
-                        >
-                          {f <= 0 ? <><Gift className="size-3" /> Gratuit</> : `${formatTND(f, locale)} TND`}
-                        </span>
-                      )}
+                      {active && <Check className="size-3.5" />}
+                      {c.label}
                     </button>
                   );
                 })}
-              </div>
             </div>
-          ))}
+
+            {/* The price of publishing, said once, instead of repeated on
+                every tile. */}
+            {category && fee != null && (
+              <p
+                className={cn(
+                  "mt-2.5 inline-flex items-center gap-1.5 text-[12.5px] font-bold",
+                  free ? "text-[var(--success,#4ade80)]" : "text-muted",
+                )}
+              >
+                {free ? (
+                  <><Gift className="size-3.5" /> Publication gratuite dans cette catégorie.</>
+                ) : (
+                  <>Publication : {formatTND(fee, locale)} TND</>
+                )}
+              </p>
+            )}
+          </div>
+
         </section>
 
       {/* ── STEP 2 · Photos ── */}
