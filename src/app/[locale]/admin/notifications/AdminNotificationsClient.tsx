@@ -1,20 +1,16 @@
 "use client";
 import { TONE_CLASS } from "@/components/admin/kit/tones";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Send,
   Inbox,
-  Trash2,
   RefreshCw,
   Search,
   X,
-  CheckSquare,
-  Square,
   User,
   ShieldCheck,
   Radio,
-  AlertTriangle,
 } from "lucide-react";
 import {
   KIND_CONFIG,
@@ -587,12 +583,27 @@ function PreviewCard({
 
 // ─── Queue inspector ────────────────────────────────────────────────────────
 
+/**
+ * How many rows arrive at a time.
+ *
+ * It was 50, fetched on open and again on every filter keystroke. The queue is
+ * a diagnostic surface — you look at the last few, or you filter down to one
+ * broadcast — so pulling fifty rows with their recipient and sender joins in
+ * order to show the top three was the wrong default. Ten arrives fast, and
+ * scrolling brings the next ten.
+ */
+const QUEUE_PAGE = 10;
+
 function QueueTab() {
   const [items, setItems] = useState<NotificationRow[]>([]);
   const [total, setTotal] = useState(0);
   const [stats, setStats] = useState<ListResponse["stats"] | null>(null);
+  /** First page, or a filter change — the list is replaced. */
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(0);
+  /** A further page — the list is appended to. Kept separate so the spinner
+   *  at the bottom never blanks out the rows already on screen. */
+  const [appending, setAppending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     kind: "",
     user_id: "",
@@ -600,174 +611,108 @@ function QueueTab() {
     q: "",
     unread: false,
   });
-  // Per-row selection for bulk delete. Set rather than array so toggle
-  // is O(1) for large pages.
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  // Two-step inline confirms — `selection` for "delete selected",
-  // `filtered` for the larger "delete all matching the current
-  // filters" action.
-  const [confirmingSelection, setConfirmingSelection] = useState(false);
-  const [confirmingFiltered, setConfirmingFiltered] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const limit = 50;
 
   const hasActiveFilters = !!(
     filters.kind || filters.user_id || filters.broadcast || filters.q || filters.unread
   );
 
-  const queryString = useMemo(() => {
-    const sp = new URLSearchParams();
-    if (filters.kind) sp.set("kind", filters.kind);
-    if (filters.user_id) sp.set("user_id", filters.user_id);
-    if (filters.broadcast) sp.set("broadcast", filters.broadcast);
-    if (filters.q) sp.set("q", filters.q);
-    if (filters.unread) sp.set("unread", "1");
-    sp.set("limit", String(limit));
-    sp.set("offset", String(page * limit));
-    return sp.toString();
-  }, [filters, page]);
-
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/admin/notifications/list?${queryString}`, {
+  const fetchPage = useCallback(
+    async (offset: number): Promise<ListResponse> => {
+      const sp = new URLSearchParams();
+      if (filters.kind) sp.set("kind", filters.kind);
+      if (filters.user_id) sp.set("user_id", filters.user_id);
+      if (filters.broadcast) sp.set("broadcast", filters.broadcast);
+      if (filters.q) sp.set("q", filters.q);
+      if (filters.unread) sp.set("unread", "1");
+      sp.set("limit", String(QUEUE_PAGE));
+      sp.set("offset", String(offset));
+      const res = await fetch(`/api/admin/notifications/list?${sp.toString()}`, {
         cache: "no-store",
       });
-      if (!res.ok) {
-        setError("Échec du chargement");
-        return;
-      }
-      const data = (await res.json()) as ListResponse;
-      setItems(data.items);
-      setTotal(data.total);
-      setStats(data.stats);
-      // Drop any selection ids that aren't on this page anymore — keeps
-      // the "X sélectionnées" count honest across pagination + filter
-      // changes.
-      const visibleIds = new Set(data.items.map((i) => i.id));
-      setSelected((prev) => new Set([...prev].filter((id) => visibleIds.has(id))));
-    } finally {
-      setLoading(false);
-    }
-  }, [queryString]);
+      if (!res.ok) throw new Error("list_failed");
+      return (await res.json()) as ListResponse;
+    },
+    [filters],
+  );
 
+  // First page, and again whenever a filter changes. `cancelled` guards the
+  // race a fast typist creates: change the filter before the previous response
+  // lands and, without it, the older slower response wins and the list
+  // disagrees with the filter bar.
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
-
-  function toggleSelection(id: string) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
-  function toggleSelectAll() {
-    if (selected.size === items.length) {
-      setSelected(new Set());
-    } else {
-      setSelected(new Set(items.map((i) => i.id)));
-    }
-  }
-
-  async function deleteOne(id: string) {
-    setBusy(true);
+    let cancelled = false;
+    setLoading(true);
     setError(null);
-    try {
-      const res = await fetch(`/api/admin/notifications/${id}`, {
-        method: "DELETE",
+    fetchPage(0)
+      .then((data) => {
+        if (cancelled) return;
+        setItems(data.items);
+        setTotal(data.total);
+        setStats(data.stats);
+      })
+      .catch(() => {
+        if (!cancelled) setError("Échec du chargement");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
       });
-      if (!res.ok) {
-        setError("Échec de la suppression");
-        return;
-      }
-      setItems((arr) => arr.filter((x) => x.id !== id));
-      setTotal((n) => Math.max(0, n - 1));
-      setSelected((prev) => {
-        const next = new Set(prev);
-        next.delete(id);
-        return next;
-      });
-    } finally {
-      setBusy(false);
-    }
-  }
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchPage]);
 
-  async function deleteSelected() {
-    if (selected.size === 0) return;
-    setBusy(true);
-    setError(null);
-    setConfirmingSelection(false);
-    const ids = [...selected];
-    try {
-      const res = await fetch("/api/admin/notifications/bulk-delete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids }),
-      });
-      const payload = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setError("Échec de la suppression");
-        return;
-      }
-      const { deletedCount } = payload as { deletedCount?: number };
-      setSelected(new Set());
-      await refresh();
-      setError(
-        typeof deletedCount === "number"
-          ? `${deletedCount} notification${deletedCount > 1 ? "s" : ""} supprimée${deletedCount > 1 ? "s" : ""}.`
-          : null,
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
+  const hasMore = items.length < total;
 
-  async function deleteFiltered() {
-    if (!hasActiveFilters) return;
-    setBusy(true);
-    setError(null);
-    setConfirmingFiltered(false);
-    try {
-      const res = await fetch("/api/admin/notifications/bulk-delete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ filters }),
-      });
-      const payload = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setError("Échec de la suppression");
-        return;
-      }
-      const { deletedCount } = payload as { deletedCount?: number };
-      setSelected(new Set());
-      await refresh();
-      setError(
-        typeof deletedCount === "number"
-          ? `${deletedCount} notification${deletedCount > 1 ? "s" : ""} supprimée${deletedCount > 1 ? "s" : ""}.`
-          : null,
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
+  // The observer is built once, so its callback must not close over stale
+  // state. It calls through a ref that every render keeps current instead.
+  const loadMoreRef = useRef<() => void>(() => {});
+  useEffect(() => {
+    loadMoreRef.current = () => {
+      if (loading || appending || !hasMore) return;
+      setAppending(true);
+      fetchPage(items.length)
+        .then((data) => {
+          setTotal(data.total);
+          setStats(data.stats);
+          // Dedupe by id: a notification inserted while you were reading
+          // shifts the offset window, and without this the same row appears
+          // twice.
+          setItems((prev) => {
+            const seen = new Set(prev.map((x) => x.id));
+            return [...prev, ...data.items.filter((x) => !seen.has(x.id))];
+          });
+        })
+        .catch(() => setError("Échec du chargement"))
+        .finally(() => setAppending(false));
+    };
+  });
+
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    // 300px of lead time, so the next ten are already on screen by the time
+    // the reader reaches where they would have run out.
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) loadMoreRef.current();
+      },
+      { rootMargin: "300px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  /** Re-runs the filter effect without changing what is filtered. */
+  const reload = useCallback(() => setFilters((f) => ({ ...f })), []);
 
   function applyBroadcastFilter(broadcastId: string) {
     setFilters((f) => ({ ...f, broadcast: broadcastId }));
-    setPage(0);
   }
 
   function applyUserFilter(userId: string) {
     setFilters((f) => ({ ...f, user_id: userId }));
-    setPage(0);
   }
-
-  const pageCount = Math.max(1, Math.ceil(total / limit));
-  const allOnPageSelected = items.length > 0 && selected.size === items.length;
 
   return (
     <div>
@@ -785,10 +730,7 @@ function QueueTab() {
           <input
             type="text"
             value={filters.q}
-            onChange={(e) => {
-              setFilters((f) => ({ ...f, q: e.target.value }));
-              setPage(0);
-            }}
+            onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))}
             placeholder="Recherche titre…"
             className="rounded-full border border-border bg-surface py-1.5 pl-7 pr-3 text-[12px]"
           />
@@ -796,39 +738,27 @@ function QueueTab() {
         <input
           type="text"
           value={filters.kind}
-          onChange={(e) => {
-            setFilters((f) => ({ ...f, kind: e.target.value }));
-            setPage(0);
-          }}
+          onChange={(e) => setFilters((f) => ({ ...f, kind: e.target.value }))}
           placeholder="kind"
           className="w-32 rounded-full border border-border bg-surface px-3 py-1.5 font-mono text-[11px]"
         />
         <input
           type="text"
           value={filters.user_id}
-          onChange={(e) => {
-            setFilters((f) => ({ ...f, user_id: e.target.value }));
-            setPage(0);
-          }}
+          onChange={(e) => setFilters((f) => ({ ...f, user_id: e.target.value }))}
           placeholder="user_id"
           className="w-44 rounded-full border border-border bg-surface px-3 py-1.5 font-mono text-[11px]"
         />
         <input
           type="text"
           value={filters.broadcast}
-          onChange={(e) => {
-            setFilters((f) => ({ ...f, broadcast: e.target.value }));
-            setPage(0);
-          }}
+          onChange={(e) => setFilters((f) => ({ ...f, broadcast: e.target.value }))}
           placeholder="broadcast_id"
           className="w-44 rounded-full border border-border bg-surface px-3 py-1.5 font-mono text-[11px]"
         />
         <button
           type="button"
-          onClick={() => {
-            setFilters((f) => ({ ...f, unread: !f.unread }));
-            setPage(0);
-          }}
+          onClick={() => setFilters((f) => ({ ...f, unread: !f.unread }))}
           className={`rounded-full px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] ring-1 transition ${
             filters.unread
               ? "bg-[var(--gold-faint)] text-[var(--gold)] ring-[rgba(212,175,55,0.35)]"
@@ -840,10 +770,9 @@ function QueueTab() {
         {hasActiveFilters && (
           <button
             type="button"
-            onClick={() => {
-              setFilters({ kind: "", user_id: "", broadcast: "", q: "", unread: false });
-              setPage(0);
-            }}
+            onClick={() =>
+              setFilters({ kind: "", user_id: "", broadcast: "", q: "", unread: false })
+            }
             className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-muted hover:text-foreground"
           >
             <X className="size-3" strokeWidth={2.4} />
@@ -852,7 +781,7 @@ function QueueTab() {
         )}
         <button
           type="button"
-          onClick={() => void refresh()}
+          onClick={reload}
           className="ms-auto inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-muted hover:border-gold/40 hover:text-foreground"
         >
           <RefreshCw className={`size-3 ${loading ? "animate-spin" : ""}`} strokeWidth={2.4} />
@@ -860,80 +789,10 @@ function QueueTab() {
         </button>
       </div>
 
-      {/* Action strip — selection-aware. When rows are selected, shows
-          bulk-delete on those. Otherwise, when filters are active,
-          shows the bigger "delete everything matching" action so an
-          admin can clear out an entire kind / broadcast / unread pile
-          without clicking through each page. */}
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-surface px-3 py-2 ring-1 ring-border">
-        <div className="flex items-center gap-2 text-[12px] text-muted">
-          <button
-            type="button"
-            onClick={toggleSelectAll}
-            disabled={items.length === 0}
-            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-muted hover:bg-foreground/5 disabled:opacity-40"
-          >
-            {allOnPageSelected ? (
-              <CheckSquare className="size-3.5" strokeWidth={2.2} />
-            ) : (
-              <Square className="size-3.5" strokeWidth={2.2} />
-            )}
-            {allOnPageSelected ? "Tout désélectionner" : "Tout sélectionner"}
-          </button>
-          {selected.size > 0 && (
-            <span className="font-bold text-foreground">
-              {selected.size} sélectionnée{selected.size > 1 ? "s" : ""}
-            </span>
-          )}
-          <span className="ms-2">
-            {total} résultat{total > 1 ? "s" : ""}
-            {hasActiveFilters && " (filtrés)"}
-          </span>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {selected.size > 0 && !confirmingSelection && (
-            <button
-              type="button"
-              onClick={() => setConfirmingSelection(true)}
-              disabled={busy}
-              className="inline-flex items-center gap-1.5 rounded-full border border-[rgba(239,68,68,0.35)] px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-[#ef8681] transition hover:border-[#ef8681] hover:bg-[rgba(239,68,68,0.07)] disabled:opacity-60"
-            >
-              <Trash2 className="size-3.5" strokeWidth={2.4} />
-              Supprimer la sélection
-            </button>
-          )}
-          {hasActiveFilters && selected.size === 0 && !confirmingFiltered && (
-            <button
-              type="button"
-              onClick={() => setConfirmingFiltered(true)}
-              disabled={busy}
-              className="inline-flex items-center gap-1.5 rounded-full border border-[rgba(239,68,68,0.35)] bg-[rgba(239,68,68,0.10)] px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-[#ef8681] transition hover:bg-[rgba(239,68,68,0.16)] disabled:opacity-60"
-            >
-              <AlertTriangle className="size-3.5" strokeWidth={2.4} />
-              Supprimer tout (filtré)
-            </button>
-          )}
-        </div>
+      <div className="mb-2 text-[11px] uppercase tracking-[0.12em] text-muted">
+        {items.length} affichée{items.length > 1 ? "s" : ""} sur {total}
+        {hasActiveFilters && " (filtrés)"}
       </div>
-
-      {/* Inline confirms — replace native confirm() so the dialog stays
-          inside the styled admin shell. */}
-      {confirmingSelection && (
-        <ConfirmStrip
-          message={`Supprimer ${selected.size} notification${selected.size > 1 ? "s" : ""} sélectionnée${selected.size > 1 ? "s" : ""} ?`}
-          onCancel={() => setConfirmingSelection(false)}
-          onConfirm={() => void deleteSelected()}
-          busy={busy}
-        />
-      )}
-      {confirmingFiltered && (
-        <ConfirmStrip
-          message={`Supprimer toutes les notifications correspondant aux filtres (${total} ligne${total > 1 ? "s" : ""}) ?`}
-          onCancel={() => setConfirmingFiltered(false)}
-          onConfirm={() => void deleteFiltered()}
-          busy={busy}
-        />
-      )}
 
       {error && (
         <div className="mb-3 rounded-xl bg-foreground/5 px-3 py-2 text-[12px] text-foreground ring-1 ring-border">
@@ -941,19 +800,17 @@ function QueueTab() {
         </div>
       )}
 
-      {/* List */}
+      {/* Nothing here deletes. The queue is the record of what was sent, and a
+          record you can erase is not one you can rely on when a seller asks
+          whether they were ever told. */}
       <div className="overflow-hidden rounded-xl bg-surface ring-1 ring-border">
         <ul className="divide-y divide-border">
           {items.map((n) => (
             <QueueRow
               key={n.id}
               item={n}
-              selected={selected.has(n.id)}
-              onToggle={() => toggleSelection(n.id)}
-              onDelete={() => void deleteOne(n.id)}
               onFilterByBroadcast={() => n.broadcast_id && applyBroadcastFilter(n.broadcast_id)}
               onFilterByUser={() => applyUserFilter(n.user_id)}
-              busy={busy}
             />
           ))}
           {!loading && items.length === 0 && (
@@ -964,92 +821,41 @@ function QueueTab() {
         </ul>
       </div>
 
-      {/* Pagination */}
-      {pageCount > 1 && (
-        <div className="mt-3 flex items-center justify-between text-[11px] uppercase tracking-[0.12em] text-muted">
-          <span>
-            Page {page + 1} / {pageCount} · {total} total
+      {/* Sentinel — scrolling this into view pulls the next ten. The button is
+          not decoration: an IntersectionObserver never fires for someone who
+          tabs through the page rather than scrolling it. */}
+      <div ref={sentinelRef} className="mt-3 flex justify-center">
+        {appending ? (
+          <span className="inline-flex items-center gap-2 py-2 text-[11.5px] text-muted">
+            <RefreshCw className="size-3 animate-spin" strokeWidth={2.4} />
+            Chargement…
           </span>
-          <div className="flex gap-1.5">
-            <button
-              type="button"
-              disabled={page === 0}
-              onClick={() => setPage((p) => Math.max(0, p - 1))}
-              className="rounded-full border border-border bg-surface px-3 py-1 text-[11px] font-bold disabled:opacity-40"
-            >
-              ←
-            </button>
-            <button
-              type="button"
-              disabled={page >= pageCount - 1}
-              onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
-              className="rounded-full border border-border bg-surface px-3 py-1 text-[11px] font-bold disabled:opacity-40"
-            >
-              →
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ConfirmStrip({
-  message,
-  onCancel,
-  onConfirm,
-  busy,
-}: {
-  message: string;
-  onCancel: () => void;
-  onConfirm: () => void;
-  busy: boolean;
-}) {
-  return (
-    <div className="mb-3 flex items-center justify-between gap-2 rounded-xl border border-[rgba(239,68,68,0.30)] bg-[rgba(239,68,68,0.10)] px-3 py-2.5 text-[13px] text-[#ef8681]">
-      <span className="font-semibold">{message}</span>
-      <div className="flex gap-1.5">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="rounded-lg px-2.5 py-1 text-[12px] font-bold text-muted hover:text-foreground"
-        >
-          Annuler
-        </button>
-        <button
-          type="button"
-          onClick={onConfirm}
-          disabled={busy}
-          className="rounded-lg border border-[rgba(239,68,68,0.35)] px-2.5 py-1 text-[12px] font-bold text-[#ef8681] transition hover:border-[#ef8681] hover:bg-[rgba(239,68,68,0.07)] disabled:opacity-60"
-        >
-          Confirmer
-        </button>
+        ) : hasMore ? (
+          <button
+            type="button"
+            onClick={() => loadMoreRef.current()}
+            className="rounded-full border border-border bg-surface px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-muted transition hover:border-gold/40 hover:text-foreground"
+          >
+            Charger 10 de plus
+          </button>
+        ) : (
+          items.length > 0 && (
+            <span className="py-2 text-[11.5px] text-muted">Fin de la liste.</span>
+          )
+        )}
       </div>
     </div>
   );
 }
 
-/**
- * One row in the queue inspector. Surfaces enough metadata for the
- * admin to act: who received it, who sent it (for broadcasts), when,
- * read vs unread, links to drill into the broadcast or the user.
- */
 function QueueRow({
   item: n,
-  selected,
-  onToggle,
-  onDelete,
   onFilterByBroadcast,
   onFilterByUser,
-  busy,
 }: {
   item: NotificationRow;
-  selected: boolean;
-  onToggle: () => void;
-  onDelete: () => void;
   onFilterByBroadcast: () => void;
   onFilterByUser: () => void;
-  busy: boolean;
 }) {
   const recipientName = n.recipient?.full_name?.trim() || `user · ${n.user_id.slice(0, 8)}`;
   const recipientRole = n.recipient?.role || "";
@@ -1057,24 +863,7 @@ function QueueRow({
   const isBroadcast = !!n.broadcast_id;
 
   return (
-    <li
-      className={`flex items-start gap-3 p-3 transition ${
-        selected ? "bg-gold/5" : ""
-      }`}
-    >
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-label={selected ? "Désélectionner" : "Sélectionner"}
-        className="mt-0.5 inline-flex size-6 shrink-0 items-center justify-center rounded text-muted hover:text-foreground"
-      >
-        {selected ? (
-          <CheckSquare className="size-4 text-gold-bright" strokeWidth={2.2} />
-        ) : (
-          <Square className="size-4" strokeWidth={2.2} />
-        )}
-      </button>
-
+    <li className="flex items-start gap-3 p-3">
       <div className="min-w-0 flex-1">
         {/* Tag row — kind, status, broadcast pill */}
         <div className="flex flex-wrap items-center gap-2">
@@ -1162,16 +951,6 @@ function QueueRow({
           </span>
         </div>
       </div>
-
-      <button
-        type="button"
-        onClick={onDelete}
-        disabled={busy}
-        aria-label="Supprimer"
-        className="inline-flex size-8 shrink-0 items-center justify-center rounded-full text-muted transition hover:bg-red-50 hover:text-red-700 disabled:opacity-40"
-      >
-        <Trash2 className="size-3.5" strokeWidth={2} />
-      </button>
     </li>
   );
 }
