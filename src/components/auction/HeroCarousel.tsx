@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
+import { SafeImage } from "@/components/media/SafeImage";
 import { useTranslations } from "next-intl";
 import { ChevronLeft, ChevronRight, Car } from "lucide-react";
 import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
@@ -133,7 +133,7 @@ export function HeroCarousel({
                     key={`${p.id}-${i}`}
                     className="relative h-full w-full shrink-0"
                   >
-                    <Image
+                    <SafeImage
                       src={src}
                       alt={alt}
                       fill
@@ -217,7 +217,7 @@ export function HeroCarousel({
                     : "opacity-70 ring-1 ring-border hover:opacity-100"
                 }`}
               >
-                <Image
+                <SafeImage
                   src={src}
                   alt=""
                   fill

@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { SafeImage } from "@/components/media/SafeImage";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 
 /**
@@ -65,7 +65,7 @@ export function ListingImage({
 
   if (fit === "cover") {
     return (
-      <Image
+      <SafeImage
         src={src}
         alt={alt}
         fill
@@ -83,7 +83,7 @@ export function ListingImage({
     <>
       {/* Fill layer — same photo, tiny and blurred, cropped to cover. Purely
           decorative: the sharp copy above carries the alt text. */}
-      <Image
+      <SafeImage
         src={src}
         alt=""
         aria-hidden
@@ -97,7 +97,7 @@ export function ListingImage({
         className="scale-125 object-cover blur-xl brightness-[0.55] saturate-150"
         draggable={false}
       />
-      <Image
+      <SafeImage
         src={src}
         alt={alt}
         fill
