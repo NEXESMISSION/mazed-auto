@@ -904,3 +904,32 @@ html[dir="rtl"] .batta-marquee-reverse { animation-name: batta-marquee; }
   from { width: 0%; }
   to   { width: 100%; }
 }
+
+/* ── Centred alert dialog ──────────────────────────────────────────────────
+   An error is a dialog, not a toast in a corner: it opens in the middle of
+   the screen, over everything, and stays until it is acknowledged. The panel
+   scales in rather than sliding, so it reads as "this is in front of you"
+   instead of "something arrived". */
+@keyframes batta-alert-in {
+  from { opacity: 0; transform: scale(0.94) translateY(6px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.batta-alert-in {
+  animation: batta-alert-in 160ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+
+/* The field a dialog line sent the user to. Two gold pulses: enough to catch
+   the eye once the scroll settles, gone before it becomes decoration. */
+@keyframes batta-field-flash {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0); }
+  25%, 75% { box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.35); }
+}
+.batta-field-flash {
+  animation: batta-field-flash 1.4s ease-in-out 1;
+  border-radius: 1rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .batta-alert-in { animation: none; }
+  .batta-field-flash { animation: none; box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.4); }
+}

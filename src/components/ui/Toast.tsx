@@ -3,6 +3,7 @@
 import * as React from "react";
 import { CheckCircle2, XCircle, AlertTriangle, Info, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AlertDialog, type AlertPayload } from "./AlertDialog";
 
 type ToastVariant = "success" | "error" | "warning" | "info";
 
@@ -13,7 +14,19 @@ interface Toast {
 }
 
 interface ToastContextType {
+  /**
+   * Anything the user should notice. success / info slide in as a small
+   * notice; error / warning open the centred dialog instead — an error the
+   * user can scroll away from, or that fades after four seconds, is an error
+   * they never read.
+   */
   toast: (message: string, variant?: ToastVariant) => void;
+  /**
+   * A problem with structure: a title, and optionally the list of fields that
+   * caused it. Each field can carry `fieldId`, which turns its line into a
+   * button that scrolls to the field and focuses it.
+   */
+  alert: (payload: AlertPayload) => void;
 }
 
 const ToastContext = React.createContext<ToastContextType | null>(null);
@@ -28,7 +41,7 @@ const ToastContext = React.createContext<ToastContextType | null>(null);
 // nothing in the page for crawlers. A missing provider is a wiring mistake
 // worth surfacing, but it is not worth a blank page — so we warn in dev and
 // keep rendering. The user simply doesn't get that one toast.
-const NOOP_TOAST: ToastContextType = { toast: () => {} };
+const NOOP_TOAST: ToastContextType = { toast: () => {}, alert: () => {} };
 
 export function useToast() {
   const ctx = React.useContext(ToastContext);
@@ -47,17 +60,27 @@ let id = 0;
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = React.useState<Toast[]>([]);
+  const [alertPayload, setAlertPayload] = React.useState<AlertPayload | null>(null);
+
+  const alert = React.useCallback((payload: AlertPayload) => {
+    setAlertPayload(payload);
+  }, []);
 
   const toast = React.useCallback(
     (message: string, variant: ToastVariant = "info") => {
+      // Every existing `toast(msg, "error")` call in the app — 40 files' worth
+      // — becomes a centred dialog from here, with no change at the call site.
+      if (variant === "error" || variant === "warning") {
+        setAlertPayload({ title: message, variant });
+        return;
+      }
       const newId = ++id;
       setToasts((prev) => [...prev, { id: newId, message, variant }]);
-      // Auto-dismiss timeout scales with severity — long errors need
-      // more reading time than a success ack.
-      const ms = variant === "error" || variant === "warning" ? 4500 : 1800;
+      // Only acknowledgements reach this line now, and they need no dwell
+      // time — the dialog handles anything the user has to act on.
       setTimeout(() => {
         setToasts((prev) => prev.filter((t) => t.id !== newId));
-      }, ms);
+      }, 1800);
     },
     [],
   );
@@ -65,9 +88,14 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const dismiss = (id: number) =>
     setToasts((prev) => prev.filter((t) => t.id !== id));
 
+  const value = React.useMemo(() => ({ toast, alert }), [toast, alert]);
+
   return (
-    <ToastContext.Provider value={{ toast }}>
+    <ToastContext.Provider value={value}>
       {children}
+      {alertPayload && (
+        <AlertDialog payload={alertPayload} onClose={() => setAlertPayload(null)} />
+      )}
       {/* Top-anchored stack — sits below the status bar with safe-area
           padding so notifications never collide with the bottom tab bar.
           aria-live so screen-reader users hear toasts; assertive because
