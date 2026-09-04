@@ -3,6 +3,7 @@ import { getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
+import { avatarUrl } from "@/lib/avatar";
 import { formatTND } from "@/lib/utils";
 import { HeroCarousel } from "@/components/auction/HeroCarousel";
 import { ContactReveal } from "./ContactReveal";
@@ -129,6 +130,13 @@ export default async function AnnoncePage({
       : Promise.resolve({ data: [] }),
   ]);
 
+  // The seller's face, shown next to their name on the contact card. A
+  // classified is a stranger asking a stranger to meet about a car; a photo is
+  // the cheapest trust signal there is.
+  const { data: sellerProfile } = admin && l.seller_id
+    ? await admin.from("profiles").select("avatar_path").eq("id", l.seller_id).maybeSingle()
+    : { data: null };
+
   // Only show attributes the seller actually filled, labelled the way the
   // category defines them — a raw jsonb dump ("transmission: manual") is not
   // something a buyer should have to decode.
@@ -248,11 +256,38 @@ export default async function AnnoncePage({
           <div className="mb-3 flex justify-end">
             <FavoriteButton listingId={l.id} initialSaved={saved} loggedIn={user !== null} />
           </div>
-          <ContactReveal
-            listingId={l.id}
-            sellerName={l.contact_name}
-            revealCount={l.contact_reveal_count}
-          />
+          <div className="flex items-center gap-3">
+            <span className="size-11 shrink-0 overflow-hidden rounded-full bg-surface-2 ring-1 ring-border">
+              {avatarUrl(sellerProfile?.avatar_path as string | null) ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={avatarUrl(sellerProfile?.avatar_path as string | null) as string}
+                  alt=""
+                  className="size-full object-cover"
+                />
+              ) : (
+                <span className="grid size-full place-items-center text-[15px] font-extrabold text-muted">
+                  {(l.contact_name ?? "?").trim().charAt(0).toUpperCase() || "?"}
+                </span>
+              )}
+            </span>
+            <div className="min-w-0">
+              <div className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-muted">
+                Vendeur
+              </div>
+              <div className="truncate text-[14px] font-bold text-foreground">
+                {l.contact_name ?? "Particulier"}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-3">
+            <ContactReveal
+              listingId={l.id}
+              sellerName={l.contact_name}
+              revealCount={l.contact_reveal_count}
+            />
+          </div>
         </section>
 
         {/* ── Specs ── */}

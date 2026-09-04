@@ -3,6 +3,7 @@ import { getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { formatPhone, realEmail } from "@/lib/identity";
+import { AvatarUploader } from "@/components/account/AvatarUploader";
 import { DeleteAccountButton } from "@/components/account/DeleteAccountButton";
 import { SmsNotificationsToggle } from "@/components/account/SmsNotificationsToggle";
 import { PasswordSection } from "./PasswordSection";
@@ -40,6 +41,8 @@ export default async function SettingsPage() {
   let userId: string | null = null;
   let userEmail: string | null = null;
   let phoneLabel: string | null = null;
+  let fullName: string | null = null;
+  let avatarPath: string | null = null;
   let smsEnabled = true;
   try {
     const supabase = await getServerSupabase();
@@ -51,11 +54,13 @@ export default async function SettingsPage() {
       userEmail = user.email ?? null;
       const { data: profile } = await supabase
         .from("profiles")
-        .select("sms_notifications_enabled, phone")
+        .select("sms_notifications_enabled, phone, full_name, avatar_path")
         .eq("id", user.id)
         .single();
       smsEnabled = profile?.sms_notifications_enabled ?? true;
       phoneLabel = formatPhone(profile?.phone ?? null);
+      fullName = (profile?.full_name as string | null) ?? null;
+      avatarPath = (profile?.avatar_path as string | null) ?? null;
     }
   } catch {
     // env missing — fall through to guest UI.
@@ -164,6 +169,13 @@ export default async function SettingsPage() {
         </Section>
 
         {/* ── Notifications ────────────────────────────────────────── */}
+        {/* Identity first: the face is what a buyer sees next to the annonce. */}
+        <Section label="Profil">
+          <div className="p-4 lg:p-5">
+            <AvatarUploader initialPath={avatarPath} name={fullName} />
+          </div>
+        </Section>
+
         <Section label="Notifications">
           <SmsNotificationsToggle initial={smsEnabled} />
         </Section>
