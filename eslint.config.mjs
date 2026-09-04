@@ -6,6 +6,22 @@
 import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
 import nextTypescript from "eslint-config-next/typescript";
 
+// Tailwind's default palette, as a class-name fragment. These are light-mode
+// swatches; the console is a #0a0a0a surface, so `bg-red-50` renders as a pale
+// pink block and `text-amber-700` is unreadable on it. Matched in both plain
+// string literals and template literals, since half the console's class names
+// are built by interpolation.
+const PALETTE_RE =
+  "(^|[\\s'\"`])(bg|text|ring|border|from|to|via|divide|outline|decoration|shadow|accent|fill|stroke|caret|placeholder)-(slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-(50|100|200|300|400|500|600|700|800|900|950)([^0-9]|$)";
+
+const PALETTE_MESSAGE =
+  "Admin is dark-themed: use a theme token (StatusPill / TONE_CLASS / var(--…)) instead of a Tailwind palette class.";
+
+const NO_LIGHT_PALETTE = [
+  { selector: `Literal[value=/${PALETTE_RE}/]`, message: PALETTE_MESSAGE },
+  { selector: `TemplateElement[value.raw=/${PALETTE_RE}/]`, message: PALETTE_MESSAGE },
+];
+
 const eslintConfig = [
   ...nextCoreWebVitals,
   ...nextTypescript,
@@ -41,6 +57,42 @@ const eslintConfig = [
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" },
       ],
     },
+  },
+  {
+    // The admin console is a dark surface (#0a0a0a). Tailwind's default
+    // palette classes are light-mode swatches: `bg-red-50` renders as a pale
+    // pink block on near-black, and `text-amber-700` is unreadable on it.
+    // There were 84 of them across the console, which is most of the reason
+    // it looked broken rather than merely dense.
+    //
+    // Tones come from the theme tokens instead — via <StatusPill>, the
+    // `TONE_CLASS` map, or an arbitrary value like `text-[#e0a029]` when a
+    // one-off is genuinely needed. Arbitrary values are deliberately still
+    // allowed: the rule is "don't reach for the light-mode palette", not
+    // "don't write colours".
+    // Error inside the kit and every screen already rebuilt on it — these
+    // start clean and must stay clean.
+    files: [
+      "src/components/admin/kit/**/*.{ts,tsx}",
+      "src/components/admin/AdminShell.tsx",
+      "src/app/**/admin/page.tsx",
+      "src/app/**/admin/site/**/*.{ts,tsx}",
+    ],
+    rules: { "no-restricted-syntax": ["error", ...NO_LIGHT_PALETTE] },
+  },
+  {
+    // Warn across the legacy console. 84 of these exist today; each phase
+    // removes a batch with the screen that carried them, and Phase 8 promotes
+    // this block to "error" once the count reaches zero. Warning rather than
+    // erroring keeps the build green while the debt is visible and shrinking.
+    files: ["src/components/admin/**/*.{ts,tsx}", "src/app/**/admin/**/*.{ts,tsx}"],
+    ignores: [
+      "src/components/admin/kit/**",
+      "src/components/admin/AdminShell.tsx",
+      "src/app/**/admin/page.tsx",
+      "src/app/**/admin/site/**",
+    ],
+    rules: { "no-restricted-syntax": ["warn", ...NO_LIGHT_PALETTE] },
   },
   {
     ignores: [".next/**", "node_modules/**", "desing/**", "scripts/**"],

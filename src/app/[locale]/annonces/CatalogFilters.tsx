@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import { RouteProgress, useFilteringFlag } from "@/components/ui/RouteProgress";
 import { useRouter } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { Overlay, LAYER } from "@/components/ui/Overlay";
@@ -155,6 +156,9 @@ function useFilters(current: FilterState) {
     debounce.current = setTimeout(() => commit(merged), 400);
   }
 
+  // Dims the server-rendered results while the next page is in flight.
+  useFilteringFlag(pending);
+
   return { f, setF, push, pushDebounced, pending, router };
 }
 
@@ -168,7 +172,8 @@ function FilterBody({
   const visibleCats = categories.filter((c) => !f.kind || c.kind === f.kind);
 
   return (
-    <div className={cn("space-y-5 transition-opacity", pending && "opacity-60")}>
+    <div className="space-y-5">
+      <RouteProgress active={pending} />
       <Group label="Je cherche">
         <div className="grid grid-cols-3 gap-1.5">
           {[
@@ -397,6 +402,8 @@ export function CatalogToolbar({ categories, governorates, current, total }: Pro
 
   return (
     <>
+      <RouteProgress active={pending} />
+
       {/* ── Search + sort: the row everyone uses, on every screen ── */}
       <div className="flex gap-2">
         <label className="relative flex-1">

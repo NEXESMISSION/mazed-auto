@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServiceSupabase } from "@/lib/supabase/admin";
@@ -10,6 +11,29 @@ import { FavoriteButton } from "@/components/property/FavoriteButton";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { BadgeCheck, ImageOff, Images, MapPin, SearchX, Wrench, Car } from "lucide-react";
 import { CONDITIONS, FUELS, TRANSMISSIONS } from "@/lib/vehicles";
+
+type Cat = { id: string; parent_id: string | null; label_fr: string; kind: string };
+
+/**
+ * The category tree is reference data — it is seeded by migration and changes
+ * about never — but it was re-read from a remote Postgres on every render,
+ * including every filter change. Cached under a tag so it can still be busted
+ * the day categories become editable.
+ */
+const fetchCategories = unstable_cache(
+  async (): Promise<Cat[]> => {
+    const admin = getServiceSupabase();
+    if (!admin) return [];
+    const { data } = await admin
+      .from("categories")
+      .select("id, parent_id, label_fr, kind, sort_order")
+      .eq("is_active", true)
+      .order("sort_order");
+    return (data ?? []) as Cat[];
+  },
+  ["catalog-categories"],
+  { revalidate: 3600, tags: ["categories"] },
+);
 
 export const dynamic = "force-dynamic";
 
@@ -78,14 +102,19 @@ export default async function AnnoncesPage({
     return <main className="px-4 py-16 text-center text-[13px] text-muted">Service indisponible.</main>;
   }
 
-  const { data: catRows } = await admin
-    .from("categories")
-    .select("id, parent_id, label_fr, kind, sort_order")
-    .eq("is_active", true)
-    .order("sort_order");
+  // Kicked off before anything is awaited so the listings query and the
+  // viewer's session travel to the database together instead of one after the
+  // other. Filtering was five SEQUENTIAL round trips to a remote Postgres —
+  // the query itself is single-digit milliseconds, the waiting was the cost.
+  const catsPromise = fetchCategories();
+  const userPromise = getServerSupabase().then(async (c) => ({
+    client: c,
+    user: (await c.auth.getUser()).data.user,
+  }));
 
-  type Cat = { id: string; parent_id: string | null; label_fr: string; kind: string };
-  const cats = (catRows ?? []) as Cat[];
+  const catRows = await catsPromise;
+
+  const cats = catRows;
   const leaves = cats.filter((c) => c.parent_id != null);
 
   const kind = sp.kind === "part" || sp.kind === "vehicle" ? sp.kind : null;
@@ -235,31 +264,36 @@ export default async function AnnoncesPage({
 
   // Which of these the viewer already saved — one read, through their own
   // session so RLS decides what they can see.
-  const userClient = await getServerSupabase();
-  const { data: { user } } = await userClient.auth.getUser();
+  // Both of these depend on `rows`, and on nothing else — so they go together.
+  const { client: userClient, user } = await userPromise;
+  const sellerIds = [...new Set(rows.map((r) => r.seller_id))];
+
+  const [savedRes, badgeRes] = await Promise.all([
+    user && rows.length > 0
+      ? userClient
+          .from("watchlist")
+          .select("listing_id")
+          .eq("user_id", user.id)
+          .in("listing_id", rows.map((r) => r.id))
+      : Promise.resolve({ data: null }),
+    sellerIds.length > 0
+      ? admin
+          .from("seller_badges")
+          .select("seller_id, expires_at, revoked_at")
+          .in("seller_id", sellerIds)
+          .is("revoked_at", null)
+      : Promise.resolve({ data: null }),
+  ]);
+
   const savedIds = new Set<string>();
-  if (user && rows.length > 0) {
-    const { data: saved } = await userClient
-      .from("watchlist")
-      .select("listing_id")
-      .eq("user_id", user.id)
-      .in("listing_id", rows.map((r) => r.id));
-    for (const w of saved ?? []) if (w.listing_id) savedIds.add(w.listing_id as string);
+  for (const w of (savedRes.data ?? []) as { listing_id: string | null }[]) {
+    if (w.listing_id) savedIds.add(w.listing_id);
   }
 
-  // Badges in one round-trip rather than one per card.
-  const sellerIds = [...new Set(rows.map((r) => r.seller_id))];
   const badged = new Set<string>();
-  if (sellerIds.length > 0) {
-    const { data: badges } = await admin
-      .from("seller_badges")
-      .select("seller_id, expires_at, revoked_at")
-      .in("seller_id", sellerIds)
-      .is("revoked_at", null);
-    const now = Date.now();
-    for (const b of badges ?? []) {
-      if (new Date(b.expires_at as string).getTime() > now) badged.add(b.seller_id as string);
-    }
+  const now = Date.now();
+  for (const b of (badgeRes.data ?? []) as { seller_id: string; expires_at: string }[]) {
+    if (new Date(b.expires_at).getTime() > now) badged.add(b.seller_id);
   }
 
   const filterState = {
@@ -292,6 +326,9 @@ export default async function AnnoncesPage({
         <div className="min-w-0">
           <CatalogToolbar {...filterProps} total={total} />
 
+          {/* `data-catalog-results` is what globals.css dims while a filter
+              transition is in flight — see the RouteProgress bar. */}
+          <div data-catalog-results>
           {rows.length === 0 ? (
             <div className="mt-8 rounded-2xl border border-dashed border-border bg-surface-2/40 px-6 py-14 text-center">
               <span className="mx-auto grid size-12 place-items-center rounded-full bg-surface text-muted">
@@ -315,7 +352,9 @@ export default async function AnnoncesPage({
               {rows.map((l) => {
                 const cat = one(l.category);
                 const photos = (l.photos ?? []).slice().sort((a, b) => a.sort_order - b.sort_order);
-                const cover = photos[0];
+                // Honour the cover an admin picked in /admin/home; falls back
+                // to the seller's first photo when nobody has chosen one.
+                const cover = photos.find((p) => p.is_cover) ?? photos[0];
                 const at = (l.attributes ?? {}) as Record<string, unknown>;
                 const isPart = cat?.kind === "part";
 
@@ -424,6 +463,7 @@ export default async function AnnoncesPage({
               })}
             </div>
           )}
+          </div>
 
       {lastPage > 1 && (
         <nav className="mt-6 flex items-center justify-center gap-2" aria-label="Pagination">

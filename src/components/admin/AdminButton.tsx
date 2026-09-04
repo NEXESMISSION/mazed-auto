@@ -3,8 +3,8 @@ import { Loader2, Check } from "lucide-react";
 /**
  * One button vocabulary for the whole admin console. Before this, every
  * queue hand-rolled its own emerald/red/amber Tailwind classes — colors
- * that clashed with the navy brand and drifted page to page. Everything
- * routes through these tokens now (--gold = navy primary, --success,
+ * that clashed with the gold brand and drifted page to page. Everything
+ * routes through these tokens now (--gold = primary, --success,
  * --danger/--accent, --warning) so the console reads as one product.
  *
  * Use `adminBtn(variant, size)` for the className when you need a <Link>
@@ -12,7 +12,7 @@ import { Loader2, Check } from "lucide-react";
  * pending spinner + disabled state for you).
  */
 export type AdminButtonVariant =
-  | "primary" // navy fill — main affirmative action
+  | "primary" // gold fill — main affirmative action
   | "success" // green fill — approve / verify
   | "danger" // red fill — destructive submit
   | "dangerSoft" // tinted red — reject link, lower weight
@@ -29,15 +29,15 @@ const SIZES: Record<AdminButtonSize, string> = {
 
 const VARIANTS: Record<AdminButtonVariant, string> = {
   primary:
-    "bg-[var(--gold)] text-white shadow-sm hover:bg-[var(--gold-bright)]",
+    "bg-[var(--gold)] text-black shadow-sm hover:bg-[var(--gold-bright)]",
   success:
     "bg-[var(--success)] text-white shadow-sm hover:brightness-95",
   danger:
     "bg-[var(--danger)] text-white shadow-sm hover:bg-[var(--accent-bright)]",
   dangerSoft:
-    "bg-[var(--accent-faint)] text-[var(--accent-deep)] ring-1 ring-[var(--accent-soft)] hover:bg-[var(--accent)]/10",
+    "bg-[var(--accent-faint)] text-[#ef8681] ring-1 ring-[var(--accent-soft)] hover:bg-[var(--accent)]/10",
   warnSoft:
-    "bg-[rgba(245,158,11,0.12)] text-[#92400e] ring-1 ring-[rgba(245,158,11,0.35)] hover:bg-[rgba(245,158,11,0.2)]",
+    "bg-[rgba(245,158,11,0.12)] text-[#e0a029] ring-1 ring-[rgba(245,158,11,0.35)] hover:bg-[rgba(245,158,11,0.2)]",
   ghost:
     "border border-border bg-surface text-foreground hover:border-[var(--gold-soft)] hover:text-[var(--gold)]",
   neutral:

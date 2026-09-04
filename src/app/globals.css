@@ -596,12 +596,15 @@ textarea.batta-input {
 }
 .batta-tone-warn {
   background: rgba(245, 158, 11, 0.10);
-  color: #b45309;
+  /* amber-700 (#b45309) on a #0a0a0a ground fails contrast outright — it was
+     inherited from the light-mode twin. Light end of the same hue instead. */
+  color: #e0a029;
   border: 1px solid rgba(245, 158, 11, 0.30);
 }
 .batta-tone-bad {
   background: var(--accent-faint);
-  color: var(--accent-deep);
+  /* --accent-deep is red-700; same problem as the warn tone above. */
+  color: #ef8681;
   border: 1px solid rgba(220, 38, 38, 0.25);
 }
 
@@ -943,4 +946,29 @@ html[dir="rtl"] .batta-marquee-reverse { animation-name: batta-marquee; }
   .batta-alert-in { animation: none; }
   .batta-field-flash { animation: none; box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.4); }
   .batta-field-flash-danger { animation: none; box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.5); }
+}
+
+/* ── Filtering feedback ─────────────────────────────────────────────────────
+   A catalogue filter is a server round trip. React keeps the previous results
+   on screen for the whole transition (which is what stops the page blanking),
+   but that also means a filtered page looks IDENTICAL to an unfiltered one
+   until the data lands — so a tap on "Renault" read as a dead click.
+
+   The results dim and stop accepting clicks while the next set is in flight;
+   the controls themselves stay crisp, because dimming the thing the user is
+   currently pointing at is backwards. */
+@keyframes route-progress {
+  0%   { transform: scaleX(0);    opacity: 1; }
+  60%  { transform: scaleX(0.75); opacity: 1; }
+  100% { transform: scaleX(0.92); opacity: 1; }
+}
+
+[data-filtering] [data-catalog-results] {
+  opacity: 0.42;
+  pointer-events: none;
+  transition: opacity 140ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-filtering] [data-catalog-results] { transition: none; }
 }
