@@ -23,3 +23,4 @@ supabase/.temp/
 # public repo. Tracked once by mistake; untracked in this commit.
 DEEP-AUDIT-*.md
 verify-*.log
+backups/

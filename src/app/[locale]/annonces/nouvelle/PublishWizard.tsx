@@ -12,7 +12,7 @@ import {
   modelsFor, modelYears,
 } from "@/lib/vehicles";
 import {
-  Car, Wrench, Truck, Bike, Tractor, Check, ChevronLeft, ChevronRight,
+  Car, Wrench, Truck, Bike, Tractor, Check,
   Loader2, MapPin, Plus, Trash2, CircleAlert, Gift, Ticket, ImageOff,
 } from "lucide-react";
 
@@ -62,8 +62,6 @@ export type WizardCategory = {
 
 type Fitment = { make: string; model: string; yearFrom: string; yearTo: string };
 
-const STEPS = ["Catégorie", "Photos", "Détails", "Prix", "Contact"] as const;
-type Step = 0 | 1 | 2 | 3 | 4;
 
 /** Icon per category slug, falling back by kind. */
 function iconFor(slug: string, kind: "vehicle" | "part") {
@@ -92,7 +90,6 @@ export function PublishWizard({
   const router = useRouter();
   const { toast } = useToast();
 
-  const [step, setStep] = useState<Step>(0);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState<"idle" | "saving" | "ok">("idle");
   const [listingId, setListingId] = useState<string | null>(null);
@@ -148,36 +145,34 @@ export function PublishWizard({
     return [...m.entries()];
   }, [categories]);
 
-  // ─── What is missing, per step ────────────────────────────────────────────
-  const problems: Record<Step, string | null> = {
-    0: categoryId ? null : "Choisissez ce que vous vendez.",
-    1: photosUploading > 0
-      ? `Encore ${photosUploading} photo${photosUploading > 1 ? "s" : ""} en cours d'envoi…`
-      : photos.length > 0
-        ? null
-        : "Ajoutez au moins une photo.",
-    2: isPart
-      ? !attrs.part_name?.trim()
-        ? "Indiquez de quelle pièce il s'agit."
-        : null
-      : !attrs.make?.trim()
-        ? "Choisissez la marque."
-        : !attrs.model?.trim()
-          ? "Choisissez le modèle."
-          : !attrs.year
-            ? "Indiquez l'année."
-            : null,
-    3: title.trim().length < 3
-      ? "Donnez un titre à votre annonce."
-      : !onRequest && !(Number(price) > 0)
-        ? "Indiquez un prix, ou cochez « prix sur demande »."
-        : null,
-    4: contactPhone.replace(/\D/g, "").length < 8
-      ? "Un numéro joignable est obligatoire."
-      : !attested
-        ? "Cochez l'attestation pour publier."
-        : null,
-  };
+  // ─── What is still missing ────────────────────────────────────────────────
+  // A single list, because the whole form is on screen: the seller can see
+  // every gap at once and fix them in any order, instead of being told about
+  // them one screen at a time.
+  const missing: string[] = [];
+  if (!categoryId) missing.push("Choisissez ce que vous vendez.");
+  if (photosUploading > 0) {
+    missing.push(`Encore ${photosUploading} photo${photosUploading > 1 ? "s" : ""} en cours d'envoi…`);
+  } else if (photos.length === 0) {
+    missing.push("Ajoutez au moins une photo.");
+  }
+  if (categoryId) {
+    if (isPart) {
+      if (!attrs.part_name?.trim()) missing.push("Indiquez de quelle pièce il s'agit.");
+    } else {
+      if (!attrs.make?.trim()) missing.push("Choisissez la marque.");
+      else if (!attrs.model?.trim()) missing.push("Choisissez le modèle.");
+      else if (!attrs.year) missing.push("Indiquez l'année.");
+    }
+  }
+  if (title.trim().length < 3) missing.push("Donnez un titre à votre annonce.");
+  if (!onRequest && !(Number(price) > 0)) {
+    missing.push("Indiquez un prix, ou cochez « prix sur demande ».");
+  }
+  if (contactPhone.replace(/\D/g, "").length < 8) {
+    missing.push("Un numéro joignable est obligatoire.");
+  }
+  if (!attested) missing.push("Cochez l'attestation pour publier.");
 
   // ─── Persistence ──────────────────────────────────────────────────────────
   async function saveDraft(extra: Record<string, unknown> = {}): Promise<string | null> {
@@ -212,24 +207,15 @@ export function PublishWizard({
     return j.id;
   }
 
-  async function goNext() {
-    if (problems[step]) {
+  async function publishNow() {
+    if (missing.length > 0) {
       setShowErrors(true);
+      // Take them to the first gap rather than leaving them to hunt for it.
+      document.getElementById("publish-missing")?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
     setShowErrors(false);
-    if (step === 4) return publish();
-
-    setBusy(true);
-    try {
-      // From step 2 on there is enough to persist; before that there is no
-      // category and the draft would be meaningless.
-      if (step >= 1) await saveDraft();
-      setStep((s) => (s + 1) as Step);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    } finally {
-      setBusy(false);
-    }
+    return publish();
   }
 
   async function publish() {
@@ -301,8 +287,6 @@ export function PublishWizard({
     );
   }
 
-  const err = showErrors ? problems[step] : null;
-
   return (
     <main className="mx-auto max-w-2xl px-4 pb-32 pt-4 lg:pb-12 lg:pt-8">
       {/* One page, top to bottom. The wizard's five screens hid what the form
@@ -331,7 +315,7 @@ export function PublishWizard({
 
       {/* ── STEP 1 · Category ── */}
               <section className="mt-6">
-          <h1 className="text-[22px] font-extrabold tracking-tight">Que vendez-vous ?</h1>
+          <h2 className="flex items-center gap-2.5 text-[19px] font-extrabold tracking-tight"><span className="inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--gold)] text-[12px] font-extrabold text-white">1</span>Que vendez-vous ?</h2>
           <p className="mt-1 text-[13px] text-muted">
             Cela décide des informations qui vous seront demandées.
           </p>
@@ -394,7 +378,7 @@ export function PublishWizard({
 
       {/* ── STEP 2 · Photos ── */}
               <section className="mt-6">
-          <h1 className="text-[22px] font-extrabold tracking-tight">Vos photos</h1>
+          <h2 className="flex items-center gap-2.5 text-[19px] font-extrabold tracking-tight"><span className="inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--gold)] text-[12px] font-extrabold text-white">2</span>Vos photos</h2>
           <p className="mt-1 text-[13px] text-muted">
             Elles décident si un acheteur clique. Montrez l&apos;avant, l&apos;arrière,
             les côtés, l&apos;intérieur et le compteur.
@@ -410,9 +394,9 @@ export function PublishWizard({
 
       {/* ── STEP 3 · Details ── */}
               <section className="mt-6">
-          <h1 className="text-[22px] font-extrabold tracking-tight">
+          <h2 className="flex items-center gap-2.5 text-[19px] font-extrabold tracking-tight"><span className="inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--gold)] text-[12px] font-extrabold text-white">3</span>
             {isPart ? "La pièce" : "Le véhicule"}
-          </h1>
+          </h2>
           <p className="mt-1 text-[13px] text-muted">
             {isPart
               ? "Plus c'est précis, moins vous recevrez d'appels pour rien."
@@ -590,7 +574,7 @@ export function PublishWizard({
 
       {/* ── STEP 4 · Price & description ── */}
               <section className="mt-6">
-          <h1 className="text-[22px] font-extrabold tracking-tight">Titre et prix</h1>
+          <h2 className="flex items-center gap-2.5 text-[19px] font-extrabold tracking-tight"><span className="inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--gold)] text-[12px] font-extrabold text-white">4</span>Titre et prix</h2>
           <p className="mt-1 text-[13px] text-muted">
             Le titre est proposé d&apos;après ce que vous avez saisi — modifiez-le si
             vous voulez.
@@ -648,7 +632,7 @@ export function PublishWizard({
 
       {/* ── STEP 5 · Contact, preview, publish ── */}
               <section className="mt-6">
-          <h1 className="text-[22px] font-extrabold tracking-tight">Contact et publication</h1>
+          <h2 className="flex items-center gap-2.5 text-[19px] font-extrabold tracking-tight"><span className="inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--gold)] text-[12px] font-extrabold text-white">5</span>Contact et publication</h2>
           <p className="mt-1 text-[13px] text-muted">
             Les acheteurs vous appellent directement sur ce numéro.
           </p>
@@ -745,7 +729,7 @@ export function PublishWizard({
       {/* Everything still missing, in one place, instead of discovering it a
           screen at a time. Only shown once they have tried to publish. */}
       {showErrors && missing.length > 0 && (
-        <div className="mt-6 rounded-2xl border border-[var(--accent-soft)] bg-[var(--accent-faint)] p-4">
+        <div id="publish-missing" className="mt-6 rounded-2xl border border-[var(--accent-soft)] bg-[var(--accent-faint)] p-4">
           <p className="inline-flex items-center gap-2 text-[13px] font-extrabold text-[var(--accent-deep)]">
             <CircleAlert className="size-4 shrink-0" />
             Il manque {missing.length === 1 ? "une chose" : `${missing.length} choses`}

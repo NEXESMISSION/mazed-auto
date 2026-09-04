@@ -2,6 +2,7 @@ import { Fragment } from "react";
 import { getTranslations, getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { accountLabel } from "@/lib/identity";
 import { SignOutButton } from "@/components/auth/SignOutButton";
 import { DeleteAccountButton } from "@/components/account/DeleteAccountButton";
 import {
@@ -53,10 +54,15 @@ export default async function AccountPage() {
       userEmail = user.email ?? null;
       const { data: profile } = await supabase
         .from("profiles")
-        .select("full_name, kyc_status, role")
+        .select("full_name, kyc_status, role, phone")
         .eq("id", user.id)
         .single();
       fullName = profile?.full_name ?? null;
+      // The account is a PHONE account: `user.email` is the synthetic
+      // 216…@phone.mazedauto.app that signup mints for Supabase. Showing it
+      // is meaningless to the person reading it — show the number they
+      // actually sign in with.
+      userEmail = accountLabel(user.email, profile?.phone ?? null);
       kycStatus = profile?.kyc_status ?? "none";
       role = profile?.role ?? "individual";
     }

@@ -83,11 +83,26 @@ export function LoginForm() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ phone, password }),
         });
-        const data = (await res.json().catch(() => ({}))) as { ok?: boolean };
+        const data = (await res.json().catch(() => ({}))) as {
+          ok?: boolean;
+          error?: string;
+        };
         if (!data.ok) {
-          // Generic wording — never reveals whether the phone is the problem
-          // or the password (no account-enumeration signal).
-          setError("Identifiants invalides. Vérifiez le numéro et le mot de passe.");
+          // A wrong number and a wrong password stay indistinguishable — that
+          // is deliberate, it is what stops the form being an account oracle.
+          //
+          // But everything ELSE was being reported as bad credentials too, and
+          // that is not caution, it is a lie: someone who trips the rate limit
+          // after five quick tries is told their password is wrong, so they
+          // retry, stay locked out, and reset a password that was correct all
+          // along. Name the failures that are not about the credentials.
+          setError(
+            data.error === "rate_limited"
+              ? "Trop de tentatives. Patientez quelques minutes avant de réessayer — vos identifiants ne sont peut-être pas en cause."
+              : res.status >= 500
+                ? "Service indisponible pour le moment. Réessayez dans un instant."
+                : "Identifiants invalides. Vérifiez le numéro et le mot de passe.",
+          );
           return;
         }
       } catch {

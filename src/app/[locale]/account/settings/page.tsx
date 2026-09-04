@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { formatPhone, realEmail } from "@/lib/identity";
 import { DeleteAccountButton } from "@/components/account/DeleteAccountButton";
 import { SmsNotificationsToggle } from "@/components/account/SmsNotificationsToggle";
 import { PasswordSection } from "./PasswordSection";
@@ -39,6 +40,7 @@ export default async function SettingsPage() {
   // Fail-soft: Supabase env missing in dev → render the guest prompt.
   let userId: string | null = null;
   let userEmail: string | null = null;
+  let phoneLabel: string | null = null;
   let kycStatus = "none";
   let smsEnabled = true;
   try {
@@ -51,15 +53,19 @@ export default async function SettingsPage() {
       userEmail = user.email ?? null;
       const { data: profile } = await supabase
         .from("profiles")
-        .select("kyc_status, sms_notifications_enabled")
+        .select("kyc_status, sms_notifications_enabled, phone")
         .eq("id", user.id)
         .single();
       kycStatus = profile?.kyc_status ?? "none";
       smsEnabled = profile?.sms_notifications_enabled ?? true;
+      phoneLabel = formatPhone(profile?.phone ?? null);
     }
   } catch {
     // env missing — fall through to guest UI.
   }
+
+  // A synthetic 216…@phone.mazedauto.app is not an e-mail the user has.
+  const hasRealEmail = realEmail(userEmail) !== null;
 
   if (!userId) {
     return (
@@ -133,17 +139,23 @@ export default async function SettingsPage() {
         </Section>
 
         {/* ── E-mail ───────────────────────────────────────────────── */}
-        <Section label="E-mail">
+        {/* Phone accounts have no e-mail to speak of — the address on the
+            auth row is a synthetic 216…@phone.mazedauto.app that signup mints
+            because Supabase requires one. Presenting it as "votre adresse
+            e-mail … identifiant de connexion" was telling the user to sign in
+            with an address that does not exist. Show the number instead, and
+            keep the e-mail card only for accounts that really have one. */}
+        <Section label={hasRealEmail ? "E-mail" : "Téléphone"}>
           <div className="flex items-center gap-3 p-4 lg:p-5">
             <IconBadge>
               <Mail className="size-5" strokeWidth={2} />
             </IconBadge>
             <div className="min-w-0 flex-1">
               <div className="text-[14px] font-bold text-foreground">
-                Adresse e-mail
+                {hasRealEmail ? "Adresse e-mail" : "Numéro de téléphone"}
               </div>
               <div className="mt-0.5 truncate text-[12px] text-muted">
-                {userEmail ?? "Compte sans adresse e-mail"}
+                {hasRealEmail ? userEmail : (phoneLabel ?? "—")}
               </div>
             </div>
             <span className="shrink-0 rounded-full border border-border bg-surface-2 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-muted">
@@ -153,10 +165,9 @@ export default async function SettingsPage() {
           <Divider />
           <div className="p-4 lg:p-5">
             <p className="text-[12px] leading-relaxed text-muted">
-              Votre adresse e-mail sert d&apos;identifiant de connexion et reçoit
-              les confirmations d&apos;enchères. Pour la modifier, contactez notre
-              support — chaque changement est vérifié manuellement pour protéger
-              votre compte.
+              {hasRealEmail
+                ? "Votre adresse e-mail sert d'identifiant de connexion. Pour la modifier, contactez notre support — chaque changement est vérifié manuellement pour protéger votre compte."
+                : "Votre numéro de téléphone est votre identifiant de connexion, et c'est lui que les acheteurs voient sur vos annonces. Pour le modifier, contactez notre support — chaque changement est vérifié manuellement pour protéger votre compte."}
             </p>
             <Link
               href="/contact"
