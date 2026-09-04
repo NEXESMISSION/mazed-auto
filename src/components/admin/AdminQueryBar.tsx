@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Search } from "lucide-react";
+import { SearchIcon, SearchSweep, SearchStatus } from "@/components/ui/SearchBusy";
 
 const RANGES = [
   { key: "", label: "Tout" },
@@ -30,6 +30,8 @@ export function AdminQueryBar({
   const sp = useSearchParams();
   const [q, setQ] = useState(sp.get("q") ?? "");
   const range = sp.get("range") ?? "";
+  // True from the moment a query is committed until its results render.
+  const [searching, startSearch] = useTransition();
 
   function push(next: Record<string, string | null>) {
     const params = new URLSearchParams(sp.toString());
@@ -38,7 +40,9 @@ export function AdminQueryBar({
       else params.delete(k);
     }
     params.delete("page");
-    router.push(`${pathname}?${params.toString()}`);
+    startSearch(() => {
+      router.push(`${pathname}?${params.toString()}`);
+    });
   }
 
   // Debounced search — skip the mount so we don't refetch the SSR page.
@@ -55,8 +59,13 @@ export function AdminQueryBar({
 
   return (
     <div className="mt-4 flex flex-wrap items-center gap-2">
-      <div className="relative">
-        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" strokeWidth={2} />
+      <div className="relative overflow-hidden rounded-lg">
+        <SearchIcon
+          active={searching}
+          className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted"
+        />
+        <SearchSweep active={searching} />
+        <SearchStatus active={searching} />
         <input
           type="search"
           value={q}

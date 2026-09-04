@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { normalizeSearchQuery } from "@/lib/search";
 import { TUNISIAN_GOVERNORATES } from "@/lib/tunisia";
-import { Search, MapPin } from "lucide-react";
+import { MapPin } from "lucide-react";
+import { SearchIcon, SearchSweep, SearchStatus } from "@/components/ui/SearchBusy";
 import { SelectMenu, type SelectOption } from "@/components/ui/SelectMenu";
 
 // Canonical 24-wilaya list (previously a truncated 16 here).
@@ -41,6 +42,7 @@ export function HomeSearch({
   const [q, setQ] = useState("");
   const [gov, setGov] = useState("");
   const [type, setType] = useState("");
+  const [searching, startSearch] = useTransition();
 
   const govOptions: SelectOption[] = [
     { value: "", label: t("search.allWilayas") },
@@ -59,11 +61,18 @@ export function HomeSearch({
     const cleanQ = normalizeSearchQuery(q);
     if (cleanQ) params.set("q", cleanQ);
     if (gov) params.set("gov", gov);
-    // The new Explore page expects `types` (comma-separated list); a
-    // single picked type maps cleanly to a one-element list.
-    if (type) params.set("types", type);
+    // `types` was the v2 Explore vocabulary (sedan / suv / hatchback…) and the
+    // catalogue has no such concept — it splits on kind (vehicle vs part) and
+    // then on category. Only the one type that still means something survives
+    // the translation; the rest would have been a parameter nothing reads.
+    if (type === "spare_part") params.set("kind", "part");
     const qs = params.toString();
-    router.push((qs ? `/properties?${qs}` : "/properties") as `/properties`);
+    // /properties is the retired surface: the auction gate 307s it to
+    // /annonces, and until today that redirect dropped the query — so this
+    // form's whole payload was thrown away on arrival.
+    startSearch(() => {
+      router.push((qs ? `/annonces?${qs}` : "/annonces") as `/annonces`);
+    });
   }
 
   // Desktop hero variant — one horizontal row: keyword | governorate |
@@ -78,10 +87,12 @@ export function HomeSearch({
         {/* Keyword absorbs the free space; the two selects size to their
             own (sometimes long) labels via shrink-0 so nothing clips. */}
         <div className="relative flex min-w-0 flex-1 items-center">
-          <Search
+          <SearchIcon
+            active={searching}
             className="pointer-events-none absolute size-4 text-muted ltr:left-4 rtl:right-4"
-            strokeWidth={2}
           />
+          <SearchSweep active={searching} />
+          <SearchStatus active={searching} />
           <input
             type="search"
             value={q}
@@ -113,7 +124,7 @@ export function HomeSearch({
           type="submit"
           className="batta-gold-fill inline-flex shrink-0 items-center gap-2 rounded-xl px-7 text-[13px] font-extrabold shadow-[var(--shadow-gold)] ring-1 ring-black/10 transition active:scale-[0.98]"
         >
-          <Search className="size-4" strokeWidth={2.5} />
+          <SearchIcon active={searching} className="size-4" />
           {t("search.submit")}
         </button>
       </form>
@@ -130,10 +141,12 @@ export function HomeSearch({
             narrow phones — the type + governorate pickers drop below. */}
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
-            <Search
+            <SearchIcon
+              active={searching}
               className="pointer-events-none absolute top-1/2 size-4 -translate-y-1/2 text-muted ltr:left-3.5 rtl:right-3.5"
-              strokeWidth={2}
             />
+            <SearchSweep active={searching} />
+            <SearchStatus active={searching} />
             <input
               type="search"
               value={q}
@@ -148,7 +161,7 @@ export function HomeSearch({
             className="batta-gold-fill tap-target inline-flex size-11 shrink-0 items-center justify-center rounded-full shadow-[var(--shadow-gold)] ring-1 ring-black/10"
             aria-label={t("search.submit")}
           >
-            <Search className="size-4" strokeWidth={2.5} />
+            <SearchIcon active={searching} className="size-4" />
           </button>
         </div>
 

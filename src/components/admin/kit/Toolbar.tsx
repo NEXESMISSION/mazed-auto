@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Search, X, Loader2 } from "lucide-react";
+import { X, Loader2 } from "lucide-react";
+import { SearchIcon, SearchSweep, SearchStatus } from "@/components/ui/SearchBusy";
 
 /**
  * Filters, flat: tabs as underlined words, search as a line rather than a box.
@@ -96,13 +97,17 @@ export function Toolbar({
       )}
 
       <div className="ms-auto flex shrink-0 items-center gap-2">
-        {pending && <Loader2 className="size-3.5 animate-spin text-[var(--gold)]" />}
+        {/* Only when there is no search field to carry the state itself —
+            two spinners a few pixels apart read as two things happening. */}
+        {pending && !search && <Loader2 className="size-3.5 animate-spin text-[var(--gold)]" />}
         {search && (
-          <div className="relative">
-            <Search
+          <div className="relative overflow-hidden">
+            <SearchIcon
+              active={pending}
               className="pointer-events-none absolute start-0 top-1/2 size-3.5 -translate-y-1/2 text-subtle"
-              strokeWidth={2}
             />
+            <SearchSweep active={pending} />
+            <SearchStatus active={pending} />
             <input
               type="search"
               value={q}

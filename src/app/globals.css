@@ -1064,3 +1064,35 @@ html[dir="rtl"] .batta-marquee-reverse { animation-name: batta-marquee; }
   .press { transition: none; }
   .press:active { transform: none; }
 }
+
+/* ── Search in flight ───────────────────────────────────────────────────────
+   A search submit is a full server round trip, and the field gave no sign it
+   had heard you: the text sat there, the icon sat there, and the results
+   arrived whenever they arrived. This is deliberately loud — a gold bar
+   sweeping the width of the field, not a 3px tint — because "did that
+   register?" is the question it exists to answer. */
+@keyframes search-sweep {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+
+.search-sweep::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 2px;
+  width: 40%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  animation: search-sweep 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search-sweep::after {
+    animation: none;
+    width: 100%;
+    background: var(--gold);
+    opacity: 0.7;
+  }
+}

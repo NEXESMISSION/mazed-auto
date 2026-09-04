@@ -2,13 +2,13 @@
 
 import Image from "next/image";
 import dynamic from "next/dynamic";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { activeTabFor, TAB_HREFS, type TabId } from "@/lib/nav/tabs";
 import { AccountMenu } from "./AccountMenu";
 import { normalizeSearchQuery } from "@/lib/search";
-import { Search } from "lucide-react";
+import { SearchIcon, SearchSweep, SearchStatus } from "@/components/ui/SearchBusy";
 
 // Lazy-loaded — see TopBar for rationale (heavy icon set + realtime socket +
 // mount fetch, none needed for first paint). Reserves the 36px slot.
@@ -68,13 +68,22 @@ export function DesktopNav() {
   const pathname = usePathname();
   const router = useRouter();
   const [q, setQ] = useState("");
+  // Ends when the new page is on screen, not on a timer.
+  const [searching, startSearch] = useTransition();
 
   function submitSearch(e: React.FormEvent) {
     e.preventDefault();
     const clean = normalizeSearchQuery(q);
-    router.push(
-      (clean ? `/properties?q=${encodeURIComponent(clean)}` : "/properties") as `/properties`,
-    );
+    // Straight to the catalogue. This used to push /properties — the
+    // auction-era surface, which the auction gate 307s to /annonces while
+    // dropping the query string. Every header search therefore landed on the
+    // FULL, unfiltered catalogue: you typed "golf", pressed Enter, and got all
+    // 66 annonces. (The redirect keeps the query now too, for old links.)
+    startSearch(() => {
+      router.push(
+        (clean ? `/annonces?q=${encodeURIComponent(clean)}` : "/annonces") as `/annonces`,
+      );
+    });
   }
 
   return (
@@ -129,18 +138,20 @@ export function DesktopNav() {
 
         {/* ── Center zone: real search — submits to the explore surface ── */}
         <form onSubmit={submitSearch} className="flex flex-1 justify-center" role="search">
-          <div className="relative flex w-full max-w-md items-center">
-            <Search
+          <div className="relative flex w-full max-w-md items-center overflow-hidden rounded-full">
+            <SearchIcon
+              active={searching}
               className="pointer-events-none absolute size-4 text-muted ltr:left-4 rtl:right-4"
-              strokeWidth={2}
             />
+            <SearchSweep active={searching} />
+            <SearchStatus active={searching} />
             <input
               type="search"
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder={ts("placeholder")}
               aria-label={ts("placeholder")}
-              className="h-11 w-full rounded-full border border-border bg-surface-2 text-[13px] text-foreground placeholder:text-muted transition-colors focus:border-gold-soft/70 focus:bg-surface focus:outline-none focus:ring-2 focus:ring-gold-faint ltr:pl-11 ltr:pr-4 rtl:pl-4 rtl:pr-11"
+              className={`h-11 w-full rounded-full border bg-surface-2 text-[13px] text-foreground placeholder:text-muted transition-colors focus:bg-surface focus:outline-none focus:ring-2 focus:ring-gold-faint ltr:pl-11 ltr:pr-4 rtl:pl-4 rtl:pr-11 ${searching ? "border-gold-soft" : "border-border focus:border-gold-soft/70"}`}
             />
           </div>
         </form>

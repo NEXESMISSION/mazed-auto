@@ -146,6 +146,12 @@ export async function middleware(req: NextRequest) {
     const exploreMatch = pathname.match(/^\/(fr|ar|en)\/properties(?:\/.*)?$/);
     if (exploreMatch) {
       const target = new URL(`/${exploreMatch[1]}/annonces`, req.url);
+      // Carry the query across. Without this the redirect silently emptied
+      // it, so /properties?q=golf landed on the FULL catalogue — which is
+      // what the header search did on every single submit: type, press
+      // Enter, arrive at 66 unfiltered annonces. The catalogue reads the
+      // same `q`/`gov` names, so forwarding them verbatim is enough.
+      target.search = req.nextUrl.search;
       mwLog.info(`auction-gate ${pathname} → ${target.pathname}`);
       return NextResponse.redirect(target, 307);
     }
