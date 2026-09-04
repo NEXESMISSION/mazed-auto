@@ -1,330 +1,164 @@
 import type { Metadata } from "next";
-import { Check, Sparkles, ArrowRight, X as XIcon } from "lucide-react";
+import { Check, ArrowRight } from "lucide-react";
 import { Link } from "@/i18n/navigation";
+import { getServiceSupabase } from "@/lib/supabase/admin";
+import { PRODUCT_SELECT, toProduct, type Product } from "@/lib/products";
 
 export const metadata: Metadata = {
-  title: "Tarifs Pro — Mazed Auto",
+  title: "Tarifs — Mazed Auto",
   description:
-    "Comptes professionnels Mazed Auto : choisissez le plan Silver, Gold ou Diamond pour vendre plus de voitures aux enchères.",
+    "Ce que coûte une annonce sur Mazed Auto : un prix par publication, pas d'abonnement.",
 };
 
-// Pure static content — prerender at build and serve from the edge CDN.
-export const dynamic = "force-static";
+// Prices come from the database, so this cannot be prerendered at build.
+export const dynamic = "force-dynamic";
 
-/* ------------------------------------------------------------------ */
-/* Static plans — v2 has no subscriptions backend yet, the cards are  */
-/* purely informational and every CTA routes to /contact.             */
-/* TODO(owner): real prices + quotas                                  */
-/* ------------------------------------------------------------------ */
+/**
+ * Tarifs — one number per publication, and that is the whole model.
+ *
+ * The monthly Silver / Gold / Diamond plans that used to live here were
+ * invented copy: no subscriptions backend existed, every CTA went to /contact,
+ * and the quotas and percentages on the cards were placeholders. A price list
+ * nobody can buy from is worse than no price list — it sets an expectation the
+ * product cannot meet.
+ *
+ * What is real is `products` (0157): the admin sets the publication price per
+ * category on /admin/pricing, parts are free (0167), and the submit route
+ * charges exactly what this page shows. So this page reads the same rows the
+ * checkout does, instead of restating them in JSX that drifts.
+ */
+export default async function PricingPage() {
+  const admin = getServiceSupabase();
+  let products: Product[] = [];
+  if (admin) {
+    const { data } = await admin
+      .from("products")
+      .select(PRODUCT_SELECT)
+      .eq("is_active", true)
+      .order("sort_order");
+    products = (data ?? []).map((r) => toProduct(r as Parameters<typeof toProduct>[0]));
+  }
 
-type PlanTone = "silver" | "gold" | "diamond";
+  const standard = products.find((p) => p.slug === "annonce-standard") ?? null;
+  const part = products.find((p) => p.slug === "annonce-piece") ?? null;
+  const renewal = products.find((p) => p.kind === "renewal") ?? null;
+  const promos = products.filter((p) => p.kind === "promo");
 
-type Plan = {
-  slug: string;
-  name: string;
-  tagline: string;
-  /** Placeholder monthly price in TND. */
-  monthlyPrice: number;
-  tone: PlanTone;
-  /** -1 = illimité */
-  listingsPerMonth: number;
-  maxPhotos: number;
-  /** 0 = aucune priorité */
-  searchPriorityPct: number;
-  /** 0 = aucune remise */
-  featuredDiscountPct: number;
-  trustedSellerBadge: boolean;
-  homepagePlacement: boolean;
-  support: "email" | "chat" | "dedicated";
-};
+  const price = (p: Product | null) =>
+    p == null ? "—" : p.price <= 0 ? "Gratuit" : `${p.price} TND`;
 
-const PLANS: Plan[] = [
-  {
-    slug: "silver",
-    name: "Silver",
-    tagline: "Pour démarrer votre activité de vente en ligne.",
-    monthlyPrice: 99,
-    tone: "silver",
-    listingsPerMonth: 10,
-    maxPhotos: 10,
-    searchPriorityPct: 0,
-    featuredDiscountPct: 0,
-    trustedSellerBadge: false,
-    homepagePlacement: false,
-    support: "email",
-  },
-  {
-    slug: "gold",
-    name: "Gold",
-    tagline: "Le meilleur équilibre pour les vendeurs réguliers.",
-    monthlyPrice: 199,
-    tone: "gold",
-    listingsPerMonth: 30,
-    maxPhotos: 15,
-    searchPriorityPct: 15,
-    featuredDiscountPct: 10,
-    trustedSellerBadge: true,
-    homepagePlacement: false,
-    support: "chat",
-  },
-  {
-    slug: "diamond",
-    name: "Diamond",
-    tagline: "Pour les concessionnaires à fort volume.",
-    monthlyPrice: 399,
-    tone: "diamond",
-    listingsPerMonth: -1,
-    maxPhotos: 20,
-    searchPriorityPct: 30,
-    featuredDiscountPct: 25,
-    trustedSellerBadge: true,
-    homepagePlacement: true,
-    support: "dedicated",
-  },
-];
-
-const SUPPORT_LABEL: Record<Plan["support"], string> = {
-  email: "Email",
-  chat: "Email + chat",
-  dedicated: "Compte dédié",
-};
-
-/* ------------------------------------------------------------------ */
-
-export default function PricingPage() {
   return (
-    <div className="mx-auto max-w-[var(--max-w)] px-4 pb-10 pt-6 lg:max-w-[var(--max-w-wide)] lg:px-8 lg:pb-16 lg:pt-12">
-      {/* Centered editorial header */}
-      <header className="text-center space-y-3">
-        <div className="inline-flex items-center gap-1.5 text-[10px] lg:text-[11px] uppercase tracking-[0.22em] font-bold text-gold">
-          <Sparkles className="size-3 lg:size-3.5" />
-          Comptes professionnels
-        </div>
-        <h1 className="text-3xl lg:text-5xl font-black tracking-tight leading-tight">
-          Choisissez votre plan
+    <div className="mx-auto max-w-[var(--max-w)] px-4 pb-16 pt-6 lg:max-w-3xl lg:px-8 lg:pb-24 lg:pt-12">
+      <header className="text-center">
+        <h1 className="text-3xl font-black leading-tight tracking-tight lg:text-5xl">
+          Vous payez à l&apos;annonce
         </h1>
-        <p className="mx-auto max-w-2xl text-[13px] lg:text-base leading-relaxed text-muted">
-          Vendez plus de voitures avec plus d&apos;annonces, un placement
-          prioritaire dans les résultats et un badge de confiance. Mensuel,
-          sans engagement.
+        <p className="mx-auto mt-3 max-w-xl text-[13px] leading-relaxed text-muted lg:text-base">
+          Pas d&apos;abonnement, pas d&apos;engagement. Une annonce, un prix — réglé
+          après vérification, par virement ou D17.
         </p>
       </header>
 
-      {/* Plan cards — stacked on mobile, 3-up from md */}
-      <div className="mt-8 grid gap-4 md:grid-cols-3 lg:mt-12 lg:gap-6">
-        {PLANS.map((plan) => (
-          <PlanCard key={plan.slug} plan={plan} />
-        ))}
+      {/* The two prices that matter */}
+      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:mt-12">
+        <PriceCard
+          title="Voiture, moto, utilitaire"
+          price={price(standard)}
+          note="Par annonce, en ligne 30 jours après validation."
+          highlight
+        />
+        <PriceCard
+          title="Pièce de rechange"
+          price={price(part)}
+          note="Publier une pièce ne coûte rien, dans toutes les sous-catégories."
+        />
       </div>
 
-      {/* Detailed comparison — desktop only */}
-      <div className="hidden md:block">
-        <ComparisonTable />
-      </div>
-
-      <p className="mx-auto mt-8 max-w-3xl text-center text-[11px] lg:text-xs leading-relaxed text-muted lg:mt-10">
-        Offre de lancement — les abonnements en ligne arrivent bientôt.
-        Contactez-nous pour activer un compte professionnel.
-      </p>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-
-const TONE_BORDER: Record<PlanTone, string> = {
-  silver: "border-slate-400/40 ring-slate-400/20",
-  gold: "border-[var(--gold)] ring-[var(--gold)]/20",
-  diamond: "border-cyan-500/40 ring-cyan-500/20",
-};
-
-const TONE_ACCENT: Record<PlanTone, string> = {
-  silver: "text-slate-300",
-  gold: "text-gold",
-  diamond: "text-cyan-300",
-};
-
-function PlanCard({ plan }: { plan: Plan }) {
-  return (
-    <div
-      className={`relative flex h-full flex-col rounded-2xl bg-surface border-2 ring-1 p-5 lg:p-6 ${TONE_BORDER[plan.tone]}`}
-    >
-      {plan.tone === "gold" && (
-        <div className="absolute -top-3 inset-x-0 flex justify-center">
-          <span className="batta-gold-fill whitespace-nowrap rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.22em] shadow-[var(--shadow-gold)]">
-            Recommandé
-          </span>
-        </div>
+      {/* Options, only if the admin actually sells them */}
+      {(renewal || promos.length > 0) && (
+        <section className="mt-10">
+          <h2 className="batta-eyebrow flex items-center gap-2">
+            <span aria-hidden className="batta-gold-rule-short" />
+            En option
+          </h2>
+          <ul className="mt-3 divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface">
+            {renewal && <OptionRow name="Renouveler une annonce expirée" price={price(renewal)} />}
+            {promos.map((p) => (
+              <OptionRow key={p.slug} name={p.nameFr} price={price(p)} />
+            ))}
+          </ul>
+        </section>
       )}
 
-      <div
-        className={`text-[11px] lg:text-xs uppercase tracking-[0.22em] font-bold ${TONE_ACCENT[plan.tone]}`}
-      >
-        {plan.name}
-      </div>
-      <div className="mt-1 text-[13px] lg:text-sm leading-snug text-muted">
-        {plan.tagline}
-      </div>
+      <section className="mt-10 rounded-2xl border border-border bg-surface p-5 lg:p-6">
+        <h2 className="text-[15px] font-extrabold">Ce qui est compris</h2>
+        <ul className="mt-3 space-y-2">
+          {[
+            "Jusqu'à 12 photos par annonce",
+            "Vos coordonnées visibles par les acheteurs vérifiés",
+            "Vérification de chaque annonce avant sa mise en ligne",
+            "Modification et retrait à tout moment",
+          ].map((line) => (
+            <li key={line} className="flex items-start gap-2 text-[13px] text-foreground/85">
+              <Check className="mt-0.5 size-4 shrink-0 text-gold" strokeWidth={2.4} />
+              {line}
+            </li>
+          ))}
+        </ul>
+      </section>
 
-      <div className="mt-4 flex flex-wrap items-baseline gap-1 lg:mt-5">
-        <span className="batta-tabular text-3xl lg:text-4xl font-black leading-none">
-          {plan.monthlyPrice} TND
-        </span>
-        <span className="text-[11px] lg:text-xs text-muted">/ mois</span>
-      </div>
-
-      <ul className="mt-4 flex-1 space-y-1.5 text-[13px] lg:mt-5 lg:space-y-2 lg:text-sm">
-        <Bullet>
-          {plan.listingsPerMonth === -1
-            ? "Mises en ligne illimitées"
-            : `${plan.listingsPerMonth} mises en ligne / mois`}
-        </Bullet>
-        <Bullet>{plan.maxPhotos} photos par annonce</Bullet>
-        {plan.searchPriorityPct > 0 && (
-          <Bullet>Priorité de recherche +{plan.searchPriorityPct}%</Bullet>
-        )}
-        {plan.featuredDiscountPct > 0 && (
-          <Bullet>
-            −{plan.featuredDiscountPct}% sur les mises en avant
-          </Bullet>
-        )}
-        {plan.trustedSellerBadge && (
-          <Bullet>Badge « vendeur de confiance »</Bullet>
-        )}
-        {plan.homepagePlacement && (
-          <Bullet>Apparition permanente en page d&apos;accueil</Bullet>
-        )}
-        <Bullet>Support {SUPPORT_LABEL[plan.support].toLowerCase()}</Bullet>
-      </ul>
-
-      <div className="mt-4 border-t border-border pt-4 lg:mt-5 lg:pt-5">
-        {plan.tone === "gold" ? (
-          <Link
-            href="/contact"
-            className="batta-gold-fill inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-xl text-[13px] lg:text-sm font-extrabold shadow-[var(--shadow-gold)] ring-1 ring-black/10 transition active:scale-[0.99]"
-          >
-            Nous contacter
-            <ArrowRight className="size-4" />
+      <div className="mt-8 text-center">
+        <Link
+          href="/annonces/nouvelle"
+          className="batta-btn-luxe tap-target inline-flex h-12 items-center gap-2 px-6 text-[14px]"
+        >
+          Publier une annonce <ArrowRight className="size-4" />
+        </Link>
+        <p className="mt-3 text-[12px] text-muted">
+          Une question sur la facturation ?{" "}
+          <Link href="/contact" className="font-semibold text-gold hover:underline">
+            Contactez-nous
           </Link>
-        ) : (
-          <Link
-            href="/contact"
-            className="inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-xl bg-surface-2 text-[13px] lg:text-sm font-semibold ring-1 ring-border transition hover:ring-gold-soft/60"
-          >
-            Nous contacter
-            <ArrowRight className="size-4" />
-          </Link>
-        )}
+          .
+        </p>
       </div>
     </div>
   );
 }
 
-function Bullet({ children }: { children: React.ReactNode }) {
+function PriceCard({
+  title,
+  price,
+  note,
+  highlight,
+}: {
+  title: string;
+  price: string;
+  note: string;
+  highlight?: boolean;
+}) {
   return (
-    <li className="flex items-start gap-2">
-      <Check className="mt-0.5 size-4 shrink-0 text-gold" strokeWidth={2.5} />
-      <span>{children}</span>
-    </li>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-
-function ComparisonTable() {
-  return (
-    <section className="pt-8 lg:pt-12">
-      <h2 className="mb-3 text-lg lg:text-2xl font-extrabold tracking-tight">
-        Comparatif détaillé
-      </h2>
-      <div className="overflow-x-auto rounded-2xl bg-surface ring-1 ring-border [scrollbar-width:thin]">
-        <table className="w-full min-w-[560px] text-[13px] lg:text-sm">
-          <thead className="bg-surface-2 text-[10px] uppercase tracking-[0.18em] font-bold text-muted">
-            <tr>
-              <th className="sticky start-0 z-10 bg-surface-2 p-3 text-start"></th>
-              {PLANS.map((p) => (
-                <th key={p.slug} className="whitespace-nowrap p-3 text-start">
-                  <span className={TONE_ACCENT[p.tone]}>{p.name}</span>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            <Row
-              label="Prix / mois"
-              values={PLANS.map((p) => `${p.monthlyPrice} TND`)}
-            />
-            <Row
-              label="Mises en ligne / mois"
-              values={PLANS.map((p) =>
-                p.listingsPerMonth === -1 ? "∞" : String(p.listingsPerMonth),
-              )}
-            />
-            <Row
-              label="Photos max"
-              values={PLANS.map((p) => String(p.maxPhotos))}
-            />
-            <Row
-              label="Priorité de recherche"
-              values={PLANS.map((p) =>
-                p.searchPriorityPct > 0 ? `+${p.searchPriorityPct}%` : "—",
-              )}
-            />
-            <Row
-              label="Remise mises en avant"
-              values={PLANS.map((p) =>
-                p.featuredDiscountPct > 0 ? `−${p.featuredDiscountPct}%` : "—",
-              )}
-            />
-            <BoolRow
-              label="Badge confiance"
-              values={PLANS.map((p) => p.trustedSellerBadge)}
-            />
-            <BoolRow
-              label="Page d'accueil permanente"
-              values={PLANS.map((p) => p.homepagePlacement)}
-            />
-            <Row
-              label="Support"
-              values={PLANS.map((p) => SUPPORT_LABEL[p.support])}
-            />
-          </tbody>
-        </table>
+    <div
+      className={`rounded-2xl border p-6 ${
+        highlight ? "border-gold/40 bg-[var(--gold-faint)]" : "border-border bg-surface"
+      }`}
+    >
+      <div className="text-[12.5px] font-bold text-muted">{title}</div>
+      <div className="batta-tabular gradient-gold-text mt-2 text-[38px] font-extrabold leading-none">
+        {price}
       </div>
-    </section>
+      <p className="mt-2 text-[12px] leading-relaxed text-muted">{note}</p>
+    </div>
   );
 }
 
-function Row({ label, values }: { label: string; values: string[] }) {
+function OptionRow({ name, price }: { name: string; price: string }) {
   return (
-    <tr>
-      <td className="sticky start-0 z-10 min-w-[140px] bg-surface p-3 font-semibold text-muted">
-        {label}
-      </td>
-      {values.map((v, i) => (
-        <td key={i} className="batta-tabular whitespace-nowrap p-3">
-          {v}
-        </td>
-      ))}
-    </tr>
-  );
-}
-
-function BoolRow({ label, values }: { label: string; values: boolean[] }) {
-  return (
-    <tr>
-      <td className="sticky start-0 z-10 min-w-[140px] bg-surface p-3 font-semibold text-muted">
-        {label}
-      </td>
-      {values.map((v, i) => (
-        <td key={i} className="p-3">
-          {v ? (
-            <Check className="size-4 text-gold" />
-          ) : (
-            <XIcon className="size-4 text-subtle" />
-          )}
-        </td>
-      ))}
-    </tr>
+    <li className="flex items-center justify-between gap-4 px-4 py-3">
+      <span className="text-[13px] text-foreground/85">{name}</span>
+      <span className="batta-tabular shrink-0 text-[13px] font-extrabold text-foreground">
+        {price}
+      </span>
+    </li>
   );
 }
