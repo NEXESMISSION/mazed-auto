@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { Overlay, LAYER } from "@/components/ui/Overlay";
 import { CAR_MAKES, FUELS, TRANSMISSIONS, modelsFor } from "@/lib/vehicles";
 import {
-  ArrowDownWideNarrow, Car, Check, LayoutGrid, Search, SlidersHorizontal, Wrench, X,
+  ArrowDownWideNarrow, Car, Check, ChevronDown, LayoutGrid, Search, SlidersHorizontal, Wrench, X,
 } from "lucide-react";
 
 /**
@@ -171,6 +171,15 @@ function FilterBody({
   const activeCount = chipsFor(f, categories).length;
   const visibleCats = categories.filter((c) => !f.kind || c.kind === f.kind);
 
+  // Marque, modèle, année, kilométrage, carburant and boîte are six groups
+  // that most people never touch — and together they were the reason the rail
+  // ran well past the fold. They fold into one toggle, which starts OPEN when
+  // any of them is set: a filter that is silently hidden is a filter you
+  // cannot tell is narrowing your results.
+  const detailCount = [f.make, f.model, f.year_min, f.year_max, f.km_max, f.fuel, f.boite]
+    .filter(Boolean).length;
+  const [moreOpen, setMoreOpen] = useState(detailCount > 0);
+
   return (
     <div className="space-y-5">
       <RouteProgress active={pending} />
@@ -235,7 +244,7 @@ function FilterBody({
       </Group>
 
       {!isPart && (
-        <>
+        <MoreFilters open={moreOpen} onToggle={() => setMoreOpen((v) => !v)} count={detailCount}>
           {/* Marque and modèle existed ONLY in the parts branch, as
               "compatible avec ma voiture" — so someone browsing cars, which is
               most of the catalogue, had no way to filter by make at all. They
@@ -310,7 +319,7 @@ function FilterBody({
               onPick={(v) => push({ boite: v })}
             />
           </Group>
-        </>
+        </MoreFilters>
       )}
 
       {isPart && (
@@ -374,7 +383,14 @@ function FilterBody({
 export function CatalogSidebar(props: Omit<Props, "total">) {
   return (
     <aside className="hidden lg:block">
-      <div className="sticky top-[calc(var(--desktop-nav-h,64px)+1rem)] rounded-2xl border border-border bg-surface p-4">
+      {/* Sticky was already here and did nothing useful: an element TALLER
+          than the viewport still scrolls with the page until its bottom is
+          reached, so getting to "Carburant" meant scrolling the whole results
+          column past it. Capping the height and giving the rail its own
+          scrollbar is what makes sticky mean "stays put". */}
+      <div
+        className="sticky top-[calc(var(--desktop-nav-h,64px)+1rem)] flex max-h-[calc(100dvh-var(--desktop-nav-h,64px)-2rem)] flex-col overflow-y-auto overscroll-contain rounded-2xl border border-border bg-surface p-4"
+      >
         <FilterBody {...props} />
       </div>
     </aside>
@@ -538,6 +554,47 @@ export function CatalogToolbar({ categories, governorates, current, total }: Pro
 
 const INPUT =
   "w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-[13.5px] text-foreground placeholder:text-muted focus:border-gold focus:outline-none";
+
+/**
+ * The secondary filter block, folded away by default.
+ *
+ * It keeps its children mounted when closed rather than unmounting them: an
+ * unmounted <select> loses nothing here (the state lives in the URL), but
+ * remounting six of them on every toggle is jank for no benefit.
+ */
+function MoreFilters({
+  open, onToggle, count, children,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  /** How many of the hidden filters are active — shown so a closed section
+   *  never conceals the reason the result count looks wrong. */
+  count: number;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="border-t border-border pt-4">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className="flex w-full items-center gap-2 text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-muted transition hover:text-foreground"
+      >
+        <ChevronDown
+          className={`size-3.5 shrink-0 transition-transform ${open ? "" : "-rotate-90"}`}
+          strokeWidth={2.4}
+        />
+        Plus de filtres
+        {count > 0 && (
+          <span className="rounded-full bg-gold-faint px-1.5 py-0.5 text-[10px] text-gold">
+            {count}
+          </span>
+        )}
+      </button>
+      <div className={`space-y-5 ${open ? "mt-4" : "hidden"}`}>{children}</div>
+    </div>
+  );
+}
 
 function Group({ label, children }: { label: string; children: React.ReactNode }) {
   return (
