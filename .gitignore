@@ -24,3 +24,6 @@ supabase/.temp/
 DEEP-AUDIT-*.md
 verify-*.log
 backups/
+
+# Verification builds (see distDir in next.config.ts) — never the dev server's .next
+.next-verify/

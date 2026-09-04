@@ -4,6 +4,22 @@ import createNextIntlPlugin from "next-intl/plugin";
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 const nextConfig: NextConfig = {
+  /**
+   * `next build` and `next dev` both own `.next` by default, and they overwrite
+   * each other's chunk graph. When a production build runs while a dev server
+   * is up, the dev server keeps serving from a directory that has been rewritten
+   * underneath it: stylesheets 404, and client components resolve a different
+   * module instance of next-intl than the provider did, which surfaces as
+   * "No intl context found. Have you configured the provider?" on pages whose
+   * provider is demonstrably right there in the layout.
+   *
+   * Set NEXT_DIST_DIR to build somewhere else — e.g. a verification build:
+   *   NEXT_DIST_DIR=.next-verify next build
+   *   NEXT_DIST_DIR=.next-verify next start -p 3020
+   * Unset, everything behaves exactly as before.
+   */
+  distDir: process.env.NEXT_DIST_DIR || ".next",
+
   // Pin Turbopack to this app dir so it doesn't pick up a stray lockfile
   // higher in the tree. `import.meta.dirname` is Node 20+ and survives
   // Next's CJS-output transform of the config file.
