@@ -16,6 +16,30 @@ reason is recorded.
 
 Append here as phases land. Newest first.
 
+### Nothing had actually deployed since 2 September · **FIXED** 2026-09-04
+
+Eight production deploys in a row failed on Vercel, each in about five
+seconds — every commit from `be8e63e` (the KYC deletion) onward. Five seconds
+is too fast to be a compile error: they never reached the build.
+
+`be8e63e` dropped `@vladmandic/face-api` from package.json and left
+`pnpm-lock.yaml` untouched. Vercel installs with `--frozen-lockfile`, which
+refuses outright when the lockfile and the manifest disagree
+(ERR_PNPM_OUTDATED_LOCKFILE). So a fortnight of work — the free parts pricing,
+the catalog paging, the image optimisation, the content rewrite, the new
+publish flow — was sitting on main and running nowhere.
+
+**Why the local checks missed it.** Every "build is clean" in this log was
+`npm run build` against node_modules that were already installed. Nothing in
+that path reads the pnpm lockfile, so the one file the deploy checks first was
+the one file never verified. This project is pnpm; the verification has to be
+`pnpm install --frozen-lockfile` and then `pnpm run build`, from a clean
+`.next`, or it is not testing what Vercel runs.
+
+**Rule from here on:** a change to `package.json` is not finished until
+`pnpm-lock.yaml` moves with it in the same commit.
+
+
 ### Images, back-navigation, Favoris, and the copy sweep · **DONE** 2026-09-02
 
 **Images were sixty times too big.** Measured before changing anything:
