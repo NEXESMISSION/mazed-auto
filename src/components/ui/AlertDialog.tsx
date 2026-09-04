@@ -33,6 +33,13 @@ export type AlertPayload = {
   title: string;
   body?: string;
   items?: AlertItem[];
+  /**
+   * Called with the `fieldId` when a line is tapped, on top of the scroll.
+   * The dialog can only flash a field for a second; a form that keeps its own
+   * idea of what is still missing uses this to mark it red and leave it red
+   * until it is filled.
+   */
+  onJump?: (fieldId: string) => void;
   variant?: "error" | "warning" | "info";
   /** Label for the dismiss button. Defaults to "J'ai compris". */
   confirmLabel?: string;
@@ -45,7 +52,7 @@ const TONE = {
 } as const;
 
 /** Scroll to a field, focus it, and flash it so the eye finds it. */
-export function goToField(fieldId: string) {
+export function goToField(fieldId: string, tone: "gold" | "danger" = "gold") {
   const run = (attempt = 0) => {
     const el = document.getElementById(fieldId);
     if (!el) return;
@@ -86,8 +93,12 @@ export function goToField(fieldId: string) {
       }
     }, 400);
 
-    el.classList.add("batta-field-flash");
-    window.setTimeout(() => el.classList.remove("batta-field-flash"), 1600);
+    // Red when the dialog is reporting a problem — a gold flash on a field
+    // the seller was just told is missing reads as decoration, not as "this
+    // one".
+    const cls = tone === "danger" ? "batta-field-flash-danger" : "batta-field-flash";
+    el.classList.add(cls);
+    window.setTimeout(() => el.classList.remove(cls), 1600);
   };
   run();
 }
@@ -168,9 +179,14 @@ export function AlertDialog({
                   <button
                     type="button"
                     onClick={() => {
+                      const id = item.fieldId!;
+                      payload.onJump?.(id);
                       onClose();
                       // after the dialog unmounts, so the scroll is not undone
-                      window.setTimeout(() => goToField(item.fieldId!), 30);
+                      window.setTimeout(
+                        () => goToField(id, payload.variant === "info" ? "gold" : "danger"),
+                        30,
+                      );
                     }}
                     className="tap-target group flex w-full items-center gap-2 rounded-xl bg-surface-2 px-3 py-2.5 text-start text-[13px] font-semibold text-foreground transition hover:bg-[var(--gold-faint)]"
                   >

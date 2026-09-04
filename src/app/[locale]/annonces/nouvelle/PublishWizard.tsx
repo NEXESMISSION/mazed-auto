@@ -4,7 +4,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useToast } from "@/components/ui/Toast";
 import { PhotoUploader, type UploadedPhoto } from "@/components/listing/PhotoUploader";
-import { propertyPhotoUrl } from "@/lib/imageUrl";
+import { ListingImage } from "@/components/media/ListingImage";
 import { formatTND, cn } from "@/lib/utils";
 import { GOVERNORATES } from "@/lib/governorates";
 import {
@@ -44,6 +44,28 @@ import {
  */
 
 export const SELLER_ATTESTATION_VERSION = "v1";
+
+/**
+ * Every field this form can ask for, by kind.
+ *
+ * A category change used to wipe the attributes wholesale. But the five
+ * vehicle categories — voitures, utilitaires, motos, camions, engins — all ask
+ * for exactly these seven things, so switching between them threw away work
+ * for no reason and the fields went blank under the seller. Only what the new
+ * kind has no field for is dropped now.
+ */
+const ATTR_KEYS: Record<"vehicle" | "part", readonly string[]> = {
+  vehicle: ["make", "model", "year", "mileage", "fuel", "transmission", "color"],
+  part: ["part_name", "brand", "reference", "quantity"],
+};
+
+function keepAttrsFor(
+  attrs: Record<string, string>,
+  kind: "vehicle" | "part",
+): Record<string, string> {
+  const keep = new Set(ATTR_KEYS[kind]);
+  return Object.fromEntries(Object.entries(attrs).filter(([k]) => keep.has(k)));
+}
 
 const ATTESTATION_TEXT =
   "J'atteste sur l'honneur que toutes les informations, photos et documents " +
@@ -128,6 +150,13 @@ export function PublishWizard({
       .map((x) => ({ path: x.storage_path })),
   );
   const [photosUploading, setPhotosUploading] = useState(0);
+  /**
+   * Fields the seller asked to be shown, from the "il manque une chose" list.
+   * Kept as ids rather than a boolean so only what they actually tapped goes
+   * red — and `flaggedNow` drops an id again the moment the field is filled,
+   * so the red never outlives the problem.
+   */
+  const [flagged, setFlagged] = useState<string[]>([]);
   const [attrs, setAttrs] = useState<Record<string, string>>(() =>
     Object.fromEntries(
       Object.entries(d?.attributes ?? {})
@@ -226,13 +255,32 @@ export function PublishWizard({
     missing.push({ label: "Cochez l'attestation pour publier.", fieldId: "f-contact" });
   }
 
+  // Red only survives while the field is still empty: fill it and the outline
+  // goes on its own, without the seller having to dismiss anything.
+  const missingIds = new Set(missing.map((m) => m.fieldId));
+  const flaggedNow = new Set(flagged.filter((id) => missingIds.has(id)));
+
   /** Scroll to whatever is missing and put the cursor in it. */
   function goToField(id: string) {
+    // Mark it before scrolling: by the time the smooth scroll lands, the
+    // field is already outlined, so it is obvious which one was meant.
+    setFlagged((f) => (f.includes(id) ? f : [...f, id]));
     const el = document.getElementById(id);
     if (!el) return;
     el.scrollIntoView({ behavior: "smooth", block: "start" });
     const focusable = el.querySelector<HTMLElement>("input, select, textarea, button");
     focusable?.focus({ preventScroll: true });
+  }
+
+  /**
+   * A red outline, for a field the seller asked to be shown and has not filled
+   * yet. `outline` rather than a border or ring so nothing moves when it
+   * appears — the field is already in view when it turns red.
+   */
+  function flagCls(id: string) {
+    return flaggedNow.has(id)
+      ? " outline outline-2 outline-offset-2 outline-danger"
+      : "";
   }
 
   /**
@@ -334,6 +382,10 @@ export function PublishWizard({
             : `Il manque ${missing.length} choses`,
         body: "Touchez une ligne pour aller directement au champ concerné.",
         items: missing,
+        // The dialog can only flash the field for a second, and the seller is
+        // watching a smooth scroll while it does. This keeps it outlined in
+        // red afterwards, until it is actually filled.
+        onJump: (id) => setFlagged((f) => (f.includes(id) ? f : [...f, id])),
         variant: "warning",
         confirmLabel: "Corriger",
       });
@@ -456,7 +508,7 @@ export function PublishWizard({
       <div className="mx-auto mt-5 max-w-3xl">
         <div className="space-y-4">
       {/* ── Category ── */}
-              <section id="f-category" className="scroll-mt-24 rounded-2xl border border-border bg-surface p-4 sm:p-5">
+              <section id="f-category" className={`scroll-mt-24 rounded-2xl border border-border bg-surface p-4 sm:p-5${flagCls("f-category")}`}>
           <SectionHead icon={Tag} title="Que vendez-vous ?" />
           <p className="mt-1 text-[13px] text-muted">
             Cela décide des informations qui vous seront demandées.
@@ -502,7 +554,7 @@ export function PublishWizard({
                       // brake pad.
                       if (category && category.kind !== k) {
                         setCategoryId(null);
-                        setAttrs({});
+                        setAttrs((a) => keepAttrsFor(a, k));
                       }
                     }}
                     className={cn(
@@ -534,7 +586,13 @@ export function PublishWizard({
                       type="button"
                       role="radio"
                       aria-checked={active}
-                      onClick={() => { setCategoryId(c.id); setAttrs({}); }}
+                      onClick={() => {
+                        setCategoryId(c.id);
+                        // Voitures → Motos asks for the same seven things, so
+                        // clearing the lot cost the seller everything they had
+                        // typed. Only what the new kind has no field for goes.
+                        setAttrs((a) => keepAttrsFor(a, c.kind === "part" ? "part" : "vehicle"));
+                      }}
                       className={cn(
                         "inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[13px] font-bold transition",
                         active
@@ -570,7 +628,7 @@ export function PublishWizard({
         </section>
 
       {/* ── STEP 2 · Photos ── */}
-              <section id="f-photos" className="scroll-mt-24 rounded-2xl border border-border bg-surface p-4 sm:p-5">
+              <section id="f-photos" className={`scroll-mt-24 rounded-2xl border border-border bg-surface p-4 sm:p-5${flagCls("f-photos")}`}>
           <SectionHead icon={Camera} title="Vos photos" />
           <p className="mt-1 text-[13px] text-muted">
             Elles décident si un acheteur clique. Montrez l&apos;avant, l&apos;arrière,
@@ -586,7 +644,7 @@ export function PublishWizard({
         </section>
 
       {/* ── STEP 3 · Details ── */}
-              <section id="f-details" className="scroll-mt-24 rounded-2xl border border-border bg-surface p-4 sm:p-5">
+              <section id="f-details" className={`scroll-mt-24 rounded-2xl border border-border bg-surface p-4 sm:p-5${flagCls("f-details")}`}>
           <SectionHead icon={ClipboardList} title={isPart ? "La pièce" : "Le véhicule"} />
           <p className="mt-1 text-[13px] text-muted">
             {isPart
@@ -764,7 +822,7 @@ export function PublishWizard({
         </section>
 
       {/* ── STEP 4 · Price & description ── */}
-              <section id="f-price" className="scroll-mt-24 rounded-2xl border border-border bg-surface p-4 sm:p-5">
+              <section id="f-price" className={`scroll-mt-24 rounded-2xl border border-border bg-surface p-4 sm:p-5${flagCls("f-price")}`}>
           <SectionHead icon={Wallet} title="Titre et prix" />
           <p className="mt-1 text-[13px] text-muted">
             Le titre est proposé d&apos;après ce que vous avez saisi — modifiez-le si
@@ -772,7 +830,7 @@ export function PublishWizard({
           </p>
 
           <div className="mt-5 space-y-4">
-            <div id="f-title" className="scroll-mt-24">
+            <div id="f-title" className={`scroll-mt-24 rounded-xl${flagCls("f-title")}`}>
             <Field
               label="Titre de l'annonce"
               required
@@ -824,7 +882,7 @@ export function PublishWizard({
         </section>
 
       {/* ── STEP 5 · Contact, preview, publish ── */}
-              <section id="f-contact" className="scroll-mt-24 rounded-2xl border border-border bg-surface p-4 sm:p-5">
+              <section id="f-contact" className={`scroll-mt-24 rounded-2xl border border-border bg-surface p-4 sm:p-5${flagCls("f-contact")}`}>
           <SectionHead icon={Phone} title="Contact et publication" />
           <p className="mt-1 text-[13px] text-muted">
             Les acheteurs vous appellent directement sur ce numéro.
@@ -833,7 +891,7 @@ export function PublishWizard({
           <div className="mt-5 space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <Field label="Nom affiché" value={contactName} onChange={setContactName} placeholder="Karim B." />
-              <div id="f-phone" className="scroll-mt-24">
+              <div id="f-phone" className={`scroll-mt-24 rounded-xl${flagCls("f-phone")}`}>
                 <Field label="Téléphone" required value={contactPhone} onChange={setContactPhone} placeholder="+216 …" />
               </div>
             </div>
@@ -852,16 +910,24 @@ export function PublishWizard({
               </div>
             </div>
 
-            {/* Preview — the exact card a buyer will see. */}
+            {/* Preview — the exact card a buyer will see.
+
+                It claimed to be that and was not: a raw <img> contained on
+                flat black, so a portrait photo sat in a black slab that looked
+                broken, and the browser pulled the full-size original to fill
+                180px. ListingImage is what every real card uses — whole photo
+                over a blurred fill of itself, resized to the box. */}
             <div>
               <Label>Aperçu</Label>
               <div className="mt-1 w-[180px] overflow-hidden rounded-2xl border border-border bg-surface">
-                <div className="relative aspect-[4/3] bg-black">
+                <div className="relative aspect-[4/3] bg-surface-2">
                   {photos[0] ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={propertyPhotoUrl(photos[0].path)} alt="" className="size-full object-contain" />
+                    <ListingImage path={photos[0].path} alt="" sizes="180px" />
                   ) : (
-                    <span className="grid size-full place-items-center text-muted"><ImageOff className="size-5" /></span>
+                    <span className="grid size-full place-items-center gap-1 text-center text-muted">
+                      <ImageOff className="mx-auto size-5" />
+                      <span className="px-2 text-[10px] leading-tight">Aucune photo</span>
+                    </span>
                   )}
                 </div>
                 <div className="p-2.5">
@@ -944,9 +1010,19 @@ export function PublishWizard({
                   <button
                     type="button"
                     onClick={() => goToField(m.fieldId)}
-                    className="flex w-full items-start gap-2 rounded-lg px-2 py-1.5 text-start text-[12.5px] text-muted transition hover:bg-surface-2 hover:text-foreground"
+                    className={cn(
+                      "flex w-full items-start gap-2 rounded-lg px-2 py-1.5 text-start text-[12.5px] transition hover:bg-surface-2",
+                      flaggedNow.has(m.fieldId)
+                        ? "font-bold text-danger"
+                        : "text-muted hover:text-foreground",
+                    )}
                   >
-                    <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-[var(--gold)]" />
+                    <span
+                      className={cn(
+                        "mt-1.5 size-1.5 shrink-0 rounded-full",
+                        flaggedNow.has(m.fieldId) ? "bg-danger" : "bg-[var(--gold)]",
+                      )}
+                    />
                     {m.label}
                   </button>
                 </li>

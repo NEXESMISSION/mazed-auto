@@ -545,8 +545,10 @@ export function CheckoutClient({
       finalStep,
     ];
     return (
-      <div className="min-h-screen bg-background">
-        <main className="mx-auto max-w-md px-4 py-12 lg:py-16">
+      // Centred: this screen is one card and nothing else, and left at the top
+      // of a tall phone it sat above a half-screen of empty black.
+      <div className="grid min-h-screen place-items-center bg-background">
+        <main className="mx-auto w-full max-w-md px-4 py-12">
           <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-[0_12px_40px_rgba(0,0,0,0.35)]">
             <div className="flex flex-col items-center bg-gradient-to-b from-emerald-500/10 to-transparent px-6 pt-8 pb-6 text-center">
               <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-500/30">
@@ -558,7 +560,7 @@ export function CheckoutClient({
               <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--foreground-muted)]">
                 Justificatif de{" "}
                 <span className="font-bold text-foreground">
-                  {formatTND(amount, locale)}
+                  {formatTND(amount, locale)} TND
                 </span>
                 {auction ? (
                   <>
