@@ -6,6 +6,7 @@ import { routing } from "@/i18n/routing";
 import { MobileShell } from "@/components/layout/MobileShell";
 import { NetworkStatus } from "@/components/layout/NetworkStatus";
 import { ToastProvider } from "@/components/ui/Toast";
+import { NavigationProgress } from "@/components/ui/NavigationProgress";
 import { PopupManagerLazy } from "@/components/popups/PopupManagerLazy";
 import { WatchlistSync } from "@/components/watchlist/WatchlistSync";
 import type { Metadata } from "next";
@@ -57,6 +58,10 @@ export default async function LocaleLayout({
   return (
     <NextIntlClientProvider locale={locale} messages={messages}>
       <ToastProvider>
+        {/* Fires on the click, before the server has answered. See the
+            component: every page here is force-dynamic, so a navigation is a
+            full round trip that used to happen with nothing on screen moving. */}
+        <NavigationProgress />
         <NetworkStatus />
         <WatchlistSync />
         <MobileShell>{children}</MobileShell>

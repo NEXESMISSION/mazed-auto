@@ -414,7 +414,7 @@ export default async function AnnoncesPage({
                   <Link
                     key={l.id}
                     href={`/annonces/${l.id}` as never}
-                    className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-surface transition duration-300 hover:border-gold-soft hover:shadow-[0_10px_30px_-16px_rgba(0,0,0,0.6)] lg:rounded-[20px] lg:hover:-translate-y-1 lg:hover:shadow-[0_22px_50px_-24px_rgba(0,0,0,0.85)]"
+                    className="press group flex flex-col overflow-hidden rounded-2xl border border-border bg-surface transition duration-300 hover:border-gold-soft hover:shadow-[0_10px_30px_-16px_rgba(0,0,0,0.6)] lg:rounded-[20px] lg:hover:-translate-y-1 lg:hover:shadow-[0_22px_50px_-24px_rgba(0,0,0,0.85)]"
                   >
                     <div className="relative aspect-[4/3] overflow-hidden bg-surface-2">
                       {cover ? (
