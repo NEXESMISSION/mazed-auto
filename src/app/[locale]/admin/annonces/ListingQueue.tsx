@@ -34,6 +34,8 @@ export type QueueListing = {
   expiresAt: string | null;
   /** Our own inspection sheet for this annonce, draft or published. */
   diagnostic: Diagnostic | null;
+  /** The publication fee and any receipt the seller sent for it. */
+  payment: { amount: number; status: string; receipts: string[]; uploadedAt: string | null } | null;
   photos: string[];
 };
 
@@ -225,6 +227,68 @@ export function ListingQueue({
                     <DiagnosticEditor propertyId={l.id} initial={l.diagnostic} />
                   </div>
                 </details>
+
+                {/* ── The money, where the annonce is ──────────────────────
+                    A listing fee never appeared in the payments console: that
+                    one groups by auction_id and only covers deposit_lock,
+                    buy_now and final_payment (0081). So a seller could send a
+                    receipt and nobody would ever see it. It belongs on the row
+                    the decision is about anyway. */}
+                {l.status === "pending_payment" && (
+                  <div className="mt-3 rounded-xl border border-[var(--gold-soft)] bg-gold-faint/30 p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="inline-flex items-center gap-1.5 text-[12.5px] font-bold text-gold">
+                        <Wallet className="size-3.5" />
+                        Frais de publication
+                        {l.payment ? ` · ${l.payment.amount} TND` : ""}
+                      </span>
+                      {l.payment?.uploadedAt ? (
+                        <span className="text-[11.5px] text-muted">
+                          Reçu envoyé le {new Date(l.payment.uploadedAt).toLocaleDateString("fr-FR")}
+                        </span>
+                      ) : (
+                        <span className="text-[11.5px] text-muted">Aucun reçu envoyé</span>
+                      )}
+                    </div>
+
+                    {(l.payment?.receipts.length ?? 0) > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {l.payment!.receipts.map((url, i) => (
+                          <ImageLightbox
+                            key={url}
+                            src={url}
+                            alt={`Reçu ${i + 1}`}
+                            triggerClassName="relative size-16 overflow-hidden rounded-lg bg-black ring-1 ring-border"
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={url} alt="" className="size-full object-contain" />
+                          </ImageLightbox>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="mt-2.5 flex flex-wrap gap-2">
+                      <AdminButton
+                        variant="success"
+                        pending={pending}
+                        onClick={() => act(l.id, { action: "mark_paid" }, "Paiement enregistré.")}
+                      >
+                        <Check className="size-3.5" /> Paiement reçu
+                      </AdminButton>
+                      <AdminButton
+                        variant="ghost"
+                        pending={pending}
+                        onClick={() => act(l.id, { action: "waive_fee" }, "Publication offerte.")}
+                      >
+                        <Gift className="size-3.5" /> Publier sans paiement
+                      </AdminButton>
+                    </div>
+                    <p className="mt-1.5 text-[11px] text-muted">
+                      Les deux envoient l&apos;annonce en vérification — elle n&apos;est pas
+                      publiée sans votre validation.
+                    </p>
+                  </div>
+                )}
 
                 {(actionable || l.status === "published") && (
                   <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3">

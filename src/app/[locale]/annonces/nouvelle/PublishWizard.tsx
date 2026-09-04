@@ -921,6 +921,48 @@ export function PublishWizard({
           </div>
         </section>
 
+        {/* The publish button, at the end of the form.
+
+            It lived only in the sidebar, and the report was simply "I have
+            been looking for it" — which is fair: the end of a form is where
+            everyone looks for the button that submits it, and a panel off to
+            one side is a summary, not a destination. Desktop-only because the
+            phone already has it pinned to the bottom bar. */}
+        <div className="hidden rounded-2xl border border-border bg-surface p-4 lg:block">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-[13.5px] font-bold text-foreground">
+                {missing.length === 0
+                  ? "Tout est prêt."
+                  : `Il reste ${missing.length} chose${missing.length > 1 ? "s" : ""} à compléter.`}
+              </p>
+              <p className="mt-0.5 text-[12px] text-muted">
+                {usingCredit
+                  ? `Utilise 1 de vos ${creditsLeft} publications.`
+                  : free
+                    ? "Publication gratuite dans cette catégorie."
+                    : fee != null
+                      ? `Frais de publication : ${formatTND(fee, locale)} TND.`
+                      : "Choisissez une catégorie pour voir le prix."}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={publishNow}
+              disabled={busy || photosUploading > 0}
+              className="batta-btn-luxe tap-target inline-flex h-12 items-center justify-center gap-1.5 px-7 text-[14px] disabled:opacity-60"
+            >
+              {busy ? (
+                <><Loader2 className="size-4 animate-spin" /> Un instant…</>
+              ) : photosUploading > 0 ? (
+                <><Loader2 className="size-4 animate-spin" /> Envoi des photos…</>
+              ) : (
+                <>Publier mon annonce</>
+              )}
+            </button>
+          </div>
+        </div>
+
         </div>
 
         {/* What is left, what it costs, and the button — beside the form on

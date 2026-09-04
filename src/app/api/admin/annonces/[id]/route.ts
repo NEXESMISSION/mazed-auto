@@ -47,6 +47,70 @@ export async function POST(
     .maybeSingle();
   if (!listing) return NextResponse.json({ error: "listing_not_found" }, { status: 404 });
 
+  // ── Settle the publication fee ────────────────────────────────────────────
+  // Two ways a fee stops being owed, and both were missing:
+  //
+  //   "paid"   — the seller sent a receipt and it checks out. The payment is
+  //              captured here rather than in the payments console, because
+  //              this is the screen where the annonce is being looked at.
+  //   "waived" — the money arrived some other way. Cash in hand happens, and
+  //              refusing to publish over it just means the annonce never goes
+  //              up. `fee_waived_by` records who decided, so the revenue
+  //              reports show a gap rather than a silent free publication.
+  //
+  // Neither publishes on its own: the annonce moves to the review queue and is
+  // published by the normal approve path, so nothing skips the check.
+  if (action === "mark_paid" || action === "waive_fee") {
+    if (listing.status !== "pending_payment" && listing.status !== "pending_review") {
+      return NextResponse.json(
+        { error: "not_awaiting_payment", detail: `Cette annonce est « ${listing.status} ».` },
+        { status: 409 },
+      );
+    }
+
+    if (action === "mark_paid") {
+      if (!listing.fee_payment_id) {
+        return NextResponse.json(
+          { error: "no_payment", detail: "Aucun paiement n'est rattaché à cette annonce." },
+          { status: 400 },
+        );
+      }
+      const { error } = await admin
+        .from("payments")
+        // reviewer_id / reviewed_at — the columns this table actually has.
+        .update({
+          status: "captured",
+          reviewer_id: user.id,
+          reviewed_at: new Date().toISOString(),
+        })
+        .eq("id", listing.fee_payment_id);
+      if (error) return fail("payment_capture_failed", 500, error);
+    }
+
+    const { error: upErr } = await admin
+      .from("listings")
+      .update({
+        status: "pending_review",
+        rejection_reason: null,
+        ...(action === "waive_fee" ? { fee_waived_by: user.id } : {}),
+      })
+      .eq("id", id);
+    if (upErr) return fail("listing_update_failed", 500, upErr);
+
+    await admin
+      .rpc("enqueue_notification", {
+        p_user_id: listing.seller_id,
+        p_kind: "listing_payment_received",
+        p_title: "Paiement enregistré",
+        p_body: `« ${listing.title} » passe en vérification.`,
+        p_link: "/account/listings",
+      })
+      .then(() => {}, () => {});
+
+    logAction(req, user, `admin.listing.${action}`, { id });
+    return NextResponse.json({ ok: true, status: "pending_review" });
+  }
+
   // ── Approve ───────────────────────────────────────────────────────────────
   if (action === "approve") {
     if (!listing.contact_phone) {
