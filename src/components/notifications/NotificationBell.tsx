@@ -50,6 +50,25 @@ type NotificationRow = {
 // whether anything changed — the highest-volume idle cost in the app.
 // 5 min keeps the heal guarantee while cutting that load ~5×.
 const POLL_MS = 300_000;
+
+/**
+ * The bell is mounted twice — once in the mobile TopBar, once in DesktopNav —
+ * and only one of them is visible at a time. They held completely separate
+ * state, so marking everything read in the visible one left the hidden one
+ * still counting three; crossing the lg breakpoint then showed a badge for
+ * notifications that had been read minutes ago.
+ *
+ * They agree now: any instance that changes read state says so, and the others
+ * apply the same change without a round trip.
+ */
+const READ_EVENT = "mazed:notifications-read";
+
+type ReadDetail = { ids: string[] | "all" };
+
+function broadcastRead(detail: ReadDetail) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent<ReadDetail>(READ_EVENT, { detail }));
+}
 // Re-render relative timestamps every 30s while the dialog is open so
 // "il y a 1 min" doesn't freeze.
 const TICK_MS = 30_000;
@@ -98,6 +117,19 @@ export function NotificationBell() {
   // rebuilding the poll interval AND the realtime subscription below (both
   // keyed on `refresh`) each time.
   const itemsLenRef = useRef(0);
+  /**
+   * Bumped by every local read/delete. `refresh` captures it before it fetches
+   * and drops the response if it changed meanwhile.
+   *
+   * Without this the badge was permanently wrong: opening the panel PATCHes
+   * everything read and sets the count to 0, but the realtime UPDATE events
+   * that same PATCH generates trigger a refresh, and a GET that left before
+   * the write committed comes back saying "3 unread" and overwrites the 0.
+   * Nothing ever corrected it — the database and the API both said 0 while
+   * the badge sat on 3 until a reload.
+   */
+  const genRef = useRef(0);
+
   // Single-flight guards for `refresh` (see its definition).
   const refreshingRef = useRef(false);
   const refreshPendingRef = useRef(false);
@@ -134,6 +166,8 @@ export function NotificationBell() {
       do {
         refreshPendingRef.current = false;
         const want = Math.min(50, Math.max(PAGE_SIZE, itemsLenRef.current));
+        // Snapshot the generation BEFORE the request leaves.
+        const gen = genRef.current;
         const res = await fetch(`/api/notifications?limit=${want}`, {
           cache: "no-store",
           signal: AbortSignal.timeout(10000),
@@ -144,6 +178,10 @@ export function NotificationBell() {
           unreadCount: number;
           hasMore?: boolean;
         };
+        // A read or delete happened while this was in flight: the response
+        // describes a world that no longer exists. Applying it is what put the
+        // badge back to 3 after the user had just cleared it.
+        if (gen !== genRef.current) break;
         setItems(data.items);
         setUnread(data.unreadCount);
         setHasMore(Boolean(data.hasMore));
@@ -323,16 +361,52 @@ export function NotificationBell() {
     return () => window.clearInterval(id);
   }, [open]);
 
-  // Opening the panel clears the unread state — simply viewing the list
-  // marks everything read (the badge + bold rows clear). markAllRead is a
-  // no-op when there's nothing unread, so reopening doesn't re-fire writes.
+  // Opening the panel clears the unread state — simply viewing the list marks
+  // everything read (the badge + bold rows clear). markAllRead is a no-op when
+  // there's nothing unread, so reopening doesn't re-fire writes.
+  //
+  // Depends on `unread`, not just `open`: clicking the bell before the first
+  // count arrived (a cold load, a slow connection) used to run this once while
+  // the count was still 0, no-op, and then leave the badge showing 3 over an
+  // open panel. It also covers a notification arriving while the panel is
+  // already open — the user is looking straight at it, so it is read.
   useEffect(() => {
-    if (open) void markAllRead();
+    if (open && unread > 0) void markAllRead();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, unread]);
+
+  // Another instance of the bell (mobile header vs desktop nav) marked things
+  // read. Apply it locally rather than waiting up to five minutes for the poll.
+  useEffect(() => {
+    function onRead(e: Event) {
+      const detail = (e as CustomEvent<ReadDetail>).detail;
+      if (!detail) return;
+      const stamp = new Date().toISOString();
+      genRef.current += 1;
+      if (detail.ids === "all") {
+        setUnread(0);
+        setItems((arr) => arr.map((n) => ({ ...n, read_at: n.read_at ?? stamp })));
+        return;
+      }
+      const ids = new Set(detail.ids);
+      setItems((arr) => {
+        let cleared = 0;
+        const next = arr.map((n) => {
+          if (!ids.has(n.id) || n.read_at) return n;
+          cleared += 1;
+          return { ...n, read_at: stamp };
+        });
+        if (cleared > 0) setUnread((u) => Math.max(0, u - cleared));
+        return next;
+      });
+    }
+    window.addEventListener(READ_EVENT, onRead);
+    return () => window.removeEventListener(READ_EVENT, onRead);
+  }, []);
 
   async function markAllRead() {
     if (unread === 0) return;
+    genRef.current += 1;
     setUnread(0);
     setItems((arr) =>
       arr.map((n) => ({ ...n, read_at: n.read_at ?? new Date().toISOString() })),
@@ -344,12 +418,14 @@ export function NotificationBell() {
         body: JSON.stringify({ all: true }),
         signal: AbortSignal.timeout(10000),
       });
+      broadcastRead({ ids: "all" });
     } catch {
       // best-effort
     }
   }
 
   async function markOneRead(id: string) {
+    genRef.current += 1;
     setItems((arr) =>
       arr.map((n) =>
         n.id === id ? { ...n, read_at: n.read_at ?? new Date().toISOString() } : n,
@@ -363,6 +439,7 @@ export function NotificationBell() {
         body: JSON.stringify({ ids: [id] }),
         signal: AbortSignal.timeout(10000),
       });
+      broadcastRead({ ids: [id] });
     } catch {
       // best-effort
     }
@@ -374,6 +451,9 @@ export function NotificationBell() {
   // with whatever the server still had, which masked the symptom
   // ("item came back after I deleted it") of a silent zero-row DELETE.
   async function deleteOne(id: string) {
+    // Same generation guard as the read path: an in-flight GET must not put a
+    // deleted row back on screen.
+    genRef.current += 1;
     const snapshot = { items, unread };
     const wasUnread = items.find((n) => n.id === id && !n.read_at);
     setItems((arr) => arr.filter((n) => n.id !== id));
@@ -402,6 +482,7 @@ export function NotificationBell() {
 
   async function deleteAll() {
     if (items.length === 0) return;
+    genRef.current += 1;
     const snapshot = { items, unread };
     setItems([]);
     setUnread(0);
