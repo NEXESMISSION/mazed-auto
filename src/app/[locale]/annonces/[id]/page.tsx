@@ -9,6 +9,7 @@ import { HeroCarousel } from "@/components/auction/HeroCarousel";
 import { ContactReveal } from "./ContactReveal";
 import { FavoriteButton } from "@/components/property/FavoriteButton";
 import { RelatedListings } from "@/components/listing/RelatedListings";
+import { ViewTracker } from "@/components/listing/ViewTracker";
 import { getServerSupabase } from "@/lib/supabase/server";
 import {
   DiagnosticSheet,
@@ -285,6 +286,9 @@ export default async function AnnoncePage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      {/* Renders nothing; reports from the browser that this page was really
+          looked at, rather than merely prefetched. */}
+      <ViewTracker listingId={l.id} />
 
       <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-8 lg:px-6 lg:pt-6">
         {/* ── Left: the thing being sold ── */}
