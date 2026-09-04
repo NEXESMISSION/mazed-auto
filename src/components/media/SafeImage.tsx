@@ -37,11 +37,15 @@ import { useState } from "react";
 export function SafeImage(props: ImageProps) {
   // 0 = optimized, 1 = optimized retry, 2 = straight from storage.
   const [attempt, setAttempt] = useState(0);
-  const { onError, unoptimized, ...rest } = props;
+  // `alt` is pulled out and passed by name rather than through the spread:
+  // ImageProps already requires it, but jsx-a11y cannot see through `{...rest}`
+  // and reports every use of this component as missing one.
+  const { onError, unoptimized, alt, ...rest } = props;
 
   return (
     <Image
       {...rest}
+      alt={alt}
       key={attempt}
       unoptimized={unoptimized || attempt >= 2}
       onError={(e) => {
