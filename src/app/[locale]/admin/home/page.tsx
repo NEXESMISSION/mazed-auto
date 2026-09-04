@@ -1,109 +1,65 @@
-import { getServerSupabase } from "@/lib/supabase/server";
-import { propertyPhotoUrl } from "@/lib/imageUrl";
-import { HomeControlClient, type HomeRow } from "./HomeControlClient";
+import { getServiceSupabase } from "@/lib/supabase/admin";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
-import { Search } from "lucide-react";
+import { HomeCurator, type CuratorRow } from "./HomeCurator";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-type Raw = {
-  id: string;
-  title: string;
-  governorate: string;
-  promo_home_featured: boolean;
-  promo_top_listed: boolean;
-  promo_banner: boolean;
-  promo_expires_at: string | null;
-  promo_manual: boolean;
-  photos: { storage_path: string; sort_order: number }[];
-};
+/**
+ * Accueil — what a visitor sees first, decided here.
+ *
+ * This page used to edit `promo_home_featured` on `properties`: the auction
+ * table, deleted in the pivot. It had had no effect on anything a visitor sees
+ * for weeks — the home page was ordering by published_at and the card image
+ * was whichever photo the seller uploaded first. Both are choices now, and
+ * this is where they are made.
+ */
+export default async function AdminHomePage() {
+  const admin = getServiceSupabase();
+  if (!admin) {
+    return (
+      <div>
+        <AdminPageHeader eyebrow="Accueil" title="Mise en avant" description="Service indisponible." />
+      </div>
+    );
+  }
 
-export default async function AdminHomePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ q?: string }>;
-}) {
-  const { q: qParam } = await searchParams;
-  const q = (qParam ?? "").trim().slice(0, 60).replace(/[,()*%]/g, " ").trim();
-  const supabase = await getServerSupabase();
-  let pq = supabase
-    .from("properties")
-    .select(`
-      id, title, governorate,
-      promo_home_featured, promo_top_listed, promo_banner, promo_expires_at, promo_manual,
-      photos:property_photos ( storage_path, sort_order )
-    `)
-    .eq("status", "ready");
-  if (q) pq = pq.or(`title.ilike.%${q}%,governorate.ilike.%${q}%`);
-  const { data } = await pq.order("created_at", { ascending: false }).limit(150);
+  const [{ data: listings }, { data: layoutRow }] = await Promise.all([
+    admin
+      .from("listings")
+      .select(
+        `id, title, governorate, featured_rank,
+         photos:listing_photos (id, storage_path, sort_order, is_cover)`,
+      )
+      .eq("status", "published")
+      .order("featured_rank", { ascending: true, nullsFirst: false })
+      .order("published_at", { ascending: false })
+      .limit(60),
+    admin.from("app_settings").select("value").eq("key", "home_layout").maybeSingle(),
+  ]);
 
-  const now = Date.now();
-  const rows: HomeRow[] = ((data ?? []) as unknown as Raw[]).map((p) => {
-    const cover = (p.photos ?? []).slice().sort((a, b) => a.sort_order - b.sort_order)[0];
-    const expired = p.promo_expires_at ? new Date(p.promo_expires_at).getTime() < now : false;
-    const anyOn = (p.promo_home_featured || p.promo_top_listed || p.promo_banner) && !expired;
-    return {
-      id: p.id,
-      title: p.title,
-      governorate: p.governorate,
-      home: p.promo_home_featured && !expired,
-      top: p.promo_top_listed && !expired,
-      banner: p.promo_banner && !expired,
-      expiresAt: p.promo_expires_at,
-      expired,
-      manual: p.promo_manual,
-      featured: anyOn,
-      coverUrl: cover ? propertyPhotoUrl(cover.storage_path) : null,
-    };
-  });
+  const rows = ((listings ?? []) as CuratorRow[]).map((r) => ({
+    ...r,
+    photos: (r.photos ?? []).slice().sort((a, b) => a.sort_order - b.sort_order),
+  }));
 
-  // Featured first, then the rest.
-  rows.sort((a, b) => Number(b.featured) - Number(a.featured));
-  const activeCount = rows.filter((r) => r.featured).length;
+  const v = (layoutRow?.value ?? {}) as Partial<{ hero_slots: number; side_slots: number; fallback: string }>;
+  const layout = {
+    hero_slots: v.hero_slots ?? 1,
+    side_slots: v.side_slots ?? 3,
+    fallback: v.fallback ?? "recent",
+  };
 
   return (
     <div>
       <AdminPageHeader
-        eyebrow="Vitrine d'accueil"
-        title="Accueil"
-        description={
-          <>
-            Contrôlez les annonces mises en avant (accueil, top recherche,
-            bannière). « Payé » = via une option achetée, « Manuel » = ajouté ici.
-            Vous pouvez mettre n&apos;importe quelle annonce publiée en vedette.
-          </>
-        }
-        actions={
-          activeCount > 0 ? (
-            <span className="shrink-0 rounded-full bg-gold-faint px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.14em] text-gold-bright">
-              {activeCount} en vedette
-            </span>
-          ) : undefined
-        }
+        eyebrow="Accueil"
+        title="Mise en avant"
+        description="Choisissez les annonces à la une, l'image de chaque annonce, et la composition de la page d'accueil."
       />
-
-      {/* Server search — find any published listing by title or governorate
-          (the list is capped at 150, so search is the way to reach the rest). */}
-      <form method="get" role="search" className="mt-4 flex items-center gap-2">
-        <div className="relative max-w-sm flex-1">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted" strokeWidth={2} />
-          <input
-            type="search"
-            name="q"
-            defaultValue={q}
-            placeholder="Rechercher une annonce (titre ou ville)…"
-            className="h-9 w-full rounded-lg border border-border bg-surface pl-8 pr-3 text-[12px] text-foreground placeholder:text-muted focus:border-gold focus:outline-none"
-          />
-        </div>
-        {q && (
-          <span className="batta-tabular text-[12px] text-muted">
-            {rows.length} résultat{rows.length > 1 ? "s" : ""}
-          </span>
-        )}
-      </form>
-
-      <HomeControlClient rows={rows} />
+      <div className="mt-6">
+        <HomeCurator rows={rows} layout={layout} />
+      </div>
     </div>
   );
 }

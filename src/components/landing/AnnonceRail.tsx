@@ -1,4 +1,5 @@
 import { Link } from "@/i18n/navigation";
+import { coverPhoto } from "@/lib/listingCover";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { ListingImage } from "@/components/media/ListingImage";
 import { formatTND } from "@/lib/utils";
@@ -26,7 +27,7 @@ type Row = {
   governorate: string;
   seller_id: string;
   category: { label_fr: string } | { label_fr: string }[] | null;
-  photos: { storage_path: string; sort_order: number }[] | null;
+  photos: { storage_path: string; sort_order: number; is_cover?: boolean | null }[] | null;
 };
 
 export async function AnnonceRail({
@@ -60,7 +61,7 @@ export async function AnnonceRail({
     .select(
       `id, title, price, price_on_request, governorate, seller_id,
        category:categories (label_fr),
-       photos:listing_photos (storage_path, sort_order)`,
+       photos:listing_photos (storage_path, sort_order, is_cover)`,
     )
     .eq("status", "published")
     .in("category_id", ids)
@@ -135,7 +136,7 @@ function Card({
   locale: string;
 }) {
   const cat = Array.isArray(listing.category) ? listing.category[0] : listing.category;
-  const cover = (listing.photos ?? []).slice().sort((a, b) => a.sort_order - b.sort_order)[0];
+  const cover = coverPhoto(listing.photos);
 
   return (
     <Link

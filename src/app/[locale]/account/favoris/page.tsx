@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { coverPhoto } from "@/lib/listingCover";
 import { getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
@@ -27,7 +28,7 @@ type ListingRow = {
     id: string; title: string; price: number | null; price_on_request: boolean;
     governorate: string; status: string;
     category: { label_fr: string } | { label_fr: string }[] | null;
-    photos: { storage_path: string; sort_order: number }[] | null;
+    photos: { storage_path: string; sort_order: number; is_cover?: boolean | null }[] | null;
 };
 
 type Row = { listing_id: string; listing: ListingRow | ListingRow[] | null };
@@ -52,7 +53,7 @@ export default async function FavorisPage() {
        listing:listings (
          id, title, price, price_on_request, governorate, status,
          category:categories (label_fr),
-         photos:listing_photos (storage_path, sort_order)
+         photos:listing_photos (storage_path, sort_order, is_cover)
        )`,
     )
     .eq("user_id", user.id)
@@ -80,7 +81,7 @@ export default async function FavorisPage() {
         {rows.map((r) => {
           const l = r.listing;
           const cat = one(l.category);
-          const cover = (l.photos ?? []).slice().sort((a, b) => a.sort_order - b.sort_order)[0];
+          const cover = coverPhoto(l.photos);
           const gone = l.status !== "published";
           return (
             <article

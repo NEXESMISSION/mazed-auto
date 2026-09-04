@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { coverPhoto } from "@/lib/listingCover";
 import { getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
@@ -48,7 +49,7 @@ export default async function MyListingsPage() {
       .select(
         `id, title, price, price_on_request, status, rejection_reason, published_at,
          expires_at, created_at, category_id, category:categories (label_fr),
-         photos:listing_photos (storage_path, sort_order)`,
+         photos:listing_photos (storage_path, sort_order, is_cover)`,
       )
       .eq("seller_id", user.id)
       .order("created_at", { ascending: false }),
@@ -84,7 +85,7 @@ export default async function MyListingsPage() {
     expires_at: string | null; created_at: string;
     category: { label_fr: string } | { label_fr: string }[] | null;
     category_id: string;
-    photos: { storage_path: string; sort_order: number }[] | null;
+    photos: { storage_path: string; sort_order: number; is_cover?: boolean | null }[] | null;
   };
   const rows = (listRes.data ?? []) as Row[];
 
@@ -161,7 +162,7 @@ export default async function MyListingsPage() {
         {rows.map((l) => {
           const st = STATUS[l.status] ?? { label: l.status, tone: "bg-surface-2 text-muted" };
           const cat = Array.isArray(l.category) ? l.category[0] : l.category;
-          const cover = (l.photos ?? []).slice().sort((a, b) => a.sort_order - b.sort_order)[0];
+          const cover = coverPhoto(l.photos);
           return (
             <article key={l.id} className="flex gap-3 rounded-2xl border border-border bg-surface p-3">
               <Link href={`/annonces/${l.id}` as never} className="size-20 shrink-0 overflow-hidden rounded-xl bg-surface-2 ring-1 ring-border">
@@ -227,7 +228,7 @@ export default async function MyListingsPage() {
             {rows.map((l) => {
               const st = STATUS[l.status] ?? { label: l.status, tone: "bg-surface-2 text-muted" };
               const cat = Array.isArray(l.category) ? l.category[0] : l.category;
-              const cover = (l.photos ?? []).slice().sort((a, b) => a.sort_order - b.sort_order)[0];
+              const cover = coverPhoto(l.photos);
               return (
                 <tr key={l.id} className="align-middle transition hover:bg-surface-2/50">
                   <td className="px-4 py-3">

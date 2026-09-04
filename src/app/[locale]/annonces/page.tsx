@@ -57,7 +57,7 @@ type ListingRow = {
   published_at: string | null; seller_id: string;
   attributes: Record<string, unknown> | null;
   category: { label_fr: string; kind: string } | { label_fr: string; kind: string }[] | null;
-  photos: { storage_path: string; sort_order: number }[] | null;
+  photos: { storage_path: string; sort_order: number; is_cover?: boolean | null }[] | null;
 };
 
 const one = <T,>(v: T | T[] | null): T | null => (Array.isArray(v) ? v[0] ?? null : v);
@@ -118,7 +118,7 @@ export default async function AnnoncesPage({
   const LISTING_SELECT = `id, title, price, price_on_request, negotiable, governorate,
      condition, published_at, seller_id, attributes,
      category:categories (label_fr, kind),
-     photos:listing_photos (storage_path, sort_order)`;
+     photos:listing_photos (storage_path, sort_order, is_cover)`;
 
   /** The subset of the query builder these filters need. */
   type Filterable = {

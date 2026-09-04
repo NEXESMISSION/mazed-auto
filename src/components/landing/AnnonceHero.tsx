@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { coverPhoto } from "@/lib/listingCover";
 import { getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServiceSupabase } from "@/lib/supabase/admin";
@@ -32,13 +33,13 @@ type Row = {
   governorate: string;
   attributes: Record<string, unknown> | null;
   category: { label_fr: string; kind: string } | { label_fr: string; kind: string }[] | null;
-  photos: { storage_path: string; sort_order: number }[] | null;
+  photos: { storage_path: string; sort_order: number; is_cover?: boolean | null }[] | null;
 };
 
 const one = <T,>(v: T | T[] | null): T | null => (Array.isArray(v) ? v[0] ?? null : v);
 
 function cover(r: Row): string | null {
-  const p = (r.photos ?? []).slice().sort((a, b) => a.sort_order - b.sort_order)[0];
+  const p = coverPhoto(r.photos);
   return p ? propertyPhotoUrl(p.storage_path) : null;
 }
 
@@ -69,16 +70,45 @@ const featuredAnnonces = cache(async (): Promise<Row[]> => {
   const admin = getServiceSupabase();
   if (!admin) return [];
 
-  const { data } = await admin
-    .from("listings")
-    .select(
-      `id, title, price, price_on_request, governorate, attributes,
+  const SELECT = `id, title, price, price_on_request, governorate, attributes,
+       featured_rank, featured_until,
        category:categories (label_fr, kind),
-       photos:listing_photos (storage_path, sort_order)`,
-    )
+       photos:listing_photos (storage_path, sort_order, is_cover)`;
+
+  // What the admin put à la une, in the order they chose. This used to be
+  // `order by published_at` and nothing else — "featured" meant "posted most
+  // recently", and no screen in the product could change it.
+  const nowIso = new Date().toISOString();
+  const { data: picked } = await admin
+    .from("listings")
+    .select(SELECT)
     .eq("status", "published")
-    .order("published_at", { ascending: false })
+    .not("featured_rank", "is", null)
+    .or(`featured_until.is.null,featured_until.gt.${nowIso}`)
+    .order("featured_rank", { ascending: true })
     .limit(12);
+
+  // Then fill the rest, so the home page is never empty because nobody has
+  // curated it yet — and so a lapsed placement degrades instead of leaving a
+  // hole. `fallback` is an admin setting (0171).
+  const chosen = (picked ?? []) as Row[];
+  const need = 12 - chosen.length;
+  let data = chosen;
+  if (need > 0) {
+    const { data: layout } = await admin
+      .from("app_settings").select("value").eq("key", "home_layout").maybeSingle();
+    const fallback = (layout?.value as { fallback?: string } | null)?.fallback ?? "recent";
+    const fill = admin
+      .from("listings")
+      .select(SELECT)
+      .eq("status", "published")
+      .is("featured_rank", null)
+      .limit(need);
+    const { data: rest } = await (fallback === "viewed"
+      ? fill.order("view_count", { ascending: false })
+      : fill.order("published_at", { ascending: false }));
+    data = [...chosen, ...((rest ?? []) as Row[])];
+  }
 
   // Only rows we can actually show: a cover with no photo is a grey box.
   return ((data ?? []) as Row[]).filter((r) => cover(r) !== null);
