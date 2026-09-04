@@ -2,48 +2,27 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { describeKind } from "@/lib/notifications/catalog";
 import {
+  PhoneCall,
   Bell,
   BellDot,
   X,
   Trash2,
   CheckCheck,
   Loader2,
-  ShieldCheck,
-  ShieldX,
   CheckCircle2,
   AlertTriangle,
-  Gavel,
-  TrendingUp,
-  Trophy,
   Clock3,
-  Eye,
-  HandCoins,
-  FileCheck2,
-  CalendarClock,
-  ClipboardList,
   Sparkles,
-  Wallet,
-  Hourglass,
-  UserCheck,
-  FileText,
   Megaphone,
-  Inbox,
-  Radio,
   Receipt,
-  Timer,
-  TimerReset,
-  CircleAlert,
   // Added: distinct glyphs for the 6 kinds previously falling through to
   // the generic Bell icon — broadcasts (announcement / promo / maintenance
   // / system_alert) and entity-tied lifecycle events (auction_cancelled,
   // deposit_refunded). A bell that visually distinguishes "your auction
   // was cancelled" from "your deposit was refunded" is the whole point.
-  Tag,
   Wrench,
-  ShieldAlert,
-  Ban,
-  RefreshCcw,
 } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { getBrowserSupabase } from "@/lib/supabase/client";
@@ -776,123 +755,28 @@ function iconForKind(kind: string): {
   Icon: typeof Bell;
   tone: string;
 } {
-  // Tone palette:
-  //   emerald = success/positive completion
-  //   red     = rejection / negative outcome
-  //   amber   = warning / time pressure
-  //   sky     = informational / in-progress
-  //   gold    = default / neutral promotional
-  switch (kind) {
-    case "kyc_verified":
-      return { Icon: ShieldCheck, tone: "bg-emerald-50 text-emerald-700" };
-    case "kyc_rejected":
-      return { Icon: ShieldX, tone: "bg-red-50 text-red-700" };
-    case "payment_accepted":
-      return { Icon: CheckCircle2, tone: "bg-emerald-50 text-emerald-700" };
-    case "payment_rejected":
-      return { Icon: AlertTriangle, tone: "bg-red-50 text-red-700" };
-    case "bid_placed":
-      return { Icon: Gavel, tone: "bg-sky-50 text-sky-700" };
-    case "outbid":
-    case "sixth_offer_outbid":
-      return { Icon: TrendingUp, tone: "bg-amber-50 text-amber-700" };
-    case "watched_new_bid":
-      return { Icon: Eye, tone: "bg-sky-50 text-sky-700" };
-    case "auction_won":
-    case "sixth_offer_awarded":
-      return { Icon: Trophy, tone: "bg-emerald-50 text-emerald-700" };
-    case "auction_sold_seller":
-    case "auction_finalized_seller":
-      return { Icon: HandCoins, tone: "bg-emerald-50 text-emerald-700" };
-    case "auction_ended_unsold":
-    case "reserve_not_met":
-      return { Icon: AlertTriangle, tone: "bg-amber-50 text-amber-700" };
-    case "auction_ending_soon":
-      return { Icon: Hourglass, tone: "bg-amber-50 text-amber-700" };
-    case "buy_now_initiated":
-      return { Icon: HandCoins, tone: "bg-sky-50 text-sky-700" };
-    case "listing_submitted":
-      return { Icon: ClipboardList, tone: "bg-sky-50 text-sky-700" };
-    case "listing_published":
-    case "listing_approved":
-      return { Icon: Sparkles, tone: "bg-emerald-50 text-emerald-700" };
-    case "listing_rejected":
-    case "listing_payment_rejected":
-      return { Icon: AlertTriangle, tone: "bg-red-50 text-red-700" };
-    case "listing_expired":
-      return { Icon: Clock3, tone: "bg-amber-50 text-amber-700" };
-    case "inspection_requested":
-      return { Icon: FileText, tone: "bg-sky-50 text-sky-700" };
-    case "inspection_assigned":
-      return { Icon: UserCheck, tone: "bg-sky-50 text-sky-700" };
-    case "inspection_scheduled":
-      return { Icon: CalendarClock, tone: "bg-sky-50 text-sky-700" };
-    case "inspection_completed":
-      return { Icon: FileCheck2, tone: "bg-emerald-50 text-emerald-700" };
-    case "inspector_approved":
-      return { Icon: ShieldCheck, tone: "bg-emerald-50 text-emerald-700" };
-    case "payout_processing":
-      return { Icon: Wallet, tone: "bg-sky-50 text-sky-700" };
-    case "payout_paid":
-      return { Icon: Wallet, tone: "bg-emerald-50 text-emerald-700" };
-    case "payout_rejected":
-      return { Icon: AlertTriangle, tone: "bg-red-50 text-red-700" };
-    case "welcome":
-      return { Icon: Megaphone, tone: "bg-[var(--gold-faint)] text-[var(--gold)]" };
-    case "seller_received_bid":
-      return { Icon: Gavel, tone: "bg-sky-50 text-sky-700" };
-    case "seller_sixth_offer_received":
-      return { Icon: TrendingUp, tone: "bg-sky-50 text-sky-700" };
-    case "auction_live_seller":
-    case "auction_live":
-      return { Icon: Radio, tone: "bg-emerald-50 text-emerald-700" };
-    case "sixth_offer_placed":
-      return { Icon: Gavel, tone: "bg-sky-50 text-sky-700" };
-    case "payment_receipt_received":
-      return { Icon: Receipt, tone: "bg-sky-50 text-sky-700" };
-    case "inspector_application_received":
-      return { Icon: FileText, tone: "bg-sky-50 text-sky-700" };
-    case "final_payment_due_soon":
-      return { Icon: Timer, tone: "bg-amber-50 text-amber-700" };
-    case "final_payment_due_tomorrow":
-      return { Icon: TimerReset, tone: "bg-amber-50 text-amber-700" };
-    case "final_payment_overdue":
-    case "final_payment_overdue_seller":
-      return { Icon: CircleAlert, tone: "bg-red-50 text-red-700" };
-    case "admin_kyc_pending":
-    case "admin_receipt_pending":
-    case "admin_payout_pending":
-    case "admin_listing_pending":
-    case "admin_inspector_pending":
-    case "admin_final_payment_overdue":
-      return { Icon: Inbox, tone: "bg-[var(--gold-faint)] text-[var(--gold)]" };
-    // Broadcasts (admin-sent to many) — distinct tones so the row at a
-    // glance reads as "info / deal / planned downtime / alert" without
-    // having to read the title.
-    case "announcement":
-      return { Icon: Megaphone, tone: "bg-sky-50 text-sky-700" };
-    case "promo":
-      return { Icon: Tag, tone: "bg-emerald-50 text-emerald-700" };
-    case "maintenance":
-      return { Icon: Wrench, tone: "bg-amber-50 text-amber-700" };
-    case "system_alert":
-      return { Icon: ShieldAlert, tone: "bg-red-50 text-red-700" };
-    // Lifecycle events with a strong neutral signal — used to fall
-    // through to the generic Bell, indistinguishable from broadcasts.
-    case "auction_cancelled":
-      return { Icon: Ban, tone: "bg-red-50 text-red-700" };
-    case "deposit_refunded":
-      return { Icon: RefreshCcw, tone: "bg-emerald-50 text-emerald-700" };
-    // Gentle reminder kinds (migration 0051) — share the same amber
-    // "soft nudge" tone so they don't feel as alarming as auction-
-    // ending or payment-overdue but still stand out from passive info.
-    case "kyc_pending_reminder":
-      return { Icon: Hourglass, tone: "bg-amber-50 text-amber-700" };
-    case "listing_unscheduled_reminder":
-      return { Icon: CalendarClock, tone: "bg-amber-50 text-amber-700" };
-    default:
-      return { Icon: Bell, tone: "bg-[var(--gold-faint)] text-[var(--gold)]" };
-  }
+  // Icon and colour come from the catalogue, so a new event needs one entry
+  // there rather than an edit here, in target.ts and in sms-kinds.ts — which
+  // is how the three of them drifted apart in the first place.
+  const def = describeKind(kind);
+  const ICONS: Record<string, typeof Bell> = {
+    phone: PhoneCall,
+    check: CheckCircle2,
+    x: AlertTriangle,
+    clock: Clock3,
+    receipt: Receipt,
+    megaphone: Megaphone,
+    sparkles: Sparkles,
+    wrench: Wrench,
+    bell: Bell,
+  };
+  const TONES: Record<string, string> = {
+    good: "bg-emerald-50 text-emerald-700",
+    bad: "bg-red-50 text-red-700",
+    warn: "bg-amber-50 text-amber-700",
+    info: "bg-sky-50 text-sky-700",
+  };
+  return { Icon: ICONS[def.icon] ?? Bell, tone: TONES[def.tone] ?? TONES.info };
 }
 
 function timeAgo(iso: string): string {
