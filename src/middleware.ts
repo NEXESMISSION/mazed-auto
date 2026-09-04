@@ -103,6 +103,10 @@ export async function middleware(req: NextRequest) {
 
   let authUserId: string | null = null;
   let authUserEmail: string | null = null;
+  // True when we HOLD a session cookie but could not reach the auth server to
+  // check it. "Unknown" is not the same as "signed out", and the gates below
+  // must not treat it as such.
+  let authUnknown = false;
   let supabase: ReturnType<typeof createServerClient> | null = null;
 
   if (hasAuthCookie) {
@@ -128,6 +132,11 @@ export async function middleware(req: NextRequest) {
       authUserId = data.user?.id ?? null;
       authUserEmail = data.user?.email ?? null;
     } catch (err) {
+      // A timeout or DNS blip reaching Supabase Auth used to land here and
+      // leave authUserId null, which the account gate read as "not signed in"
+      // — so one slow round trip signed the user out of a page they were
+      // already on. It is a failure to ASK, not an answer.
+      authUnknown = true;
       mwLog.warn(`session refresh failed: ${err instanceof Error ? err.message : err}`);
     } finally {
       endAuth();
@@ -206,7 +215,18 @@ export async function middleware(req: NextRequest) {
     /^\/(fr|ar|en)\/(login|signup|forgot-password)\/?$/,
   );
   if (authPageMatch && authUserId) {
-    const target = new URL(`/${authPageMatch[1]}`, req.url);
+    // Honour `next`. Without this the two gates fought each other: a blip on
+    // the account gate sent a signed-in user to /login?next=/fr/account/favoris,
+    // this gate then read the session fine and sent them to the HOME page,
+    // dropping `next` on the floor. Refreshing a private page could therefore
+    // land you somewhere you never asked for, with nothing to say why.
+    //
+    // Relative paths only, and never protocol-relative: `next` comes off the
+    // query string, and //evil.example is a redirect off this site.
+    const wanted = req.nextUrl.searchParams.get("next");
+    const safe =
+      wanted && wanted.startsWith("/") && !wanted.startsWith("//") ? wanted : null;
+    const target = new URL(safe ?? `/${authPageMatch[1]}`, req.url);
     mwLog.info(`auth-gate ${pathname} → ${target.pathname}`);
     return NextResponse.redirect(target, 307);
   }
@@ -214,8 +234,12 @@ export async function middleware(req: NextRequest) {
   // Private-area gate. Every /account page needs a session — an anonymous
   // visitor (e.g. tapping the account icon while signed out) is sent
   // straight to login with a `next` param so they return here afterwards.
+  // `authUnknown` is deliberately excluded: if we could not reach the auth
+  // server we let the request through and let the page's own check decide.
+  // Worst case it renders its own redirect; best case — the usual case — the
+  // session was fine all along and the reader keeps the page they were on.
   const accountMatch = pathname.match(/^\/(fr|ar|en)\/account(?:\/.*)?$/);
-  if (accountMatch && !authUserId) {
+  if (accountMatch && !authUserId && !authUnknown) {
     const next = `${pathname}${search}`;
     const target = new URL(
       `/${accountMatch[1]}/login?next=${encodeURIComponent(next)}`,

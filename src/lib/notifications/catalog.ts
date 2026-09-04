@@ -76,9 +76,14 @@ const listingHref = (p: NotificationPayload, link?: string | null) =>
       : "/account/listings";
 
 export const NOTIFICATION_KINDS: Record<string, NotificationKindDef> = {
-  // ── The event the whole product exists for ──────────────────────────────
-  // A buyer asked for the seller's number. That is a lead, and until now it
-  // was recorded in `contact_reveals` and told to nobody.
+  // ── No longer sent ──────────────────────────────────────────────────────
+  // Nothing enqueues this any more: the ping on every "afficher le numéro"
+  // was removed on request. The kind stays defined because notifications sent
+  // before that still sit in people's lists and need a label and an icon to
+  // render — deleting it here would turn those rows into blanks.
+  //
+  // The reveal itself is still recorded in `contact_reveals`, still counted on
+  // the annonce, and still shown in the admin statistics.
   contact_revealed: {
     icon: "phone",
     tone: "good",

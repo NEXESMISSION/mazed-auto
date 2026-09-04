@@ -108,46 +108,12 @@ export async function POST(
     log.scope("api").warn(`reveal counter not incremented: ${countErr.message}`);
   }
 
-  // ── Tell the seller ──────────────────────────────────────────────────────
-  // Someone asking for the number is the only signal this product generates
-  // that is worth money to a seller: it is the moment their annonce did its
-  // job. It was recorded in contact_reveals and told to NOBODY — sellers had
-  // to open the site and hope to notice a counter had moved.
-  //
-  // Once per listing per hour: a buyer who reveals, closes the tab and comes
-  // back should not ping the seller twice, and a bot that gets past the IP
-  // throttle should not become a notification storm. The reveal itself is
-  // always logged; only the ping is throttled.
-  if (listing.seller_id) {
-    const { data: recent } = await admin
-      .from("notifications")
-      .select("id")
-      .eq("user_id", listing.seller_id)
-      .eq("kind", "contact_revealed")
-      // Match on `link`, not on payload: enqueue_notification takes no payload
-      // argument, so payload is always null here and a payload filter matched
-      // nothing — the throttle silently never fired and a buyer who revealed
-      // twice pinged the seller twice.
-      .eq("link", `/annonces/${id}`)
-      .gte("created_at", new Date(Date.now() - 3600_000).toISOString())
-      .limit(1);
-
-    if (!recent || recent.length === 0) {
-      const { error: notifyErr } = await admin.rpc("enqueue_notification", {
-        p_user_id: listing.seller_id,
-        p_kind: "contact_revealed",
-        p_title: "Un acheteur a demandé votre numéro",
-        p_body: listing.title
-          ? `Quelqu'un vient de demander votre numéro pour « ${listing.title} ». Gardez votre téléphone à portée.`
-          : "Quelqu'un vient de demander votre numéro. Gardez votre téléphone à portée.",
-        p_link: `/annonces/${id}`,
-      });
-      // Never fail the buyer's reveal because the seller's ping did not send.
-      if (notifyErr) {
-        log.scope("api").warn(`reveal notification failed: ${notifyErr.message}`);
-      }
-    }
-  }
+  // NOT notified. The seller used to get "un acheteur a demandé votre numéro"
+  // on every reveal. It was removed on request: the reveal is still recorded
+  // in contact_reveals and still counted on the annonce and in the admin
+  // statistics, so nothing is lost — it simply no longer pings a phone every
+  // time somebody looks. A notification that arrives for an event the seller
+  // cannot act on is noise, and noise is what gets a whole channel muted.
 
   return NextResponse.json({
     phone: listing.contact_phone,

@@ -50,17 +50,39 @@ export function FavoriteButton({
     const next = !saved;
     setSaved(next);
     setBusy(true);
-    try {
-      const res = await fetch(`/api/annonces/${listingId}/favorite`, {
+
+    const send = () =>
+      fetch(`/api/annonces/${listingId}/favorite`, {
         method: next ? "POST" : "DELETE",
       });
+
+    try {
+      let res = await send();
+
+      // The route has to ask Supabase who you are, and that is a network call.
+      // When it times out the route answers 500 and the heart used to just
+      // un-fill with "impossible d'enregistrer" — which reads as "this feature
+      // is broken" for what is usually a one-second blip. One retry catches it.
+      if (!res.ok && res.status >= 500) {
+        await new Promise((r) => setTimeout(r, 700));
+        res = await send();
+      }
+
       if (!res.ok) {
         setSaved(!next);
-        toast("Impossible d'enregistrer ce favori.", "error");
+        // 401 is a different problem from a failed write, and telling someone
+        // their favourite could not be saved when the real answer is "your
+        // session ended" sends them looking in the wrong place.
+        toast(
+          res.status === 401
+            ? "Votre session a expiré. Reconnectez-vous pour enregistrer vos favoris."
+            : "Impossible d'enregistrer ce favori. Réessayez.",
+          res.status === 401 ? "warning" : "error",
+        );
       }
     } catch {
       setSaved(!next);
-      toast("Erreur réseau.", "error");
+      toast("Pas de connexion. Réessayez.", "error");
     } finally {
       setBusy(false);
     }
