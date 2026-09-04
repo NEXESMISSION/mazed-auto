@@ -80,7 +80,6 @@ export function PublishWizard({
   creditsLeft,
   defaultContactName,
   defaultContactPhone,
-  userId,
   locale,
 }: {
   categories: WizardCategory[];
@@ -88,7 +87,6 @@ export function PublishWizard({
   creditsLeft: number;
   defaultContactName: string;
   defaultContactPhone: string;
-  userId: string;
   locale: string;
 }) {
   const router = useRouter();
@@ -103,6 +101,7 @@ export function PublishWizard({
 
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [photos, setPhotos] = useState<UploadedPhoto[]>([]);
+  const [photosUploading, setPhotosUploading] = useState(0);
   const [attrs, setAttrs] = useState<Record<string, string>>({});
   const [fitments, setFitments] = useState<Fitment[]>([]);
   const [typedTitle, setTypedTitle] = useState("");
@@ -152,7 +151,11 @@ export function PublishWizard({
   // ─── What is missing, per step ────────────────────────────────────────────
   const problems: Record<Step, string | null> = {
     0: categoryId ? null : "Choisissez ce que vous vendez.",
-    1: photos.length > 0 ? null : "Ajoutez au moins une photo.",
+    1: photosUploading > 0
+      ? `Encore ${photosUploading} photo${photosUploading > 1 ? "s" : ""} en cours d'envoi…`
+      : photos.length > 0
+        ? null
+        : "Ajoutez au moins une photo.",
     2: isPart
       ? !attrs.part_name?.trim()
         ? "Indiquez de quelle pièce il s'agit."
@@ -302,39 +305,32 @@ export function PublishWizard({
 
   return (
     <main className="mx-auto max-w-2xl px-4 pb-32 pt-4 lg:pb-12 lg:pt-8">
-      {/* ── Progress ── */}
-      <div className="sticky top-[var(--batta-topbar-h,56px)] z-20 -mx-4 bg-background/90 px-4 pb-3 pt-2 backdrop-blur-md lg:static lg:mx-0 lg:bg-transparent lg:px-0 lg:backdrop-blur-none">
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-muted">
-            Étape {step + 1} / {STEPS.length} · {STEPS[step]}
+      {/* One page, top to bottom. The wizard's five screens hid what the form
+          was actually asking for — you could not see that it wanted a photo
+          until you had already answered two screens of questions, and going
+          back to fix a price meant walking the whole chain again. Publishing a
+          classified is a short form; it reads better as one. */}
+      <div className="flex items-start justify-between gap-3 pt-2">
+        <div>
+          <h1 className="text-[24px] font-extrabold tracking-tight">Publier une annonce</h1>
+          <p className="mt-1 text-[13px] text-muted">
+            Quelques informations, des photos, votre numéro — c&apos;est tout.
+          </p>
+        </div>
+        {saved === "saving" && (
+          <span className="mt-1 inline-flex shrink-0 items-center gap-1 text-[11px] text-muted">
+            <Loader2 className="size-3 animate-spin" /> Enregistrement…
           </span>
-          {saved === "saving" && (
-            <span className="inline-flex items-center gap-1 text-[11px] text-muted">
-              <Loader2 className="size-3 animate-spin" /> Enregistrement…
-            </span>
-          )}
-          {saved === "ok" && (
-            <span className="inline-flex items-center gap-1 text-[11px] text-muted">
-              <Check className="size-3" /> Brouillon enregistré
-            </span>
-          )}
-        </div>
-        <div className="mt-2 flex gap-1.5">
-          {STEPS.map((_, i) => (
-            <span
-              key={i}
-              className={cn(
-                "h-1 flex-1 rounded-full transition",
-                i <= step ? "bg-[var(--gold)]" : "bg-surface-2",
-              )}
-            />
-          ))}
-        </div>
+        )}
+        {saved === "ok" && (
+          <span className="mt-1 inline-flex shrink-0 items-center gap-1 text-[11px] text-muted">
+            <Check className="size-3" /> Brouillon enregistré
+          </span>
+        )}
       </div>
 
       {/* ── STEP 1 · Category ── */}
-      {step === 0 && (
-        <section className="mt-6">
+              <section className="mt-6">
           <h1 className="text-[22px] font-extrabold tracking-tight">Que vendez-vous ?</h1>
           <p className="mt-1 text-[13px] text-muted">
             Cela décide des informations qui vous seront demandées.
@@ -395,25 +391,25 @@ export function PublishWizard({
             </div>
           ))}
         </section>
-      )}
 
       {/* ── STEP 2 · Photos ── */}
-      {step === 1 && (
-        <section className="mt-6">
+              <section className="mt-6">
           <h1 className="text-[22px] font-extrabold tracking-tight">Vos photos</h1>
           <p className="mt-1 text-[13px] text-muted">
             Elles décident si un acheteur clique. Montrez l&apos;avant, l&apos;arrière,
             les côtés, l&apos;intérieur et le compteur.
           </p>
           <div className="mt-5">
-            <PhotoUploader photos={photos} onChange={setPhotos} userId={userId} />
+            <PhotoUploader
+              photos={photos}
+              onChange={setPhotos}
+              onPendingChange={setPhotosUploading}
+            />
           </div>
         </section>
-      )}
 
       {/* ── STEP 3 · Details ── */}
-      {step === 2 && (
-        <section className="mt-6">
+              <section className="mt-6">
           <h1 className="text-[22px] font-extrabold tracking-tight">
             {isPart ? "La pièce" : "Le véhicule"}
           </h1>
@@ -591,11 +587,9 @@ export function PublishWizard({
             </div>
           )}
         </section>
-      )}
 
       {/* ── STEP 4 · Price & description ── */}
-      {step === 3 && (
-        <section className="mt-6">
+              <section className="mt-6">
           <h1 className="text-[22px] font-extrabold tracking-tight">Titre et prix</h1>
           <p className="mt-1 text-[13px] text-muted">
             Le titre est proposé d&apos;après ce que vous avez saisi — modifiez-le si
@@ -651,11 +645,9 @@ export function PublishWizard({
             </div>
           </div>
         </section>
-      )}
 
       {/* ── STEP 5 · Contact, preview, publish ── */}
-      {step === 4 && (
-        <section className="mt-6">
+              <section className="mt-6">
           <h1 className="text-[22px] font-extrabold tracking-tight">Contact et publication</h1>
           <p className="mt-1 text-[13px] text-muted">
             Les acheteurs vous appellent directement sur ce numéro.
@@ -749,40 +741,47 @@ export function PublishWizard({
             </div>
           </div>
         </section>
+
+      {/* Everything still missing, in one place, instead of discovering it a
+          screen at a time. Only shown once they have tried to publish. */}
+      {showErrors && missing.length > 0 && (
+        <div className="mt-6 rounded-2xl border border-[var(--accent-soft)] bg-[var(--accent-faint)] p-4">
+          <p className="inline-flex items-center gap-2 text-[13px] font-extrabold text-[var(--accent-deep)]">
+            <CircleAlert className="size-4 shrink-0" />
+            Il manque {missing.length === 1 ? "une chose" : `${missing.length} choses`}
+          </p>
+          <ul className="mt-2 space-y-1">
+            {missing.map((m) => (
+              <li key={m} className="text-[12.5px] text-[var(--accent-deep)]">• {m}</li>
+            ))}
+          </ul>
+        </div>
       )}
 
-      {/* ── Error + actions ── */}
-      {err && (
-        <p className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[var(--accent-faint)] px-3 py-2 text-[12.5px] font-semibold text-[var(--accent-deep)]">
-          <CircleAlert className="size-4 shrink-0" /> {err}
-        </p>
-      )}
-
-      <div className="fixed inset-x-0 bottom-[calc(var(--batta-bottombar-h,64px)+env(safe-area-inset-bottom))] z-20 flex gap-2 border-t border-border bg-background/95 px-4 py-3 backdrop-blur-md lg:static lg:mt-8 lg:border-0 lg:bg-transparent lg:px-0 lg:backdrop-blur-none">
-        {step > 0 && (
-          <button
-            type="button"
-            onClick={() => { setShowErrors(false); setStep((s) => (s - 1) as Step); }}
-            disabled={busy}
-            className="tap-target inline-flex h-12 items-center gap-1.5 rounded-full border border-border px-4 text-[13px] font-bold text-foreground disabled:opacity-50"
-          >
-            <ChevronLeft className="size-4" /> Retour
-          </button>
-        )}
+      <div className="fixed inset-x-0 bottom-[calc(var(--batta-bottombar-h,64px)+env(safe-area-inset-bottom))] z-20 border-t border-border bg-background/95 px-4 py-3 backdrop-blur-md lg:static lg:mt-8 lg:border-0 lg:bg-transparent lg:px-0 lg:backdrop-blur-none">
         <button
           type="button"
-          onClick={goNext}
-          disabled={busy}
-          className="batta-btn-luxe tap-target inline-flex h-12 flex-1 items-center justify-center gap-1.5 text-[14px] disabled:opacity-60"
+          onClick={publishNow}
+          disabled={busy || photosUploading > 0}
+          className="batta-btn-luxe tap-target inline-flex h-12 w-full items-center justify-center gap-1.5 text-[14px] disabled:opacity-60"
         >
           {busy ? (
             <><Loader2 className="size-4 animate-spin" /> Un instant…</>
-          ) : step === 4 ? (
-            <>Publier mon annonce</>
+          ) : photosUploading > 0 ? (
+            <><Loader2 className="size-4 animate-spin" /> Envoi des photos…</>
           ) : (
-            <>Continuer <ChevronRight className="size-4" /></>
+            <>Publier mon annonce</>
           )}
         </button>
+        <p className="mt-2 text-center text-[11px] text-muted lg:mt-3">
+          {free
+            ? "Publication gratuite dans cette catégorie."
+            : usingCredit
+              ? `Utilise 1 de vos ${creditsLeft} publications.`
+              : fee != null
+                ? `${fee} TND — à régler après vérification.`
+                : "Le prix de publication s'affiche dès que la catégorie est choisie."}
+        </p>
       </div>
     </main>
   );

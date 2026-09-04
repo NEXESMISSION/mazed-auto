@@ -100,7 +100,6 @@ export default async function NewListingPage() {
       creditsLeft={creditsLeft}
       defaultContactName={(profRes.data?.full_name as string | null) ?? ""}
       defaultContactPhone={(profRes.data?.phone as string | null) ?? ""}
-      userId={user.id}
       locale={locale}
     />
   );

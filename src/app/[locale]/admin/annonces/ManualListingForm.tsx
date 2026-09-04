@@ -1,14 +1,11 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useToast } from "@/components/ui/Toast";
 import { AdminButton } from "@/components/admin/AdminButton";
-import { getBrowserSupabase } from "@/lib/supabase/client";
-import { compressImage } from "@/lib/imageCompress";
-import { propertyPhotoUrl } from "@/lib/imageUrl";
-import { withTimeout, isTimeout } from "@/lib/withTimeout";
 import { GOVERNORATES } from "@/lib/governorates";
+import { PhotoUploader, type UploadedPhoto } from "@/components/listing/PhotoUploader";
 import {
   AttributeField,
   CheckField,
@@ -17,7 +14,7 @@ import {
   Label,
   type ListingAttribute,
 } from "@/components/listing/fields";
-import { ImagePlus, Plus, Search, Trash2, X } from "lucide-react";
+import { Plus, Search, X } from "lucide-react";
 
 /**
  * Créer une annonce — the admin typing in a listing for a seller who called,
@@ -41,11 +38,8 @@ export type AdminCategory = {
   attributes: ListingAttribute[];
 };
 
-type Photo = { path: string };
 type Fitment = { make: string; model: string; yearFrom: string; yearTo: string };
 
-const MAX_PHOTOS = 12;
-const MAX_PHOTO_MB = 25;
 
 export function ManualListingForm({
   sellers,
@@ -56,7 +50,6 @@ export function ManualListingForm({
 }) {
   const router = useRouter();
   const { toast } = useToast();
-  const fileRef = useRef<HTMLInputElement>(null);
 
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -74,7 +67,7 @@ export function ManualListingForm({
   const [attrs, setAttrs] = useState<Record<string, string | boolean>>({});
   const [contactName, setContactName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
-  const [photos, setPhotos] = useState<Photo[]>([]);
+  const [photos, setPhotos] = useState<UploadedPhoto[]>([]);
   const [fitments, setFitments] = useState<Fitment[]>([]);
   const [publishNow, setPublishNow] = useState(true);
 
@@ -111,57 +104,6 @@ export function ManualListingForm({
     // seller wants on the annonce is often not the one on their account.
     if (!contactName) setContactName(s.name);
     if (!contactPhone && s.phone) setContactPhone(s.phone);
-  }
-
-  async function onPickPhotos(e: React.ChangeEvent<HTMLInputElement>) {
-    const picked = Array.from(e.target.files ?? []);
-    e.target.value = "";
-    const room = MAX_PHOTOS - photos.length;
-    if (picked.length === 0 || room <= 0) return;
-
-    setBusy(true);
-    const supabase = getBrowserSupabase();
-    try {
-      const { data: auth } = await withTimeout(supabase.auth.getUser(), 15_000);
-      if (!auth.user) {
-        toast("Session expirée — reconnectez-vous.", "error");
-        return;
-      }
-      for (const file of picked.slice(0, room)) {
-        if (file.size > MAX_PHOTO_MB * 1024 * 1024) {
-          toast(`${file.name} : trop volumineux (max ${MAX_PHOTO_MB} Mo).`, "error");
-          continue;
-        }
-        let out = file;
-        try {
-          out = await withTimeout(
-            compressImage(file, { maxEdge: 1600, quality: 0.8, format: "webp" }),
-            45_000,
-          );
-        } catch {
-          out = file;
-        }
-        const ext = out.name.split(".").pop()?.toLowerCase() || "webp";
-        const path = `${auth.user.id}/annonce-${Date.now()}-${Math.round(Math.random() * 1e6)}.${ext}`;
-        const { error } = await withTimeout(
-          supabase.storage.from("properties").upload(path, out, {
-            cacheControl: "3600",
-            upsert: false,
-            contentType: out.type || "image/webp",
-          }),
-          120_000,
-        );
-        if (error) {
-          toast(`Échec du téléversement : ${error.message}`, "error");
-          continue;
-        }
-        setPhotos((p) => [...p, { path }]);
-      }
-    } catch (err) {
-      toast(isTimeout(err) ? "Connexion trop lente — réessayez." : "Erreur réseau.", "error");
-    } finally {
-      setBusy(false);
-    }
   }
 
   function validate(): string | null {
@@ -404,34 +346,15 @@ export function ManualListingForm({
           />
         </label>
 
-        {/* ── Photos ── */}
+        {/* ── Photos ──
+            The shared uploader: signed URL + plain fetch. The version that
+            lived here went through supabase-js, which serialises on the
+            per-origin auth Web Lock and left uploads hanging forever. */}
         <div>
           <Label>Photos</Label>
-          <div className="mt-1 flex flex-wrap gap-2">
-            {photos.map((p, i) => (
-              <div key={p.path} className="relative size-20 overflow-hidden rounded-xl ring-1 ring-border">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={propertyPhotoUrl(p.path)} alt="" className="size-full bg-black object-contain" />
-                <button
-                  onClick={() => setPhotos((s) => s.filter((_, j) => j !== i))}
-                  className="absolute end-1 top-1 rounded-md bg-black/60 p-1 text-white"
-                  aria-label="Retirer la photo"
-                >
-                  <Trash2 className="size-3" />
-                </button>
-              </div>
-            ))}
-            {photos.length < MAX_PHOTOS && (
-              <button
-                onClick={() => fileRef.current?.click()}
-                disabled={busy}
-                className="grid size-20 place-items-center rounded-xl border border-dashed border-border text-muted hover:text-foreground disabled:opacity-50"
-              >
-                <ImagePlus className="size-5" />
-              </button>
-            )}
+          <div className="mt-1">
+            <PhotoUploader photos={photos} onChange={setPhotos} disabled={busy} />
           </div>
-          <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={onPickPhotos} />
         </div>
 
         {/* ── Compatibilité (pièces) ── */}
