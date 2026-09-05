@@ -128,7 +128,7 @@ export function DiagnosticEditor({
         const path = `${auth.user.id}/diag-${propertyId}-${Date.now()}-${added.length}.${ext}`;
         const { error } = await withTimeout(
           supabase.storage.from("properties").upload(path, out, {
-            cacheControl: "3600",
+            cacheControl: "31536000",
             upsert: false,
             contentType: out.type || "image/webp",
           }),

@@ -18,13 +18,18 @@ import { propertyPhotoUrl } from "@/lib/imageUrl";
  * what they did not see — the wrong trade for a photo of the thing being sold.
  * So the photo is CONTAINED: all of it, always.
  *
- * THE GAPS. Containing on flat black turned every card into a black slab with a
- * small picture floating in it, and no two cards looked alike. So the leftover
- * space is filled with a blurred, over-scaled copy of the same photo — the
- * trick every serious classifieds site uses. Nothing is cropped, nothing is
- * dead space, and the card reads as one image. The backdrop is fetched at 64px
- * (about 1KB): it is blurred past recognition, so a larger one would only cost
- * bandwidth.
+ * THE GAPS. Containing on flat black turns a card into a black slab with a
+ * small picture floating in it. The leftover space is filled with a soft
+ * radial gradient, so the letterbox reads as part of the card.
+ *
+ * It used to be filled with a blurred, over-scaled SECOND COPY of the photo.
+ * That looked better and cost double: two requests and — the expensive half —
+ * two COLD optimizer transforms per displayed photo, since every distinct
+ * (url, width, quality) is its own transform with its own origin fetch, and a
+ * cold transform measures 420–730ms here. It also put a third quality value
+ * into circulation (q=50 beside q=72 and q=75), so the same picture never
+ * shared a cache entry with itself. On one home page it was 715 of 2 732 image
+ * URLs. A gradient costs no request, no transform and no bytes.
  *
  * **The parent must be positioned** — `relative`, `absolute` or `fixed`.
  * Every layer here is `<Image fill>`, which is `position:absolute; inset:0`,
@@ -81,21 +86,28 @@ export function ListingImage({
 
   return (
     <>
-      {/* Fill layer — same photo, tiny and blurred, cropped to cover. Purely
-          decorative: the sharp copy above carries the alt text. */}
-      <SafeImage
-        src={src}
-        alt=""
+      {/* The gap filler used to be a SECOND copy of the photo — fetched again
+          at 64px and q=50, blurred, cropped to cover. It looked good and it
+          cost double everywhere it was used:
+
+            · two HTTP requests per displayed photo;
+            · two COLD optimizer transforms per photo, and a cold transform is
+              the slow part of this pipeline (measured 420–730ms, and 504s
+              under concurrency), because each distinct (url, width, quality)
+              is its own transform with its own origin fetch;
+            · a third quality value in circulation — the home page asked for
+              q=72, q=50 and q=75 of the same pictures, so nothing shared a
+              cache entry with anything else.
+
+          On one home page that was 715 of 2 732 image URLs, every one of them
+          decoration behind a photo that was already loading.
+
+          It is a gradient now: no request, no transform, no bytes. The letter-
+          box sides stay dark rather than smeared with the picture's colours —
+          which is what was originally asked for ("add black sides"). */}
+      <span
         aria-hidden
-        fill
-        sizes="64px"
-        // 50, not a lower number: next.config's `images.qualities` allowlist
-        // rejects anything not listed, and an unlisted quality is a 400 rather
-        // than a smaller file.
-        quality={50}
-        loading="lazy"
-        className="scale-125 object-cover blur-xl brightness-[0.55] saturate-150"
-        draggable={false}
+        className="absolute inset-0 bg-[radial-gradient(120%_100%_at_50%_40%,#1b1b1b_0%,#121212_55%,#0b0b0b_100%)]"
       />
       <SafeImage
         src={src}

@@ -59,7 +59,7 @@ export function AvatarUploader({
       };
 
       const form = new FormData();
-      form.append("cacheControl", "3600");
+      form.append("cacheControl", "31536000");
       form.append("", small);
       const put = await fetch(signedUrl, { method: "PUT", body: form });
       if (!put.ok) throw new Error("L'envoi de la photo a échoué.");

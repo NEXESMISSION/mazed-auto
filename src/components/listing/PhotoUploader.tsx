@@ -162,7 +162,14 @@ export function PhotoUploader({
         // Multipart with an empty field name is what the storage API expects
         // for a signed upload (see storage-js uploadToSignedUrl).
         const form = new FormData();
-        form.append("cacheControl", "3600");
+        // A year, immutable. The server mints a unique path per upload
+        // (user id + timestamp + random + index), so a stored object is never
+        // replaced — an edit produces a new path. One hour meant Supabase's CDN
+        // dropped it hourly, and every next/image variant that expired then had
+        // to go back to origin for the source before it could transcode. That
+        // origin round trip is the slow, sometimes-failing part of the whole
+        // pipeline; this removes it for everything we host ourselves.
+        form.append("cacheControl", "31536000");
         form.append("", out);
 
         arm(timeoutFor(out.size));

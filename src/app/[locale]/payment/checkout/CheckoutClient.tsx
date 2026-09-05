@@ -452,7 +452,7 @@ export function CheckoutClient({
             // Multipart with an empty field name is what the storage API
             // expects for a signed upload (see storage-js uploadToSignedUrl).
             const form = new FormData();
-            form.append("cacheControl", "3600");
+            form.append("cacheControl", "31536000");
             form.append("", file);
             const put = await fetch(target.signedUrl, {
               method: "PUT",
