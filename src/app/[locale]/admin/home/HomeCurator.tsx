@@ -12,6 +12,7 @@ export type CuratorRow = {
   title: string;
   governorate: string | null;
   featured_rank: number | null;
+  boost: number | null;
   photos: CuratorPhoto[];
 };
 
@@ -142,9 +143,34 @@ export function HomeCurator({
                   <span className="block truncate text-[13.5px] font-bold">{r.title}</span>
                   <span className="text-[11.5px] text-muted">{r.governorate ?? "—"}</span>
                 </span>
+                {/* Two different powers, deliberately side by side.
+                    « Poids » is a dial: it lifts or buries a listing across
+                    every surface while still letting freshness and interest
+                    compete. « À la une » is a pin: position N on the cover,
+                    no argument. Most days the dial is the right tool. */}
+                <label className="flex shrink-0 items-center gap-1.5 text-[11px] font-bold text-muted">
+                  Poids
+                  <input
+                    type="number" min={-100} max={100} step={10}
+                    defaultValue={r.boost ?? 0}
+                    id={`boost-${r.id}`}
+                    title="-100 enterre, 0 neutre, +100 remonte partout"
+                    className="h-9 w-16 rounded-lg border border-border bg-surface-2 px-2 text-center text-[13px]"
+                  />
+                </label>
+                <button type="button" disabled={busy === r.id}
+                  onClick={() => {
+                    const el = document.getElementById(`boost-${r.id}`) as HTMLInputElement | null;
+                    call("PUT", { listingId: r.id, boost: Number(el?.value || 0) }, r.id)
+                      .then((ok) => ok && toast("Poids enregistré.", "success"));
+                  }}
+                  className="tap-target inline-flex shrink-0 items-center rounded-full border border-border px-2.5 py-2 text-[12px] font-bold hover:border-gold-soft">
+                  OK
+                </button>
                 <input type="number" min={1} max={50} defaultValue={r.featured_rank ?? 1}
                   id={`rank-${r.id}`}
-                  className="h-9 w-16 rounded-lg border border-border bg-surface-2 px-2 text-center text-[13px]" />
+                  title="Position sur la couverture"
+                  className="h-9 w-14 rounded-lg border border-border bg-surface-2 px-2 text-center text-[13px]" />
                 <button type="button" disabled={busy === r.id}
                   onClick={() => {
                     const el = document.getElementById(`rank-${r.id}`) as HTMLInputElement | null;

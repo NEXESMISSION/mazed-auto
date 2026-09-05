@@ -8,6 +8,7 @@ import { ListingImage } from "@/components/media/ListingImage";
 import { formatTND } from "@/lib/utils";
 import { HeroMarquee, type MarqueeCard } from "./HeroMarquee";
 import { FeaturedCarousel, CarouselSlide } from "./FeaturedCarousel";
+import { allocate, rankListings } from "@/lib/home/ranking";
 import { ArrowUpRight, Gauge, MapPin, Sparkles, Wrench } from "lucide-react";
 
 /**
@@ -34,6 +35,11 @@ type Row = {
   attributes: Record<string, unknown> | null;
   category: { label_fr: string; kind: string } | { label_fr: string; kind: string }[] | null;
   photos: { storage_path: string; sort_order: number; is_cover?: boolean | null }[] | null;
+  published_at?: string | null;
+  boost?: number | null;
+  boost_until?: string | null;
+  view_count?: number | null;
+  contact_reveal_count?: number | null;
 };
 
 const one = <T,>(v: T | T[] | null): T | null => (Array.isArray(v) ? v[0] ?? null : v);
@@ -71,7 +77,8 @@ const featuredAnnonces = cache(async (): Promise<Row[]> => {
   if (!admin) return [];
 
   const SELECT = `id, title, price, price_on_request, governorate, attributes,
-       featured_rank, featured_until,
+       featured_rank, featured_until, published_at, boost, boost_until,
+       view_count, contact_reveal_count,
        category:categories (label_fr, kind),
        photos:listing_photos (storage_path, sort_order, is_cover)`;
 
@@ -92,26 +99,90 @@ const featuredAnnonces = cache(async (): Promise<Row[]> => {
   // curated it yet — and so a lapsed placement degrades instead of leaving a
   // hole. `fallback` is an admin setting (0171).
   const chosen = (picked ?? []) as Row[];
-  const need = 12 - chosen.length;
-  let data = chosen;
-  if (need > 0) {
-    const { data: layout } = await admin
-      .from("app_settings").select("value").eq("key", "home_layout").maybeSingle();
-    const fallback = (layout?.value as { fallback?: string } | null)?.fallback ?? "recent";
-    const fill = admin
+
+  // Everything else, RANKED rather than ordered by date.
+  //
+  // This used to take the newest N and stop, which is why the home page was
+  // the same page every visit and why the same handful of cars filled every
+  // surface on it. A wide pool is fetched instead and scored — admin boost,
+  // freshness, interest, photographs, and a rotation that reshuffles every
+  // twenty minutes — so the page moves on its own and the deep catalogue gets
+  // a turn. See lib/home/ranking.
+  const POOL = 60;
+  const nowMs = Date.now();
+  const [{ data: recent }, { data: boosted }] = await Promise.all([
+    admin
       .from("listings")
       .select(SELECT)
       .eq("status", "published")
       .is("featured_rank", null)
-      .limit(need);
-    const { data: rest } = await (fallback === "viewed"
-      ? fill.order("view_count", { ascending: false })
-      : fill.order("published_at", { ascending: false }));
-    data = [...chosen, ...((rest ?? []) as Row[])];
-  }
+      .order("published_at", { ascending: false })
+      .limit(POOL),
+    // Boosted rows are fetched SEPARATELY and unconditionally.
+    //
+    // Ranking a window of "the 60 newest" cannot lift anything older than the
+    // window — the first version of this did exactly that, and a listing given
+    // boost=100 never appeared because it was the 71st most recent. An
+    // editorial weight has to be able to reach the whole catalogue or it is
+    // not a weight, it is a tie-breaker.
+    admin
+      .from("listings")
+      .select(SELECT)
+      .eq("status", "published")
+      .is("featured_rank", null)
+      .gt("boost", 0)
+      .or(`boost_until.is.null,boost_until.gt.${new Date(nowMs).toISOString()}`)
+      .order("boost", { ascending: false })
+      .limit(20),
+  ]);
 
   // Only rows we can actually show: a cover with no photo is a grey box.
-  return ((data ?? []) as Row[]).filter((r) => cover(r) !== null);
+  const showable = (rows: Row[]) => rows.filter((r) => cover(r) !== null);
+  const byId = new Map<string, Row>();
+  for (const r of [...((boosted ?? []) as Row[]), ...((recent ?? []) as Row[])]) {
+    if (!byId.has(r.id)) byId.set(r.id, r);
+  }
+  const ranked = rankListings(
+    showable([...byId.values()]).map((r) => ({ ...r, photoCount: (r.photos ?? []).length })),
+  );
+
+  // Pinned placements keep their exact order — that is what a pin is for —
+  // and the ranked pool fills in behind them.
+  return [...showable(chosen), ...ranked];
+});
+
+/**
+ * Who goes where — decided once per request, so no listing appears twice.
+ *
+ * The cover, the runners beside it and the drifting marquee all used to read
+ * from the same array with overlapping slices: `rows[0]` was the cover AND
+ * `rows.slice(1,3)` the runners AND the whole array the marquee. On a page
+ * with three surfaces that is the same car three times.
+ */
+const heroBlocks = cache(async (): Promise<{
+  cover: Row[];
+  runners: Row[];
+  marquee: Row[];
+  /** Everything the hero has claimed, so the rails below can avoid it. */
+  usedIds: Set<string>;
+}> => {
+  const rows = await featuredAnnonces();
+  const blocks = allocate(rows, { cover: 5, runners: 3, marquee: 12 });
+  const cover = (blocks.cover ?? []) as Row[];
+  const runners = (blocks.runners ?? []) as Row[];
+  const marquee = (blocks.marquee ?? []) as Row[];
+  return {
+    cover,
+    runners,
+    marquee,
+    usedIds: new Set([...cover, ...runners, ...marquee].map((r) => r.id)),
+  };
+});
+
+/** Ids the hero is already showing — the rails exclude these. */
+export const heroUsedIds = cache(async (): Promise<string[]> => {
+  const { usedIds } = await heroBlocks();
+  return [...usedIds];
 });
 
 /** The mobile cover. Renders nothing when no annonce has a photo. */
@@ -144,10 +215,9 @@ export async function AnnonceCoverMobile() {
   const rows = await featuredAnnonces();
   if (rows.length === 0) return null;
 
-  // Up to five in the cover slider; the rest keep drifting past in the marquee.
-  const covers = rows.slice(0, 5);
-  const runners = rows.slice(1, 3);
-  const marqueeCards: MarqueeCard[] = rows.map((r) => {
+  const { cover: covers, runners: allRunners, marquee } = await heroBlocks();
+  const runners = allRunners.slice(0, 2);
+  const marqueeCards: MarqueeCard[] = marquee.map((r) => {
     const p = coverPhoto(r.photos)!;
     return {
       id: r.id,
@@ -279,16 +349,14 @@ export async function AnnonceHero() {
   const withPhoto = await featuredAnnonces();
   if (withPhoto.length === 0) return null;
 
-  const featured = withPhoto[0];
+  const { cover: covers, runners, marquee } = await heroBlocks();
   // The cover slides through the top picks; the runners beside it stay fixed,
   // so the column does not shuffle every six seconds while you read it.
-  const covers = withPhoto.slice(0, 5);
-  const runners = withPhoto.slice(1, 4);
-  const backdrop = cover(featured)!;
+  const backdrop = cover(covers[0] ?? withPhoto[0])!;
 
   // Everything with a photo, not the first six: the banner this replaces showed
   // one annonce at a time, so eleven of the twelve were behind a timer.
-  const marqueeCards: MarqueeCard[] = withPhoto.map((r) => {
+  const marqueeCards: MarqueeCard[] = marquee.map((r) => {
     const p = coverPhoto(r.photos)!;
     return {
       id: r.id,

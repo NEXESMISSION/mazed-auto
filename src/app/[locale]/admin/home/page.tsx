@@ -30,7 +30,7 @@ export default async function AdminHomePage() {
     admin
       .from("listings")
       .select(
-        `id, title, governorate, featured_rank,
+        `id, title, governorate, featured_rank, boost,
          photos:listing_photos (id, storage_path, sort_order, is_cover)`,
       )
       .eq("status", "published")

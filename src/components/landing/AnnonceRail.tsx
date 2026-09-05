@@ -1,4 +1,6 @@
 import { Link } from "@/i18n/navigation";
+import { rankListings } from "@/lib/home/ranking";
+import { heroUsedIds } from "./AnnonceHero";
 import { coverPhoto } from "@/lib/listingCover";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { ListingImage } from "@/components/media/ListingImage";
@@ -28,6 +30,11 @@ type Row = {
   seller_id: string;
   category: { label_fr: string } | { label_fr: string }[] | null;
   photos: { storage_path: string; sort_order: number; is_cover?: boolean | null }[] | null;
+  published_at?: string | null;
+  boost?: number | null;
+  boost_until?: string | null;
+  view_count?: number | null;
+  contact_reveal_count?: number | null;
 };
 
 export async function AnnonceRail({
@@ -56,19 +63,36 @@ export async function AnnonceRail({
   const ids = (cats ?? []).map((c) => c.id as string);
   if (ids.length === 0) return null;
 
+  // Fetch WIDER than the rail shows, then rank and drop what the hero is
+  // already displaying. Before this the rail was "the newest `limit`", which
+  // on a home page whose cover is also "the newest" meant the same cars in
+  // both places, and the rest of the catalogue in neither.
   const { data } = await admin
     .from("listings")
     .select(
       `id, title, price, price_on_request, governorate, seller_id,
+       published_at, boost, boost_until, view_count, contact_reveal_count,
        category:categories (label_fr),
        photos:listing_photos (storage_path, sort_order, is_cover)`,
     )
     .eq("status", "published")
     .in("category_id", ids)
     .order("published_at", { ascending: false })
-    .limit(limit);
+    .limit(Math.max(limit * 4, 40));
 
-  const rows = (data ?? []) as Row[];
+  const used = new Set(await heroUsedIds());
+  const pool = ((data ?? []) as Row[]).map((r) => ({
+    ...r,
+    photoCount: (r.photos ?? []).length,
+  }));
+  // Prefer listings the hero has not taken. Falling back only when there are
+  // NONE left — not merely fewer than the rail would like. The first version
+  // reverted to the whole pool whenever `unused` was short, which put ten of
+  // the hero's twenty annonces back into the rails underneath it: a shorter
+  // rail is honest, the same car twice on one screen is what this change
+  // exists to stop.
+  const unused = pool.filter((r) => !used.has(r.id));
+  const rows = rankListings(unused.length > 0 ? unused : pool).slice(0, limit);
   if (rows.length === 0) return null;
 
   // One query for every badge on the rail, not one per card.

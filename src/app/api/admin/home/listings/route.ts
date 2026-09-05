@@ -100,6 +100,37 @@ export async function PUT(req: NextRequest) {
   if (gate instanceof NextResponse) return gate;
 
   const body = await req.json().catch(() => ({} as Record<string, unknown>));
+
+  // PUT carries two different edits, told apart by whether a listing is named:
+  //   { listingId, boost }        → editorial weight on one annonce
+  //   { hero_slots, side_slots }  → the shape of the page
+  // Both are "replace this value with that one", which is what PUT means.
+  if (typeof body.listingId === "string" && body.listingId) {
+    const raw = Math.round(Number(body.boost));
+    if (!Number.isFinite(raw)) {
+      return NextResponse.json({ error: "boost_required" }, { status: 400 });
+    }
+    // The column has a CHECK for this too; rejecting here gives a better error
+    // than a 500 from Postgres.
+    const boost = Math.max(-100, Math.min(100, raw));
+    const days = Math.max(0, Math.min(365, Math.floor(Number(body.days ?? 0) || 0)));
+
+    const db = getServiceSupabase();
+    if (!db) return fail("server_misconfigured", 500);
+    const { error } = await db
+      .from("listings")
+      .update({
+        boost,
+        boost_until: days === 0 ? null : new Date(Date.now() + days * 86_400_000).toISOString(),
+      })
+      .eq("id", body.listingId);
+    if (error) return fail("boost_failed", 500, error);
+
+    logAction(req, gate.user, "home.boost", { listingId: body.listingId, boost, days });
+    bustHome();
+    return NextResponse.json({ ok: true, boost });
+  }
+
   const clamp = (v: unknown, lo: number, hi: number, dflt: number) => {
     const n = Math.floor(Number(v));
     return Number.isFinite(n) ? Math.max(lo, Math.min(hi, n)) : dflt;
