@@ -1020,15 +1020,24 @@ export function PublishWizard({
               )}
             </div>
 
-            {/* lg only: below it the floating bar carries this button, and two
-                "Publier" buttons on one screen is a question, not a
-                convenience. Sized to its label rather than stretched — a
-                700px-wide button is not more clickable, only louder. */}
+            {/* lg only: below that the floating bar carries this button, and
+                two "Publier" buttons on one screen is a question, not a
+                convenience.
+
+                The `hidden` sits on this WRAPPER, not on the button. It was on
+                the button and did nothing: `.batta-btn-luxe` sets
+                `display: inline-flex` from globals.css, which is unlayered CSS,
+                and unlayered CSS outranks everything in `@layer utilities` —
+                so `hidden` lost the cascade to it at every width and both
+                buttons showed on every phone. Any display utility on a gold
+                button has the same problem; put it on a plain element around
+                the button instead. */}
+            <div className="hidden shrink-0 lg:block">
             <button
               type="button"
               onClick={publishNow}
               disabled={busy || photosUploading > 0}
-              className="batta-btn-luxe tap-target hidden h-11 shrink-0 items-center justify-center gap-1.5 px-7 text-[13.5px] disabled:opacity-60 lg:inline-flex"
+              className="batta-btn-luxe tap-target h-11 shrink-0 items-center justify-center gap-1.5 px-7 text-[13.5px] disabled:opacity-60"
             >
               {busy ? (
                 <><Loader2 className="size-4 animate-spin" /> Un instant…</>
@@ -1038,6 +1047,7 @@ export function PublishWizard({
                 <>Publier mon annonce</>
               )}
             </button>
+            </div>
           </div>
 
           {missing.length > 0 && (
