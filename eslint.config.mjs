@@ -97,7 +97,10 @@ const eslintConfig = [
     rules: { "no-restricted-syntax": ["error", ...NO_LIGHT_PALETTE] },
   },
   {
-    ignores: [".next/**", "node_modules/**", "desing/**", "scripts/**"],
+    // `.next-verify` is the isolated output of a verification build (see
+    // distDir in next.config.ts). Like `.next` it is generated code, and
+    // linting it produced ~600KB of errors about Next's own bundles.
+    ignores: [".next/**", ".next-verify/**", "node_modules/**", "desing/**", "scripts/**"],
   },
 ];
 
