@@ -2,11 +2,7 @@ import { Link } from "@/i18n/navigation";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { PageHeader } from "@/components/admin/kit";
 import { adminBtn } from "@/components/admin/AdminButton";
-import {
-  ManualListingForm,
-  type AdminCategory,
-  type AdminSeller,
-} from "../ManualListingForm";
+import { ManualListingForm, type AdminCategory } from "../ManualListingForm";
 import type { ListingAttribute } from "@/components/listing/fields";
 import { ArrowLeft } from "lucide-react";
 
@@ -49,8 +45,11 @@ export default async function AdminNewListingPage() {
     );
   }
 
-  const [profRes, catRes, attrRes] = await Promise.all([
-    admin.from("profiles").select("id, full_name, phone").order("full_name").limit(500),
+  // Profiles are NOT fetched here. The seller picker searches
+  // /api/admin/vendeurs/search as you type, so this page loads the categories
+  // it needs and nothing else — it used to pull 500 profiles on every visit to
+  // populate a list that was then rendered in full before anyone had typed.
+  const [catRes, attrRes] = await Promise.all([
     admin
       .from("categories")
       .select("id, parent_id, label_fr, kind, sort_order")
@@ -62,11 +61,6 @@ export default async function AdminNewListingPage() {
       .order("sort_order"),
   ]);
 
-  const sellers: AdminSeller[] = (profRes.data ?? []).map((p) => ({
-    id: p.id as string,
-    name: (p.full_name as string | null) ?? "Sans nom",
-    phone: (p.phone as string | null) ?? null,
-  }));
 
   type CatRow = { id: string; parent_id: string | null; label_fr: string; kind: string };
   type AttrRow = {
@@ -112,7 +106,7 @@ export default async function AdminNewListingPage() {
       />
 
       <div className="mt-6">
-        <ManualListingForm sellers={sellers} categories={categories} standalone />
+        <ManualListingForm categories={categories} standalone />
       </div>
     </div>
   );

@@ -5,6 +5,7 @@ import { ListingImage } from "@/components/media/ListingImage";
 import { TrendingRail } from "@/components/landing/TrendingRail";
 import { formatTND } from "@/lib/utils";
 import { ArrowRight, BadgeCheck, ImageOff, MapPin } from "lucide-react";
+import { LinkBusy } from "@/components/ui/LinkBusy";
 
 /**
  * "Annonces similaires" — the bottom of a listing page.
@@ -216,8 +217,9 @@ function Card({
   return (
     <Link
       href={`/annonces/${listing.id}` as never}
-      className="group block overflow-hidden rounded-2xl border border-border bg-surface transition hover:border-gold-soft"
+      className="press group relative block overflow-hidden rounded-2xl border border-border bg-surface transition hover:border-gold-soft"
     >
+      <LinkBusy />
       <div className="relative aspect-[4/3] bg-surface-2">
         {cover ? (
           <ListingImage

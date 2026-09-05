@@ -1056,13 +1056,22 @@ html[dir="rtl"] .batta-marquee-reverse { animation-name: batta-marquee; }
 
 /* Anything that navigates should acknowledge the press immediately, before the
    server has said anything at all. */
-.press { transition: transform 120ms ease-out; }
-.press:active { transform: scale(0.985); }
+.press {
+  transition: transform 130ms cubic-bezier(.2, .8, .2, 1), filter 130ms ease-out;
+}
+/* 0.985 was the old value and it was below the threshold of noticing — a 1.5%
+   scale on a 300px card is four pixels, which reads as nothing on a phone.
+   The brightness lift is what actually sells it: the surface moves AND
+   changes, so the tap registers even on a card that is mostly photograph. */
+.press:active {
+  transform: scale(0.968);
+  filter: brightness(1.08);
+}
 
 @media (prefers-reduced-motion: reduce) {
   .batta-page-enter { animation: none; }
   .press { transition: none; }
-  .press:active { transform: none; }
+  .press:active { transform: none; filter: brightness(1.08); }
 }
 
 /* ── Search in flight ───────────────────────────────────────────────────────
@@ -1138,4 +1147,41 @@ html[dir="rtl"] .batta-marquee-reverse { animation-name: batta-marquee; }
   label {
     touch-action: manipulation;
   }
+}
+
+/* ── Pending navigation ────────────────────────────────────────────────────
+   The gap `.press` and the top progress bar leave between them: the press
+   ends after 120ms, the bar says the app is busy but not WHICH card you
+   tapped, and on a force-dynamic route the skeleton can be a few hundred
+   milliseconds away. This marks the tapped thing until its page arrives.
+
+   Both parts fade IN over 90ms rather than appearing: a navigation that
+   resolves from cache finishes well inside that, so a fast click stays
+   silent instead of flashing a spinner at you. */
+.link-busy-overlay {
+  background: color-mix(in srgb, var(--background) 55%, transparent);
+  backdrop-filter: blur(1px);
+  animation: link-busy-in 90ms ease-out both;
+}
+
+.link-busy-ring {
+  border-radius: 9999px;
+  border: 2px solid color-mix(in srgb, var(--gold) 22%, transparent);
+  border-top-color: var(--gold);
+  animation: link-busy-in 90ms ease-out both, link-busy-spin 620ms linear 90ms infinite;
+}
+
+@keyframes link-busy-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes link-busy-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Still say which card is loading — just hold it still. */
+  .link-busy-ring { animation: link-busy-in 90ms ease-out both; border-top-color: var(--gold); }
+  .link-busy-overlay { backdrop-filter: none; }
 }

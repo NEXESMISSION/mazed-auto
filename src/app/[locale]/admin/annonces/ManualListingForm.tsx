@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useToast } from "@/components/ui/Toast";
 import { AdminButton } from "@/components/admin/AdminButton";
@@ -40,9 +40,11 @@ export type AdminCategory = {
 
 type Fitment = { make: string; model: string; yearFrom: string; yearTo: string };
 
+/** Below this, the picker stays empty rather than listing the database. */
+const MIN_SELLER_CHARS = 2;
+
 
 export function ManualListingForm({
-  sellers,
   categories,
   /**
    * On its own page (`/admin/annonces/nouvelle`) the form is the whole point,
@@ -51,7 +53,6 @@ export function ManualListingForm({
    */
   standalone = false,
 }: {
-  sellers: AdminSeller[];
   categories: AdminCategory[];
   standalone?: boolean;
 }) {
@@ -63,6 +64,9 @@ export function ManualListingForm({
 
   const [sellerQuery, setSellerQuery] = useState("");
   const [sellerId, setSellerId] = useState("");
+  const [picked, setPicked] = useState<AdminSeller | null>(null);
+  const [matches, setMatches] = useState<AdminSeller[]>([]);
+  const [searching, setSearching] = useState(false);
   const [categoryId, setCategoryId] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -78,21 +82,49 @@ export function ManualListingForm({
   const [fitments, setFitments] = useState<Fitment[]>([]);
   const [publishNow, setPublishNow] = useState(true);
 
-  const seller = sellers.find((s) => s.id === sellerId) ?? null;
+  const seller = picked;
   const category = categories.find((c) => c.id === categoryId) ?? null;
   const isPart = category?.kind === "part";
 
-  const matches = useMemo(() => {
-    const q = sellerQuery.trim().toLowerCase();
-    const pool = q
-      ? sellers.filter(
-          (s) =>
-            s.name.toLowerCase().includes(q) ||
-            (s.phone ?? "").replace(/\s/g, "").includes(q),
-        )
-      : sellers;
-    return pool.slice(0, 8);
-  }, [sellers, sellerQuery]);
+  /**
+   * Sellers come from the server, two characters at a time.
+   *
+   * This used to receive every profile as a prop and filter in the browser,
+   * which listed all of them before anything was typed — fine at 23 accounts,
+   * unusable at 5 000, and it cost a 500-row query on every page load. Below
+   * MIN_SELLER_CHARS nothing is fetched and nothing is shown: an empty box is
+   * a clearer instruction than a wall of names.
+   */
+  useEffect(() => {
+    const q = sellerQuery.trim();
+    if (q.length < MIN_SELLER_CHARS) {
+      setMatches([]);
+      setSearching(false);
+      return;
+    }
+    setSearching(true);
+    const ctrl = new AbortController();
+    const id = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/admin/vendeurs/search?q=${encodeURIComponent(q)}`, {
+          signal: ctrl.signal,
+        });
+        if (!res.ok) throw new Error("search_failed");
+        const data = (await res.json()) as { sellers: AdminSeller[] };
+        setMatches(data.sellers ?? []);
+      } catch (e) {
+        // An aborted request is the previous keystroke being superseded, not a
+        // failure — showing "aucun résultat" for it would flicker on every key.
+        if ((e as Error).name !== "AbortError") setMatches([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 250);
+    return () => {
+      clearTimeout(id);
+      ctrl.abort();
+    };
+  }, [sellerQuery]);
 
   const grouped = useMemo(() => {
     const map = new Map<string, AdminCategory[]>();
@@ -106,7 +138,9 @@ export function ManualListingForm({
 
   function pickSeller(s: AdminSeller) {
     setSellerId(s.id);
+    setPicked(s);
     setSellerQuery("");
+    setMatches([]);
     // Prefill from the profile, then let the admin override: the number the
     // seller wants on the annonce is often not the one on their account.
     if (!contactName) setContactName(s.name);
@@ -272,11 +306,20 @@ export function ManualListingForm({
                     </button>
                   </li>
                 ))}
-                {matches.length === 0 && (
+
+                {/* Three states, because "nothing listed" means three different
+                    things and only one of them is a problem. */}
+                {sellerQuery.trim().length < MIN_SELLER_CHARS ? (
+                  <li className="px-3 py-2 text-[12px] text-muted">
+                    Tapez au moins {MIN_SELLER_CHARS} caractères — nom ou numéro.
+                  </li>
+                ) : searching ? (
+                  <li className="px-3 py-2 text-[12px] text-muted">Recherche…</li>
+                ) : matches.length === 0 ? (
                   <li className="px-3 py-2 text-[12px] text-muted">
                     Aucun compte ne correspond — le vendeur doit d&apos;abord s&apos;inscrire.
                   </li>
-                )}
+                ) : null}
               </ul>
             </>
           )}

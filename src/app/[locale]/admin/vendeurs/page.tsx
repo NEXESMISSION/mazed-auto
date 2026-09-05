@@ -45,52 +45,87 @@ export default async function AdminVendeursPage({
   const page = Math.max(1, Number(sp.page) || 1);
   const from = (page - 1) * PAGE_SIZE;
 
-  // Live badges, resolved once: a badge is "live" only if it was never revoked
-  // and has not lapsed, and both tests need the row rather than a join filter.
   const nowIso = new Date().toISOString();
-  const { data: badgeRows } = await admin
-    .from("seller_badges")
-    .select("seller_id, expires_at")
-    .is("revoked_at", null)
-    .gt("expires_at", nowIso);
-  const verified = new Map<string, string>(
-    (badgeRows ?? []).map((b) => [b.seller_id as string, b.expires_at as string]),
-  );
 
+  /**
+   * "Vérifié" is a join, not an id list.
+   *
+   * The first version read every live badge, built a Map of seller ids, and
+   * fed it to `.in("id", [...])` — which is an unbounded IN clause in the URL,
+   * and a second unbounded read to build it. Fine at three badges, a broken
+   * request at three thousand. `seller_badges!inner(...)` makes Postgres do
+   * the join and keeps the page's payload proportional to the page size.
+   */
   const listQuery = () => {
-    let query = admin
-      .from("profiles")
-      .select("id, full_name, phone, role, governorate, created_at, banned_at", { count: "exact" })
-      .is("deleted_at", null);
+    let query =
+      tab === "verified"
+        ? admin
+            .from("profiles")
+            .select(
+              "id, full_name, phone, role, governorate, created_at, banned_at, seller_badges!inner(expires_at, revoked_at)",
+              { count: "exact" },
+            )
+            .is("deleted_at", null)
+            .is("seller_badges.revoked_at", null)
+            .gt("seller_badges.expires_at", nowIso)
+        : admin
+            .from("profiles")
+            .select(
+              "id, full_name, phone, role, governorate, created_at, banned_at, seller_badges(expires_at, revoked_at)",
+              { count: "exact" },
+            )
+            .is("deleted_at", null);
 
     if (tab === "agency") query = query.eq("role", "agency");
     if (tab === "banned") query = query.not("banned_at", "is", null);
-    if (tab === "verified" && verified.size > 0) query = query.in("id", [...verified.keys()]);
-    if (tab === "verified" && verified.size === 0) query = query.eq("id", "no-match");
     if (q) query = query.or(`full_name.ilike.%${q}%,phone.ilike.%${q}%`);
 
     return query.order("created_at", { ascending: false }).range(from, from + PAGE_SIZE - 1);
   };
 
-  const [tallyRes, listRes] = await Promise.all([
-    admin.from("profiles").select("id, role, banned_at").is("deleted_at", null),
+  /**
+   * Tab counts as four head-only COUNTs rather than one full table read.
+   *
+   * This used to `select id, role, banned_at` for EVERY profile and tally in
+   * JS — the same mistake the seller picker made, and the reason it is worth
+   * naming: at 23 accounts you cannot see it, and at 50 000 the page moves
+   * 50 000 rows to render a number. Head-only counts transfer no rows at all,
+   * and the four run in parallel.
+   */
+  const head = () => admin.from("profiles").select("id", { count: "exact", head: true }).is("deleted_at", null);
+
+  const [allRes, agencyRes, bannedRes, verifiedRes, listRes] = await Promise.all([
+    head(),
+    head().eq("role", "agency"),
+    head().not("banned_at", "is", null),
+    admin
+      .from("seller_badges")
+      .select("seller_id", { count: "exact", head: true })
+      .is("revoked_at", null)
+      .gt("expires_at", nowIso),
     listQuery(),
   ]);
 
-  type Tally = { id: string; role: string; banned_at: string | null };
-  const tallyRows = (tallyRes.data ?? []) as Tally[];
   const counts: Record<TabKey, number> = {
-    all: tallyRows.length,
-    agency: tallyRows.filter((r) => r.role === "agency").length,
-    verified: tallyRows.filter((r) => verified.has(r.id)).length,
-    banned: tallyRows.filter((r) => r.banned_at !== null).length,
+    all: allRes.count ?? 0,
+    agency: agencyRes.count ?? 0,
+    verified: verifiedRes.count ?? 0,
+    banned: bannedRes.count ?? 0,
   };
   const tabs: Tab[] = TAB_ORDER.map((t) => ({ value: t, label: TAB_LABEL[t], count: counts[t] }));
 
   type ProfileRow = {
     id: string; full_name: string | null; phone: string | null; role: string;
     governorate: string | null; created_at: string; banned_at: string | null;
+    seller_badges?: { expires_at: string; revoked_at: string | null }[] | null;
   };
+
+  /** A badge counts only if it was never revoked and has not lapsed — both
+   *  tests live on the row now, so no second query and no id map. */
+  const isVerified = (r: ProfileRow) =>
+    (r.seller_badges ?? []).some(
+      (b) => !b.revoked_at && new Date(b.expires_at) > new Date(),
+    );
   const rows = (listRes.data ?? []) as ProfileRow[];
   const total = listRes.count ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -140,7 +175,7 @@ export default async function AdminVendeursPage({
             <ul className="min-h-0 flex-1 divide-y divide-border/70 overflow-y-auto overscroll-contain">
               {rows.map((r) => {
                 const selected = r.id === openId;
-                const badge = verified.get(r.id);
+                const badge = isVerified(r);
                 return (
                   <li key={r.id}>
                     <Link

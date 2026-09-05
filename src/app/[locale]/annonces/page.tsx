@@ -11,6 +11,7 @@ import { FavoriteButton } from "@/components/property/FavoriteButton";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { BadgeCheck, ImageOff, Images, MapPin, SearchX, Wrench, Car } from "lucide-react";
 import { CONDITIONS, FUELS, TRANSMISSIONS } from "@/lib/vehicles";
+import { LinkBusy } from "@/components/ui/LinkBusy";
 
 type Cat = { id: string; parent_id: string | null; label_fr: string; kind: string };
 
@@ -414,8 +415,9 @@ export default async function AnnoncesPage({
                   <Link
                     key={l.id}
                     href={`/annonces/${l.id}` as never}
-                    className="press group flex flex-col overflow-hidden rounded-2xl border border-border bg-surface transition duration-300 hover:border-gold-soft hover:shadow-[0_10px_30px_-16px_rgba(0,0,0,0.6)] lg:rounded-[20px] lg:hover:-translate-y-1 lg:hover:shadow-[0_22px_50px_-24px_rgba(0,0,0,0.85)]"
+                    className="press group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-surface transition duration-300 hover:border-gold-soft hover:shadow-[0_10px_30px_-16px_rgba(0,0,0,0.6)] lg:rounded-[20px] lg:hover:-translate-y-1 lg:hover:shadow-[0_22px_50px_-24px_rgba(0,0,0,0.85)]"
                   >
+                    <LinkBusy />
                     <div className="relative aspect-[4/3] overflow-hidden bg-surface-2">
                       {cover ? (
                         <ListingImage

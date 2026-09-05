@@ -10,6 +10,7 @@ import { HeroMarquee, type MarqueeCard } from "./HeroMarquee";
 import { FeaturedCarousel, CarouselSlide } from "./FeaturedCarousel";
 import { allocate, rankListings } from "@/lib/home/ranking";
 import { ArrowUpRight, Gauge, MapPin, Sparkles, Wrench } from "lucide-react";
+import { LinkBusy } from "@/components/ui/LinkBusy";
 
 /**
  * The home cover — the v3 replacement for DesktopHero + PromoHero.
@@ -479,6 +480,7 @@ function FeaturedCard({
           : "aspect-[16/10] rounded-[28px] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.65)]")
       }
     >
+      <LinkBusy />
       <ListingImage
         path={img}
         alt={headline}
