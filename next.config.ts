@@ -39,9 +39,18 @@ const nextConfig: NextConfig = {
     // payload from scratch: the browser tries to restore the scroll position
     // against a page whose content does not exist yet, so it lands at the top
     // and the user loses their place in the catalog every single time.
-    // Thirty seconds is enough to cover "open a car, decide, come back" while
-    // staying short enough that prices and availability stay fresh.
-    staleTimes: { dynamic: 30, static: 180 },
+    // Thirty seconds was NOT enough to cover "open a car, decide, come back".
+    // Looking at a listing means photos, specs, description, often a phone
+    // call — a minute or three, not twenty seconds. So the entry expired
+    // while the buyer was still reading, Back refetched, and the failure
+    // described above happened anyway: the catalogue reopened somewhere near
+    // the top and they had to find their place again after every car.
+    //
+    // Three minutes, matching `static`. The freshness argument was inherited
+    // from the auction era, where a price could move while you were looking
+    // at it; on a fixed-price classified nothing changes in three minutes
+    // that is worth losing your place in a 66-item list for.
+    staleTimes: { dynamic: 180, static: 180 },
   },
   /**
    * Retired admin routes.
