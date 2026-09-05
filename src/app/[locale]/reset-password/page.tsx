@@ -54,7 +54,7 @@ export default async function ResetPasswordPage() {
   return (
     <>
       {/* ── MOBILE / tablet (< lg) — centered card ── */}
-      <div className="lg:hidden mx-auto flex min-h-[calc(100dvh-9rem)] max-w-[var(--max-w)] flex-col items-center justify-center px-6">
+      <div className="lg:hidden mx-auto flex min-h-dvh max-w-[var(--max-w)] flex-col items-center justify-center px-6">
         <div className="relative w-full max-w-sm">
           <div
             aria-hidden
