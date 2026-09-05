@@ -29,11 +29,12 @@ export const metadata: Metadata = {
   metadataBase: SITE_URL ? new URL(SITE_URL) : undefined,
   applicationName: "Mazed Auto",
   title: {
-    default: "Mazed Auto — Enchères automobiles",
+    default: "Mazed Auto — Petites annonces automobiles en Tunisie",
     template: "%s · Mazed Auto",
   },
   description:
-    "Tunisia's first dedicated car auction platform. Transparency. Speed. Trust.",
+    "Voitures et pièces de rechange partout en Tunisie. Le prix est affiché, "
+    + "vous appelez le vendeur — chaque annonce est vérifiée avant sa mise en ligne.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
@@ -46,9 +47,10 @@ export const metadata: Metadata = {
   // copied straight from v1 so the gold "MA" shows everywhere, including the
   // /favicon.ico path browsers request by default.
   openGraph: {
-    title: "Mazed Auto — Enchères automobiles",
+    title: "Mazed Auto — Petites annonces automobiles en Tunisie",
     description:
-      "Tunisia's first dedicated car auction platform. Transparency. Speed. Trust.",
+      "Voitures et pièces de rechange partout en Tunisie. Le prix est affiché, "
+      + "vous appelez le vendeur.",
     type: "website",
     siteName: "Mazed Auto",
     images: [
@@ -56,14 +58,16 @@ export const metadata: Metadata = {
         url: "/logo-square.png",
         width: 1104,
         height: 1104,
-        alt: "Mazed Auto — Enchères automobiles",
+        alt: "Mazed Auto — Petites annonces automobiles en Tunisie",
       },
     ],
   },
   twitter: {
     card: "summary",
-    title: "Mazed Auto — Enchères automobiles",
-    description: "Tunisia's first dedicated car auction platform.",
+    title: "Mazed Auto — Petites annonces automobiles en Tunisie",
+    description:
+      "Voitures et pièces de rechange partout en Tunisie. Le prix est affiché, "
+      + "vous appelez le vendeur.",
     images: ["/logo-square.png"],
   },
   formatDetection: { telephone: false },

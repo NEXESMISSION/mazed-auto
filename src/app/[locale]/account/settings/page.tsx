@@ -196,9 +196,8 @@ export default async function SettingsPage() {
               <p className="text-[12px] leading-relaxed text-muted">
                 La suppression de votre compte est définitive : vos données
                 personnelles et vos pièces d&apos;identité sont effacées. Les
-                opérations en cours (annonce en enchère, enchère remportée non
-                réglée, paiement ou virement en attente) doivent être soldées
-                avant.
+                opérations en cours (paiement ou virement en attente) doivent
+                être soldées avant.
               </p>
             </div>
             <Divider />

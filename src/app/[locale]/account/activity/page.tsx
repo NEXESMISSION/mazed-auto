@@ -222,7 +222,7 @@ export default async function ActivityPage({
             Mes achats
           </h1>
           <p className="mt-1.5 text-[12px] text-muted lg:text-[14px]">
-            Enchères, acquisitions et favoris.
+            Vos annonces suivies et vos favoris.
           </p>
         </div>
         <Link

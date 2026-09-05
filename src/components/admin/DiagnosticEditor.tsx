@@ -272,7 +272,7 @@ export function DiagnosticEditor({
           value={summary}
           onChange={(e) => setSummary(e.target.value)}
           rows={4}
-          placeholder="Ce que nous avons constaté, en clair, pour un acheteur qui ne verra pas la voiture avant l'enchère."
+          placeholder="Ce que nous avons constaté, en clair, pour un acheteur qui ne verra pas la voiture avant de se déplacer."
           className={INPUT}
         />
       </label>

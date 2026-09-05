@@ -1,7 +1,7 @@
 {
-  "name": "Mazed Auto — Enchères automobiles",
+  "name": "Mazed Auto — Petites annonces automobiles",
   "short_name": "Mazed Auto",
-  "description": "La première plateforme tunisienne d'enchères automobiles. Transparence. Rapidité. Confiance.",
+  "description": "Voitures et pièces de rechange partout en Tunisie. Le prix est affiché, vous appelez le vendeur.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

@@ -15,10 +15,14 @@ import { Trash2, AlertTriangle } from "lucide-react";
  * exactly what to settle first (prefer toasts over inline error blocks).
  */
 const BLOCKER_FR: Record<string, string> = {
+  // Both of these are answered by the `auctions` table, which is empty since
+  // the pivot, so neither can fire today. They keep sensible wording rather
+  // than auction wording in case a row ever appears — and see the note in the
+  // route: nothing here yet checks v3 `listings`.
   active_listings:
-    "Vous avez une annonce en cours d'enchère. Attendez sa clôture avant de supprimer votre compte.",
+    "Vous avez une opération en cours sur une annonce. Attendez sa clôture avant de supprimer votre compte.",
   unpaid_win:
-    "Vous avez une enchère remportée non réglée. Réglez le solde avant de supprimer votre compte.",
+    "Vous avez un achat non réglé. Réglez le solde avant de supprimer votre compte.",
   pending_payments:
     "Un paiement est en cours de vérification. Attendez sa validation avant de supprimer votre compte.",
   pending_payout:

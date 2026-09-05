@@ -71,16 +71,16 @@ export default async function MyPaymentsPage({
         <span className="batta-eyebrow">Historique</span>
         <h1 className="mt-1.5 text-[24px] font-extrabold leading-tight tracking-tight">Mes paiements</h1>
         <p className="mt-1.5 text-[12px] text-muted">
-          Cautions, frais d&apos;annonce, achats et remboursements.
+          Frais de publication, packs et remboursements.
         </p>
         <div className="batta-frame-gold relative mt-6 px-6 py-10 text-center">
           <Wallet className="mx-auto size-8 text-gold" strokeWidth={2} />
           <p className="mt-3 text-[13px] text-muted">Aucun paiement pour le moment.</p>
           <Link
-            href="/properties"
+            href="/annonces"
             className="batta-btn-luxe tap-target mt-5 inline-flex px-5 py-2.5 text-[12.5px]"
           >
-            Parcourir les enchères
+            Parcourir les annonces
           </Link>
         </div>
       </div>
@@ -235,7 +235,7 @@ export default async function MyPaymentsPage({
       <span className="batta-eyebrow">Historique</span>
       <h1 className="mt-1.5 text-[24px] font-extrabold leading-tight tracking-tight">Mes paiements</h1>
       <p className="mt-1.5 text-[12px] text-muted">
-        Cautions, achats, frais et remboursements.
+        Frais de publication, packs et remboursements.
       </p>
 
       <PaymentsClient payments={vms} summary={summary} locale={dateLocale} />

@@ -11,7 +11,7 @@ import {
 export const metadata: Metadata = {
   title: "Notifications — Mazed Auto",
   description:
-    "Centre de notifications : suivez vos enchères, paiements, annonces et alertes en temps réel.",
+    "Centre de notifications : suivez vos annonces, vos paiements et vos alertes en temps réel.",
 };
 
 // Per-user, auth-gated — never static.
@@ -69,7 +69,7 @@ export default async function NotificationsPage({
         Notifications
       </h1>
       <p className="mt-1.5 text-[12px] text-muted">
-        Enchères, paiements, annonces et alertes — tout au même endroit.
+        Annonces, paiements et alertes — tout au même endroit.
       </p>
     </>
   );
@@ -88,14 +88,14 @@ export default async function NotificationsPage({
             Aucune notification
           </p>
           <p className="mt-1 text-[12.5px] text-muted">
-            Tout est calme. Allez jeter un œil aux enchères.
+            Tout est calme. Allez jeter un œil aux annonces.
           </p>
           <div className="mt-5">
             <Link
-              href="/properties"
+              href="/annonces"
               className="batta-btn-luxe tap-target inline-flex px-5 py-2.5 text-[12.5px]"
             >
-              Explorer les enchères
+              Parcourir les annonces
             </Link>
           </div>
         </div>

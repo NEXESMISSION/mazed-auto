@@ -68,7 +68,7 @@ const TABS: { key: TabKey; label: string; icon: typeof Gavel }[] = [
 ];
 
 const EMPTY: Record<TabKey, { icon: typeof Gavel; text: string }> = {
-  enCours: { icon: Gavel, text: "Aucune enchère en cours. Réservez votre place avant l'ouverture." },
+  enCours: { icon: Gavel, text: "Rien en cours pour le moment." },
   terminees: { icon: History, text: "Rien de terminé pour l'instant. Vos acquisitions et participations passées apparaîtront ici." },
   favoris: { icon: Heart, text: "Aucun favori. Touchez le cœur sur une annonce pour la suivre." },
 };
@@ -369,11 +369,11 @@ export function ActivityTabs({
                 {empty.text}
               </p>
               <Link
-                href="/properties"
+                href="/annonces"
                 className="batta-btn-luxe tap-target mt-5 inline-flex items-center gap-1.5 px-5 py-2.5 text-[12.5px]"
               >
                 <Search className="size-4" strokeWidth={2.5} />
-                Parcourir les enchères
+                Parcourir les annonces
               </Link>
             </div>
           ) : (

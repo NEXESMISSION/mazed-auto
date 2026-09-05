@@ -62,15 +62,15 @@ export const KIND_CONFIG: KindDef[] = [
       { key: "body", label: "Message", type: "textarea", maxLength: 1000, placeholder: "Détails de la maintenance." },
       { key: "scheduled_at", label: "Début prévu", type: "datetime", required: true, helper: "Heure locale (Tunis)." },
       { key: "duration_min", label: "Durée (minutes)", type: "number", placeholder: "60" },
-      { key: "affected", label: "Services impactés", type: "text", maxLength: 200, placeholder: "Enchères, paiements" },
+      { key: "affected", label: "Services impactés", type: "text", maxLength: 200, placeholder: "Publication, paiements" },
     ],
   },
   {
     value: "promo",
     label: "Promo / actualité",
-    description: "Offre limitée, événement, mise en avant d'une enchère.",
+    description: "Offre limitée, événement, mise en avant d'une annonce.",
     fields: [
-      { key: "title", label: "Titre", type: "text", required: true, maxLength: 200, placeholder: "Enchère spéciale ce week-end" },
+      { key: "title", label: "Titre", type: "text", required: true, maxLength: 200, placeholder: "Publication offerte ce week-end" },
       { key: "body", label: "Message", type: "textarea", maxLength: 1000, placeholder: "Détails de la promo." },
       { key: "link", label: "Lien", type: "url", maxLength: 500, placeholder: "/annonces/<id>" },
       { key: "cta_label", label: "Libellé du bouton", type: "text", maxLength: 60, placeholder: "Voir l'offre" },

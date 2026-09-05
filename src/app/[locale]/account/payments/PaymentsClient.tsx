@@ -65,7 +65,15 @@ const KIND_LABELS: Record<string, string> = {
   inspection_fee: "Frais d'inspection",
   subscription: "Abonnement",
   deposit_release: "Remboursement de caution",
+  // v3. Everything above this line belongs to the auction era and stays only
+  // so an old row still reads properly; these are the kinds the product
+  // actually charges today, and they were missing — a renewal or a pack
+  // rendered its raw enum value in the history.
   listing_fee: "Frais d'annonce",
+  listing_pack: "Pack d'annonces",
+  renewal: "Renouvellement d'annonce",
+  promo: "Mise en avant",
+  badge: "Badge vérifié",
 };
 
 const STATUS: Record<string, { label: string; tone: string }> = {
