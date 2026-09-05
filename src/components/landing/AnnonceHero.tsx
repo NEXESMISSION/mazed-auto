@@ -7,6 +7,7 @@ import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { ListingImage } from "@/components/media/ListingImage";
 import { formatTND } from "@/lib/utils";
 import { HeroMarquee, type MarqueeCard } from "./HeroMarquee";
+import { FeaturedCarousel, CarouselSlide } from "./FeaturedCarousel";
 import { ArrowUpRight, Gauge, MapPin, Sparkles, Wrench } from "lucide-react";
 
 /**
@@ -143,7 +144,8 @@ export async function AnnonceCoverMobile() {
   const rows = await featuredAnnonces();
   if (rows.length === 0) return null;
 
-  const featured = rows[0];
+  // Up to five in the cover slider; the rest keep drifting past in the marquee.
+  const covers = rows.slice(0, 5);
   const runners = rows.slice(1, 3);
   const marqueeCards: MarqueeCard[] = rows.map((r) => {
     const p = coverPhoto(r.photos)!;
@@ -198,8 +200,17 @@ export async function AnnonceCoverMobile() {
         <span className="batta-eyebrow inline-flex items-center gap-1.5">
           <Sparkles className="size-3" /> À la une
         </span>
+        {/* Slides through everything the admin put à la une. The cards are
+            server-rendered and handed to the carousel as children, so only the
+            few lines that move them ship to the browser. */}
         <div className="mt-2.5">
-          <FeaturedCard row={featured} locale={locale} compact />
+          <FeaturedCarousel className="overflow-hidden rounded-2xl">
+            {covers.map((r) => (
+              <CarouselSlide key={r.id}>
+                <FeaturedCard row={r} locale={locale} compact />
+              </CarouselSlide>
+            ))}
+          </FeaturedCarousel>
         </div>
         {runners.length > 0 && (
           <ul className="mt-3 space-y-2.5">
@@ -269,6 +280,9 @@ export async function AnnonceHero() {
   if (withPhoto.length === 0) return null;
 
   const featured = withPhoto[0];
+  // The cover slides through the top picks; the runners beside it stay fixed,
+  // so the column does not shuffle every six seconds while you read it.
+  const covers = withPhoto.slice(0, 5);
   const runners = withPhoto.slice(1, 4);
   const backdrop = cover(featured)!;
 
@@ -348,7 +362,13 @@ export async function AnnonceHero() {
           {/* Featured + runners. With no runners the featured card spans the
               full width instead of leaving a gap on thin inventory. */}
           <div className={runners.length > 0 ? "grid grid-cols-[1.7fr_1fr] gap-6 xl:gap-7" : ""}>
-            <FeaturedCard row={featured} locale={locale} />
+            <FeaturedCarousel className="overflow-hidden rounded-[28px]">
+              {covers.map((r) => (
+                <CarouselSlide key={r.id}>
+                  <FeaturedCard row={r} locale={locale} />
+                </CarouselSlide>
+              ))}
+            </FeaturedCarousel>
 
             {runners.length > 0 && (
               <div
