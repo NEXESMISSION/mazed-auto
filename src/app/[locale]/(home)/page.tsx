@@ -20,6 +20,8 @@ import { PropertyCard } from "@/components/property/PropertyCard";
 import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
 import { formatTND } from "@/lib/utils";
 import { getHomeFeed, type HammeredRow } from "@/lib/home/feed";
+import { unstable_cache } from "next/cache";
+import { getServiceSupabase } from "@/lib/supabase/admin";
 import { log } from "@/lib/log";
 import { PerfProbe } from "@/components/dev/PerfProbe";
 
@@ -28,6 +30,40 @@ import { PerfProbe } from "@/components/dev/PerfProbe";
 // are filled in client-side via the watchlist store after hydration. This
 // lets Vercel serve the page straight from the edge CDN — ~20ms TTFB and no
 // serverless cold start — instead of rendering ~200 cards on every request.
+/**
+ * How many published annonces each make has — the number in the corner of
+ * every brand tile.
+ *
+ * The badge markup has been in BrandRail all along, but the counts fed to it
+ * were derived from the auction feeds (`trending`, `nouveautes`, `offers`,
+ * `recent`) by splitting each lot TITLE on its first word. Those arrays are
+ * empty since the pivot, so every tile scored 0 and the badge never rendered:
+ * a wall of logos with no indication that half of them have nothing behind
+ * them.
+ *
+ * Counted from `attributes->>make` on published listings — the same field the
+ * catalogue filters on — so the badge and the results agree.
+ */
+const fetchMakeCounts = unstable_cache(
+  async (): Promise<{ name: string; count: number }[]> => {
+    const admin = getServiceSupabase();
+    if (!admin) return [];
+    const { data } = await admin
+      .from("listings")
+      .select("attributes->>make")
+      .eq("status", "published")
+      .limit(5000);
+    const counts = new Map<string, number>();
+    for (const row of (data ?? []) as { make: string | null }[]) {
+      const make = (row.make ?? "").trim();
+      if (make) counts.set(make, (counts.get(make) ?? 0) + 1);
+    }
+    return [...counts.entries()].map(([name, count]) => ({ name, count }));
+  },
+  ["home-make-counts"],
+  { revalidate: 300, tags: ["home-feed"] },
+);
+
 export const revalidate = 60;
 import type { AuctionWithProperty } from "@/lib/types";
 import {
@@ -261,21 +297,10 @@ export default async function LandingPage({
     endData();
   }
 
-  // "Parcourir par marque" — distinct makes across the loaded surfaces,
-  // ranked by lot count. Derived from each title's leading token (titles
-  // are "Make Model Year"), so no extra query or brand-logo assets needed.
-  const _seenIds = new Set<string>();
-  const _makeCount = new Map<string, number>();
-  for (const a of [...trending, ...nouveautes, ...offers, ...recent]) {
-    if (_seenIds.has(a.id)) continue;
-    _seenIds.add(a.id);
-    const mk = String(a.property?.title ?? "").trim().split(/\s+/)[0];
-    if (mk) _makeCount.set(mk, (_makeCount.get(mk) ?? 0) + 1);
-  }
-  const topMakes = [..._makeCount.entries()]
-    .map(([name, count]) => ({ name, count }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 12);
+  // "Parcourir par marque" and the makes figure in the stats bar. Both used to
+  // be derived by splitting auction lot TITLES on their first word, across
+  // feeds that are empty since the pivot — see fetchMakeCounts.
+  const makeCounts = await fetchMakeCounts();
 
   // "Les plus disputées" — live lots ranked by bid count (HotNow signal,
   // distinct from `trending` which sorts by ends_at + paid placement).
@@ -373,7 +398,7 @@ export default async function LandingPage({
       {AUCTIONS_VISIBLE && (
         <>
         {/* Trending rail — horizontal scroller of the top 8 hottest auctions. */}
-        <StatsBar live={liveCount} sold={soldThisMonthCount} makes={topMakes.length} govs={coverageGovs} />
+        <StatsBar live={liveCount} sold={soldThisMonthCount} makes={makeCounts.length} govs={coverageGovs} />
 
         <HomeSectionDivider
           tone="live"
@@ -698,7 +723,7 @@ export default async function LandingPage({
 
       {/* Brand wall — full logo grid of every make, each tile deep-linking into
           Explore filtered by that brand (see BrandRail + src/lib/brands.ts). */}
-      <BrandRail makes={topMakes} title="Parcourir par marque" />
+      <BrandRail makes={makeCounts} title="Parcourir par marque" />
 
       <section className="mt-10">
         <div className="px-4">
