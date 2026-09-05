@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { createPortal } from "react-dom";
+import { useScrollLock } from "@/lib/scrollLock";
 
 /**
  * Every layer that sits on top of the page comes through here.
@@ -44,16 +45,16 @@ export function Overlay({
   const panel = React.useRef<HTMLDivElement>(null);
   React.useEffect(() => setMounted(true), []);
 
+  // Shared, reference-counted: nested overlays cannot strand the page.
+  useScrollLock(open);
+
   React.useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     const t = window.setTimeout(() => panel.current?.focus(), 20);
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
       window.clearTimeout(t);
     };
   }, [open, onClose]);

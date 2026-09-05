@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useScrollLock } from "@/lib/scrollLock";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -54,6 +55,10 @@ export function Modal({
     setMounted(true);
   }, []);
 
+  // Reference-counted, so a Modal and an AlertDialog can overlap without
+  // one of them leaving the page frozen on close (see lib/scrollLock).
+  useScrollLock(open);
+
   React.useEffect(() => {
     if (!open) return;
     previouslyFocusedRef.current = document.activeElement as HTMLElement | null;
@@ -94,11 +99,9 @@ export function Modal({
       }
     };
     window.addEventListener("keydown", handler);
-    document.body.style.overflow = "hidden";
     return () => {
       window.clearTimeout(tId);
       window.removeEventListener("keydown", handler);
-      document.body.style.overflow = "";
       const prev = previouslyFocusedRef.current;
       if (prev && document.body.contains(prev)) {
         prev.focus();

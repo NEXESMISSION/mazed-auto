@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useScrollLock } from "@/lib/scrollLock";
 import { X, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
 
 const MIN_SCALE = 1;
@@ -67,16 +68,15 @@ function Viewer({ src, alt, onClose }: { src: string; alt: string; onClose: () =
   const lastPan = useRef<{ x: number; y: number } | null>(null);
   const moved = useRef(false);
 
+  useScrollLock(true);
+
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
     }
     document.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
     };
   }, [onClose]);
 

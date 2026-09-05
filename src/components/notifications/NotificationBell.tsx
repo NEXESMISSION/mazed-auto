@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useScrollLock } from "@/lib/scrollLock";
 import { createPortal } from "react-dom";
 import { describeKind } from "@/lib/notifications/catalog";
 import {
@@ -104,6 +105,7 @@ export function NotificationBell() {
   const [unread, setUnread] = useState(0);
   const [items, setItems] = useState<NotificationRow[]>([]);
   const [open, setOpen] = useState(false);
+  const [narrow, setNarrow] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [confirmingDeleteAll, setConfirmingDeleteAll] = useState(false);
@@ -142,6 +144,16 @@ export function NotificationBell() {
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  // Tracked rather than read once: rotating a phone, or dragging a desktop
+  // window narrow, changes which behaviour is correct.
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 1023px)");
+    const sync = () => setNarrow(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
   }, []);
 
   // Keep the latest loaded count in a ref so `refresh` can stay dependency-free.
@@ -348,16 +360,20 @@ export function NotificationBell() {
       if (e.key === "Escape") setOpen(false);
     }
     document.addEventListener("keydown", onKey);
-    // Only the mobile sheet locks body scroll. The desktop dropdown lets
-    // the page scroll behind it (it's a header dropdown, not a modal).
-    if (window.matchMedia("(max-width: 1023px)").matches) {
-      document.body.style.overflow = "hidden";
-    }
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
     };
   }, [open]);
+
+  // Only the mobile sheet locks body scroll — the desktop dropdown is a header
+  // dropdown, not a modal, and the page is meant to scroll behind it.
+  //
+  // The old version wrote `document.body.style.overflow = ""` on close
+  // UNCONDITIONALLY: on desktop, where it had never locked anything, closing
+  // this dropdown cleared a lock some other component was still holding, and
+  // on mobile it clobbered an outer sheet's saved value. Both directions of
+  // the bug, in eight lines.
+  useScrollLock(open && narrow);
 
   useEffect(() => {
     if (!open) return;

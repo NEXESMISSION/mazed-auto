@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { RouteProgress, useFilteringFlag } from "@/components/ui/RouteProgress";
 import { useRouter } from "@/i18n/navigation";
+import { useScrollLock } from "@/lib/scrollLock";
 import { cn } from "@/lib/utils";
 import { Overlay, LAYER } from "@/components/ui/Overlay";
 import { CAR_MAKES, FUELS, TRANSMISSIONS, modelsFor } from "@/lib/vehicles";
@@ -407,12 +408,9 @@ export function CatalogToolbar({ categories, governorates, current, total }: Pro
   const activeCount = chips.length;
 
   // A sheet open behind a scrolling page is how you lose your place.
-  useEffect(() => {
-    if (!sheet) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
-  }, [sheet]);
+  // Reference-counted (see scrollLock): an alert opening over this sheet used
+  // to leave the page unscrollable after both had closed.
+  useScrollLock(sheet);
 
   return (
     <>

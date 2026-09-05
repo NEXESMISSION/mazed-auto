@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef } from "react";
+import { useScrollLock } from "@/lib/scrollLock";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { X } from "lucide-react";
 
@@ -52,13 +53,12 @@ export function SidePanel({
       if (e.key === "Escape") close();
     };
     window.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     return () => {
       window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
     };
   }, [close]);
+
+  useScrollLock(true);
 
   // Move focus into the panel on open so keyboard and screen-reader users
   // land on the thing that just appeared instead of staying on the row behind.

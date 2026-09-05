@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useScrollLock } from "@/lib/scrollLock";
 import { createPortal } from "react-dom";
 import { X, Download, FileText } from "lucide-react";
 
@@ -35,13 +36,12 @@ export function DocumentViewerModal({
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     return () => {
       window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prevOverflow;
     };
   }, [open, onClose]);
+
+  useScrollLock(open);
 
   if (!open) return null;
   if (typeof document === "undefined") return null;

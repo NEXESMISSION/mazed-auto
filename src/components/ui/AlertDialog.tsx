@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { createPortal } from "react-dom";
+import { useScrollLock } from "@/lib/scrollLock";
 import { AlertTriangle, XCircle, Info, ArrowRight, X } from "lucide-react";
 
 /**
@@ -114,18 +115,18 @@ export function AlertDialog({
   const panelRef = React.useRef<HTMLDivElement>(null);
   React.useEffect(() => setMounted(true), []);
 
+  // An alert almost always opens OVER something else — see scrollLock.
+  useScrollLock(true);
+
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     document.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     // Move focus into the dialog so keyboard and screen-reader users land here.
     window.setTimeout(() => panelRef.current?.focus(), 20);
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
     };
   }, [onClose]);
 
