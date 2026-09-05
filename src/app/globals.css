@@ -1096,3 +1096,46 @@ html[dir="rtl"] .batta-marquee-reverse { animation-name: batta-marquee; }
     opacity: 0.7;
   }
 }
+
+/* ── Touch devices ──────────────────────────────────────────────────────────
+   Everything in this block is scoped to a real touch screen — `hover: none`
+   AND `pointer: coarse` — so a desktop keeps its denser controls untouched.
+
+   FONT SIZE. iOS Safari zooms the page whenever you focus a field whose text
+   is smaller than 16px, and then leaves you zoomed in. Our inputs are 13px, so
+   typing anything — a title, a price, a phone number — threw the layout
+   sideways. This is the documented fix; the alternative, `maximum-scale=1` on
+   the viewport, stops the user pinch-zooming AT ALL, which is a real
+   accessibility loss to fix a self-inflicted problem.
+
+   THE LONG PRESS. Holding a photo popped up the iOS callout ("Copy", "Save
+   Image"…) and selected it with a blue wash. On a page where holding is how
+   you inspect a car, that reads as the page misbehaving. Photos are not text
+   to be selected or files to be saved from here.
+
+   THE DOUBLE-TAP. `touch-action: manipulation` drops the double-tap-to-zoom
+   gesture on controls, which also removes the ~300ms delay browsers keep in
+   order to wait and see whether a second tap is coming. Taps land immediately.
+─────────────────────────────────────────────────────────────────────────── */
+@media (hover: none) and (pointer: coarse) {
+  input,
+  select,
+  textarea,
+  .batta-input {
+    /* 16px exactly: the threshold, not a preference. */
+    font-size: 16px;
+  }
+
+  img {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  button,
+  a,
+  [role="button"],
+  label {
+    touch-action: manipulation;
+  }
+}

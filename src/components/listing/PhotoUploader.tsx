@@ -249,6 +249,24 @@ export function PhotoUploader({
     })();
   }
 
+  /**
+   * Promote a photo to the front, which is what "couverture" means: the
+   * annonce shows photos in order and the first one is the cover.
+   *
+   * It has its own control because the alternative was tapping the left arrow
+   * once per position — five taps to promote the sixth photo, with a re-render
+   * between each. Nobody found that, so nobody changed their cover.
+   */
+  function makeCover(from: number) {
+    onChange((prev) => {
+      if (from <= 0 || from >= prev.length) return prev;
+      const next = prev.slice();
+      const [x] = next.splice(from, 1);
+      next.unshift(x);
+      return next;
+    });
+  }
+
   function move(from: number, to: number) {
     onChange((prev) => {
       if (to < 0 || to >= prev.length) return prev;
@@ -330,8 +348,18 @@ export function PhotoUploader({
         </p>
       )}
 
+      {photos.length > 1 && (
+        <p className="mt-2 text-[11.5px] text-muted">
+          La première photo est la couverture. Utilisez les flèches pour changer
+          l&apos;ordre, ou l&apos;étoile pour choisir la couverture directement.
+        </p>
+      )}
+
+      {/* Two across on a phone, not three. The controls below live on the
+          tile, and four of them across a 105px square is a row of targets too
+          small and too close to hit. */}
       {(photos.length > 0 || pending.length > 0) && (
-        <ul className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-4">
+        <ul className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
           {photos.map((p, i) => (
             <li
               key={p.path}
@@ -346,32 +374,53 @@ export function PhotoUploader({
                 </span>
               )}
 
-              <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 bg-black/70 p-1 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
+              {/* ALWAYS VISIBLE on a touch screen.
+
+                  This bar was `opacity-0 group-hover:opacity-100`. A phone has
+                  no hover, so on a phone the controls did not exist: the photos
+                  could not be reordered, could not be deleted, and the cover
+                  could not be changed. It only ever worked on a desktop, where
+                  the mouse revealed it by accident.
+
+                  So: shown by default, and only hidden-until-hover from lg,
+                  where a mouse is doing the pointing and a permanently dark bar
+                  across every thumbnail would be noise. */}
+              <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-0.5 bg-black/75 p-1 transition lg:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100">
                 <button
                   type="button"
                   onClick={() => move(i, i - 1)}
                   disabled={i === 0}
                   aria-label="Déplacer avant"
-                  className="rounded p-1 text-white disabled:opacity-30"
+                  className="tap-target rounded p-1.5 text-white disabled:opacity-25"
                 >
-                  <ArrowLeft className="size-3.5" />
+                  <ArrowLeft className="size-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => makeCover(i)}
+                  disabled={i === 0}
+                  aria-label="Définir comme couverture"
+                  title="Couverture"
+                  className="tap-target rounded p-1.5 text-white disabled:opacity-25"
+                >
+                  <Star className="size-4" />
                 </button>
                 <button
                   type="button"
                   onClick={() => onChange((prev) => prev.filter((_, j) => j !== i))}
                   aria-label="Supprimer la photo"
-                  className="rounded p-1 text-white"
+                  className="tap-target rounded p-1.5 text-white"
                 >
-                  <Trash2 className="size-3.5" />
+                  <Trash2 className="size-4" />
                 </button>
                 <button
                   type="button"
                   onClick={() => move(i, i + 1)}
                   disabled={i === photos.length - 1}
                   aria-label="Déplacer après"
-                  className="rounded p-1 text-white disabled:opacity-30"
+                  className="tap-target rounded p-1.5 text-white disabled:opacity-25"
                 >
-                  <ArrowRight className="size-3.5" />
+                  <ArrowRight className="size-4" />
                 </button>
               </div>
             </li>
