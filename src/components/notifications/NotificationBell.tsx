@@ -108,7 +108,6 @@ export function NotificationBell() {
   const [narrow, setNarrow] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const [confirmingDeleteAll, setConfirmingDeleteAll] = useState(false);
   const [filter, setFilter] = useState<"all" | "unread">("all");
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -336,7 +335,6 @@ export function NotificationBell() {
         setItems([]);
         setUnread(0);
         setOpen(false);
-        setConfirmingDeleteAll(false);
       } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
         void refresh();
       }
@@ -352,7 +350,6 @@ export function NotificationBell() {
 
   useEffect(() => {
     if (!open) {
-      setConfirmingDeleteAll(false);
       setFilter("all");
       return;
     }
@@ -531,40 +528,6 @@ export function NotificationBell() {
     }
   }
 
-  async function deleteAll() {
-    if (items.length === 0) return;
-    genRef.current += 1;
-    const snapshot = { items, unread };
-    setItems([]);
-    setUnread(0);
-    setConfirmingDeleteAll(false);
-    try {
-      const res = await fetch("/api/notifications", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ all: true }),
-        signal: AbortSignal.timeout(10000),
-      });
-      const payload = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error("delete_failed");
-      const deletedCount = (payload as { deletedCount?: number }).deletedCount;
-      if (typeof deletedCount === "number" && deletedCount === 0) {
-        setItems(snapshot.items);
-        setUnread(snapshot.unread);
-        toast("Suppression refusée par le serveur.", "error");
-      } else if (typeof deletedCount === "number") {
-        toast(
-          `${deletedCount} notification${deletedCount > 1 ? "s" : ""} supprimée${deletedCount > 1 ? "s" : ""}.`,
-          "success",
-        );
-      }
-    } catch {
-      setItems(snapshot.items);
-      setUnread(snapshot.unread);
-      toast("Échec de la suppression. Vérifiez la connexion.", "error");
-    }
-  }
-
   if (!loaded) return null;
 
   const BellIcon = unread > 0 ? BellDot : Bell;
@@ -615,7 +578,7 @@ export function NotificationBell() {
             <div
               className="relative flex max-h-[88vh] w-full max-w-md flex-col overflow-hidden rounded-3xl bg-[var(--surface)] shadow-[var(--shadow-lg)] ring-1 ring-[var(--border)] focus:outline-none animate-[batta-float-up_240ms_ease-out_both] lg:absolute lg:end-[calc((100vw_-_min(100vw,var(--max-w-wide)))_/_2_+_2rem)] lg:top-[calc(var(--desktop-nav-h)+0.5rem)] lg:max-h-[min(620px,78vh)] lg:w-[420px] lg:max-w-[420px] lg:rounded-[22px] lg:shadow-[0_30px_80px_-24px_rgba(15,23,42,0.35)] lg:ring-1 lg:ring-black/[0.06]"
             >
-              {/* Header — title + inline unread count, "Supprimer tout", close. */}
+              {/* Header — title, inline unread count, close. */}
               <div className="flex items-center gap-3 px-5 pt-4 pb-3">
                 <h3 className="flex items-center gap-2 text-[16px] font-extrabold tracking-tight text-foreground leading-none">
                   Notifications
@@ -627,17 +590,6 @@ export function NotificationBell() {
                 </h3>
 
                 <div className="ms-auto flex items-center gap-1">
-                  {items.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setConfirmingDeleteAll(true)}
-                      className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12.5px] font-bold text-[var(--foreground-muted)] transition hover:bg-red-50 hover:text-red-700"
-                    >
-                      <Trash2 className="h-4 w-4" strokeWidth={2} />
-                      Supprimer tout
-                    </button>
-                  )}
-
                   <button
                     type="button"
                     aria-label="Fermer"
@@ -678,27 +630,6 @@ export function NotificationBell() {
                 </div>
               )}
 
-              {confirmingDeleteAll && (
-                <div className="mx-5 mb-3 flex items-center justify-between gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-[13px] text-red-900">
-                  <span className="font-semibold">Tout supprimer ?</span>
-                  <div className="flex gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => setConfirmingDeleteAll(false)}
-                      className="rounded-lg px-2.5 py-1 text-[12px] font-bold text-red-900 hover:bg-red-100"
-                    >
-                      Annuler
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void deleteAll()}
-                      className="rounded-lg bg-red-600 px-2.5 py-1 text-[12px] font-bold text-white hover:bg-red-700"
-                    >
-                      Confirmer
-                    </button>
-                  </div>
-                </div>
-              )}
 
               {items.length === 0 ? (
                 <div className="flex flex-1 flex-col items-center justify-center px-8 py-16 text-center">
