@@ -232,25 +232,26 @@ export async function AnnonceCoverMobile() {
   return (
     <section className="lg:hidden">
       <div className="px-4 pt-5">
-        <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--gold)]">
-          <Sparkles className="size-3" />
-          Mazed Auto
-        </span>
-        <h1 className="mt-2 text-[28px] font-black leading-[1.08] tracking-tight text-foreground">
+        {/* Four stacked blocks of words — an eyebrow repeating the name in
+            the header above it, a two-line headline, a three-line paragraph,
+            then a footnote under the buttons — pushed the first car most of a
+            screen down. On a classifieds app the cars ARE the argument.
+
+            One line of claim and one row with the way in. The paragraph said
+            "partout en Tunisie… nous vérifions l'annonce" — true, and nothing
+            a buyer needs before seeing a single price. The free-parts term
+            moves onto the chip that leads to the parts. */}
+        <h1 className="text-[26px] font-black leading-[1.1] tracking-tight text-foreground">
           Le prix est affiché,{" "}
           <span className="gradient-gold-text">le vendeur au bout du fil</span>
         </h1>
-        <p className="mt-2.5 text-[13.5px] leading-relaxed text-muted">
-          Voitures et pièces de rechange partout en Tunisie. Vous appelez le vendeur
-          directement — nous vérifions l&apos;annonce avant qu&apos;elle soit en ligne.
-        </p>
 
-        <div className="mt-4 flex gap-2">
+        <div className="mt-3.5 flex gap-2">
           <Link
             href={"/annonces" as never}
-            className="batta-btn-luxe tap-target inline-flex h-11 flex-1 items-center justify-center gap-1.5 text-[13.5px]"
+            className="batta-btn-luxe tap-target h-11 flex-1 text-[13.5px]"
           >
-            Parcourir le catalogue
+            Parcourir
             <ArrowUpRight className="size-4" />
           </Link>
           <Link
@@ -258,12 +259,9 @@ export async function AnnonceCoverMobile() {
             className="tap-target inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-full bg-gold-faint px-4 text-[12.5px] font-bold text-gold ring-1 ring-gold-soft"
           >
             <Wrench className="size-3.5" />
-            Pièces
+            Pièces · gratuit
           </Link>
         </div>
-        <p className="mt-1.5 text-[11px] text-muted">
-          Pièces de rechange : publication gratuite.
-        </p>
       </div>
 
       <div className="mt-5 px-4">

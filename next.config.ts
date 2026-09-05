@@ -103,11 +103,21 @@ const nextConfig: NextConfig = {
     // Long-cache optimized variants on the CDN. They're keyed by
     // (source URL + width + quality + format) so this is safe.
     minimumCacheTTL: 60 * 60 * 24 * 30,
-    // Property cards render small (≤ ~300px wide); cap the generated variants
-    // so the optimizer stops emitting oversized 2048/3840 images for thumbnails
-    // (fewer + smaller transforms = faster loads, lower bandwidth).
-    deviceSizes: [360, 640, 828, 1080, 1280, 1920],
-    imageSizes: [120, 200, 280, 384],
+    // Every next/image writes a srcset holding EVERY width in these two lists —
+    // deviceSizes and imageSizes together — as a full `/_next/image?url=…`
+    // string. The home page renders about 250 images (it draws a mobile tree
+    // and a desktop tree and hides one), so ten widths meant ~2 700 URLs in the
+    // HTML, and the RSC payload carries them a second time: 1.5 MB of document
+    // before a single photo is fetched.
+    //
+    // Six widths, chosen against what this site actually renders: 128/256/384
+    // covers thumbnails, marquee cards (156–248) and rail cards (210–260) at
+    // 1× and 2×; 640/1080/1920 covers the featured card, the runners and the
+    // full-bleed gallery. The dropped widths (360, 828, 1280, 120, 200, 280)
+    // sat between these and saved a few KB per photo while costing a URL each
+    // in every srcset on every page.
+    deviceSizes: [640, 1080, 1920],
+    imageSizes: [128, 256, 384],
     // Scope to the Supabase Storage public path so the optimizer can only
     // transcode our OWN stored images, not arbitrary URLs on the project host.
     // Dropped the unsplash/picsum hosts (test-only, never rendered): allowing
