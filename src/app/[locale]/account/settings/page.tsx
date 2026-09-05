@@ -4,16 +4,9 @@ import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { formatPhone, realEmail } from "@/lib/identity";
 import { AvatarUploader } from "@/components/account/AvatarUploader";
-import { DeleteAccountButton } from "@/components/account/DeleteAccountButton";
 import { SmsNotificationsToggle } from "@/components/account/SmsNotificationsToggle";
 import { PasswordSection } from "./PasswordSection";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Mail,
-  LifeBuoy,
-  AlertTriangle,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Mail, LifeBuoy } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Paramètres du compte — Mazed Auto",
@@ -185,27 +178,6 @@ export default async function SettingsPage() {
             end — the row was still rendered, so it promised a check that no
             longer exists and dropped the user back on their account page. */}
 
-        {/* ── Zone de danger ───────────────────────────────────────── */}
-        <section>
-          <p className="batta-eyebrow mb-2 text-[var(--danger)]">Zone de danger</p>
-          <div className="overflow-hidden rounded-2xl bg-surface ring-1 ring-[var(--danger)]/30">
-            <div className="flex items-start gap-3 p-4 lg:p-5">
-              <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--danger)]/10 text-[var(--danger)]">
-                <AlertTriangle className="size-5" strokeWidth={2} />
-              </span>
-              <p className="text-[12px] leading-relaxed text-muted">
-                La suppression de votre compte est définitive : vos données
-                personnelles et vos pièces d&apos;identité sont effacées. Les
-                opérations en cours (paiement ou virement en attente) doivent
-                être soldées avant.
-              </p>
-            </div>
-            <Divider />
-            <div className="p-3 lg:p-4">
-              <DeleteAccountButton label="Supprimer mon compte" />
-            </div>
-          </div>
-        </section>
       </div>
     </div>
   );

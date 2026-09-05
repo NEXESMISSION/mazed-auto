@@ -4,7 +4,6 @@ import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { accountLabel } from "@/lib/identity";
 import { SignOutButton } from "@/components/auth/SignOutButton";
-import { DeleteAccountButton } from "@/components/account/DeleteAccountButton";
 import {
   Plus,
   Wallet,
@@ -229,9 +228,6 @@ export default async function AccountPage() {
         <div className="mt-6">
           <SignOutButton label="Se déconnecter" />
         </div>
-        <div className="mt-2">
-          <DeleteAccountButton label="Supprimer mon compte" />
-        </div>
       </div>
 
       {/* ── DESKTOP (lg+) — white profile banner + 3-col action grid ── */}
@@ -274,9 +270,6 @@ export default async function AccountPage() {
             </div>
           </div>
         ))}
-        <div className="mt-10 max-w-sm">
-          <DeleteAccountButton label="Supprimer mon compte" />
-        </div>
       </div>
     </>
   );
