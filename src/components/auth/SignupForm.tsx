@@ -5,7 +5,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { PhoneInput } from "./PhoneInput";
 import { PasswordInput } from "./PasswordInput";
 import { Loader2, Smartphone } from "lucide-react";
-import { TUNISIAN_GOVERNORATES, normalizeE164, validatePhone } from "@/lib/tunisia";
+import { normalizeE164, validatePhone } from "@/lib/tunisia";
 import { Modal } from "@/components/ui/Modal";
 import { TermsContent, PrivacyContent } from "@/components/legal/LegalContent";
 
@@ -24,7 +24,7 @@ import { TermsContent, PrivacyContent } from "@/components/legal/LegalContent";
 //   - ville / gouvernorat (24-item native select)
 //   - password (min 8)
 //
-// The metadata keys (full_name, phone, governorate, language) are passed to
+// The metadata keys (full_name, phone, language) are passed to
 // admin.createUser and picked up by `_on_auth_user_created` (migration 0045)
 // when the auth.users row is inserted.
 export function SignupForm() {
@@ -34,7 +34,6 @@ export function SignupForm() {
   const [fullName, setFullName] = useState("");
   const [dialCode, setDialCode] = useState("+216");
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [governorate, setGovernorate] = useState("");
   const [accepted, setAccepted] = useState(false);
   const [legalModal, setLegalModal] = useState<null | "terms" | "privacy">(null);
   const [error, setError] = useState<string | null>(null);
@@ -66,7 +65,6 @@ export function SignupForm() {
           phone: normalizedPhone,
           password,
           full_name: fullName,
-          governorate,
         }),
       });
       const j = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
@@ -90,7 +88,10 @@ export function SignupForm() {
     // Hard navigation (not router.replace+refresh): the auth cookie was just
     // written by the signup response; a soft refresh can prefetch the
     // destination before the cookie propagates, leaving the render anonymous.
-    window.location.assign(`/${locale}/kyc`);
+    // Home, not /kyc. KYC was deleted in the pivot; that path only still
+    // resolves because the middleware rewrites it to /account, so every new
+    // account was taking a redirect hop to a page it had no reason to open.
+    window.location.assign(`/${locale}`);
   }
 
   function onSubmit(e: React.FormEvent) {
@@ -107,10 +108,6 @@ export function SignupForm() {
       // validatePhone already caught. Defensive fallback so a future
       // schema change in one helper can't ship a confusing form error.
       setError("Numéro invalide.");
-      return;
-    }
-    if (!governorate) {
-      setError("Sélectionnez votre gouvernorat pour continuer.");
       return;
     }
     if (!accepted) {
@@ -269,25 +266,6 @@ export function SignupForm() {
           onNumberChange={setPhoneNumber}
           required
         />
-      </label>
-
-      <label className="block">
-        <span className="batta-eyebrow text-[10px]">Gouvernorat</span>
-        <select
-          value={governorate}
-          onChange={(e) => setGovernorate(e.target.value)}
-          required
-          className="mt-1.5 w-full rounded-xl border border-batta-gold/25 bg-batta-surface-2 px-4 py-2.5 text-sm text-batta-cream focus:border-batta-gold focus:outline-none focus:ring-1 focus:ring-batta-gold/40"
-        >
-          <option value="" disabled className="bg-batta-surface-2">
-            Choisir votre gouvernorat…
-          </option>
-          {TUNISIAN_GOVERNORATES.map((g) => (
-            <option key={g} value={g} className="bg-batta-surface-2">
-              {g}
-            </option>
-          ))}
-        </select>
       </label>
 
       <PasswordInput

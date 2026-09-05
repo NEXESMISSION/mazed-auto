@@ -9,7 +9,7 @@ import { isSmsConfigured } from "@/lib/winsms";
 /**
  * Phone-only signup — fully server-side.
  *
- *   Body: { phone: "+216…" (E.164), password, full_name, governorate }
+ *   Body: { phone: "+216…" (E.164), password, full_name }
  *   200:  { ok: true }   (account created + signed in; auth cookie on response)
  *   400:  { ok: false, error: "invalid_phone" | "weak_password" | "bad_request" | "signup_failed" }
  *   409:  { ok: false, error: "phone_taken" }
@@ -19,7 +19,7 @@ import { isSmsConfigured } from "@/lib/winsms";
  * synthetic, PRE-CONFIRMED email from the phone (no real inbox, never shown to
  * the user). The unique auth.users.email on that synthetic address doubles as a
  * one-account-per-phone guard. The `_on_auth_user_created` trigger copies
- * full_name / phone / governorate into public.profiles. After creation we sign
+ * full_name / phone into public.profiles. After creation we sign
  * the user in on the SSR client so the auth cookie is written onto the response
  * (same mechanism as /api/auth/login-by-phone) and the client hard-navigates.
  *
@@ -61,13 +61,11 @@ export async function POST(req: NextRequest) {
   let phone = "";
   let password = "";
   let fullName = "";
-  let governorate = "";
   try {
     const body = (await req.json()) as Record<string, unknown>;
     if (typeof body.phone === "string") phone = body.phone.trim();
     if (typeof body.password === "string") password = body.password;
     if (typeof body.full_name === "string") fullName = body.full_name.trim();
-    if (typeof body.governorate === "string") governorate = body.governorate.trim();
   } catch {
     return NextResponse.json({ ok: false, error: "bad_request" }, { status: 400 });
   }
@@ -126,10 +124,14 @@ export async function POST(req: NextRequest) {
     email,
     password,
     email_confirm: true,
+    // No governorate. Signup stopped asking for it: it was a required field
+    // gating account creation, and nothing on the site ever read it back —
+    // an annonce carries its OWN governorate, which is the one that matters
+    // for search. `profiles.governorate` is nullable, so existing rows and
+    // the trigger that fills it are both unaffected.
     user_metadata: {
       full_name: fullName || null,
       phone,
-      governorate: governorate || null,
     },
   });
   if (createErr) {
