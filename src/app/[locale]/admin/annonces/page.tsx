@@ -80,7 +80,7 @@ function tabFilters(tab: TabKey): Filter[] {
 }
 
 const LIST_SELECT = `
-  id, title, price, negotiable, price_on_request, governorate, status,
+  id, reference, title, price, negotiable, price_on_request, governorate, status,
   created_at, published_at, expires_at, featured_rank, featured_until,
   seller_credit_id, fee_payment_id, fee_waived_by, contact_phone,
   seller:profiles!listings_seller_id_fkey (full_name, phone),
@@ -109,7 +109,18 @@ export default async function AdminAnnoncesPage({
   const page = Math.max(1, Number(sp.page) || 1);
   const from = (page - 1) * PAGE_SIZE;
 
-  const OR = `title.ilike.%${q}%,contact_phone.ilike.%${q}%,governorate.ilike.%${q}%`;
+  // Reference first, and normalised: someone reading a code off a note types
+  // "42", "mz-42" or "MZ 00042" — all of which mean MZ-00042. The raw term is
+  // still matched too, so a partial like "MZ-001" keeps working as a prefix.
+  const digits = q.replace(/\D/g, "");
+  const asRef = digits ? `MZ-${digits.padStart(5, "0")}` : "";
+  const OR = [
+    `reference.ilike.%${q}%`,
+    ...(asRef ? [`reference.eq.${asRef}`] : []),
+    `title.ilike.%${q}%`,
+    `contact_phone.ilike.%${q}%`,
+    `governorate.ilike.%${q}%`,
+  ].join(",");
 
   /**
    * All seven tab counts in ONE round trip.
@@ -169,7 +180,7 @@ export default async function AdminAnnoncesPage({
   }));
 
   type ListRow = {
-    id: string; title: string; price: number | null; negotiable: boolean;
+    id: string; reference: string | null; title: string; price: number | null; negotiable: boolean;
     price_on_request: boolean; governorate: string; status: string;
     created_at: string; published_at: string | null; expires_at: string | null;
     featured_rank: number | null; featured_until: string | null;
@@ -186,8 +197,14 @@ export default async function AdminAnnoncesPage({
 
   const queueRows: QueueRow[] = rows.map((r) => ({
     id: r.id,
+    reference: r.reference ?? null,
     title: r.title,
     meta: `${r.seller?.full_name ?? "Sans nom"} · ${r.category?.label_fr ?? "—"} · ${r.governorate}`,
+    // Also as separate fields: at full width the queue lays these out as
+    // columns instead of one stretched line (see QueueList).
+    seller: r.seller?.full_name ?? "Sans nom",
+    category: r.category?.label_fr ?? "—",
+    gov: r.governorate,
     value: r.price_on_request
       ? "Sur demande"
       : r.price != null
@@ -228,7 +245,7 @@ export default async function AdminAnnoncesPage({
         <Toolbar
           tabs={tabs}
           defaultTab="pending_review"
-          searchPlaceholder="Titre, téléphone, gouvernorat…"
+          searchPlaceholder="Référence MZ-00042, titre, téléphone…"
           resetParams={["page", "a"]}
         />
         <Link href="/admin/annonces/nouvelle" className={`${adminBtn("primary", "sm")} shrink-0`}>
@@ -242,9 +259,16 @@ export default async function AdminAnnoncesPage({
       <div className="flex min-h-0 flex-1">
         {/* Left pane — the queue. Below lg it is the whole screen until an
             annonce is opened, because there is no room for two panes. */}
+        {/* The queue was a fixed 360/400px column whatever the screen, so with
+            nothing selected a 1900px display showed a narrow strip of rows and
+            fifteen hundred pixels of "Choisissez une annonce à gauche". The
+            list now takes the whole width until something IS selected, and
+            only then narrows to make room for the annonce. */}
         <div
-          className={`flex min-h-0 w-full flex-col border-border lg:w-[360px] lg:shrink-0 lg:border-e xl:w-[400px] ${
-            detail ? "hidden lg:flex" : "flex"
+          className={`flex min-h-0 flex-col border-border ${
+            detail
+              ? "hidden w-full lg:flex lg:w-[360px] lg:shrink-0 lg:border-e xl:w-[400px]"
+              : "flex w-full"
           }`}
         >
           {queueRows.length === 0 ? (
@@ -261,7 +285,7 @@ export default async function AdminAnnoncesPage({
               />
             </div>
           ) : (
-            <QueueList rows={queueRows} selectedId={openId} hrefBase={hrefBase} />
+            <QueueList rows={queueRows} selectedId={openId} hrefBase={hrefBase} wide={!detail} />
           )}
 
           {totalPages > 1 && (
@@ -272,21 +296,14 @@ export default async function AdminAnnoncesPage({
         </div>
 
         {/* Right pane — the annonce. */}
-        <div className={`min-w-0 flex-1 ${detail ? "flex" : "hidden lg:flex"}`}>
-          {detail ? (
+        {/* Only exists once there is something to put in it. */}
+        {detail && (
+          <div className="flex min-w-0 flex-1">
             <div className="w-full">
               <ListingDetail listing={detail} backHref={listHref} />
             </div>
-          ) : (
-            <div className="grid w-full place-items-center px-6">
-              <p className="max-w-xs text-center text-[12.5px] text-subtle">
-                Choisissez une annonce à gauche.
-                <br />
-                <span className="text-[11.5px]">j / k pour parcourir, Entrée pour ouvrir.</span>
-              </p>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </FullBleed>
   );
@@ -318,7 +335,7 @@ async function loadPanel(admin: Admin, id: string): Promise<PanelListing | null>
   const { data } = await admin
     .from("listings")
     .select(
-      `id, title, description, price, negotiable, price_on_request, condition,
+      `id, reference, title, description, price, negotiable, price_on_request, condition,
        governorate, delegation, status, rejection_reason, category_id,
        contact_name, contact_phone, show_phone, attributes,
        created_at, published_at, expires_at, featured_rank, featured_until,
@@ -334,7 +351,7 @@ async function loadPanel(admin: Admin, id: string): Promise<PanelListing | null>
 
   if (!data) return null;
   const r = data as unknown as {
-    id: string; title: string; description: string | null; price: number | null;
+    id: string; reference: string | null; title: string; description: string | null; price: number | null;
     negotiable: boolean; price_on_request: boolean; condition: string | null;
     governorate: string; delegation: string | null; status: string;
     rejection_reason: string | null; category_id: string;
@@ -405,6 +422,7 @@ async function loadPanel(admin: Admin, id: string): Promise<PanelListing | null>
 
   return {
     id: r.id,
+    reference: r.reference,
     title: r.title,
     description: r.description,
     price: r.price,

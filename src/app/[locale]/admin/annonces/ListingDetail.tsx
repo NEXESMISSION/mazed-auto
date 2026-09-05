@@ -36,6 +36,7 @@ export type PanelPhoto = { path: string; isCover: boolean };
 
 export type PanelListing = {
   id: string;
+  reference: string | null;
   title: string;
   description: string | null;
   price: number | null;
@@ -134,6 +135,10 @@ export function ListingDetail({
         </h1>
         <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11.5px] text-subtle">
           <StatusPill status={l.status} />
+          {/* The code the seller on the phone will have quoted. */}
+          {l.reference && (
+            <span className="batta-tabular font-semibold text-foreground/70">{l.reference}</span>
+          )}
           {featured && (
             <span className="inline-flex items-center gap-1 text-[var(--gold)]">
               <Star className="size-3" strokeWidth={2.6} /> Accueil

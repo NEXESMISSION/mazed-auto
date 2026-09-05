@@ -16,7 +16,7 @@ import {
   DiagnosticBadge,
   fetchPublishedDiagnostic,
 } from "@/components/property/DiagnosticSheet";
-import { BadgeCheck, MapPin, Wrench, Car, Clock, ShieldAlert } from "lucide-react";
+import { BadgeCheck, MapPin, Wrench, Car, Clock, ShieldAlert, Hash} from "lucide-react";
 import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
@@ -37,6 +37,7 @@ type Row = {
   attributes: Record<string, unknown> | null;
   contact_name: string | null; show_phone: boolean;
   status: string; published_at: string | null; expires_at: string | null;
+  reference: string | null;
   seller_id: string;
   category: { id: string; label_fr: string; kind: string } | { id: string; label_fr: string; kind: string }[] | null;
   photos: { storage_path: string; sort_order: number }[] | null;
@@ -46,7 +47,7 @@ type Row = {
 const SELECT = `
   id, title, description, price, price_on_request, negotiable, condition,
   governorate, delegation, attributes, contact_name, show_phone, status,
-  published_at, expires_at, seller_id,
+  published_at, expires_at, seller_id, reference,
   category:categories (id, label_fr, kind),
   photos:listing_photos (storage_path, sort_order),
   fitments:listing_fitments (make, model, year_from, year_to)
@@ -334,6 +335,19 @@ export default async function AnnoncePage({
                 <span className="inline-flex items-center gap-1">
                   <Clock className="size-3.5" />
                   publiée le {new Date(l.published_at).toLocaleDateString("fr-FR")}
+                </span>
+              )}
+              {/* The reference, printed where a buyer will find it when they
+                  call: "je vous appelle pour la MZ-00042". A uuid cannot be
+                  read down a phone line, so until now neither the seller nor
+                  the office had any way to name one annonce out of ninety. */}
+              {l.reference && (
+                <span
+                  className="batta-tabular inline-flex items-center gap-1 rounded-full bg-surface-2 px-2 py-0.5 font-semibold tracking-wide text-foreground ring-1 ring-border"
+                  title="Référence de l'annonce"
+                >
+                  <Hash className="size-3" />
+                  {l.reference}
                 </span>
               )}
             </div>

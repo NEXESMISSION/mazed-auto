@@ -25,8 +25,13 @@ import { Check, X, Archive, CalendarPlus, ListChecks } from "lucide-react";
 
 export type QueueRow = {
   id: string;
+  /** Human reference (MZ-00042) — what a caller reads out. */
+  reference: string | null;
   title: string;
   meta: string;
+  seller: string;
+  category: string;
+  gov: string;
   value: string;
   hint: string;
   status: string;
@@ -37,11 +42,15 @@ export function QueueList({
   rows,
   selectedId,
   hrefBase,
+  wide = false,
 }: {
   rows: QueueRow[];
   selectedId: string | null;
   /** Current filters as a query string; the row appends `a=<id>` to it. */
   hrefBase: string;
+  /** True when the queue owns the whole screen — lay the row out in columns
+   *  rather than stretching one line across 1600px with a void in the middle. */
+  wide?: boolean;
 }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -137,6 +146,23 @@ export function QueueList({
         </span>
       </div>
 
+      {/* Column header — only in the wide layout, where the columns exist.
+          Aligned with the row grid below, including the 14px lead gutter the
+          status dot occupies, so the labels sit over their own values. */}
+      {wide && (
+        <div className="hidden shrink-0 items-center gap-3 border-b border-border px-4 py-1.5 lg:flex">
+          <span className="w-[14px] shrink-0" aria-hidden />
+          <span className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_110px_150px_130px_110px_100px] items-center gap-4 text-[10px] font-bold uppercase tracking-[0.13em] text-subtle">
+            <span>Annonce</span>
+            <span>Référence</span>
+            <span>Vendeur</span>
+            <span>Catégorie</span>
+            <span className="text-end">Prix</span>
+            <span className="text-end">Échéance</span>
+          </span>
+        </div>
+      )}
+
       {/* Rows */}
       <ul className="min-h-0 flex-1 divide-y divide-border/70 overflow-y-auto overscroll-contain">
         {rows.map((r) => {
@@ -179,25 +205,64 @@ export function QueueList({
                   )}
                 </span>
 
-                <span className="min-w-0 flex-1">
-                  <span
-                    className={`block truncate text-[13px] ${
-                      isSel ? "font-semibold text-foreground" : "font-medium text-foreground/90"
-                    }`}
-                  >
-                    {r.title}
+                {wide ? (
+                  /* Columns. The width is spent on the facts a moderator scans
+                     — who, what, where, how much, how long — instead of on a
+                     gap between a left-aligned title and a right-aligned
+                     price. */
+                  <span className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_110px_150px_130px_110px_100px] items-center gap-4">
+                    <span className="min-w-0">
+                      <span
+                        className={`block truncate text-[13px] ${
+                          isSel ? "font-semibold text-foreground" : "font-medium text-foreground/90"
+                        }`}
+                      >
+                        {r.title}
+                      </span>
+                    </span>
+                    <span className="batta-tabular truncate text-[11.5px] text-foreground/60">
+                      {r.reference ?? "—"}
+                    </span>
+                    <span className="truncate text-[11.5px] text-subtle">{r.seller}</span>
+                    <span className="truncate text-[11.5px] text-subtle">{r.category}</span>
+                    <span className="batta-tabular truncate text-end text-[12.5px] text-foreground/90">
+                      {r.value}
+                    </span>
+                    <span className="batta-tabular truncate text-end text-[11px] text-subtle">
+                      {r.hint}
+                    </span>
                   </span>
-                  <span className="mt-0.5 block truncate text-[11.5px] text-subtle">{r.meta}</span>
-                </span>
+                ) : (
+                  <>
+                    <span className="min-w-0 flex-1">
+                      <span
+                        className={`block truncate text-[13px] ${
+                          isSel ? "font-semibold text-foreground" : "font-medium text-foreground/90"
+                        }`}
+                      >
+                        {r.title}
+                      </span>
+                      {/* The reference leads the meta line: it is the one thing
+                          on the row that is unambiguous, and the thing a caller
+                          will have said before anything else. */}
+                      <span className="mt-0.5 block truncate text-[11.5px] text-subtle">
+                        {r.reference && (
+                          <span className="batta-tabular me-1.5 text-foreground/70">{r.reference}</span>
+                        )}
+                        {r.meta}
+                      </span>
+                    </span>
 
-                <span className="shrink-0 text-end">
-                  <span className="batta-tabular block text-[12.5px] text-foreground/90">
-                    {r.value}
-                  </span>
-                  <span className="batta-tabular mt-0.5 block text-[11px] text-subtle">
-                    {r.hint}
-                  </span>
-                </span>
+                    <span className="shrink-0 text-end">
+                      <span className="batta-tabular block text-[12.5px] text-foreground/90">
+                        {r.value}
+                      </span>
+                      <span className="batta-tabular mt-0.5 block text-[11px] text-subtle">
+                        {r.hint}
+                      </span>
+                    </span>
+                  </>
+                )}
               </Link>
             </li>
           );
