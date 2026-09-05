@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useToast } from "@/components/ui/Toast";
-import { Phone, MessageCircle, Loader2, Eye } from "lucide-react";
+import { Phone, MessageCircle, Loader2 } from "lucide-react";
 
 /**
  * "Afficher le numéro".
@@ -14,13 +14,7 @@ import { Phone, MessageCircle, Loader2, Eye } from "lucide-react";
  * in them; to collect numbers it has to make a thousand deliberate requests
  * from one address, which is exactly the pattern the log catches.
  */
-export function ContactReveal({
-  listingId,
-  revealCount,
-}: {
-  listingId: string;
-  revealCount: number;
-}) {
+export function ContactReveal({ listingId }: { listingId: string }) {
   const { toast } = useToast();
   const [busy, setBusy] = useState(false);
   const [contact, setContact] = useState<{ phone: string; whatsapp: string | null } | null>(null);
@@ -81,24 +75,6 @@ export function ContactReveal({
         {busy ? <Loader2 className="size-4 animate-spin" /> : <Phone className="size-4" strokeWidth={2.5} />}
         Afficher le numéro
       </button>
-      {/* The seller's name is printed above this button, so it is not
-          repeated here — this line carries the one thing the button does not
-          say: other people are already asking.
-
-          Written as a single string rather than as JSX text around
-          expressions. It used to sit inside an `inline-flex` span, where
-          flexbox drops the whitespace between the runs and it rendered as
-          "2 personnesl'ont demandé". */}
-      {revealCount > 0 && (
-        <p className="flex items-center justify-center gap-1.5 text-[11.5px] text-muted">
-          <Eye className="size-3.5 shrink-0" />
-          <span>
-            {`${revealCount} personne${revealCount > 1 ? "s" : ""} ${
-              revealCount > 1 ? "l'ont" : "l'a"
-            } demandé`}
-          </span>
-        </p>
-      )}
     </div>
   );
 }

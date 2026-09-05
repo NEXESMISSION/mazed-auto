@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { Overlay, LAYER } from "@/components/ui/Overlay";
 import { CAR_MAKES, FUELS, TRANSMISSIONS, modelsFor } from "@/lib/vehicles";
 import {
-  ArrowDownWideNarrow, Car, Check, ChevronDown, LayoutGrid, Search, SlidersHorizontal, Wrench, X,
+  ArrowDownWideNarrow, Car, Check, LayoutGrid, Search, SlidersHorizontal, Wrench, X,
 } from "lucide-react";
 
 /**
@@ -171,20 +171,17 @@ function FilterBody({
   const activeCount = chipsFor(f, categories).length;
   const visibleCats = categories.filter((c) => !f.kind || c.kind === f.kind);
 
-  // Marque, modèle, année, kilométrage, carburant and boîte are six groups
-  // that most people never touch — and together they were the reason the rail
-  // ran well past the fold. They fold into one toggle, which starts OPEN when
-  // any of them is set: a filter that is silently hidden is a filter you
-  // cannot tell is narrowing your results.
-  const detailCount = [f.make, f.model, f.year_min, f.year_max, f.km_max, f.fuel, f.boite]
-    .filter(Boolean).length;
-  const [moreOpen, setMoreOpen] = useState(detailCount > 0);
+  // Everything is on screen. Folding marque/année/kilométrage/carburant behind
+  // "Plus de filtres" hid exactly the controls that decide a used car, so the
+  // panel looked like it could only filter by category, price and governorate.
+  // The height that bought back is paid for instead by a tighter rhythm and by
+  // pairing controls that belong together on one row.
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-3.5">
       <RouteProgress active={pending} />
       <Group label="Je cherche">
-        <div className="grid grid-cols-3 gap-1.5">
+        <div className="grid grid-cols-3 gap-1">
           {[
             { v: "", label: "Tout", Icon: LayoutGrid },
             { v: "vehicle", label: "Véhicules", Icon: Car },
@@ -195,13 +192,13 @@ function FilterBody({
               type="button"
               onClick={() => push({ kind: v })}
               className={cn(
-                "flex flex-col items-center gap-1 rounded-xl border px-2 py-2.5 text-[11.5px] font-bold transition",
+                "flex h-9 items-center justify-center gap-1.5 rounded-lg border text-[12px] font-bold transition",
                 f.kind === v
                   ? "border-gold bg-gold-faint text-gold"
                   : "border-border bg-surface text-muted hover:text-foreground",
               )}
             >
-              <Icon className="size-4" />
+              <Icon className="size-3.5" />
               {label}
             </button>
           ))}
@@ -244,7 +241,7 @@ function FilterBody({
       </Group>
 
       {!isPart && (
-        <MoreFilters open={moreOpen} onToggle={() => setMoreOpen((v) => !v)} count={detailCount}>
+        <>
           {/* Marque and modèle existed ONLY in the parts branch, as
               "compatible avec ma voiture" — so someone browsing cars, which is
               most of the catalogue, had no way to filter by make at all. They
@@ -279,30 +276,31 @@ function FilterBody({
             </Group>
           )}
 
-          {/* Année and kilométrage decide as much as the marque on a used car,
-              and neither existed. Ranges, because "2015 or newer under
-              150 000 km" is how people actually shop. */}
-          <Group label="Année">
-            <div className="grid grid-cols-2 gap-2">
+          {/* Année and kilométrage are the same question asked twice — how
+              used is it — and "2015 or newer, under 150 000 km" is one thought,
+              not two. One row of three, which also buys back a whole group's
+              height now that nothing folds away. */}
+          <Group label="Année & kilométrage">
+            <div className="grid grid-cols-3 gap-1.5">
               <input
                 inputMode="numeric" placeholder="De" value={f.year_min}
+                aria-label="Année minimum"
                 onChange={(e) => pushDebounced({ year_min: e.target.value.replace(/\D/g, "").slice(0, 4) })}
                 className={INPUT}
               />
               <input
                 inputMode="numeric" placeholder="À" value={f.year_max}
+                aria-label="Année maximum"
                 onChange={(e) => pushDebounced({ year_max: e.target.value.replace(/\D/g, "").slice(0, 4) })}
                 className={INPUT}
               />
+              <input
+                inputMode="numeric" placeholder="km" value={f.km_max}
+                aria-label="Kilométrage maximum"
+                onChange={(e) => pushDebounced({ km_max: e.target.value.replace(/\D/g, "").slice(0, 7) })}
+                className={INPUT}
+              />
             </div>
-          </Group>
-
-          <Group label="Kilométrage max">
-            <input
-              inputMode="numeric" placeholder="150000" value={f.km_max}
-              onChange={(e) => pushDebounced({ km_max: e.target.value.replace(/\D/g, "").slice(0, 7) })}
-              className={INPUT}
-            />
           </Group>
 
           <Group label="Carburant">
@@ -319,7 +317,7 @@ function FilterBody({
               onPick={(v) => push({ boite: v })}
             />
           </Group>
-        </MoreFilters>
+        </>
       )}
 
       {isPart && (
@@ -553,56 +551,15 @@ export function CatalogToolbar({ categories, governorates, current, total }: Pro
 }
 
 const INPUT =
-  "w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-[13.5px] text-foreground placeholder:text-muted focus:border-gold focus:outline-none";
-
-/**
- * The secondary filter block, folded away by default.
- *
- * It keeps its children mounted when closed rather than unmounting them: an
- * unmounted <select> loses nothing here (the state lives in the URL), but
- * remounting six of them on every toggle is jank for no benefit.
- */
-function MoreFilters({
-  open, onToggle, count, children,
-}: {
-  open: boolean;
-  onToggle: () => void;
-  /** How many of the hidden filters are active — shown so a closed section
-   *  never conceals the reason the result count looks wrong. */
-  count: number;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="border-t border-border pt-4">
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-expanded={open}
-        className="flex w-full items-center gap-2 text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-muted transition hover:text-foreground"
-      >
-        <ChevronDown
-          className={`size-3.5 shrink-0 transition-transform ${open ? "" : "-rotate-90"}`}
-          strokeWidth={2.4}
-        />
-        Plus de filtres
-        {count > 0 && (
-          <span className="rounded-full bg-gold-faint px-1.5 py-0.5 text-[10px] text-gold">
-            {count}
-          </span>
-        )}
-      </button>
-      <div className={`space-y-5 ${open ? "mt-4" : "hidden"}`}>{children}</div>
-    </div>
-  );
-}
+  "h-10 w-full rounded-lg border border-border bg-surface px-2.5 text-[13px] text-foreground placeholder:text-muted transition-colors focus:border-gold focus:outline-none";
 
 function Group({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <span className="text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-muted">
+      <span className="text-[9.5px] font-extrabold uppercase tracking-[0.14em] text-subtle">
         {label}
       </span>
-      <div className="mt-1.5">{children}</div>
+      <div className="mt-1">{children}</div>
     </div>
   );
 }
@@ -615,14 +572,14 @@ function Pills({
   onPick: (v: string) => void;
 }) {
   return (
-    <div className="flex flex-wrap gap-1.5">
+    <div className="flex flex-wrap gap-1">
       {options.map((o) => (
         <button
           key={o.v}
           type="button"
           onClick={() => onPick(value === o.v ? "" : o.v)}
           className={cn(
-            "rounded-full px-3 py-1.5 text-[12.5px] font-bold transition",
+            "rounded-full px-2.5 py-1 text-[12px] font-bold transition",
             value === o.v
               ? "bg-[var(--gold)] text-black"
               : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground",

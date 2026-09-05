@@ -37,7 +37,6 @@ type Row = {
   attributes: Record<string, unknown> | null;
   contact_name: string | null; show_phone: boolean;
   status: string; published_at: string | null; expires_at: string | null;
-  view_count: number; contact_reveal_count: number;
   seller_id: string;
   category: { id: string; label_fr: string; kind: string } | { id: string; label_fr: string; kind: string }[] | null;
   photos: { storage_path: string; sort_order: number }[] | null;
@@ -47,7 +46,7 @@ type Row = {
 const SELECT = `
   id, title, description, price, price_on_request, negotiable, condition,
   governorate, delegation, attributes, contact_name, show_phone, status,
-  published_at, expires_at, view_count, contact_reveal_count, seller_id,
+  published_at, expires_at, seller_id,
   category:categories (id, label_fr, kind),
   photos:listing_photos (storage_path, sort_order),
   fitments:listing_fitments (make, model, year_from, year_to)
@@ -261,7 +260,7 @@ export default async function AnnoncePage({
       </div>
 
       <div className="mt-4">
-        <ContactReveal listingId={l.id} revealCount={l.contact_reveal_count} />
+        <ContactReveal listingId={l.id} />
       </div>
     </section>
   );
