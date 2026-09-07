@@ -65,6 +65,30 @@ const nextConfig: NextConfig = {
    * decision we could revisit).
    */
   async redirects() {
+    /**
+     * PUBLIC routes retired with the auction product.
+     *
+     * Deleting a page does not delete the links to it. These URLs are in
+     * notification e-mails, SMS, browser history, bookmarks and whatever
+     * Google has indexed — every one of them would now be a 404. They go to
+     * the nearest surface that answers the same intent.
+     *
+     * Temporary (302), not permanent: a 301 is cached in browsers essentially
+     * forever, and this decision is days old.
+     */
+    const publicGone: [string, string][] = [
+      // Browsing a lot -> browsing the catalogue.
+      ["auctions", "annonces"],
+      ["properties", "annonces"],
+      // Putting a lot up for auction -> publishing an annonce.
+      ["sell", "annonces/nouvelle"],
+      // The bidder's own history, and the partner portal, both of which only
+      // meant anything while there were lots.
+      ["account/bids", "account/listings"],
+      ["account/wins", "account/listings"],
+      ["partners", "account"],
+    ];
+
     const gone = [
       "properties", "auctions", "deposits", "payouts",
       "manual-payment", "inspectors", "fraud", "waitlist", "kyc-queue",
@@ -77,6 +101,10 @@ const nextConfig: NextConfig = {
       ["characteristics", "catalogue"],
     ];
     return [
+      ...publicGone.flatMap(([from, to]) => [
+        { source: `/:locale/${from}`, destination: `/:locale/${to}`, permanent: false },
+        { source: `/:locale/${from}/:path*`, destination: `/:locale/${to}`, permanent: false },
+      ]),
       ...renamed.flatMap(([from, to]) => [
         { source: `/:locale/admin/${from}`, destination: `/:locale/admin/${to}`, permanent: true },
         { source: `/:locale/admin/${from}/:path*`, destination: `/:locale/admin/${to}`, permanent: true },

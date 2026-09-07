@@ -5,7 +5,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { avatarUrl } from "@/lib/avatar";
 import { formatTND } from "@/lib/utils";
-import { HeroCarousel } from "@/components/auction/HeroCarousel";
+import { PhotoCarousel } from "@/components/listing/PhotoCarousel";
 import { ContactReveal } from "./ContactReveal";
 import { FavoriteButton } from "@/components/property/FavoriteButton";
 import { RelatedListings } from "@/components/listing/RelatedListings";
@@ -295,7 +295,7 @@ export default async function AnnoncePage({
         <div className="min-w-0">
           {photos.length > 0 && (
             <div className="overflow-hidden lg:rounded-2xl lg:border lg:border-border">
-              <HeroCarousel photos={photos} alt={l.title} />
+              <PhotoCarousel photos={photos} alt={l.title} />
             </div>
           )}
 

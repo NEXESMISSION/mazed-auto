@@ -21,6 +21,10 @@ const USER_NAV_PAUSE_MS = 6000;
 const SWIPE_THRESHOLD = 40;
 
 /**
+ * Moved here from `components/auction/` when the auction product was deleted.
+ * Nothing about a photo gallery is auction-specific — the lot page was simply
+ * the only screen that had one. `/annonces/[id]` is that screen now.
+ *
  * Cinematic hero with auto-sliding photos.
  *
  *   - Real horizontal SLIDE (translateX track), not a cross-fade.
@@ -32,7 +36,7 @@ const SWIPE_THRESHOLD = 40;
  * The server-rendered overlay (LIVE chip, lot chip, title) is passed in via
  * `children` so crawlers see it without waiting for hydration.
  */
-export function HeroCarousel({
+export function PhotoCarousel({
   photos,
   alt,
   children,

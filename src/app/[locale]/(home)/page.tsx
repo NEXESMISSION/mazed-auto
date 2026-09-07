@@ -1,28 +1,11 @@
-import Image from "next/image";
-import { Suspense } from "react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { LiveTicker } from "@/components/landing/LiveTicker";
-import { TrendingRail } from "@/components/landing/TrendingRail";
-import { RecentBidsFeed } from "@/components/landing/RecentBidsFeed";
-import { CoverageStrip } from "@/components/landing/CoverageStrip";
-import { EndingSoonBanner } from "@/components/landing/EndingSoonBanner";
-import { HeroBanner, type HeroSlide } from "@/components/landing/HeroBanner";
 import { HomeDesktop } from "@/components/landing/HomeDesktop";
-import { HomeSectionDivider } from "@/components/landing/HomeSectionDivider";
 import { BrandRail } from "@/components/landing/BrandRail";
-import { StatsBar } from "@/components/landing/StatsBar";
-import { CarRail } from "@/components/landing/CarRail";
 import { AnnonceRail } from "@/components/landing/AnnonceRail";
-import { AUCTIONS_VISIBLE } from "@/lib/features";
 import { AnnonceCoverMobile } from "@/components/landing/AnnonceHero";
-import { PropertyCard } from "@/components/property/PropertyCard";
-import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
-import { formatTND } from "@/lib/utils";
-import { getHomeFeed, type HammeredRow } from "@/lib/home/feed";
 import { unstable_cache } from "next/cache";
 import { getServiceSupabase } from "@/lib/supabase/admin";
-import { log } from "@/lib/log";
 import { PerfProbe } from "@/components/dev/PerfProbe";
 
 // Statically render + ISR-revalidate every 60s. The home page is the same
@@ -65,40 +48,10 @@ const fetchMakeCounts = unstable_cache(
 );
 
 export const revalidate = 60;
-import type { AuctionWithProperty } from "@/lib/types";
-import {
-  ArrowUpRight,
-  ChevronRight,
-  ChevronLeft,
-  Gavel,
-  MapPin,
-  Search,
-  ShieldCheck,
-  ClipboardCheck,
-  Scale,
-  Lock,
-  Sparkles,
-} from "lucide-react";
+import { ArrowUpRight, Gavel, Search, ShieldCheck, ClipboardCheck, Scale, Lock, Sparkles } from "lucide-react";
 
 // Home data layer (getHomeFeed + selects + feed types) lives in
 // "@/lib/home/feed" so this route file stays render-focused.
-
-/**
- * Race a promise against a deadline. The home page fans out several
- * round-trips to a remote Supabase; if one of them hangs (pooler hiccup,
- * network blip) the whole server render would stall and the route's
- * loading.tsx Suspense fallback would spin forever — the "stuck loading"
- * users hit intermittently. A timeout turns a hang into a fast fallback:
- * the page renders its brand hero + browse rails instead of freezing.
- */
-function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
-  return Promise.race([
-    p,
-    new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error("home_data_timeout")), ms),
-    ),
-  ]);
-}
 
 /**
  * Landing page — black + gold dark mode, design language ported from
@@ -169,161 +122,30 @@ export default async function LandingPage({
   setRequestLocale(locale);
   const t = await getTranslations();
   const isRTL = locale === "ar";
-  const ChevronEnd = isRTL ? ChevronLeft : ChevronRight;
   // Both device trees are rendered and CSS picks one (lg breakpoint). The
   // page is static, so saved-hearts + login state stay false here and the
   // client watchlist store fills them in after hydration.
 
-  // One round-trip for the listing surfaces. The smaller widgets
-  // (LiveTicker, RecentBidsFeed, CoverageStrip, EndingSoonBanner) each
-  // own their own queries — cheap, parallelizable, fail-soft.
-  let trending: AuctionWithProperty[] = [];
-  let recent: AuctionWithProperty[] = [];
-  // "Offres directes" rail — fixed-price (listing_type='direct') listings,
-  // surfaced on their own so buyers can browse buy-now stock apart from the
-  // bidding lots.
-  let offers: AuctionWithProperty[] = [];
-  let hammered: HammeredRow[] = [];
-  // "Nouveautés" rail — newest listings (by auction created_at), distinct
-  // from trending which sorts by ends_at + paid placement. Renders as the
-  // same horizontal property-card scroller so it visually parallels "Les
-  // plus suivis" but answers a different intent ("what's new").
-  let nouveautes: AuctionWithProperty[] = [];
-  // Always empty / false at static render time — the client watchlist store
-  // (WatchlistButton) fills in the real saved set + login state post-hydration.
-  const savedIds = new Set<string>();
-  const loggedIn = false;
-  let liveCount = 0;
-  // Desktop stat-strip figures — fetched best-effort alongside the
-  // listing surfaces. Each one is just a head:exact count, so the cost
-  // is one row across the wire; failure falls back to 0 silently and
-  // the strip degrades to placeholders the eye glides past.
-  let scheduledCount = 0;
-  let soldThisMonthCount = 0;
-  let coverageGovs = 0;
-
-  // Perf instrumentation — logs to the server terminal under scope `home`.
-  // `endData` measures the whole blocking data phase (everything that gates
-  // first paint). Individual round-trips are timed below so we can see which
-  // one dominates and whether getHomeFeed was a cache hit (~0ms) or a miss.
-  const perf = log.scope("home");
-  const endData = perf.time("data-phase total");
-  try {
-    await withTimeout((async () => {
-    // Stat-strip helper: first day of the current month, used to count
-    // the "vendu ce mois-ci" tile. Bucketed to the day so the cache key
-    // is stable within a day (the count only needs day-granularity).
-    const monthStart = (() => {
-      const d = new Date();
-      d.setUTCDate(1);
-      d.setUTCHours(0, 0, 0, 0);
-      return d.toISOString();
-    })();
-
-    // SHARED public data — cookieless service-role client, cached 60s. No
-    // per-user work happens here: the page is statically rendered, so saved
-    // hearts + login state are filled client-side after hydration. That's
-    // what lets this whole page be CDN-cached instead of rendered per request.
-    const endFeed = perf.time("getHomeFeed (hit≈0ms, miss=6 queries)");
-    const feed = await getHomeFeed(monthStart);
-    endFeed();
-
-    const rows = (feed?.live.rows ?? []) as unknown as AuctionWithProperty[];
-    liveCount = feed?.live.count ?? rows.length;
-
-    // Paid placements bubble to the top. promo_banner outranks
-    // promo_home_featured so banner-paying sellers get the carousel
-    // slot AND the trending lead. Stable in PG sort order otherwise so
-    // ends_at ordering is preserved within each tier.
-    rows.sort((a, b) => {
-      const ap = (a.property ?? {}) as {
-        promo_banner?: boolean;
-        promo_home_featured?: boolean;
-      };
-      const bp = (b.property ?? {}) as {
-        promo_banner?: boolean;
-        promo_home_featured?: boolean;
-      };
-      const aScore = (ap.promo_banner ? 2 : 0) + (ap.promo_home_featured ? 1 : 0);
-      const bScore = (bp.promo_banner ? 2 : 0) + (bp.promo_home_featured ? 1 : 0);
-      return bScore - aScore;
-    });
-
-    // Surfaces:
-    //   - trending rail (horizontal scroller — now self-sized to the
-    //     dataset rather than capped at 8)
-    //   - "More to explore" grid (rest of the dataset, 2-up)
-    //
-    // When there are fewer than ~12 listings we deliberately let the
-    // rail and the grid OVERLAP so neither section renders empty.
-    // A dev DB with 9 rows used to leave the grid showing 1 lonely
-    // card; now it shows all 9 even though the rail covers the first 8.
-    // Split bidding lots from fixed-price offers so each gets its own rail.
-    const auctionRows = rows.filter((r) => r.listing_type !== "direct");
-    // Each home rail used to cap at ~10 rows: 6 visible + a couple to
-    // scroll. The user asked for "more per slider, not a fixed number" —
-    // so we hand the rails the full available slice (bounded by the
-    // server-side limit above) and let the snap-rail scroll absorb it.
-    offers = rows.filter((r) => r.listing_type === "direct");
-    // Trending shows enchères (auctions). "More to explore" stays mixed so
-    // a small catalogue never renders an empty grid.
-    trending = (auctionRows.length > 0 ? auctionRows : rows).slice(0, 18);
-    // Reuse anything past the trending tail as the "More to explore"
-    // grid. With the trimmed feed (≤18 rows) the rail covers most of it,
-    // so the grid shows the back half; fall back to the last few when the
-    // catalogue is small so the grid never renders a single lonely card.
-    recent = rows.length >= 16 ? rows.slice(12) : rows.slice(Math.min(rows.length, 8));
-    hammered = (feed?.hammered ?? []) as unknown as HammeredRow[];
-    nouveautes = (feed?.nouveautes ?? []) as unknown as AuctionWithProperty[];
-    scheduledCount = feed?.scheduledCount ?? 0;
-    soldThisMonthCount = feed?.soldThisMonthCount ?? 0;
-    coverageGovs = new Set(feed?.govs ?? []).size;
-
-    perf.debug("data ready", {
-      live: rows.length,
-      trending: trending.length,
-      nouv: nouveautes.length,
-      hammered: hammered.length,
-    });
-    })(), 2500);
-  } catch (err) {
-    // env missing, query error, or timeout → the brand hero + browse
-    // rails below still render so the page is never a frozen spinner.
-    // 2.5s ceiling: longer than that and users have already bounced —
-    // better to paint the fallback hero immediately and let the client
-    // streams (LiveTicker, RecentBidsFeed) backfill the rails.
-    perf.warn("data-phase aborted (timeout or error)", err);
-  } finally {
-    endData();
-  }
+  // THE AUCTION DATA PHASE STOOD HERE.
+  //
+  // It called `getHomeFeed`, which fired six queries at `auctions` joined to
+  // `properties` — both empty since the pivot — and handed the results to
+  // rails that `AUCTIONS_VISIBLE` had already switched off. Six round trips per
+  // cache miss, on the site's most-requested page, for markup nobody could see.
+  //
+  // The catalogue rails below (`AnnonceRail`) do their own reads and always
+  // did. That is why the page kept working while this quietly fetched nothing,
+  // and why removing it changes what a visitor sees not at all.
 
   // "Parcourir par marque" and the makes figure in the stats bar. Both used to
   // be derived by splitting auction lot TITLES on their first word, across
   // feeds that are empty since the pivot — see fetchMakeCounts.
   const makeCounts = await fetchMakeCounts();
 
-  // "Les plus disputées" — live lots ranked by bid count (HotNow signal,
-  // distinct from `trending` which sorts by ends_at + paid placement).
-  const hotNow = [...trending]
-    .filter((a) => (a.bid_count ?? 0) > 0)
-    .sort((x, y) => (y.bid_count ?? 0) - (x.bid_count ?? 0))
-    .slice(0, 8);
-
-  // "Sélection VIP" — paid/featured placements (promo_home_featured).
-  const vip = trending
-    .filter((a) => ((a.property ?? {}) as { promo_home_featured?: boolean }).promo_home_featured)
-    .slice(0, 8);
-
-  // Second "ending soon" hero carousel — built once, shown on mobile AND
-  // (now) desktop. Empty when there aren't enough trending lots to fill it.
-  const endingSoonSlides =
-    trending.length > 5
-      ? buildEndingSoonSlides(trending.slice(5, 10), locale, {
-          endingSoonWord: t("home.endingSoonEyebrow"),
-          tnd: t("common.tnd"),
-          bidCta: t("home.heroBidCta"),
-        })
-      : [];
+  // `hotNow`, `vip` and `endingSoonSlides` were derived here from that feed:
+  // bid counts, `promo_home_featured`, and the lots closest to closing. A
+  // fixed-price catalogue has none of those three, and the rails they fed were
+  // already off.
 
   return (
     <>
@@ -352,13 +174,7 @@ export default async function LandingPage({
 
       {/* LIVE TICKER — streamed in its own Suspense boundary so the page
           shell + hero paint immediately instead of blocking on this query. */}
-      {AUCTIONS_VISIBLE && (
-        <section className="mt-5">
-          <Suspense fallback={<TickerSkeleton />}>
-            <LiveTicker />
-          </Suspense>
-        </section>
-      )}
+      
 
       {/* ══════════════════════════════════════════════════════════════
           BROWSE — the page's center of gravity. Trending rail on top
@@ -395,277 +211,7 @@ export default async function LandingPage({
           and the activity feed. A visitor should not be invited into a
           product we no longer sell. The lots still running stay reachable
           by direct link; Phase 6 deletes this whole region. */}
-      {AUCTIONS_VISIBLE && (
-        <>
-        {/* Trending rail — horizontal scroller of the top 8 hottest auctions. */}
-        <StatsBar live={liveCount} sold={soldThisMonthCount} makes={makeCounts.length} govs={coverageGovs} />
-
-        <HomeSectionDivider
-          tone="live"
-          eyebrow="En ce moment"
-          title="Enchères en cours"
-          subtitle="Voitures vérifiées · enchères transparentes"
-        />
-
-        {/* 🔥 Hottest signal — live lots ranked by bid count, each card
-            carrying the glowing red FOMO pill. Leads the live block (v1
-            rhythm: open with urgency). */}
-        {hotNow.length > 0 && (
-          <section className="mt-6">
-            <RailHeader
-              eyebrow="🔥 Chaud"
-              title="Les plus disputées"
-              countLabel={hotNow.length}
-              ctaHref="/annonces"
-              ChevronEnd={ChevronEnd}
-              isRTL={isRTL}
-              seeAllLabel={t("home.seeAll")}
-              flush
-            />
-            <CarRail items={hotNow} savedIds={savedIds} loggedIn={loggedIn} hot />
-          </section>
-        )}
-
-        {/* Urgency band right after the hot rail (moved up from the top so the
-            live block reads hot → ending → curated). */}
-        <div className="mt-7">
-          <Suspense fallback={null}>
-            <EndingSoonBanner />
-          </Suspense>
-        </div>
-
-        {vip.length > 0 && (
-          <section className="mt-6">
-            <RailHeader
-              eyebrow="Sélection"
-              title="Sélection VIP"
-              countLabel={vip.length}
-              ctaHref="/annonces"
-              ChevronEnd={ChevronEnd}
-              isRTL={isRTL}
-              seeAllLabel={t("home.seeAll")}
-              flush
-            />
-            <CarRail items={vip} savedIds={savedIds} loggedIn={loggedIn} />
-          </section>
-        )}
-
-        <section className="mt-7">
-          <RailHeader
-            eyebrow={t("home.trendingEyebrow")}
-            title={t("home.trendingTitle")}
-            countLabel={trending.length}
-            ctaHref="/annonces"
-            ChevronEnd={ChevronEnd}
-            isRTL={isRTL}
-            seeAllLabel={t("home.seeAll")}
-            flush
-          />
-          {/* Mobile: horizontal snap rail (auto-advancing). Desktop: replaced
-              by a proper 4-col grid below — much better than a horizontal
-              scroller when the input device is a mouse and the viewport is
-              wide enough to show eight cards on one viewport-height of
-              screen. */}
-          <div className="lg:hidden">
-            {trending.length > 0 ? (
-              <TrendingRail>
-                {trending.map((a, i) => (
-                  <div key={a.id} className="w-[230px] shrink-0 snap-start">
-                    <PropertyCard
-                      auction={a}
-                      saved={savedIds.has(a.id)}
-                      loggedIn={loggedIn}
-                      priority={i < 3}
-                    />
-                  </div>
-                ))}
-                <div className="w-1 shrink-0" />
-              </TrendingRail>
-            ) : (
-              <TrendingRail>
-                <TrendingSkeleton />
-                <TrendingSkeleton />
-                <TrendingSkeleton />
-              </TrendingRail>
-            )}
-          </div>
-          {trending.length > 0 && (
-            <div className="hidden lg:grid lg:grid-cols-4 lg:gap-5 lg:px-6 lg:mt-4">
-              {trending.slice(0, 8).map((a, i) => (
-                <PropertyCard
-                  key={a.id}
-                  auction={a}
-                  saved={savedIds.has(a.id)}
-                  loggedIn={loggedIn}
-                  priority={i < 4}
-                />
-              ))}
-            </div>
-          )}
-        </section>
-
-        {/* ─── "Offres directes" rail — fixed-price (buy-now) listings, kept
-            separate from the bidding lots so buyers can browse them on their
-            own. Only shown when there's direct stock. */}
-        {offers.length > 0 && (
-          <section className="mt-7">
-            <RailHeader
-              eyebrow="Achat immédiat"
-              title="Offres directes"
-              countLabel={offers.length}
-              ctaHref="/annonces"
-              ChevronEnd={ChevronEnd}
-              isRTL={isRTL}
-              seeAllLabel={t("home.seeAll")}
-              flush
-            />
-            <div className="lg:hidden">
-              <TrendingRail>
-                {offers.map((a, i) => (
-                  <div key={a.id} className="w-[230px] shrink-0 snap-start">
-                    <PropertyCard
-                      auction={a}
-                      saved={savedIds.has(a.id)}
-                      loggedIn={loggedIn}
-                      priority={i < 3}
-                    />
-                  </div>
-                ))}
-                <div className="w-1 shrink-0" />
-              </TrendingRail>
-            </div>
-            <div className="hidden lg:grid lg:grid-cols-4 lg:gap-5 lg:px-6 lg:mt-4">
-              {offers.slice(0, 8).map((a, i) => (
-                <PropertyCard
-                  key={a.id}
-                  auction={a}
-                  saved={savedIds.has(a.id)}
-                  loggedIn={loggedIn}
-                  priority={i < 4}
-                />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* ─── "Nouveautés" rail — sibling of the trending rail above,
-            sorted by created_at desc instead of ends_at + paid placement.
-            Same card layout so it feels familiar, different headline so
-            the user understands the section answers "what's new" rather
-            than "what's hottest". Only rendered when we actually have
-            fresh inventory — falls back to nothing rather than empty
-            skeletons because the trending rail above already absorbs the
-            "we just opened" copy. */}
-        {nouveautes.length > 0 && (
-          <section className="mt-7">
-            <RailHeader
-              eyebrow={t("home.nouveautesEyebrow")}
-              title={t("home.nouveautesTitle")}
-              countLabel={nouveautes.length}
-              ctaHref="/annonces"
-              ChevronEnd={ChevronEnd}
-              isRTL={isRTL}
-              seeAllLabel={t("home.seeAll")}
-              flush
-            />
-            <div className="lg:hidden">
-              <TrendingRail>
-                {nouveautes.map((a, i) => (
-                  <div key={a.id} className="w-[230px] shrink-0 snap-start">
-                    <PropertyCard
-                      auction={a}
-                      saved={savedIds.has(a.id)}
-                      loggedIn={loggedIn}
-                      priority={i < 3}
-                    />
-                  </div>
-                ))}
-                <div className="w-1 shrink-0" />
-              </TrendingRail>
-            </div>
-            <div className="hidden lg:grid lg:grid-cols-4 lg:gap-5 lg:px-6 lg:mt-4">
-              {nouveautes.slice(0, 8).map((a, i) => (
-                <PropertyCard
-                  key={a.id}
-                  auction={a}
-                  saved={savedIds.has(a.id)}
-                  loggedIn={loggedIn}
-                  priority={i < 4}
-                />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* ─── Second hero — same shape as the top carousel, but its
-            payload is the "ending soon" continuation: trending items
-            beyond the first 5, still sorted by ends_at asc. Gives the
-            urgency thread a second surface lower on the page. Hidden
-            when there's no second-tier urgency to show.
-
-            Desktop: skipped entirely. The wide hero at the top of the
-            page + the dedicated EndingSoonBanner already absorb the
-            urgency thread on lg+; a second photo carousel here turns
-            into a fourth full-width banner the user has to scroll past
-            to reach the browse rails. */}
-        {endingSoonSlides.length > 0 && (
-          <div className="mt-6 lg:hidden">
-            <HeroBanner slides={endingSoonSlides} isRTL={isRTL} />
-          </div>
-        )}
-
-        {/* Live activity feed — header-less, runs as a quiet tape under
-            the trending rail. The vertical marquee says "this place is
-            alive" without needing a label. */}
-        <section className="mt-6 px-4">
-          <Suspense fallback={null}>
-            <RecentBidsFeed />
-          </Suspense>
-        </section>
-
-        {/* Compact coverage strip — only lit wilayas + a "+N more" pill. */}
-        <section className="mt-7">
-          <Suspense fallback={null}>
-            <CoverageStrip />
-          </Suspense>
-        </section>
-
-        {/* More auctions — second batch on a 2-up grid. Replaces the
-            old "Featured estates" + "Recently added" duplicate sections
-            (those rendered the same rows.slice as the trending rail).
-            One header, one grid, the rest of the available data. */}
-        {recent.length > 0 && (
-          <section className="mt-9 px-4">
-            <RailHeader
-              title={t("home.moreToExplore")}
-              ctaHref="/annonces"
-              ChevronEnd={ChevronEnd}
-              isRTL={isRTL}
-              seeAllLabel={t("home.seeAll")}
-              flush
-            />
-            <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-5">
-              {recent.map((a, i) => (
-                <PropertyCard
-                  key={a.id}
-                  auction={a}
-                  saved={savedIds.has(a.id)}
-                  loggedIn={loggedIn}
-                  priority={i < 4}
-                />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Browse by type — horizontal scroll rail of compact pills.
-            The old 2×3 grid had big monogram chips with empty space
-            around them; this version puts the icon and label inline
-            so the eye reads "category" not "tile". No borders. */}
-        {/* Mobile: two stacked horizontal pill rails — fits the thumb-
-            scroll rhythm and keeps each section's headline visible. */}
-        </>
-      )}
+      
 
       {/* "Parcourir par type" / "Parcourir par prix" used to sit here. Both
           linked into /properties with filter query strings — the v2 explore
@@ -678,48 +224,8 @@ export default async function LandingPage({
           12 cards scroll). No padded placeholders: a "Coming soon"
           tile alongside a real sold listing reads as filler and makes
           the page feel emptier than just hiding the section would. */}
-      {AUCTIONS_VISIBLE && hammered.length > 0 && (
-        <HomeSectionDivider
-          tone="sold"
-          eyebrow="Historique"
-          title="Récemment adjugées"
-          subtitle="Prix réels obtenus aux enchères"
-        />
-      )}
-      {AUCTIONS_VISIBLE && hammered.length > 0 && (
-        <section className="mt-10">
-          <div className="flex items-baseline justify-between px-4">
-            <h3 className={`inline-flex items-center gap-1.5 text-[15px] font-bold leading-tight ${isRTL ? "font-arabic" : ""}`}>
-              <Gavel className="size-3.5 text-gold" strokeWidth={2.5} />
-              {t("home.recentlyHammered")}
-            </h3>
-            <span className="text-[11px] text-muted">{t("home.realPrices")}</span>
-          </div>
-          <div className="snap-rail hide-scrollbar mt-3 flex gap-3 overflow-x-auto px-4 pb-1 lg:hidden">
-            {hammered.map((h) => (
-              <div key={h.id} className="w-[200px] shrink-0 snap-start">
-                <HammeredCard row={h} locale={locale} isRTL={isRTL} soldLabel={t("home.soldChip")} tnd={t("common.tnd")} />
-              </div>
-            ))}
-            <div className="w-1 shrink-0" />
-          </div>
-          {/* Desktop: 4-col grid of the latest 8 sold lots — proof points
-              read at a glance, no horizontal scroll required when the
-              hardware can show eight cards at once. */}
-          <div className="hidden lg:grid lg:grid-cols-4 lg:gap-5 lg:px-6 lg:mt-4">
-            {hammered.slice(0, 8).map((h) => (
-              <HammeredCard
-                key={h.id}
-                row={h}
-                locale={locale}
-                isRTL={isRTL}
-                soldLabel={t("home.soldChip")}
-                tnd={t("common.tnd")}
-              />
-            ))}
-          </div>
-        </section>
-      )}
+      
+      
 
       {/* Brand wall — full logo grid of every make, each tile deep-linking into
           Explore filtered by that brand (see BrandRail + src/lib/brands.ts). */}
@@ -957,20 +463,7 @@ export default async function LandingPage({
       </section>
     </div>
 
-    <HomeDesktop
-      endingSoonSlides={endingSoonSlides}
-      trending={trending}
-      offers={offers}
-      nouveautes={nouveautes}
-      recent={recent}
-      hammered={hammered}
-      savedIds={savedIds}
-      loggedIn={loggedIn}
-      liveCount={liveCount}
-      scheduledCount={scheduledCount}
-      soldThisMonthCount={soldThisMonthCount}
-      coverageGovs={coverageGovs}
-    />
+    <HomeDesktop makeCounts={makeCounts} />
     </>
   );
 }
@@ -978,117 +471,6 @@ export default async function LandingPage({
 // ──────────────────────────────────────────────────────────────────────
 // Building blocks — ported from the mazed-auto home pattern
 // ──────────────────────────────────────────────────────────────────────
-
-/**
- * Rail header — lightweight title above a horizontal scroller or grid.
- */
-function RailHeader({
-  eyebrow,
-  title,
-  countLabel,
-  ctaHref,
-  ChevronEnd,
-  isRTL,
-  seeAllLabel,
-  flush,
-  noCta,
-}: {
-  /** Tracked uppercase metallic-gold label sitting above the title.
-      Optional — only the headline section needs it; secondary rails
-      can stay single-line for less visual noise. */
-  eyebrow?: string;
-  title: string;
-  countLabel?: number;
-  /** All "see all" CTAs point at /properties — the unified Explore
-      surface (Reels + Grid + numbered pagination). The /auctions
-      index was removed (it was a duplicate of /properties); the
-      detail route /auctions/[id] still exists for individual lots. */
-  /** Where "tout voir" goes. The v3 catalog; the literal keeps typed routes honest. */
-  ctaHref: "/annonces";
-  ChevronEnd: React.ComponentType<{ className?: string }>;
-  isRTL: boolean;
-  /** Pre-translated "See all" label. Server component callers pass
-      `t("home.seeAll")`. */
-  seeAllLabel: string;
-  flush?: boolean;
-  noCta?: boolean;
-}) {
-  return (
-    <div className={`flex items-end justify-between gap-3 ${flush ? "px-4" : ""}`}>
-      <div className="min-w-0">
-        {eyebrow && (
-          <div className="mb-1.5 flex items-center gap-2">
-            <span className="batta-gold-rule-short" />
-            <span
-              className={`batta-eyebrow ${isRTL ? "font-arabic tracking-[0.18em]" : ""}`}
-            >
-              {eyebrow}
-            </span>
-          </div>
-        )}
-        <h3
-          className={`inline-flex items-center gap-2 text-[19px] font-extrabold leading-tight tracking-tight ${
-            isRTL ? "font-arabic" : ""
-          }`}
-        >
-          {title}
-          {countLabel !== undefined && (
-            // Count as a soft gold chip rather than naked parens —
-            // reads as "7 of these" instead of debug metadata. Sized
-            // with a touch of breathing room so the number doesn't sit
-            // flush against the chip border.
-            <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-gold-faint px-2.5 text-[11px] font-extrabold tracking-wider text-gold-bright">
-              {countLabel}
-            </span>
-          )}
-        </h3>
-      </div>
-      {!noCta && (
-        // Every "See all" link goes to the unified Explore page —
-        // user picks Grid vs Reels there via the toolbar toggle.
-        <Link
-          href={ctaHref}
-          className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border bg-surface px-3 py-1.5 text-[11px] font-semibold text-muted transition-colors hover:border-gold-soft/40 hover:text-gold"
-        >
-          {seeAllLabel}
-          <ChevronEnd className="size-3" />
-        </Link>
-      )}
-    </div>
-  );
-}
-
-/**
- * Slides for the second-tier hero — the items closest to closing after
- * the top hero's headliners. Same shape as `buildHeroSlides` but the
- * eyebrow leads with "Bientôt clos" instead of "En cours", so the
- * surface reads as urgency-on-urgency rather than a duplicate of the
- * top hero. No brand-pitch slide — this carousel is purely listings.
- */
-function buildEndingSoonSlides(
-  rows: AuctionWithProperty[],
-  locale: string,
-  labels: { endingSoonWord: string; tnd: string; bidCta: string },
-): HeroSlide[] {
-  const slides: HeroSlide[] = [];
-  for (const a of rows) {
-    const property = a.property;
-    const photo = property.photos
-      ?.sort((p, q) => p.sort_order - q.sort_order)[0];
-    if (!photo) continue;
-    const price = a.current_price ?? a.opening_price;
-    slides.push({
-      id: a.id,
-      imageUrl: propertyPhotoUrl(photo.storage_path),
-      eyebrow: `${labels.endingSoonWord} · ${property.governorate}`,
-      title: property.title,
-      subtitle: `${formatTND(price, locale)} ${labels.tnd}`,
-      href: `/auctions/${a.id}`,
-      ctaLabel: labels.bidCta,
-    });
-  }
-  return slides;
-}
 
 // HOW_IT_WORKS + TRUST_PILLARS used to live here at the bottom of
 // the file. They were hoisted above LandingPage (alongside StatTile's
@@ -1101,96 +483,8 @@ function buildEndingSoonSlides(
 // (HammeredRow type is hoisted to the top of the file.)
 // ──────────────────────────────────────────────────────────────────────
 
-function HammeredCard({
-  row,
-  locale,
-  isRTL,
-  soldLabel,
-  tnd,
-}: {
-  row: HammeredRow;
-  locale: string;
-  isRTL: boolean;
-  soldLabel: string;
-  tnd: string;
-}) {
-  const photo = row.property.photos
-    ?.slice()
-    .sort((a, b) => a.sort_order - b.sort_order)[0];
-  const price = Number(row.winner_amount ?? 0);
-  return (
-    <Link
-      href={`/auctions/${row.id}`}
-      className="group flex flex-col overflow-hidden rounded-2xl bg-surface-2 transition active:scale-[0.98] hover:bg-surface"
-    >
-      <div className="relative aspect-[4/3] overflow-hidden bg-surface-2">
-        {photo ? (
-          (() => {
-            const src = propertyPhotoUrl(photo.storage_path);
-            return (
-              <Image
-                src={src}
-                alt=""
-                fill
-                sizes="(min-width: 1024px) 220px, 200px"
-                unoptimized={isStaticSeedPath(src)}
-                className="object-cover transition duration-500 group-hover:scale-105"
-              />
-            );
-          })()
-        ) : (
-          <div className="flex h-full items-center justify-center text-3xl text-foreground/15">🏛️</div>
-        )}
-        <span className="batta-gold-fill absolute top-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9.5px] font-extrabold uppercase tracking-[0.14em] ltr:left-2 rtl:right-2">
-          <Gavel className="size-2.5" strokeWidth={2.5} />
-          {soldLabel}
-        </span>
-      </div>
-      <div className="p-3">
-        <div className="batta-tabular gradient-gold-text text-[18px] font-extrabold leading-none">
-          {formatTND(price, locale)}
-          <span className="ms-1 text-[9px] font-bold uppercase tracking-[0.14em] text-muted">
-            {tnd}
-          </span>
-        </div>
-        <div className={`mt-1.5 line-clamp-1 text-[12px] font-bold text-foreground ${isRTL ? "font-arabic" : ""}`}>
-          {row.property.title}
-        </div>
-        <div className="mt-0.5 flex items-center gap-1 text-[10px] text-muted">
-          <MapPin className="size-2.5" strokeWidth={2} />
-          <span className="truncate">{row.property.governorate}</span>
-        </div>
-      </div>
-    </Link>
-  );
-}
-
-function CardSkeleton() {
-  return (
-    <div className="block">
-      <div className="aspect-[4/5] rounded-2xl bg-surface-2" />
-      <div className="space-y-2 px-1 pt-3">
-        <div className="skeleton h-3.5 w-3/4" />
-        <div className="skeleton h-3 w-1/2" />
-      </div>
-    </div>
-  );
-}
-
-function TrendingSkeleton() {
-  return (
-    <div className="w-[230px] shrink-0 snap-start">
-      <CardSkeleton />
-    </div>
-  );
-}
-
 // Suspense fallback for the LiveTicker — a single thin tape row, matching
 // the ticker's own height so the swap doesn't shift layout.
-function TickerSkeleton() {
-  return <div className="mx-4 h-9 rounded-full bg-surface-2" />;
-}
-
 // StatTile lives near the top of the file as a const expression so
 // Turbopack-RSC's bundle hoister can see it before LandingPage. Same
 // quirk that bit the HammeredRow type alias (see the comment at the
