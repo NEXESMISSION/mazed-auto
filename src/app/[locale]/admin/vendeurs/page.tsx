@@ -53,8 +53,21 @@ export default async function AdminVendeursPage({
    * The first version read every live badge, built a Map of seller ids, and
    * fed it to `.in("id", [...])` — which is an unbounded IN clause in the URL,
    * and a second unbounded read to build it. Fine at three badges, a broken
-   * request at three thousand. `seller_badges!inner(...)` makes Postgres do
-   * the join and keeps the page's payload proportional to the page size.
+   * request at three thousand. The embedded join makes Postgres do the work
+   * and keeps the page's payload proportional to the page size.
+   *
+   * The `!seller_badges_seller_id_fkey` hint is load-bearing, not decoration.
+   * `seller_badges` points at `profiles` TWICE — `seller_id` (who holds it)
+   * and `granted_by` (which admin issued it) — so a bare `seller_badges(...)`
+   * is ambiguous and PostgREST refuses the whole request with
+   * `Could not embed because more than one relationship was found`. Naming the
+   * constraint picks the one that means "this person's badge".
+   *
+   * It failed silently for exactly the reason `is_cover` did: the page still
+   * answers 200, because a React Server Component streams its shell before the
+   * query runs. The list simply came back empty forever. Both of those bugs
+   * were found by running the query against the live database rather than by
+   * loading the page — which is the only test that catches this shape.
    */
   const listQuery = () => {
     let query =
@@ -62,7 +75,7 @@ export default async function AdminVendeursPage({
         ? admin
             .from("profiles")
             .select(
-              "id, full_name, phone, role, governorate, created_at, banned_at, seller_badges!inner(expires_at, revoked_at)",
+              "id, full_name, phone, role, governorate, created_at, banned_at, seller_badges!seller_badges_seller_id_fkey!inner(expires_at, revoked_at)",
               { count: "exact" },
             )
             .is("deleted_at", null)
@@ -71,7 +84,7 @@ export default async function AdminVendeursPage({
         : admin
             .from("profiles")
             .select(
-              "id, full_name, phone, role, governorate, created_at, banned_at, seller_badges(expires_at, revoked_at)",
+              "id, full_name, phone, role, governorate, created_at, banned_at, seller_badges!seller_badges_seller_id_fkey(expires_at, revoked_at)",
               { count: "exact" },
             )
             .is("deleted_at", null);
