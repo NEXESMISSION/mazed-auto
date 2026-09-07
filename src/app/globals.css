@@ -1065,13 +1065,13 @@ html[dir="rtl"] .batta-marquee-reverse { animation-name: batta-marquee; }
    changes, so the tap registers even on a card that is mostly photograph. */
 .press:active {
   transform: scale(0.968);
-  filter: brightness(1.08);
+  filter: brightness(var(--press-brightness));
 }
 
 @media (prefers-reduced-motion: reduce) {
   .batta-page-enter { animation: none; }
   .press { transition: none; }
-  .press:active { transform: none; filter: brightness(1.08); }
+  .press:active { transform: none; filter: brightness(var(--press-brightness)); }
 }
 
 /* ── Search in flight ───────────────────────────────────────────────────────
@@ -1184,4 +1184,46 @@ html[dir="rtl"] .batta-marquee-reverse { animation-name: batta-marquee; }
   /* Still say which card is loading — just hold it still. */
   .link-busy-ring { animation: link-busy-in 90ms ease-out both; border-top-color: var(--gold); }
   .link-busy-overlay { backdrop-filter: none; }
+}
+
+
+/* ── Console tones ──────────────────────────────────────────────────────────
+   Declared here, at the end, rather than in the first :root block — Tailwind's
+   theme pass consumes that one and strips custom properties it does not know
+   about. The definitions vanished while every `var(--tone-ok)` usage survived,
+   which renders as "no colour at all" and is invisible in the source.
+
+   The admin kit used to hardcode these six values inline, chosen by eye
+   against this theme's near-black ground. That is fine until the same kit
+   renders on Mazed Land, which is dark-on-white with a navy accent: #5cc98a on
+   #ffffff is a washed-out green that fails contrast, and a gold row tint is
+   wrong on a navy product entirely.
+
+   Naming them means the kit ships one set of classes and each product supplies
+   its own values — the same arrangement that lets --gold hold metallic gold
+   here and blue-900 in Land. The values below are byte-for-byte what the kit
+   had inline, so tokenising changed nothing on this theme. */
+:root {
+  --tone-ok:        #5cc98a;
+  --tone-ok-bg:     rgba(74, 222, 128, 0.10);
+  --tone-ok-ring:   rgba(74, 222, 128, 0.28);
+  --tone-warn:      #e0a029;
+  --tone-warn-bg:   rgba(245, 158, 11, 0.12);
+  --tone-warn-ring: rgba(245, 158, 11, 0.30);
+  --tone-warn-edge: rgba(224, 160, 41, 0.80);
+  --tone-bad:       #ef8681;
+  --tone-bad-bg:    rgba(239, 68, 68, 0.12);
+  --tone-bad-ring:  rgba(239, 68, 68, 0.30);
+  --tone-bad-edge:  rgba(224, 81, 74, 0.85);
+  --tone-info-ring: rgba(212, 175, 55, 0.28);
+
+  /* Row states: a white wash on a dark ground, which must become a black wash
+     on a light one or the hover is invisible. */
+  --row-hover:    rgba(255, 255, 255, 0.025);
+  --row-focus:    rgba(255, 255, 255, 0.04);
+  --row-selected: rgba(212, 175, 55, 0.06);
+
+  /* Which way a pressed surface moves. Lifting off black reads as a press; on
+     white the same lift washes it out, so a light theme dims instead. */
+  --press-brightness: 1.08;
 }

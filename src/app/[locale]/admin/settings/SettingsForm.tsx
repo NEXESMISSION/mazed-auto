@@ -48,7 +48,7 @@ export function SettingsForm({ initial }: { initial: PayeeSettings }) {
         </p>
 
         {looksForeign && (
-          <p className="mt-3 border-s-2 border-[#e0a029] ps-3 text-[12px] text-[#e0a029]">
+          <p className="mt-3 border-s-2 border-[var(--tone-warn)] ps-3 text-[12px] text-[var(--tone-warn)]">
             Ce nom appartient au projet immobilier jumeau, pas à Mazed Auto. C'est celui que le
             vendeur recopie dans son application bancaire.
           </p>

@@ -124,7 +124,7 @@ export function DataTable({
               // route to warm.
               prefetch={false}
               style={{ gridTemplateColumns: template }}
-              className={`${shared} transition hover:bg-[rgba(255,255,255,0.025)] ${ROW_FOCUS}`}
+              className={`${shared} transition hover:bg-[var(--row-hover)] ${ROW_FOCUS}`}
             >
               {inner}
             </Link>

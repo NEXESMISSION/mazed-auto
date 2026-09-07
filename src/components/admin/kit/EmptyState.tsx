@@ -30,7 +30,7 @@ export function EmptyState({
       <span
         className={`grid size-11 place-items-center rounded-xl ${
           tone === "idle"
-            ? "bg-[rgba(74,222,128,0.08)] text-[#5cc98a]"
+            ? "bg-[var(--tone-ok-bg)] text-[var(--tone-ok)]"
             : "bg-surface-2 text-muted"
         }`}
       >

@@ -142,7 +142,7 @@ export default async function AdminDashboard() {
             <li key={qq.href}>
               <Link
                 href={qq.href as "/admin/annonces"}
-                className="group flex items-center gap-4 border-b border-border py-3 transition hover:bg-[rgba(255,255,255,0.025)]"
+                className="group flex items-center gap-4 border-b border-border py-3 transition hover:bg-[var(--row-hover)]"
               >
                 <span
                   className={`batta-tabular w-10 shrink-0 text-end text-[19px] font-semibold ${
@@ -158,7 +158,7 @@ export default async function AdminDashboard() {
                   <span className="block truncate text-[11.5px] text-subtle">{qq.sub}</span>
                 </span>
                 {qq.overdue > 0 && (
-                  <span className="inline-flex shrink-0 items-center gap-1 text-[11.5px] font-semibold text-[#ef8681]">
+                  <span className="inline-flex shrink-0 items-center gap-1 text-[11.5px] font-semibold text-[var(--tone-bad)]">
                     <AlertTriangle className="size-3" strokeWidth={2.6} />
                     {qq.overdue} en retard
                   </span>
@@ -230,7 +230,7 @@ function Figure({
       <div className={EYEBROW}>{label}</div>
       <div
         className={`batta-tabular mt-1.5 text-[30px] font-semibold leading-none ${
-          danger ? "text-[#ef8681]" : accent ? "text-[var(--gold)]" : "text-foreground"
+          danger ? "text-[var(--tone-bad)]" : accent ? "text-[var(--gold)]" : "text-foreground"
         }`}
       >
         {value.toLocaleString("fr-FR")}

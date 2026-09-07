@@ -139,7 +139,7 @@ function NavList({
           {count > 0 && (
             <span
               className={`batta-tabular ms-auto text-[11px] font-bold ${
-                active ? "text-[var(--gold)]" : "text-[#e0a029]"
+                active ? "text-[var(--gold)]" : "text-[var(--tone-warn)]"
               }`}
             >
               {count}

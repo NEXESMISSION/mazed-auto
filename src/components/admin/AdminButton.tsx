@@ -42,7 +42,7 @@ const VARIANTS: Record<string, string> = {
   // Danger is text + border, never a fill: a red block reads as an error
   // message, not as a control you may press on purpose.
   danger:
-    "border border-[rgba(239,68,68,0.35)] text-[#ef8681] hover:border-[#ef8681] hover:bg-[rgba(239,68,68,0.07)]",
+    "border border-[var(--tone-bad-ring)] text-[var(--tone-bad)] hover:border-[var(--tone-bad)] hover:bg-[var(--tone-bad-bg)]",
   // No border at all — tertiary, inside a row or a toolbar.
   quiet: "text-muted hover:text-foreground",
 };
@@ -110,7 +110,7 @@ export function AdminButton({
       disabled={isDisabled}
       title={isDisabled && !pending ? disabledReason : undefined}
       aria-label={isDisabled && !pending && disabledReason ? disabledReason : undefined}
-      className={`${adminBtn(variant, size)} ${done ? "!border-transparent !bg-[#5cc98a] !text-black" : ""} ${className}`}
+      className={`${adminBtn(variant, size)} ${done ? "!border-transparent !bg-[var(--tone-ok)] !text-black" : ""} ${className}`}
     >
       {glyph}
       {label}

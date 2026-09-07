@@ -125,7 +125,7 @@ export default async function AdminOffresPage({
           ) : (
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
               {misconfigured.length > 0 && (
-                <p className="border-b border-border bg-[rgba(224,160,41,0.06)] px-4 py-2.5 text-[11.5px] text-[#e0a029]">
+                <p className="border-b border-border bg-[var(--tone-warn-bg)] px-4 py-2.5 text-[11.5px] text-[var(--tone-warn)]">
                   {misconfigured.length} offre{misconfigured.length === 1 ? "" : "s"} en vente sans
                   prix configuré — le vendeur ne peut pas payer.
                 </p>
@@ -155,7 +155,7 @@ export default async function AdminOffresPage({
                             >
                               <span
                                 className={`mt-[7px] size-[5px] shrink-0 rounded-full ${
-                                  p.isActive ? "bg-[#5cc98a]" : "bg-[var(--foreground-subtle)]"
+                                  p.isActive ? "bg-[var(--tone-ok)]" : "bg-[var(--foreground-subtle)]"
                                 }`}
                               />
                               <span className="min-w-0 flex-1">
@@ -186,9 +186,9 @@ export default async function AdminOffresPage({
                                 <span
                                   className={`batta-tabular block text-[12.5px] ${
                                     p.price == null
-                                      ? "text-[#e0a029]"
+                                      ? "text-[var(--tone-warn)]"
                                       : p.price === 0
-                                        ? "text-[#5cc98a]"
+                                        ? "text-[var(--tone-ok)]"
                                         : "text-foreground/90"
                                   }`}
                                 >

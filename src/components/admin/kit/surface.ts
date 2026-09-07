@@ -34,16 +34,16 @@ export const NUM = "batta-tabular tabular-nums";
  */
 export const ROW_BASE =
   "relative flex w-full items-start gap-3 px-4 py-2.5 text-start transition";
-export const ROW_IDLE = "hover:bg-[rgba(255,255,255,0.025)]";
+export const ROW_IDLE = "hover:bg-[var(--row-hover)]";
 export const ROW_SELECTED =
-  "bg-[rgba(212,175,55,0.06)] before:absolute before:inset-y-0 before:start-0 before:w-[2px] before:bg-[var(--gold)]";
+  "bg-[var(--row-selected)] before:absolute before:inset-y-0 before:start-0 before:w-[2px] before:bg-[var(--gold)]";
 export const ROW_FOCUS =
-  "focus-visible:outline-none focus-visible:bg-[rgba(255,255,255,0.04)] focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[var(--gold)]";
+  "focus-visible:outline-none focus-visible:bg-[var(--row-focus)] focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[var(--gold)]";
 
 /** Left edge marker for a row that needs attention before it can move. */
 export const FLAG: Record<"warn" | "bad", string> = {
-  warn: "before:absolute before:inset-y-0 before:start-0 before:w-[2px] before:bg-[rgba(224,160,41,0.8)]",
-  bad: "before:absolute before:inset-y-0 before:start-0 before:w-[2px] before:bg-[rgba(224,81,74,0.85)]",
+  warn: "before:absolute before:inset-y-0 before:start-0 before:w-[2px] before:bg-[var(--tone-warn-edge)]",
+  bad: "before:absolute before:inset-y-0 before:start-0 before:w-[2px] before:bg-[var(--tone-bad-edge)]",
 };
 
 /** Pane scroll region — each pane scrolls independently, the page never does. */

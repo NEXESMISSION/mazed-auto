@@ -88,7 +88,7 @@ export function AttributeEditor({
                 <button
                   type="button"
                   onClick={() => setEditing(a)}
-                  className="flex w-full items-start gap-3 px-5 py-2.5 text-start transition hover:bg-[rgba(255,255,255,0.025)]"
+                  className="flex w-full items-start gap-3 px-5 py-2.5 text-start transition hover:bg-[var(--row-hover)]"
                 >
                   <GripVertical
                     className="mt-0.5 size-3.5 shrink-0 text-subtle"
@@ -98,7 +98,7 @@ export function AttributeEditor({
                     <span className="flex items-center gap-2 text-[13px] font-medium text-foreground">
                       <span className="truncate">{a.label}</span>
                       {a.required && (
-                        <span className="shrink-0 text-[10px] font-bold uppercase tracking-[0.1em] text-[#e0a029]">
+                        <span className="shrink-0 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--tone-warn)]">
                           requis
                         </span>
                       )}
@@ -177,7 +177,7 @@ function AttributeForm({
   }
 
   return (
-    <div className="border-b border-border bg-[rgba(212,175,55,0.04)] px-5 py-4">
+    <div className="border-b border-border bg-[var(--gold-faint)] px-5 py-4">
       <div className="flex items-center justify-between">
         <h3 className={`${EYEBROW} text-[var(--gold)]`}>
           {isNew ? "Nouvelle caractéristique" : attribute.label}
@@ -250,7 +250,7 @@ function AttributeForm({
                     type="button"
                     onClick={() => setOptions((prev) => prev.filter((_, j) => j !== i))}
                     aria-label="Retirer l'option"
-                    className="grid size-6 place-items-center text-subtle transition hover:text-[#ef8681]"
+                    className="grid size-6 place-items-center text-subtle transition hover:text-[var(--tone-bad)]"
                   >
                     <X className="size-3.5" strokeWidth={2.4} />
                   </button>

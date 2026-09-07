@@ -38,7 +38,7 @@ import {
 
 const STATE_TONE: Record<DiagnosticState, string> = {
   ok: "bg-[var(--success)]/12 text-[var(--success)] ring-1 ring-[var(--success)]/30",
-  warn: "bg-[rgba(245,158,11,0.12)] text-[#92400e] ring-1 ring-[rgba(245,158,11,0.35)]",
+  warn: "bg-[var(--tone-warn-bg)] text-[#92400e] ring-1 ring-[var(--tone-warn-ring)]",
   bad: "bg-[var(--accent-faint)] text-[var(--accent-deep)] ring-1 ring-[var(--accent-soft)]",
 };
 

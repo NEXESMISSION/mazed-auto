@@ -117,14 +117,14 @@ export function PaymentDetail({
             ))}
           </div>
         ) : (
-          <div className="flex items-center gap-2 border border-dashed border-border px-4 py-5 text-[12.5px] text-[#e0a029]">
+          <div className="flex items-center gap-2 border border-dashed border-border px-4 py-5 text-[12.5px] text-[var(--tone-warn)]">
             <FileWarning className="size-4 shrink-0" strokeWidth={2.2} />
             Aucun reçu n'a été envoyé pour ce paiement.
           </div>
         )}
 
         {p.adminNotes && (
-          <p className="mt-4 border-s-2 border-[#ef8681] ps-3 text-[12.5px] text-[#ef8681]">
+          <p className="mt-4 border-s-2 border-[var(--tone-bad)] ps-3 text-[12.5px] text-[var(--tone-bad)]">
             <span className="font-semibold">Motif du refus :</span> {p.adminNotes}
           </p>
         )}

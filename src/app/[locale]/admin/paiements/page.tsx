@@ -215,7 +215,7 @@ export default async function AdminPaiementsPage({
                         <span className="mt-0.5 block truncate text-[11.5px] text-subtle">
                           {paymentKindLabel(r.kind)}
                           {noReceipt && (
-                            <span className="text-[#e0a029]"> · aucun reçu</span>
+                            <span className="text-[var(--tone-warn)]"> · aucun reçu</span>
                           )}
                         </span>
                       </span>

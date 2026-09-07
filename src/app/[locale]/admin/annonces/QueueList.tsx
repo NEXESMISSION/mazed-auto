@@ -271,7 +271,7 @@ export function QueueList({
 
       {/* Bulk bar — only while something is ticked. */}
       {selected.size > 0 && (
-        <div className="flex shrink-0 flex-wrap items-center gap-1.5 border-t border-[var(--gold-soft)] bg-[rgba(212,175,55,0.05)] px-4 py-2.5">
+        <div className="flex shrink-0 flex-wrap items-center gap-1.5 border-t border-[var(--gold-soft)] bg-[var(--row-selected)] px-4 py-2.5">
           <span className="batta-tabular text-[12px] font-semibold text-foreground">
             {selected.size} sélectionnée{selected.size === 1 ? "" : "s"}
           </span>

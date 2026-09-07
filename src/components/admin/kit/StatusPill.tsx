@@ -11,9 +11,9 @@ import { statusLabel, statusTone, TONE_TEXT, type Tone } from "./tones";
  */
 
 const DOT: Record<Tone, string> = {
-  ok: "bg-[#5cc98a]",
-  warn: "bg-[#e0a029]",
-  bad: "bg-[#ef8681]",
+  ok: "bg-[var(--tone-ok)]",
+  warn: "bg-[var(--tone-warn)]",
+  bad: "bg-[var(--tone-bad)]",
   info: "bg-[var(--gold)]",
   neutral: "bg-[var(--foreground-subtle)]",
 };

@@ -140,7 +140,7 @@ export default async function AdminCataloguePage({
                             >
                               <span
                                 className={`mt-[7px] size-[5px] shrink-0 rounded-full ${
-                                  c.is_active ? "bg-[#5cc98a]" : "bg-[var(--foreground-subtle)]"
+                                  c.is_active ? "bg-[var(--tone-ok)]" : "bg-[var(--foreground-subtle)]"
                                 }`}
                               />
                               <span className="min-w-0 flex-1">

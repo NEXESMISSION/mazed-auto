@@ -171,7 +171,7 @@ export function PopupForm({
             <button
               type="button"
               onClick={onDelete}
-              className="inline-flex items-center gap-1.5 rounded-full border border-[rgba(239,68,68,0.35)] px-3 py-2 text-[11.5px] font-bold text-[#ef8681] transition hover:border-[#ef8681] hover:bg-[rgba(239,68,68,0.07)]"
+              className="inline-flex items-center gap-1.5 rounded-full border border-[var(--tone-bad-ring)] px-3 py-2 text-[11.5px] font-bold text-[var(--tone-bad)] transition hover:border-[var(--tone-bad)] hover:bg-[var(--tone-bad-bg)]"
             >
               <Trash2 className="size-4" strokeWidth={2.2} />
               Supprimer
@@ -614,7 +614,7 @@ function Field({
     <label className="block">
       <div className="mb-1 flex items-center gap-1 text-[10.5px] font-bold uppercase tracking-[0.14em] text-muted">
         {label}
-        {required && <span className="text-[#ef8681]">*</span>}
+        {required && <span className="text-[var(--tone-bad)]">*</span>}
       </div>
       {children}
       {hint && <div className="mt-1 text-[10.5px] text-muted">{hint}</div>}
@@ -640,7 +640,7 @@ function LocalisedInputs({
     <div>
       <div className="mb-1.5 flex items-center justify-between">
         <div className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-muted">
-          {label}{required && <span className="text-[#ef8681]">*</span>}
+          {label}{required && <span className="text-[var(--tone-bad)]">*</span>}
         </div>
         <div className="flex gap-1">
           {(["fr", "ar", "en"] as const).map((l) => (

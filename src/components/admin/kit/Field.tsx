@@ -42,11 +42,11 @@ function Shell({
         className="block text-[11.5px] font-semibold uppercase tracking-[0.08em] text-subtle"
       >
         {label}
-        {required && <span className="ms-1 text-[#ef8681]">*</span>}
+        {required && <span className="ms-1 text-[var(--tone-bad)]">*</span>}
       </label>
       <div className="mt-1.5">{children}</div>
       {error ? (
-        <p className="mt-1 text-[11.5px] font-semibold text-[#ef8681]">{error}</p>
+        <p className="mt-1 text-[11.5px] font-semibold text-[var(--tone-bad)]">{error}</p>
       ) : hint ? (
         <p className="mt-1 text-[11.5px] text-muted">{hint}</p>
       ) : null}

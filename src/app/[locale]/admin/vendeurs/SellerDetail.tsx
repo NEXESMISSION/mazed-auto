@@ -102,7 +102,7 @@ export function SellerDetail({
 
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4">
         {s.bannedAt && (
-          <p className="border-s-2 border-[#ef8681] ps-3 text-[12.5px] text-[#ef8681]">
+          <p className="border-s-2 border-[var(--tone-bad)] ps-3 text-[12.5px] text-[var(--tone-bad)]">
             <span className="font-semibold">Suspendu le {dt(s.bannedAt)} :</span>{" "}
             {s.bannedReason ?? "sans motif enregistré"}
           </p>

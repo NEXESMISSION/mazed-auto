@@ -178,7 +178,7 @@ export function ListingDetail({
         )}
 
         {l.rejectionReason && (
-          <p className="mt-4 border-s-2 border-[#ef8681] ps-3 text-[12.5px] text-[#ef8681]">
+          <p className="mt-4 border-s-2 border-[var(--tone-bad)] ps-3 text-[12.5px] text-[var(--tone-bad)]">
             <span className="font-semibold">Motif du refus :</span> {l.rejectionReason}
           </p>
         )}
@@ -232,7 +232,7 @@ export function ListingDetail({
                   {!l.showPhone && <span className="text-subtle"> (masqué)</span>}
                 </>
               ) : (
-                <span className="text-[#ef8681]">Aucun numéro — publication impossible</span>
+                <span className="text-[var(--tone-bad)]">Aucun numéro — publication impossible</span>
               )}
             </Row>
             {l.attestation && (

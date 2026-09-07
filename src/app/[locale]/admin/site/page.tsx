@@ -111,7 +111,7 @@ export default async function AdminSiteHub() {
           <li key={c.href}>
             <Link
               href={c.href as "/admin"}
-              className="group flex items-start gap-4 border-b border-border py-3.5 transition hover:bg-[rgba(255,255,255,0.025)]"
+              className="group flex items-start gap-4 border-b border-border py-3.5 transition hover:bg-[var(--row-hover)]"
             >
               <c.Icon
                 className="mt-0.5 size-4 shrink-0 text-subtle transition group-hover:text-[var(--gold)]"

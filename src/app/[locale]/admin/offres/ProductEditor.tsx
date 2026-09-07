@@ -212,7 +212,7 @@ export function ProductEditor({
               />
             </div>
             {isActive && price == null && (
-              <p className="mt-3 border-s-2 border-[#e0a029] ps-3 text-[12px] text-[#e0a029]">
+              <p className="mt-3 border-s-2 border-[var(--tone-warn)] ps-3 text-[12px] text-[var(--tone-warn)]">
                 En vente sans prix configuré : le vendeur ne pourra pas payer.
               </p>
             )}

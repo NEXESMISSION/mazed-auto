@@ -211,7 +211,7 @@ export default async function AdminVendeursPage({
                       </span>
                       <span className="shrink-0 text-end text-[11.5px] text-subtle">
                         {r.banned_at ? (
-                          <span className="text-[#ef8681]">suspendu</span>
+                          <span className="text-[var(--tone-bad)]">suspendu</span>
                         ) : (
                           TAB_LABEL.all && roleShort(r.role)
                         )}

@@ -114,9 +114,9 @@ function StatTile({
 }) {
   const accent =
     tone === "ok"
-      ? "bg-[#5cc98a]"
+      ? "bg-[var(--tone-ok)]"
       : tone === "info"
-        ? "bg-[#e0a029]"
+        ? "bg-[var(--tone-warn)]"
         : "bg-foreground/30";
   return (
     <div className="relative overflow-hidden rounded-2xl bg-surface p-4 ring-1 ring-border">

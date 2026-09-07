@@ -109,7 +109,7 @@ export default async function AdminActivityPage({
                   <span className="text-subtle">{r.path ?? r.type ?? "—"}</span>
                 )}
                 {r.status != null && r.status >= 400 && (
-                  <span className="ms-2 text-[11.5px] font-semibold text-[#ef8681]">
+                  <span className="ms-2 text-[11.5px] font-semibold text-[var(--tone-bad)]">
                     {r.status}
                   </span>
                 )}

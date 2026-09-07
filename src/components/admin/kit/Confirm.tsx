@@ -74,7 +74,7 @@ export function Confirm({
       <div className="absolute inset-0 bg-black/70" onClick={onCancel} aria-hidden />
       <div className="relative w-full max-w-md rounded-2xl border border-border bg-surface p-5 shadow-[var(--shadow-lg)]">
         <div className="flex items-start gap-3">
-          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[rgba(239,68,68,0.12)] text-[#ef8681]">
+          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[var(--tone-bad-bg)] text-[var(--tone-bad)]">
             <AlertTriangle className="size-4.5" strokeWidth={2.2} />
           </span>
           <div className="min-w-0">
@@ -89,7 +89,7 @@ export function Confirm({
           <label className="mt-4 block">
             <span className="text-[11.5px] font-semibold uppercase tracking-[0.08em] text-subtle">
               {reason.label}
-              {reason.required && <span className="ms-1 text-[#ef8681]">*</span>}
+              {reason.required && <span className="ms-1 text-[var(--tone-bad)]">*</span>}
             </span>
             <textarea
               ref={inputRef}
