@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { useHydrated } from "@/lib/useHydrated";
 
 /**
  * The bar at the very top of the window that says "something is loading".
@@ -17,15 +18,15 @@ import { createPortal } from "react-dom";
  * overflow-hidden containers that would otherwise clip a `fixed` child.
  */
 export function RouteProgress({ active }: { active: boolean }) {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
   // Keep the bar alive briefly after `active` drops so it can animate out to
   // 100% instead of vanishing mid-stripe, which reads as a cancelled load.
   const [visible, setVisible] = useState(false);
 
-  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     if (active) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronising with an external system, which is what an effect is for.
       setVisible(true);
       return;
     }

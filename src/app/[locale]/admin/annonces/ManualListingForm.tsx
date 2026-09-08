@@ -98,6 +98,7 @@ export function ManualListingForm({
   useEffect(() => {
     const q = sellerQuery.trim();
     if (q.length < MIN_SELLER_CHARS) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronising with an external system, which is what an effect is for.
       setMatches([]);
       setSearching(false);
       return;

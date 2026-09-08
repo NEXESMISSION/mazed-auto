@@ -29,6 +29,7 @@ import { Link } from "@/i18n/navigation";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/Toast";
 import { resolveNotificationLink } from "@/lib/notifications/target";
+import { useHydrated } from "@/lib/useHydrated";
 
 type NotificationRow = {
   id: string;
@@ -106,7 +107,7 @@ export function NotificationBell() {
   const [items, setItems] = useState<NotificationRow[]>([]);
   const [open, setOpen] = useState(false);
   const [narrow, setNarrow] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
   const [loaded, setLoaded] = useState(false);
   const [filter, setFilter] = useState<"all" | "unread">("all");
   const [hasMore, setHasMore] = useState(false);
@@ -141,9 +142,6 @@ export function NotificationBell() {
 
   const PAGE_SIZE = 20;
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Tracked rather than read once: rotating a phone, or dragging a desktop
   // window narrow, changes which behaviour is correct.
@@ -350,6 +348,7 @@ export function NotificationBell() {
 
   useEffect(() => {
     if (!open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronising with an external system, which is what an effect is for.
       setFilter("all");
       return;
     }
@@ -388,6 +387,7 @@ export function NotificationBell() {
   // open panel. It also covers a notification arriving while the panel is
   // already open — the user is looking straight at it, so it is read.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/immutability -- synchronising with an external system, which is what an effect is for.
     if (open && unread > 0) void markAllRead();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, unread]);

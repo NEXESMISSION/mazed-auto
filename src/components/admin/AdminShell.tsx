@@ -191,7 +191,14 @@ export function AdminMobileBar({ counts }: { counts: AdminCounts }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
-  useEffect(() => setOpen(false), [pathname]);
+  // Close the drawer when the route changes. During render, not in an effect:
+  // the new screen's first paint already has the drawer shut, instead of
+  // showing it over the new page for a frame.
+  const [prevPath, setPrevPath] = useState(pathname);
+  if (prevPath !== pathname) {
+    setPrevPath(pathname);
+    setOpen(false);
+  }
 
   useEffect(() => {
     if (!open) return;

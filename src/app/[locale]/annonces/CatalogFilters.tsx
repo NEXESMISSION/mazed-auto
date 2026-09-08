@@ -115,7 +115,15 @@ function useFilters(current: FilterState) {
   const [pending, startTransition] = useTransition();
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => setF(current), [current]);
+  // Re-sync the draft filters when the URL-derived ones change (back button,
+  // a chip cleared elsewhere). During render, not in an effect: the inputs
+  // then show the new values on the SAME paint as the results they describe,
+  // instead of lagging them by a frame.
+  const [prevCurrent, setPrevCurrent] = useState(current);
+  if (prevCurrent !== current) {
+    setPrevCurrent(current);
+    setF(current);
+  }
   useEffect(() => () => { if (debounce.current) clearTimeout(debounce.current); }, []);
 
   function commit(merged: FilterState) {

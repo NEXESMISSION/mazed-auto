@@ -28,9 +28,15 @@ export function NavigationProgress() {
   const [pending, setPending] = useState(false);
 
   // The new route rendered — whatever we were waiting for has arrived.
-  useEffect(() => {
+  //
+  // Adjusted during render, not in an effect: React re-renders with the
+  // corrected value before painting, so the bar cannot flash for a frame on
+  // the page it was loading.
+  const [prevPath, setPrevPath] = useState(pathname);
+  if (prevPath !== pathname) {
+    setPrevPath(pathname);
     setPending(false);
-  }, [pathname]);
+  }
 
   useEffect(() => {
     function onClick(event: MouseEvent) {

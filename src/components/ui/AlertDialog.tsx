@@ -4,6 +4,7 @@ import * as React from "react";
 import { createPortal } from "react-dom";
 import { useScrollLock } from "@/lib/scrollLock";
 import { AlertTriangle, XCircle, Info, ArrowRight, X } from "lucide-react";
+import { useHydrated } from "@/lib/useHydrated";
 
 /**
  * The one place the app says "this went wrong".
@@ -111,9 +112,8 @@ export function AlertDialog({
   payload: AlertPayload;
   onClose: () => void;
 }) {
-  const [mounted, setMounted] = React.useState(false);
+  const mounted = useHydrated();
   const panelRef = React.useRef<HTMLDivElement>(null);
-  React.useEffect(() => setMounted(true), []);
 
   // An alert almost always opens OVER something else — see scrollLock.
   useScrollLock(true);

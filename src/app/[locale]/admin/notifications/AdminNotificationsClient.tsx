@@ -641,6 +641,7 @@ function QueueTab() {
   // disagrees with the filter bar.
   useEffect(() => {
     let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronising with an external system, which is what an effect is for.
     setLoading(true);
     setError(null);
     fetchPage(0)

@@ -3,6 +3,7 @@
 import * as React from "react";
 import { createPortal } from "react-dom";
 import { useScrollLock } from "@/lib/scrollLock";
+import { useHydrated } from "@/lib/useHydrated";
 
 /**
  * Every layer that sits on top of the page comes through here.
@@ -41,9 +42,8 @@ export function Overlay({
   className?: string;
   children: React.ReactNode;
 }) {
-  const [mounted, setMounted] = React.useState(false);
+  const mounted = useHydrated();
   const panel = React.useRef<HTMLDivElement>(null);
-  React.useEffect(() => setMounted(true), []);
 
   // Shared, reference-counted: nested overlays cannot strand the page.
   useScrollLock(open);
