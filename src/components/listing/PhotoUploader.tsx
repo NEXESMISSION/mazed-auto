@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { compressImage } from "@/lib/imageCompress";
+import { watermarkImage } from "@/lib/watermark";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { useToast } from "@/components/ui/Toast";
 import {
@@ -133,6 +134,14 @@ export function PhotoUploader({
       } catch {
         out = file; // compression is an optimisation, not a gate
       }
+
+      // Stamp the monogram in the middle. AFTER compression, not inside it:
+      // `compressImage` returns the original file untouched on several paths
+      // (already-small modern formats, inputs too large to decode safely), and
+      // a photo that skipped compression must still be watermarked. Like
+      // compression this is best-effort — it returns the input unchanged if
+      // anything fails, because an unmarked photo beats a failed upload.
+      out = await watermarkImage(out);
 
       mark({ phase: "sending" });
 

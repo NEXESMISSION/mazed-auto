@@ -102,12 +102,14 @@ export function TopBar() {
 
 function BrandMark() {
   const t = useTranslations("brand");
-  // Wordmark sized to read clearly in the top bar — `h-8` (32px) on
-  // mobile, `h-9` (36px) on desktop. The ~3.2:1 wordmark auto-scales
-  // its width via `w-auto`. `priority` skips the lazy-load — this is
-  // above-the-fold on every page that shows the bar. The asset is
-  // also `<link rel="preload">`-ed in the root layout, so by the
-  // time this paints it's already in cache.
+  // `h-9` (36px) inside a 56px bar (`--batta-topbar-h`). It was `h-11`, which
+  // left six pixels of air above and below a nearly 3:1 mark — the logo
+  // stopped reading as a logo and started reading as the bar itself. Ten
+  // pixels of clearance is what makes it sit in the bar rather than fill it.
+  // The width auto-scales via `w-auto`. `priority` skips the lazy-load — this
+  // is above-the-fold on every page that shows the bar — and the asset is also
+  // `<link rel="preload">`-ed in the root layout, so by the time this paints
+  // it's already in cache.
   return (
     <Link href="/" className="flex items-center gap-2" aria-label={t("name")}>
       {/* The MA monogram, in a WIDE box.
@@ -122,8 +124,8 @@ function BrandMark() {
         width={842}
         height={285}
         priority
-        sizes="150px"
-        className="h-11 w-auto shrink-0"
+        sizes="120px"
+        className="h-9 w-auto shrink-0"
       />
       <span className="sr-only">{t("name")}</span>
     </Link>

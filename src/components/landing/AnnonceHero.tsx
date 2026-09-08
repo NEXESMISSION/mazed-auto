@@ -242,13 +242,20 @@ export async function AnnonceCoverMobile() {
             answering the question the headline raises ("and then what?"); the
             paragraph it replaces spent three lines on caveats. The free-parts
             term is on the chip that leads to the parts, where it is an
-            argument for tapping rather than a footnote. */}
-        <h1 className="text-[26px] font-black leading-[1.1] tracking-tight text-foreground">
+            argument for tapping rather than a footnote.
+
+            AND IT IS QUIET. 26px at font-black was shouting the same sentence
+            on every visit, above cars the visitor actually came for. The words
+            still say what the site is — a first-time visitor needs that — but
+            at a weight that reads as a caption to the header rather than as a
+            billboard, so the eye lands on the first car instead. The gold half
+            is the only part that carries emphasis, which is enough. */}
+        <h1 className="text-[19px] font-semibold leading-[1.3] tracking-[-0.01em] text-foreground">
           Voitures et pièces{" "}
           <span className="gradient-gold-text">partout en Tunisie</span>
         </h1>
-        <p className="mt-2 text-[13.5px] leading-relaxed text-muted">
-          Le prix est sur l&apos;annonce. Vous appelez le vendeur directement.
+        <p className="mt-1.5 text-[12.5px] leading-relaxed text-subtle">
+          Le prix est sur l&apos;annonce. Vous appelez le vendeur.
         </p>
 
         <div className="mt-3.5 flex gap-2">

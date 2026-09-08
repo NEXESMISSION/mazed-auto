@@ -105,8 +105,8 @@ export function DesktopNav() {
               width={842}
               height={285}
               priority
-              sizes="190px"
-              className="h-14 w-auto shrink-0"
+              sizes="160px"
+              className="h-11 w-auto shrink-0"
             />
             <span className="sr-only">Mazed Auto</span>
           </Link>
