@@ -9,7 +9,7 @@ import { formatTND } from "@/lib/utils";
 import { HeroMarquee, type MarqueeCard } from "./HeroMarquee";
 import { FeaturedCarousel, CarouselSlide } from "./FeaturedCarousel";
 import { allocate, rankListings } from "@/lib/home/ranking";
-import { ArrowUpRight, Gauge, MapPin, Sparkles, Wrench } from "lucide-react";
+import { ArrowUpRight, Check, Gauge, MapPin, Sparkles, Wrench } from "lucide-react";
 import { LinkBusy } from "@/components/ui/LinkBusy";
 
 /**
@@ -233,19 +233,23 @@ export async function AnnonceCoverMobile() {
   return (
     <section className="lg:hidden">
       <div className="px-4 pt-5">
-        {/* Four stacked blocks of words — an eyebrow repeating the name in
-            the header above it, a two-line headline, a three-line paragraph,
-            then a footnote under the buttons — pushed the first car most of a
-            screen down. On a classifieds app the cars ARE the argument.
+        {/* Four stacked blocks of words — an eyebrow repeating the name in the
+            header above it, a two-line headline, a three-line paragraph, then a
+            footnote under the buttons — pushed the first car most of a screen
+            down. On a classifieds app the cars ARE the argument.
 
-            One line of claim and one row with the way in. The paragraph said
-            "partout en Tunisie… nous vérifions l'annonce" — true, and nothing
-            a buyer needs before seeing a single price. The free-parts term
-            moves onto the chip that leads to the parts. */}
+            A headline and ONE line under it. The line earns its place by
+            answering the question the headline raises ("and then what?"); the
+            paragraph it replaces spent three lines on caveats. The free-parts
+            term is on the chip that leads to the parts, where it is an
+            argument for tapping rather than a footnote. */}
         <h1 className="text-[26px] font-black leading-[1.1] tracking-tight text-foreground">
-          Le prix est affiché,{" "}
-          <span className="gradient-gold-text">le vendeur au bout du fil</span>
+          Voitures et pièces{" "}
+          <span className="gradient-gold-text">partout en Tunisie</span>
         </h1>
+        <p className="mt-2 text-[13.5px] leading-relaxed text-muted">
+          Le prix est sur l&apos;annonce. Vous appelez le vendeur directement.
+        </p>
 
         <div className="mt-3.5 flex gap-2">
           <Link
@@ -409,21 +413,40 @@ export async function AnnonceHero() {
             </Link>
           </div>
 
-          {/* Editorial headline */}
+          {/* THE HEADLINE.
+              It read: an eyebrow "Mazed Auto · Sélection éditoriale", the claim
+              "Le prix est affiché, le vendeur au bout du fil", then a paragraph
+              qualifying both. Three problems. "Sélection éditoriale" is a
+              magazine's word for a page that is really a search index.
+              "Le vendeur au bout du fil" is a metaphor a first-time visitor has
+              to decode before it means anything. And the paragraph spent its
+              only three lines on caveats rather than on what the site is.
+
+              What a visitor needs in the first second is what they can do here
+              and what it costs. So: the thing, the place, the price — then the
+              three facts that actually differentiate us, as facts and not as
+              prose. */}
           <div className="mb-8">
-            <div className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.24em] text-[var(--gold)]">
-              <Sparkles className="h-3.5 w-3.5" />
-              Mazed Auto · Sélection éditoriale
-            </div>
-            <h1 className="mt-3 max-w-[20ch] text-[44px] font-black leading-[1.02] tracking-tight xl:text-[56px]">
-              Le prix est affiché,{" "}
-              <span className="gradient-gold-text">le vendeur au bout du fil</span>
+            <h1 className="max-w-[16ch] text-[44px] font-black leading-[1.02] tracking-tight xl:text-[56px]">
+              Voitures et pièces{" "}
+              <span className="gradient-gold-text">partout en Tunisie</span>
             </h1>
-            <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-white/70 xl:text-base">
-              Voitures et pièces de rechange partout en Tunisie. Vous appelez le
-              vendeur directement — nous vérifions l&apos;annonce avant qu&apos;elle
-              soit en ligne.
+            <p className="mt-4 max-w-xl text-[17px] leading-relaxed text-white/75 xl:text-lg">
+              Le prix est sur l&apos;annonce. Vous appelez le vendeur, vous
+              convenez entre vous.
             </p>
+            <ul className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-[13.5px] font-semibold text-white/70">
+              {[
+                "Annonces vérifiées avant publication",
+                "Aucune commission sur la vente",
+                "Pièces de rechange gratuites à publier",
+              ].map((f) => (
+                <li key={f} className="inline-flex items-center gap-1.5">
+                  <Check className="size-4 shrink-0 text-[var(--gold)]" strokeWidth={3} />
+                  {f}
+                </li>
+              ))}
+            </ul>
           </div>
 
           {/* Featured + runners. With no runners the featured card spans the
@@ -502,7 +525,7 @@ function FeaturedCard({
 
       <div className={"absolute inset-x-0 top-0 flex items-start justify-between gap-3 " + (compact ? "p-3" : "p-6")}>
         <span className={
-          "inline-flex items-center gap-1.5 rounded-full bg-[var(--gold)] font-extrabold uppercase tracking-wider text-black shadow-[var(--shadow-gold)] " +
+          "batta-gold-fill inline-flex items-center gap-1.5 rounded-full font-extrabold uppercase tracking-wider gold-rim " +
           (compact ? "h-7 px-2.5 text-[10px]" : "h-8 px-3 text-[11px]")
         }>
           <Sparkles className={compact ? "size-3" : "h-3.5 w-3.5"} />
@@ -593,8 +616,12 @@ function FeaturedCard({
           </div>
         </div>
 
+        {/* `bg-[var(--gold)]` was a FLAT #d4af37 fill, which is the one thing
+            that reads as highlighter yellow rather than gold. `.batta-gold-fill`
+            carries the metallic ramp (see --gold-metal in globals.css) and the
+            inset rim gives the pill a lit top edge and a shadowed bottom one. */}
         <span className={
-          "inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[var(--gold)] font-extrabold text-black shadow-[var(--shadow-gold)] transition-transform group-hover:scale-[1.04] active:scale-[0.99] " +
+          "batta-gold-fill inline-flex shrink-0 items-center gap-1.5 rounded-full font-extrabold gold-rim transition-transform group-hover:scale-[1.04] active:scale-[0.99] " +
           (compact ? "h-10 px-4 text-[12.5px]" : "h-12 gap-2 px-6 text-sm")
         }>
           Voir l&apos;annonce

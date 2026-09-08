@@ -131,14 +131,14 @@ export default async function RootLayout({
         <link
           rel="preload"
           as="image"
-          href="/logo.avif"
+          href="/logo-mark.avif"
           type="image/avif"
           fetchPriority="high"
         />
         <link
           rel="preload"
           as="image"
-          href="/logo.webp"
+          href="/logo-mark.webp"
           type="image/webp"
           fetchPriority="high"
         />

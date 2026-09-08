@@ -36,6 +36,60 @@
   --gold-faint:  rgba(212, 175, 55, 0.12);
   --gold-glow:   rgba(212, 175, 55, 0.35);
 
+  /* ── The metallic ramp ────────────────────────────────────────────────────
+     A single flat `--gold` fill reads as YELLOW, not gold. Gold is not a
+     colour so much as a set of reflections: a dark base, a hard bright band
+     where the light catches, a shadow under it, then a second weaker bounce.
+     Flat #d4af37 has none of that, which is why a filled button looked like
+     highlighter pen next to the metallic monogram in the logo.
+
+     These stops are SAMPLED off that monogram — every opaque pixel sorted by
+     luminance, then read at seven percentiles. The important find was the
+     shadow: real gold darkens through burnt ORANGE (#c35600), not through the
+     olive-brown a desaturated yellow gives you. That warmth in the low end is
+     most of what separates gold from yellow, and no amount of adjusting the
+     highlight fixes its absence.
+
+     Always applied TOP-TO-BOTTOM (180deg) — a metal surface is lit from above,
+     and the 135deg diagonal the old gradients used reads as a colour wash
+     rather than a reflection. */
+  --gold-lum:   #fff9e1;  /* specular highlight — the lit edge */
+  --gold-pale:  #fdecaf;  /* champagne, just off the highlight */
+  --gold-lit:   #ffe577;  /* the light face */
+  --gold-mid:   #f6d13e;  /* the body of the metal */
+  --gold-amber: #e9a310;  /* where it turns away from the light */
+  --gold-shade: #c35600;  /* the shadow band — burnt orange, not brown */
+  --gold-dark:  #7a2400;  /* deepest umber — the base */
+
+  /* The reflection itself. Two highlight bands with a hard shadow between them
+     is what makes a flat fill read as a curved metal surface. */
+  --gold-metal: linear-gradient(
+    180deg,
+    var(--gold-pale)  0%,
+    var(--gold-lum)   7%,
+    var(--gold-mid)   26%,
+    var(--gold-amber) 44%,
+    var(--gold-shade) 56%,
+    var(--gold-amber) 68%,
+    var(--gold-lit)   86%,
+    var(--gold-shade) 100%
+  );
+
+  /* Same ramp, angled — for wide surfaces and for type, where a purely
+     horizontal band lands across the middle of every letter and reads as a
+     stripe rather than a sheen. */
+  --gold-metal-angled: linear-gradient(
+    115deg,
+    var(--gold-shade)  0%,
+    var(--gold-amber) 16%,
+    var(--gold-mid)   32%,
+    var(--gold-lum)   44%,
+    var(--gold-pale)  52%,
+    var(--gold-mid)   66%,
+    var(--gold-amber) 82%,
+    var(--gold-shade) 100%
+  );
+
   /* Accent — RED. The second accent the user asked for. Used
      sparingly: live-now pulse, sale badges, the "Live · X auctions"
      count, error states, destructive actions. */
@@ -298,12 +352,9 @@ html, body { overscroll-behavior-y: contain; }
 .gradient-gold-text,
 .batta-gold-text,
 .batta-gradient-gold-text {
-  background-image: linear-gradient(
-    135deg,
-    var(--gold) 0%,
-    var(--gold-bright) 50%,
-    var(--gold-deep) 100%
-  );
+  /* Angled, not vertical: on a single line of type a horizontal band lands
+     across the middle of every letter and reads as a stripe. */
+  background-image: var(--gold-metal-angled);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -313,15 +364,32 @@ html, body { overscroll-behavior-y: contain; }
 
 /* Block-fill primary — for buttons / pills where we want the
    gradient surface with white ink. */
+/* The rim that makes a gold fill read as a stamped metal blank: a lit top
+   edge, a shadowed bottom one, and a hairline all round.
+
+   A real class, not an arbitrary Tailwind `shadow-[...]`. The value is a
+   COMMA-SEPARATED list of shadows, and Tailwind cannot parse that inside
+   square brackets — it silently emitted a transparent reset instead, so every
+   pill using it had no rim at all and nothing said so. */
+.gold-rim {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 249, 225, 0.8),
+    inset 0 -1px 0 rgba(122, 36, 0, 0.6),
+    inset 0 0 0 1px rgba(160, 62, 0, 0.35),
+    var(--shadow-gold);
+}
+.gold-rim-flat {                     /* same rim, no outer glow — for badges */
+  box-shadow:
+    inset 0 1px 0 rgba(255, 249, 225, 0.75),
+    inset 0 -1px 0 rgba(122, 36, 0, 0.55),
+    inset 0 0 0 1px rgba(160, 62, 0, 0.3);
+}
+
 .batta-gold-fill {
-  background-image: linear-gradient(
-    135deg,
-    var(--gold) 0%,
-    var(--gold-bright) 50%,
-    var(--gold-deep) 100%
-  );
-  background-color: var(--gold);
-  color: #0a0a0a;
+  background-image: var(--gold-metal);
+  background-color: var(--gold-mid);
+  color: #3a1200;                      /* the logo's own deepest umber */
+  text-shadow: 0 1px 0 rgba(255, 249, 225, 0.5);
 }
 
 /* Decorative gradient halo — drop two of these inside a relative
@@ -513,31 +581,46 @@ textarea.batta-input {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  background-image: linear-gradient(
-    135deg,
-    var(--gold) 0%,
-    var(--gold-bright) 50%,
-    var(--gold-deep) 100%
-  );
-  background-color: var(--gold);
-  background-size: 200% 200%;
-  background-position: 0% 0%;
-  color: #0a0a0a;
-  border: 1px solid var(--gold-deep);
-  font-weight: 600;
+  background-image: var(--gold-metal);
+  background-color: var(--gold-mid);
+  /* Taller than the button so the highlight band can TRAVEL on hover instead
+     of the whole fill changing colour. */
+  background-size: 100% 260%;
+  background-position: 50% 22%;
+  color: #3a1200;
+  text-shadow: 0 1px 0 rgba(255, 249, 225, 0.5);
+  /* A rim, not a border: dark underneath, light on top — the edge of a
+     stamped metal blank. `inset` keeps it off the layout. */
+  border: 0;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 249, 225, 0.8),
+    inset 0 -1px 0 rgba(122, 36, 0, 0.6),
+    inset 0 0 0 1px rgba(160, 62, 0, 0.4),
+    var(--shadow-gold);
+  font-weight: 700;
   letter-spacing: 0;
   border-radius: var(--radius);
-  transition: background-position 320ms ease, box-shadow 220ms ease, transform 160ms ease;
-  box-shadow: var(--shadow-gold);
+  transition: background-position 380ms ease, box-shadow 220ms ease, transform 160ms ease;
 }
 .batta-btn-luxe:active {
   transform: scale(0.985);
-  background-position: 100% 100%;
+  /* Pressed = the highlight slides off the top, so the face darkens the way a
+     real surface does when it tilts away from the light. */
+  background-position: 50% 78%;
+  box-shadow:
+    inset 0 1px 3px rgba(122, 36, 0, 0.55),
+    inset 0 0 0 1px rgba(160, 62, 0, 0.45);
 }
 @media (hover: hover) {
   .batta-btn-luxe:hover {
-    background-position: 100% 100%;
-    box-shadow: var(--shadow-md), var(--shadow-gold);
+    /* The sheen travels up across the face. */
+    background-position: 50% 62%;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 252, 240, 0.95),
+      inset 0 -1px 0 rgba(122, 36, 0, 0.6),
+      inset 0 0 0 1px rgba(180, 74, 0, 0.45),
+      var(--shadow-md),
+      var(--shadow-gold);
   }
 }
 

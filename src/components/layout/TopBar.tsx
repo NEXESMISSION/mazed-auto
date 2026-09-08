@@ -110,23 +110,22 @@ function BrandMark() {
   // time this paints it's already in cache.
   return (
     <Link href="/" className="flex items-center gap-2" aria-label={t("name")}>
-      {/* Round MA monogram avatar + gold wordmark — matches v1. The
-          square logo is shown in a round, object-cover box so it is
-          never stretched. */}
-      <span className="size-9 shrink-0 overflow-hidden rounded-full ring-1 ring-[var(--gold-soft)]/60">
-        <Image
-          src="/logo.webp"
-          alt=""
-          width={72}
-          height={72}
-          priority
-          sizes="36px"
-          className="h-full w-full object-cover"
-        />
-      </span>
-      <span className="text-[17px] font-extrabold tracking-tight gradient-gold-text">
-        {t("name")}
-      </span>
+      {/* The MA monogram, in a WIDE box.
+          It used to be `/logo.webp` inside a round `size-9` with
+          `object-cover` — a square crop of a mark that is nearly 3:1, so the
+          speed lines and most of the A were simply cut off. The file is
+          pre-trimmed (no transparent margin), which is why no padding is
+          needed here to make it sit right. */}
+      <Image
+        src="/logo-mark.webp"
+        alt=""
+        width={842}
+        height={285}
+        priority
+        sizes="150px"
+        className="h-11 w-auto shrink-0"
+      />
+      <span className="sr-only">{t("name")}</span>
     </Link>
   );
 }

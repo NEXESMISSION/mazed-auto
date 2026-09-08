@@ -168,7 +168,7 @@ export function AnnonceHeroCarousel({
                     <p className="mt-1 max-w-[34ch] text-[12.5px] leading-snug text-white/75">
                       {s.subtitle}
                     </p>
-                    <span className="mt-3 inline-flex h-9 items-center gap-1.5 rounded-full bg-[var(--gold)] px-4 text-[12.5px] font-extrabold text-black shadow-[var(--shadow-gold)]">
+                    <span className="mt-3 inline-flex h-9 items-center gap-1.5 rounded-full batta-gold-fill px-4 text-[12.5px] font-extrabold shadow-[var(--shadow-gold)]">
                       {s.cta}
                       <ArrowRight className="size-3.5" />
                     </span>

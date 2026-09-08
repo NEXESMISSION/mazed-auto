@@ -199,7 +199,7 @@ export function HomeCurator({
                     }`}>
                     <ListingImage path={ph.storage_path} alt="" sizes="80px" />
                     {ph.is_cover && (
-                      <span className="absolute inset-x-0 bottom-0 bg-[var(--gold)] py-0.5 text-center text-[9px] font-extrabold uppercase tracking-[0.1em] text-white">
+                      <span className="absolute inset-x-0 bottom-0 batta-gold-fill py-0.5 text-center text-[9px] font-extrabold uppercase tracking-[0.1em] text-white">
                         Image
                       </span>
                     )}

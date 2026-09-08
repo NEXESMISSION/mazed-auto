@@ -34,20 +34,18 @@ export function AuthHeroPanel() {
       <div className="relative flex h-full flex-col justify-between p-12">
         {/* Brand — round MA monogram + gold wordmark */}
         <Link href="/" className="inline-flex w-fit items-center gap-3" aria-label="Mazed Auto">
-          <span className="size-11 shrink-0 overflow-hidden rounded-full ring-2 ring-[var(--gold)]/40 shadow-[var(--shadow-gold)]">
-            <Image
-              src="/logo.webp"
-              alt=""
-              width={88}
-              height={88}
-              priority
-              sizes="44px"
-              className="h-full w-full object-cover"
-            />
-          </span>
-          <span className="text-2xl font-black tracking-tight gradient-gold-text">
-            Mazed Auto
-          </span>
+          {/* The wide mark — see the note in TopBar. The round `object-cover`
+              frame this replaces cropped a nearly-3:1 monogram into a circle. */}
+          <Image
+            src="/logo-mark.webp"
+            alt=""
+            width={842}
+            height={285}
+            priority
+            sizes="200px"
+            className="h-14 w-auto shrink-0"
+          />
+          <span className="sr-only">Mazed Auto</span>
         </Link>
 
         {/* Headline + trust points + social proof */}

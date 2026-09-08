@@ -324,7 +324,7 @@ function ComposeTab() {
             type="button"
             onClick={() => send(false)}
             disabled={!canSend}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[var(--gold)] px-4 py-2.5 text-[12px] font-bold uppercase tracking-[0.12em] text-black transition hover:bg-[var(--gold-bright)] disabled:opacity-40 disabled:hover:bg-[var(--gold)]"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full batta-gold-fill px-4 py-2.5 text-[12px] font-bold uppercase tracking-[0.12em] transition hover:bg-[var(--gold-bright)] disabled:opacity-40 disabled:hover:batta-gold-fill"
           >
             <Send className="size-3.5" strokeWidth={2.4} />
             {sending ? "Envoi..." : "Diffuser"}

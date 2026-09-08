@@ -31,12 +31,13 @@ export default async function SignupPage() {
             <div className="p-7 sm:p-8">
               <div className="flex flex-col items-center text-center">
                 <Image
-                  src="/logo-square.png"
+                  src="/logo-mark.webp"
                   alt={t("brand.name")}
-                  width={96}
-                  height={96}
+                  width={842}
+                  height={285}
                   priority
-                  className="h-20 w-auto"
+                  sizes="220px"
+                  className="h-16 w-auto"
                 />
                 <h1
                   className={`mt-5 text-[24px] font-extrabold leading-[1.1] tracking-tight ${
@@ -79,15 +80,16 @@ export default async function SignupPage() {
             <div aria-hidden className="batta-gradient-gold absolute inset-x-0 top-0 h-[3px]" />
 
             <div className="flex flex-col items-center text-center">
-              <span className="size-16 overflow-hidden rounded-full ring-1 ring-[var(--gold-soft)]/60 shadow-[var(--shadow-gold)]">
-                <Image
-                  src="/logo.webp"
-                  alt=""
-                  width={128}
-                  height={128}
-                  className="h-full w-full object-cover"
-                />
-              </span>
+              {/* The wide mark, not a round crop of it — see TopBar. */}
+              <Image
+                src="/logo-mark.webp"
+                alt=""
+                width={842}
+                height={285}
+                priority
+                sizes="200px"
+                className="h-16 w-auto drop-shadow-[0_4px_18px_rgba(212,175,55,0.28)]"
+              />
               <h1
                 className={`mt-5 text-[28px] font-extrabold leading-[1.1] tracking-tight ${
                   isRTL ? "font-arabic" : ""

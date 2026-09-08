@@ -96,23 +96,19 @@ export function DesktopNav() {
             className="flex shrink-0 items-center gap-2.5"
             aria-label="Mazed Auto"
           >
-            {/* Round MA monogram avatar + gold wordmark — matches v1's
-                desktop header (the square logo must NOT be stretched into a
-                wide box, which distorted the monogram). */}
-            <span className="size-9 shrink-0 overflow-hidden rounded-full ring-1 ring-[var(--gold-soft)]/60">
-              <Image
-                src="/logo.webp"
-                alt=""
-                width={72}
-                height={72}
-                priority
-                sizes="36px"
-                className="h-full w-full object-cover"
-              />
-            </span>
-            <span className="text-lg font-extrabold tracking-tight gradient-gold-text">
-              Mazed Auto
-            </span>
+            {/* The MA monogram, in a WIDE box — see the note in TopBar. The
+                round `object-cover` crop it replaces cut the speed lines and
+                most of the A off a mark that is nearly 3:1. */}
+            <Image
+              src="/logo-mark.webp"
+              alt=""
+              width={842}
+              height={285}
+              priority
+              sizes="190px"
+              className="h-14 w-auto shrink-0"
+            />
+            <span className="sr-only">Mazed Auto</span>
           </Link>
 
           <nav className="flex items-center gap-1" aria-label="Navigation principale">

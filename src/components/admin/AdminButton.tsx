@@ -34,8 +34,11 @@ const SIZES: Record<AdminButtonSize, string> = {
 
 const VARIANTS: Record<string, string> = {
   // The single filled element on any screen.
+  // `.batta-gold-fill` carries the metallic ramp; the inset rim is what stops
+  // a small control reading as a flat yellow chip. No hover COLOUR change —
+  // the sheen shifts instead, which is what a metal surface does.
   primary:
-    "bg-[var(--gold)] text-black hover:bg-[var(--gold-bright)] disabled:hover:bg-[var(--gold)]",
+    "batta-gold-fill gold-rim-flat hover:brightness-[1.06]",
   // Hairline outline — the default for everything else.
   default:
     "border border-border text-foreground hover:border-[var(--gold-soft)] hover:text-[var(--gold)]",

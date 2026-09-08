@@ -66,19 +66,22 @@ export function SplashScreen() {
       <div className="batta-gradient-blob batta-gradient-blob-lg -top-20 -right-12" />
       <div className="batta-gradient-blob batta-gradient-blob-lg -bottom-24 -left-16" />
 
-      {/* Logo — preloaded in <head>, served via <picture> so AVIF
-          (4 KB) wins where supported, with WebP fallback. The CSS
-          filter (`brightness(0) invert(1)`) flips the dark wordmark
-          to pure white so it reads directly on the gradient without
-          any backing plate. */}
+      {/* Logo — preloaded in <head>, served via <picture> so AVIF wins where
+          supported, with a WebP fallback.
+
+          The comment here used to say the mark was flipped to white with
+          `brightness(0) invert(1)`. `.batta-splash-logo` carries only a
+          drop-shadow and never did that — worth noting, because the MA
+          monogram is metallic gold and such a filter WOULD flatten it to a
+          white silhouette. It must not be added. */}
       <picture className="relative animate-[batta-float-up_220ms_ease-out_both]">
-        <source srcSet="/logo.avif" type="image/avif" />
-        <source srcSet="/logo.webp" type="image/webp" />
+        <source srcSet="/logo-mark.avif" type="image/avif" />
+        <source srcSet="/logo-mark.webp" type="image/webp" />
         <img
-          src="/logo.png"
+          src="/logo-mark.png"
           alt="Mazed Auto"
-          width={528}
-          height={164}
+          width={842}
+          height={285}
           decoding="async"
           fetchPriority="high"
           className="batta-splash-logo h-14 w-auto sm:h-16"

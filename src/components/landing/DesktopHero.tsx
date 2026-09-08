@@ -201,7 +201,7 @@ function FeaturedCard({
 
       {/* Top corners — eyebrow badge + live countdown */}
       <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-4 p-6">
-        <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-[var(--gold)] px-3 text-[11px] font-extrabold uppercase tracking-wider text-black shadow-[var(--shadow-gold)]">
+        <span className="inline-flex h-8 items-center gap-1.5 rounded-full batta-gold-fill px-3 text-[11px] font-extrabold uppercase tracking-wider shadow-[var(--shadow-gold)]">
           <Flame className="h-3.5 w-3.5" />
           La plus disputée
         </span>
@@ -270,7 +270,7 @@ function FeaturedCard({
           </div>
         </div>
 
-        <span className="inline-flex h-12 shrink-0 items-center gap-2 rounded-full bg-[var(--gold)] px-6 text-sm font-extrabold text-black shadow-[var(--shadow-gold)] transition-transform group-hover:scale-[1.04] active:scale-[0.99]">
+        <span className="inline-flex h-12 shrink-0 items-center gap-2 rounded-full batta-gold-fill px-6 text-sm font-extrabold shadow-[var(--shadow-gold)] transition-transform group-hover:scale-[1.04] active:scale-[0.99]">
           Voir l&apos;enchère
           <ArrowUpRight className="h-4 w-4" />
         </span>
@@ -375,7 +375,7 @@ function FallbackHero({ liveCount }: { liveCount: number }) {
         </p>
         <Link
           href="/properties"
-          className="mt-7 inline-flex h-12 items-center gap-2 rounded-full bg-[var(--gold)] px-6 text-sm font-extrabold text-black shadow-[var(--shadow-gold)] transition-transform hover:scale-[1.03]"
+          className="mt-7 inline-flex h-12 items-center gap-2 rounded-full batta-gold-fill px-6 text-sm font-extrabold shadow-[var(--shadow-gold)] transition-transform hover:scale-[1.03]"
         >
           Parcourir le catalogue
           <ArrowUpRight className="h-4 w-4" />
