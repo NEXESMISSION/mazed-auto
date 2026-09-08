@@ -75,8 +75,11 @@ export function BottomTabBar() {
               aria-label={t(tab.labelKey)}
               aria-current={active ? "page" : undefined}
             >
+              {/* Light, not gold. It was a gold gradient with a gold glow —
+                  the single loudest object on the page, for an action most
+                  visitors never take. See .batta-btn-luxe in globals.css. */}
               <span
-                className={`relative inline-flex h-14 w-14 -translate-y-5 items-center justify-center rounded-full bg-gradient-to-b from-[#f7e07a] via-[var(--gold-bright)] to-[var(--gold-soft)] text-black shadow-[var(--shadow-gold),inset_0_1px_0_0_rgba(255,255,255,0.35),inset_0_-1px_0_0_rgba(0,0,0,0.15)] ring-4 ring-[var(--background)] transition-transform active:scale-95 ${
+                className={`relative inline-flex h-14 w-14 -translate-y-5 items-center justify-center rounded-full bg-foreground text-[var(--background)] shadow-[var(--shadow-lg)] ring-4 ring-[var(--background)] transition-transform active:scale-95 ${
                   active ? "scale-105" : "hover:scale-[1.03]"
                 }`}
               >

@@ -45,10 +45,10 @@ const TITLE_BY_SEGMENT: Record<string, string> = {
  *   - Pure `#0a0a0a` background with a soft black drop, no glass
  *     or hairline gold rule. The chrome stays out of the way so the
  *     page content carries the design weight.
- *   - Brand wordmark on the root pages renders in `gradient-gold-text`
- *     (the same recipe auto uses for "Mazed Auto").
- *   - Inner pages get a back button + plain Jakarta page title, gold
- *     accents only on the active state.
+ *   - Root pages get the monogram plus the name in plain Jakarta. The name
+ *     used to be `sr-only` and the mark used to be gold-gradient text; both
+ *     are now the same weight as everything else in the bar.
+ *   - Inner pages get a back button + page title instead.
  */
 export function TopBar() {
   const t = useTranslations();
@@ -102,14 +102,13 @@ export function TopBar() {
 
 function BrandMark() {
   const t = useTranslations("brand");
-  // `h-9` (36px) inside a 56px bar (`--batta-topbar-h`). It was `h-11`, which
+  // `h-8` (32px) inside a 56px bar (`--batta-topbar-h`). It was `h-11`, which
   // left six pixels of air above and below a nearly 3:1 mark — the logo
-  // stopped reading as a logo and started reading as the bar itself. Ten
-  // pixels of clearance is what makes it sit in the bar rather than fill it.
-  // The width auto-scales via `w-auto`. `priority` skips the lazy-load — this
-  // is above-the-fold on every page that shows the bar — and the asset is also
-  // `<link rel="preload">`-ed in the root layout, so by the time this paints
-  // it's already in cache.
+  // stopped reading as a logo and started reading as the bar itself; it came
+  // down again to make room for the name beside it. The width auto-scales via
+  // `w-auto`. `priority` skips the lazy-load — this is above-the-fold on every
+  // page that shows the bar — and the asset is also `<link rel="preload">`-ed
+  // in the root layout, so by the time this paints it's already in cache.
   return (
     <Link href="/" className="flex items-center gap-2" aria-label={t("name")}>
       {/* The MA monogram, in a WIDE box.
@@ -124,10 +123,18 @@ function BrandMark() {
         width={842}
         height={285}
         priority
-        sizes="120px"
-        className="h-9 w-auto shrink-0"
+        sizes="100px"
+        className="h-8 w-auto shrink-0"
       />
-      <span className="sr-only">{t("name")}</span>
+      {/* The name, back beside the mark and visible.
+          It was `sr-only`, on the reasoning that a logo is the name. That
+          holds for a wordmark and fails for a monogram: « MA » is two letters
+          to anyone who has not already learnt them, so the bar identified the
+          site only to people who did not need telling. The mark gives up a
+          little height to pay for it. */}
+      <span className="truncate text-[15px] font-bold tracking-tight text-foreground">
+        {t("name")}
+      </span>
     </Link>
   );
 }

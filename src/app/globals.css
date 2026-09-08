@@ -573,54 +573,69 @@ textarea.batta-input {
    Buttons
    ============================================ */
 
-/* Primary CTA — flat blue with subtle shadow + smooth hover.
-   Was the metallic gradient gold; now a clean solid in the
-   Linear / Stripe style. */
+/* Primary CTA.
+   It was a metallic gold ramp: a travelling highlight band, a stamped-blank
+   rim and a gold outer glow. It was well made and it was wrong — on a near
+   black page every primary action lit up like a warning, the gold competed
+   with the prices (which are the only thing on a classifieds page that has
+   earned a colour), and the sheen read as decoration rather than as something
+   to press.
+
+   Plain light-on-dark instead. It is the highest contrast available here, so
+   it needs no glow to be found, and it leaves gold to mean one thing: money.
+   The interest lives in the press, not in the resting state. */
 .batta-btn-luxe {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  background-image: var(--gold-metal);
-  background-color: var(--gold-mid);
-  /* Taller than the button so the highlight band can TRAVEL on hover instead
-     of the whole fill changing colour. */
-  background-size: 100% 260%;
-  background-position: 50% 22%;
-  color: #3a1200;
-  text-shadow: 0 1px 0 rgba(255, 249, 225, 0.5);
-  /* A rim, not a border: dark underneath, light on top — the edge of a
-     stamped metal blank. `inset` keeps it off the layout. */
+  background: var(--foreground);
+  color: var(--background);
   border: 0;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 249, 225, 0.8),
-    inset 0 -1px 0 rgba(122, 36, 0, 0.6),
-    inset 0 0 0 1px rgba(160, 62, 0, 0.4),
-    var(--shadow-gold);
+  box-shadow: var(--shadow-md);
   font-weight: 700;
   letter-spacing: 0;
   border-radius: var(--radius);
-  transition: background-position 380ms ease, box-shadow 220ms ease, transform 160ms ease;
+  transition: background 160ms ease, box-shadow 220ms ease, transform 160ms ease;
 }
 .batta-btn-luxe:active {
   transform: scale(0.985);
-  /* Pressed = the highlight slides off the top, so the face darkens the way a
-     real surface does when it tilts away from the light. */
-  background-position: 50% 78%;
-  box-shadow:
-    inset 0 1px 3px rgba(122, 36, 0, 0.55),
-    inset 0 0 0 1px rgba(160, 62, 0, 0.45);
+  background: #d4d4d4;
+  box-shadow: none;
 }
 @media (hover: hover) {
   .batta-btn-luxe:hover {
-    /* The sheen travels up across the face. */
-    background-position: 50% 62%;
-    box-shadow:
-      inset 0 1px 0 rgba(255, 252, 240, 0.95),
-      inset 0 -1px 0 rgba(122, 36, 0, 0.6),
-      inset 0 0 0 1px rgba(180, 74, 0, 0.45),
-      var(--shadow-md),
-      var(--shadow-gold);
+    background: #ffffff;
+    box-shadow: var(--shadow-lg);
+  }
+}
+
+/* Secondary CTA — the same button, unfilled.
+   Paired with the primary rather than styled independently: same height, same
+   radius, same weight, so the two read as one control with two destinations
+   and the only difference is which one is filled. */
+.batta-btn-quiet {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--foreground);
+  border: 0;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+  font-weight: 700;
+  letter-spacing: 0;
+  border-radius: var(--radius);
+  transition: background 160ms ease, box-shadow 220ms ease, transform 160ms ease;
+}
+.batta-btn-quiet:active {
+  transform: scale(0.985);
+  background: rgba(255, 255, 255, 0.03);
+}
+@media (hover: hover) {
+  .batta-btn-quiet:hover {
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.24);
   }
 }
 

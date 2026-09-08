@@ -258,20 +258,27 @@ export async function AnnonceCoverMobile() {
           Le prix est sur l&apos;annonce. Vous appelez le vendeur.
         </p>
 
+        {/* Two destinations, one control. The catalogue splits in exactly two
+            — cars and parts — so the buttons name the two halves and nothing
+            else. « Parcourir » named the act rather than the destination, and
+            « Pièces · gratuit » advertised the price on a button, which is a
+            claim to make once the visitor is deciding to publish, not while
+            they are deciding where to tap. It is still said, as a fact, on the
+            pages about publishing. */}
         <div className="mt-3.5 flex gap-2">
           <Link
             href={"/annonces" as never}
             className="batta-btn-luxe tap-target h-11 flex-1 text-[13.5px]"
           >
-            Parcourir
+            Annonces
             <ArrowUpRight className="size-4" />
           </Link>
           <Link
             href={"/annonces?kind=part" as never}
-            className="tap-target inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-full bg-gold-faint px-4 text-[12.5px] font-bold text-gold ring-1 ring-gold-soft"
+            className="batta-btn-quiet tap-target h-11 shrink-0 px-4 text-[13px]"
           >
             <Wrench className="size-3.5" />
-            Pièces · gratuit
+            Pièces de rechange
           </Link>
         </div>
       </div>
@@ -403,19 +410,17 @@ export async function AnnonceHero() {
           <div className="mb-9 flex items-center justify-between gap-4">
             <Link
               href={"/annonces?kind=part" as never}
-              className="inline-flex h-9 items-center gap-2.5 rounded-full bg-[var(--gold)]/10 px-3.5 ring-1 ring-[var(--gold-soft)]/40 backdrop-blur-md transition-all hover:ring-[var(--gold)]"
+              className="batta-btn-quiet h-11 px-5 text-sm"
             >
-              <Wrench className="h-3.5 w-3.5 text-[var(--gold)]" />
-              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--gold)]">
-                Pièces de rechange · publication gratuite
-              </span>
+              <Wrench className="h-4 w-4" />
+              Pièces de rechange
             </Link>
 
             <Link
               href={"/annonces" as never}
-              className="inline-flex h-11 items-center gap-2 rounded-full bg-white/5 px-5 text-sm font-bold text-white ring-1 ring-white/10 backdrop-blur-md transition-all hover:ring-[var(--gold)]"
+              className="batta-btn-luxe h-11 px-5 text-sm"
             >
-              Parcourir le catalogue
+              Annonces
               <ArrowUpRight className="h-4 w-4" />
             </Link>
           </div>
@@ -623,12 +628,13 @@ function FeaturedCard({
           </div>
         </div>
 
-        {/* `bg-[var(--gold)]` was a FLAT #d4af37 fill, which is the one thing
-            that reads as highlighter yellow rather than gold. `.batta-gold-fill`
-            carries the metallic ramp (see --gold-metal in globals.css) and the
-            inset rim gives the pill a lit top edge and a shadowed bottom one. */}
+        {/* The same light-on-dark button as everywhere else. It was the
+            metallic gold ramp, sitting directly under a gold price on a
+            photograph — two golds competing, and the one that mattered was the
+            price. Gold is reserved for money now; the button just has to be
+            found, and white on a photo is the easiest thing there is to find. */}
         <span className={
-          "batta-gold-fill inline-flex shrink-0 items-center gap-1.5 rounded-full font-extrabold gold-rim transition-transform group-hover:scale-[1.04] active:scale-[0.99] " +
+          "batta-btn-luxe shrink-0 rounded-full transition-transform group-hover:scale-[1.04] " +
           (compact ? "h-10 px-4 text-[12.5px]" : "h-12 gap-2 px-6 text-sm")
         }>
           Voir l&apos;annonce

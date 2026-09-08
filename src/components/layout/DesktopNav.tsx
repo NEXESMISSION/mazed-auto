@@ -105,10 +105,14 @@ export function DesktopNav() {
               width={842}
               height={285}
               priority
-              sizes="160px"
-              className="h-11 w-auto shrink-0"
+              sizes="140px"
+              className="h-10 w-auto shrink-0"
             />
-            <span className="sr-only">Mazed Auto</span>
+            {/* Visible, not `sr-only` — see the note in TopBar: a monogram
+                does not say the name on its own. */}
+            <span className="text-[17px] font-bold tracking-tight text-foreground">
+              Mazed Auto
+            </span>
           </Link>
 
           <nav className="flex items-center gap-1" aria-label="Navigation principale">
