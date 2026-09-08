@@ -31,6 +31,9 @@
  *   node scripts/watermark-existing-photos.mjs            # report only
  *   node scripts/watermark-existing-photos.mjs --limit 3  # try a few
  *   node scripts/watermark-existing-photos.mjs --commit   # do it
+ *
+ * Re-running after a settings change needs no flag: bump VERSION, and every
+ * row not yet on that version is re-stamped FROM ITS ORIGINAL.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -41,18 +44,32 @@ import { config as loadEnv } from "dotenv";
 loadEnv({ path: ".env.local" });
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+/** Monogram + caption, and the monogram alone — see markSrcFor in lib/watermark. */
 const STAMP = path.join(ROOT, "public", "logo-stamp.png");
+const PLAIN = path.join(ROOT, "public", "logo-mark.png");
+const markFileFor = (w) => (w >= CAPTION_MIN_PHOTO_PX ? STAMP : PLAIN);
 const LOG = path.join(ROOT, "scripts", "watermark-backfill.log.json");
 
 // Must match src/lib/watermark.ts. Drift here shows up as a visible mismatch
 // between an old photo and a freshly uploaded one on the same page.
-const MARK_WIDTH_RATIO = 0.38;
-const MIN_MARK_PX = 160;
-const MARK_OPACITY = 0.45;
+const MARK_WIDTH_RATIO = 0.3;
+const MIN_MARK_PX = 96;
+const MARK_OPACITY = 0.18;
+const CAPTION_MIN_PHOTO_PX = 1000;
 
 const BUCKET = "properties";
-/** Rows already under this prefix are done; the path itself is the record. */
+/**
+ * Stamped objects are versioned, and re-stamping writes a NEW path.
+ *
+ * Uploads carry `Cache-Control: 31536000`, so overwriting an object in place
+ * leaves every CDN edge and every browser that has seen it serving the old
+ * picture for a year. The row has to move to a URL nothing has cached — which
+ * also means the previous version stays on disk, and a bad batch is undone by
+ * pointing the rows back at it.
+ */
 const PREFIX = "watermarked/";
+const VERSION = "v2";
+const CURRENT = `${PREFIX}${VERSION}/`;
 
 const args = process.argv.slice(2);
 const COMMIT = args.includes("--commit");
@@ -87,10 +104,10 @@ function sourceUrl(storagePath) {
 }
 
 let stampCache = null;
-async function stampAt(width) {
-  if (stampCache?.width === width) return stampCache;
+async function stampAt(file, width) {
+  if (stampCache?.width === width && stampCache?.file === file) return stampCache;
 
-  const resized = await sharp(STAMP).resize({ width }).ensureAlpha().png().toBuffer();
+  const resized = await sharp(file).resize({ width }).ensureAlpha().png().toBuffer();
   const { data, info } = await sharp(resized).raw().toBuffer({ resolveWithObject: true });
 
   const scaled = Buffer.from(data);
@@ -116,7 +133,7 @@ async function stampAt(width) {
     .png()
     .toBuffer();
 
-  stampCache = { mark, shadow, width: info.width, height: info.height };
+  stampCache = { file, mark, shadow, width: info.width, height: info.height };
   return stampCache;
 }
 
@@ -129,8 +146,8 @@ async function stampAt(width) {
  * must have same dimensions or smaller") and the browser, which does not
  * refuse, would have branded it with a cropped fragment of a logo.
  */
-async function fittedWidth(width, height) {
-  const meta = await sharp(STAMP).metadata();
+async function fittedWidth(file, width, height) {
+  const meta = await sharp(file).metadata();
   const aspect = meta.height / meta.width;
   const w = Math.min(Math.max(MIN_MARK_PX, Math.round(width * MARK_WIDTH_RATIO)), width);
   return Math.round(w * aspect) > height ? Math.round(height / aspect) : w;
@@ -138,8 +155,9 @@ async function fittedWidth(width, height) {
 
 async function stamp(photo) {
   const meta = await sharp(photo).metadata();
-  const markW = await fittedWidth(meta.width, meta.height);
-  const { mark, shadow, height: markH } = await stampAt(markW);
+  const file = markFileFor(meta.width);
+  const markW = await fittedWidth(file, meta.width, meta.height);
+  const { mark, shadow, height: markH } = await stampAt(file, markW);
   const x = Math.round((meta.width - markW) / 2);
   const y = Math.round((meta.height - markH) / 2);
   return sharp(photo)
@@ -174,43 +192,60 @@ async function repoint(id, storagePath) {
   if (!r.ok) throw new Error(`patch ${id}: ${r.status} ${await r.text()}`);
 }
 
+const log = fs.existsSync(LOG) ? JSON.parse(fs.readFileSync(LOG, "utf8")) : [];
+
+/**
+ * Where a row's UNSTAMPED bytes live.
+ *
+ * This is the whole reason the backfill writes to a new object instead of
+ * overwriting: the strength was tuned twice, and re-stamping an
+ * already-stamped photo would have compounded the mark instead of replacing
+ * it. The log maps every row back to the bytes it started from, and those
+ * bytes were never touched, so a re-run at a new opacity is a fresh stamp on
+ * the original rather than a stamp on a stamp.
+ */
+const originalOf = new Map(log.map((e) => [e.id, e.from]));
+
 const rows = await allPhotos();
-const todo = rows.filter((r) => r.storage_path && !r.storage_path.startsWith(PREFIX));
-const foreign = todo.filter((r) => /^https?:\/\//.test(r.storage_path)).length;
+const todo = rows.filter((r) => r.storage_path && !r.storage_path.startsWith(CURRENT));
+const foreign = todo.filter((r) => /^https?:\/\//.test(originalOf.get(r.id) ?? r.storage_path)).length;
 
 console.log(
-  `${rows.length} photos, ${rows.length - todo.length} already stamped, ${todo.length} to do`,
+  `${rows.length} photos, ${rows.length - todo.length} already on ${VERSION}, ${todo.length} to do`,
 );
 console.log(
   `  ${foreign} hosted on another Supabase project, ${todo.length - foreign} in our own bucket`,
 );
 if (!COMMIT) console.log("DRY RUN — pass --commit to write.\n");
 
-const log = fs.existsSync(LOG) ? JSON.parse(fs.readFileSync(LOG, "utf8")) : [];
 const planned = todo.slice(0, LIMIT === Infinity ? undefined : LIMIT);
 let done = 0;
 let failed = 0;
 
 for (const row of planned) {
-  const dest = `${PREFIX}${row.listing_id}/${row.id}.webp`;
+  const dest = `${CURRENT}${row.listing_id}/${row.id}.webp`;
+  const from = originalOf.get(row.id) ?? row.storage_path;
   try {
-    const res = await fetch(sourceUrl(row.storage_path));
+    const res = await fetch(sourceUrl(from));
     if (!res.ok) throw new Error(`source ${res.status}`);
     const original = Buffer.from(await res.arrayBuffer());
     const stamped = await stamp(original);
 
     if (COMMIT) {
       await upload(dest, stamped);
-      await repoint(row.id, dest);
-      log.push({ id: row.id, from: row.storage_path, to: dest, at: new Date().toISOString() });
+      if (row.storage_path !== dest) await repoint(row.id, dest);
+      if (!originalOf.has(row.id)) {
+        originalOf.set(row.id, from);
+        log.push({ id: row.id, from, to: dest, at: new Date().toISOString() });
+      }
     }
     done += 1;
     if (done % 25 === 0 || done === planned.length || !COMMIT) {
-      console.log(`  ${done}/${planned.length}  ${row.storage_path.slice(-48)} -> ${dest}`);
+      console.log(`  ${done}/${planned.length}  ${from.slice(-48)} -> ${dest}`);
     }
   } catch (err) {
     failed += 1;
-    console.error(`  FAILED ${row.id} (${row.storage_path}): ${err.message}`);
+    console.error(`  FAILED ${row.id} (${from}): ${err.message}`);
   }
 }
 

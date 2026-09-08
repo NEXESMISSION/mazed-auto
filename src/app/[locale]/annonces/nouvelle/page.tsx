@@ -115,11 +115,21 @@ export default async function NewListingPage() {
     return n + Math.max(0, (c.quota_total as number) - (c.quota_used as number));
   }, 0);
 
+  // Read-only: showing the offer must never be what consumes it. The claim
+  // happens once, in /api/annonces/[id]/submit, under a lock.
+  const { data: freeStatus } = await admin.rpc("free_listing_status", {
+    p_seller_id: user!.id,
+  });
+  const freeLeft = (freeStatus as { enabled?: boolean; remaining?: number } | null)?.enabled
+    ? Number((freeStatus as { remaining?: number }).remaining) || 0
+    : 0;
+
   return (
     <PublishWizard
       categories={categories}
       feeByCategory={feeByCategory}
       creditsLeft={creditsLeft}
+      freeLeft={freeLeft}
       defaultContactName={(profRes.data?.full_name as string | null) ?? ""}
       defaultContactPhone={(profRes.data?.phone as string | null) ?? ""}
       initialDraft={(draftRes.data as unknown as InitialDraft | null) ?? null}

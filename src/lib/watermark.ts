@@ -20,13 +20,22 @@
  * slow phone would get the fallback system font burnt into their photo for
  * ever. See `scripts/make-watermark-stamp.py`.
  *
- * WHY THIS STRENGTH. The mark has to survive being stolen, not dominate the
- * photo a seller paid to publish. 45% opacity over 38% of the image width is
- * where both hold on a real listing photo: the monogram reads, the caption is
- * legible rather than merely present, and the car underneath is unobscured.
- * The caption is what sets the floor — thin letterspaced caps disappear
- * several stops before a solid monogram does, so a strength chosen by looking
- * at the monogram alone leaves the words unreadable and the stamp pointless.
+ * WHY IT IS FAINT. The mark has to survive being stolen, not be the first
+ * thing anybody sees. It was 45% over 38% of the width, chosen so the caption
+ * would be crisply legible — which got the trade backwards: it made the logo
+ * the loudest object in a photograph the seller took of their own car. 18%
+ * over 30% is enough. A watermark does not have to be read at a glance to
+ * work; it has to be impossible to remove without cropping the subject, and
+ * that is a property of WHERE it sits, not how bright it is. Anyone who wants
+ * to know whose photo it is can see it.
+ *
+ * WHY THE ASSET CHANGES WITH THE PHOTO. The caption is baked in at a fixed
+ * size relative to the mark, so on a small or low-quality upload it lands at a
+ * handful of pixels tall and turns to mush — a smear that reads as a
+ * compression artefact rather than as our name, which is worse than no caption
+ * at all. Under `CAPTION_MIN_PHOTO_PX` the plain monogram is used instead: the
+ * mark stays clean at any size, and the words appear only where there is
+ * enough resolution to carry them.
  *
  * WHY IT IS DRAWN, NOT COMPOSITED SERVER-SIDE. Photos go straight from the
  * browser to storage on a signed URL — the bytes never pass through our
@@ -38,13 +47,20 @@
  */
 
 /** Fraction of the image's WIDTH the mark spans. */
-const MARK_WIDTH_RATIO = 0.38;
-/** Never smaller than this, or the caption stops being readable. */
-const MIN_MARK_PX = 160;
-/** How present the mark is. Set by the caption, not the monogram. */
-const MARK_OPACITY = 0.45;
+const MARK_WIDTH_RATIO = 0.3;
+/** A floor so the mark does not vanish entirely on a tiny upload. */
+const MIN_MARK_PX = 96;
+/** How present the mark is. Deliberately low — see the note above. */
+const MARK_OPACITY = 0.18;
+/**
+ * Below this photo width the caption would be under ~14px tall once scaled,
+ * which on a low-quality upload is indistinguishable from JPEG noise.
+ */
+const CAPTION_MIN_PHOTO_PX = 1000;
 /** Monogram over « MAZED AUTO · MAZED.TN », gold on transparent, ~2.39:1. */
-const MARK_SRC = "/logo-stamp.webp";
+const STAMP_SRC = "/logo-stamp.webp";
+/** The monogram alone, for photos too small to carry the caption. */
+const MARK_SRC = "/logo-mark.webp";
 
 /**
  * The decoded mark, fetched once per page rather than per photo.
@@ -53,20 +69,27 @@ const MARK_SRC = "/logo-stamp.webp";
  * is fetched and decoded eight times while the phone is already busy
  * re-encoding images.
  */
-let markPromise: Promise<HTMLImageElement | null> | null = null;
+const marks = new Map<string, Promise<HTMLImageElement | null>>();
 
-function loadMark(): Promise<HTMLImageElement | null> {
-  if (markPromise) return markPromise;
-  markPromise = new Promise<HTMLImageElement | null>((resolve) => {
+function loadMark(src: string): Promise<HTMLImageElement | null> {
+  const cached = marks.get(src);
+  if (cached) return cached;
+  const p = new Promise<HTMLImageElement | null>((resolve) => {
     const img = new Image();
     // Same-origin, but decoding into a canvas we later export means the
     // canvas must not be tainted.
     img.crossOrigin = "anonymous";
     img.onload = () => resolve(img);
     img.onerror = () => resolve(null);
-    img.src = MARK_SRC;
+    img.src = src;
   });
-  return markPromise;
+  marks.set(src, p);
+  return p;
+}
+
+/** Which of the two marks a photo this wide can carry. */
+export function markSrcFor(width: number): string {
+  return width >= CAPTION_MIN_PHOTO_PX ? STAMP_SRC : MARK_SRC;
 }
 
 /**
@@ -83,11 +106,10 @@ export function drawWatermark(
 ): void {
   const aspect = mark.naturalHeight / mark.naturalWidth;
 
-  // Fit, then centre. `MIN_MARK_PX` is a floor on legibility, not a promise
-  // that the photo is big enough to hold it: the catalogue contains a 120x120
-  // thumbnail, and asking for a 160px mark on it drew a stamp wider than the
-  // image. The canvas does not complain — it just crops the mark and produces
-  // a photo branded with a fragment of a logo.
+  // Fit, then centre. The floor is a floor, not a promise that the photo is
+  // big enough to hold it: the catalogue contains a 120x120 thumbnail, and
+  // asking for a mark wider than the image draws a stamp the canvas silently
+  // crops — a photo branded with a fragment of a logo.
   let markW = Math.min(Math.max(MIN_MARK_PX, Math.round(width * MARK_WIDTH_RATIO)), width);
   let markH = Math.round(markW * aspect);
   if (markH > height) {
@@ -125,8 +147,12 @@ export async function watermarkImage(file: File): Promise<File> {
   if (typeof window === "undefined" || !file.type.startsWith("image/")) return file;
 
   try {
-    const [mark, bitmap] = await Promise.all([loadMark(), createImageBitmap(file)]);
-    if (!mark) return file;
+    const bitmap = await createImageBitmap(file);
+    const mark = await loadMark(markSrcFor(bitmap.width));
+    if (!mark) {
+      bitmap.close?.();
+      return file;
+    }
 
     const canvas = document.createElement("canvas");
     canvas.width = bitmap.width;

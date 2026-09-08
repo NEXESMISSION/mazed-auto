@@ -27,6 +27,13 @@ const TEXT_KEYS = ["payee_name", "payee_bank", "payee_rib", "payee_iban", "payee
 
 const MAX = 120;
 
+/**
+ * The one non-payee key, and it is here rather than in Offres & prix because
+ * it is not a price: it decides when a price is WAIVED. Prices still live in
+ * `products` and nowhere else.
+ */
+const MAX_FREE = 50;
+
 export async function POST(req: NextRequest) {
   const gate = await requireAdmin(req);
   if (gate instanceof NextResponse) return gate;
@@ -43,6 +50,19 @@ export async function POST(req: NextRequest) {
     const raw = body[key];
     if (typeof raw !== "string") continue;
     rows.push({ key, value: raw.trim().slice(0, MAX), updated_by: user.id });
+  }
+
+  // Welcome allowance: { enabled, count }. Clamped rather than rejected — an
+  // admin typing 500 wants "lots", not a 400, and a negative count would make
+  // `consume_free_listing` compare against a nonsense allowance.
+  if (body.free_listings && typeof body.free_listings === "object") {
+    const raw = body.free_listings as { enabled?: unknown; count?: unknown };
+    const count = Math.min(Math.max(Math.trunc(Number(raw.count) || 0), 0), MAX_FREE);
+    rows.push({
+      key: "free_listings",
+      value: { enabled: raw.enabled === true && count > 0, count },
+      updated_by: user.id,
+    });
   }
 
   if (rows.length === 0) {

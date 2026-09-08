@@ -120,6 +120,7 @@ export function PublishWizard({
   categories,
   feeByCategory,
   creditsLeft,
+  freeLeft,
   defaultContactName,
   defaultContactPhone,
   initialDraft,
@@ -128,6 +129,8 @@ export function PublishWizard({
   categories: WizardCategory[];
   feeByCategory: Record<string, number | null>;
   creditsLeft: number;
+  /** Publications remaining in this seller's welcome allowance. */
+  freeLeft: number;
   defaultContactName: string;
   defaultContactPhone: string;
   initialDraft: InitialDraft | null;
@@ -198,6 +201,10 @@ export function PublishWizard({
   const fee = categoryId ? feeByCategory[categoryId] ?? null : null;
   const usingCredit = creditsLeft > 0;
   const free = fee != null && fee <= 0;
+  // The order the server settles in: a pack credit first, then a category that
+  // costs nothing, then the welcome allowance. Mirrored here so the number the
+  // seller is shown is the one they will actually be charged.
+  const usingWelcome = !usingCredit && !free && fee != null && fee > 0 && freeLeft > 0;
 
   const makeList = isMoto ? MOTO_MAKES : CAR_MAKES;
   const models = useMemo(
@@ -452,6 +459,13 @@ export function PublishWizard({
             <> Il vous reste {done.remaining} publication{done.remaining > 1 ? "s" : ""}.</>
           )}
           {done.paidWith === "free" && <> La publication était gratuite dans cette catégorie.</>}
+          {done.paidWith === "welcome" && (
+            <> Cette publication vous a été offerte
+              {typeof done.remaining === "number" && done.remaining > 0
+                ? `, il vous en reste ${done.remaining}.`
+                : "."}
+            </>
+          )}
         </p>
         <button
           onClick={() => router.push("/account/listings" as never)}
@@ -464,7 +478,7 @@ export function PublishWizard({
   }
 
   return (
-    <main className="mx-auto max-w-[var(--max-w-wide)] px-4 pb-32 pt-4 lg:px-6 lg:pb-12 lg:pt-8">
+    <main className="mx-auto max-w-[var(--max-w-wide)] px-4 pb-56 pt-4 lg:px-6 lg:pb-12 lg:pt-8">
       {/* One page, top to bottom. The wizard's five screens hid what the form
           was actually asking for — you could not see that it wanted a photo
           until you had already answered two screens of questions, and going
@@ -514,6 +528,14 @@ export function PublishWizard({
             Cela décide des informations qui vous seront demandées.
           </p>
 
+          {usingWelcome && (
+            <p className="mt-4 inline-flex items-center gap-2 rounded-xl bg-gold-faint px-3 py-2 text-[12.5px] font-bold text-gold ring-1 ring-gold-soft">
+              <Gift className="size-4" />
+              Offerte — {freeLeft} publication{freeLeft > 1 ? "s" : ""} gratuite
+              {freeLeft > 1 ? "s" : ""} restante{freeLeft > 1 ? "s" : ""}
+            </p>
+          )}
+
           {usingCredit && (
             <p className="mt-4 inline-flex items-center gap-2 rounded-xl bg-gold-faint px-3 py-2 text-[12.5px] font-bold text-gold ring-1 ring-gold-soft">
               <Ticket className="size-4" />
@@ -559,8 +581,10 @@ export function PublishWizard({
                     }}
                     className={cn(
                       "inline-flex h-10 items-center justify-center gap-2 rounded-lg text-[13.5px] font-bold transition",
+                      // Selected = the primary button's own fill. Gold is
+                      // reserved for money; a chosen radio is not money.
                       on
-                        ? "bg-[var(--gold)] text-black shadow-[var(--shadow-gold)]"
+                        ? "bg-foreground text-[var(--background)] shadow-[var(--shadow-md)]"
                         : "text-muted hover:text-foreground",
                     )}
                   >
@@ -596,7 +620,7 @@ export function PublishWizard({
                       className={cn(
                         "inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[13px] font-bold transition",
                         active
-                          ? "bg-gold-faint text-gold ring-1 ring-gold"
+                          ? "bg-foreground text-[var(--background)]"
                           : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground",
                       )}
                     >
@@ -1010,7 +1034,7 @@ export function PublishWizard({
               </span>
               {missing.length === 0 ? (
                 <p className="mt-1 flex items-center gap-1.5 text-[14.5px] font-extrabold text-foreground">
-                  <Check className="size-4 shrink-0 text-gold" strokeWidth={3} />
+                  <Check className="size-4 shrink-0 text-[var(--success,#4ade80)]" strokeWidth={3} />
                   Tout est prêt.
                 </p>
               ) : (
@@ -1067,7 +1091,7 @@ export function PublishWizard({
                     <span
                       className={cn(
                         "mt-1.5 size-1.5 shrink-0 rounded-full",
-                        flaggedNow.has(m.fieldId) ? "bg-danger" : "bg-[var(--gold)]",
+                        flaggedNow.has(m.fieldId) ? "bg-danger" : "bg-muted",
                       )}
                     />
                     {m.label}
@@ -1101,6 +1125,8 @@ export function PublishWizard({
             ? "Publication gratuite dans cette catégorie."
             : usingCredit
               ? `Utilise 1 de vos ${creditsLeft} publications.`
+              : usingWelcome
+                ? "Offerte — aucune somme à régler."
               : fee != null
                 ? `${fee} TND — à régler après vérification.`
                 : "Le prix de publication s'affiche dès que la catégorie est choisie."}
@@ -1128,7 +1154,7 @@ function SectionHead({
 }) {
   return (
     <h2 className="flex items-center gap-2.5 text-[17px] font-extrabold tracking-tight">
-      <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-gold-faint text-gold ring-1 ring-gold-soft">
+      <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-surface-2 text-muted ring-1 ring-border">
         <Icon className="size-4" />
       </span>
       {title}
@@ -1241,7 +1267,7 @@ function Chips({
             className={cn(
               "tap-target rounded-full px-4 py-2 text-[13px] font-bold transition",
               value === o.value
-                ? "bg-[var(--gold)] text-black"
+                ? "bg-foreground text-[var(--background)]"
                 : "bg-surface text-muted ring-1 ring-border hover:text-foreground",
             )}
           >
@@ -1260,7 +1286,7 @@ function Toggle({ label, on, onClick }: { label: string; on: boolean; onClick: (
       onClick={onClick}
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[12.5px] font-bold transition",
-        on ? "bg-gold-faint text-gold ring-1 ring-gold-soft" : "bg-surface text-muted ring-1 ring-border",
+        on ? "bg-white/10 text-foreground ring-1 ring-white/20" : "bg-surface text-muted ring-1 ring-border",
       )}
     >
       {on && <Check className="size-3.5" />}

@@ -4,7 +4,10 @@ import { useState } from "react";
 import { Link } from "@/i18n/navigation";
 import { AdminButton } from "@/components/admin/AdminButton";
 import { TextField, FieldGrid, useAdminAction, EYEBROW } from "@/components/admin/kit";
-import { Save, ArrowRight } from "lucide-react";
+import { Save, ArrowRight, Gift } from "lucide-react";
+
+/** The welcome allowance: the first `count` paid publications are offered. */
+export type FreeListings = { enabled: boolean; count: number };
 
 export type PayeeSettings = {
   payee_name: string;
@@ -25,9 +28,17 @@ export type PayeeSettings = {
  * Live example: `payee_name` currently reads "Batta Tunisia SARL", the name of
  * the twin real-estate project this codebase was forked from.
  */
-export function SettingsForm({ initial }: { initial: PayeeSettings }) {
+export function SettingsForm({
+  initial,
+  initialFree,
+}: {
+  initial: PayeeSettings;
+  initialFree: FreeListings;
+}) {
   const { run, pending, done } = useAdminAction();
   const [form, setForm] = useState<PayeeSettings>(initial);
+  const [free, setFree] = useState<FreeListings>(initialFree);
+  const freeAction = useAdminAction();
 
   const set = (k: keyof PayeeSettings) => (v: string) =>
     setForm((prev) => ({ ...prev, [k]: v }));
@@ -100,6 +111,74 @@ export function SettingsForm({ initial }: { initial: PayeeSettings }) {
           {dirty && (
             <span className="text-[11.5px] text-subtle">Modifications non enregistrées.</span>
           )}
+        </div>
+      </section>
+
+      <section className="mt-8 border-t border-border pt-5">
+        <h2 className={EYEBROW}>Allocation de bienvenue</h2>
+        <p className="mt-1.5 max-w-xl text-[12.5px] text-subtle">
+          Les premières publications payantes d&apos;un vendeur lui sont offertes. Les catégories
+          déjà gratuites — les pièces — ne consomment rien : l&apos;allocation ne sert que là où il
+          y aurait eu un prix.
+        </p>
+
+        <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-4">
+          <label className="inline-flex cursor-pointer items-center gap-2.5">
+            <input
+              type="checkbox"
+              checked={free.enabled}
+              onChange={(e) => setFree((f) => ({ ...f, enabled: e.target.checked }))}
+              className="size-4 accent-[var(--gold)]"
+            />
+            <span className="text-[13px] font-medium text-foreground">Activer</span>
+          </label>
+
+          <label className="inline-flex items-center gap-2.5">
+            <span className="text-[12.5px] text-subtle">Publications offertes</span>
+            <input
+              type="number"
+              min={0}
+              max={50}
+              value={free.count}
+              onChange={(e) =>
+                setFree((f) => ({ ...f, count: Math.max(0, Math.trunc(Number(e.target.value) || 0)) }))
+              }
+              className="w-20 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-[13px] tabular-nums text-foreground focus:border-[var(--gold)] focus:outline-none"
+            />
+          </label>
+        </div>
+
+        <p className="mt-3 inline-flex items-center gap-1.5 text-[12px] text-subtle">
+          <Gift className="size-3.5 shrink-0" />
+          {free.enabled && free.count > 0
+            ? `Un nouveau vendeur publie ${free.count} annonce${free.count > 1 ? "s" : ""} sans payer, puis au tarif normal.`
+            : "Désactivée : chaque publication est facturée dès la première."}
+        </p>
+
+        {/* Lowering the number never bills anyone retroactively: each waiver is
+            recorded on the listing it applied to, so what is already given
+            stays given. */}
+        <div className="mt-4 flex items-center gap-3">
+          <AdminButton
+            variant="primary"
+            size="md"
+            pending={freeAction.pending}
+            done={freeAction.done}
+            doneLabel="Enregistré"
+            disabled={free.enabled === initialFree.enabled && free.count === initialFree.count}
+            disabledReason="Rien n'a changé."
+            icon={<Save className="size-3.5" strokeWidth={2.4} />}
+            onClick={() =>
+              freeAction.run({
+                url: "/api/admin/settings",
+                method: "POST",
+                body: { free_listings: free },
+                success: "Allocation enregistrée.",
+              })
+            }
+          >
+            Enregistrer
+          </AdminButton>
         </div>
       </section>
 

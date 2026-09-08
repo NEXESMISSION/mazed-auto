@@ -1,7 +1,7 @@
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { AdminPage, EYEBROW } from "@/components/admin/kit";
 import { SiteTabs } from "@/components/admin/kit/SiteTabs";
-import { SettingsForm, type PayeeSettings } from "./SettingsForm";
+import { SettingsForm, type PayeeSettings, type FreeListings } from "./SettingsForm";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -28,9 +28,22 @@ export default async function AdminSettingsPage() {
     payee_name: "", payee_bank: "", payee_rib: "", payee_iban: "", payee_d17: "",
   };
 
+  // Off with an allowance of 3: the shape the migration seeds, and the shape
+  // a missing row has to fall back to — reading "enabled" off undefined would
+  // otherwise render the toggle as on.
+  let freeListings: FreeListings = { enabled: false, count: 3 };
+
   if (admin) {
-    const { data } = await admin.from("app_settings").select("key, value").in("key", [...KEYS]);
+    const { data } = await admin
+      .from("app_settings")
+      .select("key, value")
+      .in("key", [...KEYS, "free_listings"]);
     for (const row of data ?? []) {
+      if (row.key === "free_listings") {
+        const v = (row.value ?? {}) as { enabled?: boolean; count?: number };
+        freeListings = { enabled: v.enabled === true, count: Number(v.count) || 0 };
+        continue;
+      }
       const key = row.key as (typeof KEYS)[number];
       if (!KEYS.includes(key)) continue;
       // app_settings stores jsonb, so a plain string arrives quoted.
@@ -50,7 +63,7 @@ export default async function AdminSettingsPage() {
           vivent dans Offres &amp; prix, et nulle part ailleurs.
         </p>
       </header>
-      <SettingsForm initial={settings} />
+      <SettingsForm initial={settings} initialFree={freeListings} />
     </AdminPage>
   );
 }

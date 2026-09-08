@@ -12,6 +12,8 @@ import { PRODUCT_SELECT, resolveListingFee, toProduct } from "@/lib/products";
  * This is the one place that decides how a publication is paid for, and it
  * decides server-side because the client must never get a vote on price:
  *
+ *   0. The category costs nothing              → straight to verification
+ *   0b. The seller has a welcome allowance left → straight to verification
  *   1. The seller holds a pack with quota left  → spend one credit, straight to
  *      the moderation queue, no payment step.
  *   2. Otherwise                                → create a `listing_fee` payment
@@ -167,6 +169,50 @@ export async function POST(
 
     logAction(req, user, "listing.submit.free", { id, productSlug: fee.slug });
     return NextResponse.json({ status: "pending_review", paidWith: "free" });
+  }
+
+  // ── 2b. The welcome allowance ─────────────────────────────────────────────
+  // Deliberately AFTER the price is resolved. A category that is already free
+  // returns above, so a spare part never burns a slot the seller could have
+  // spent on a car — the allowance only ever pays for something that would
+  // otherwise have cost money.
+  //
+  // The count and the claim happen inside `consume_free_listing`, under an
+  // advisory lock on the seller: two submits arriving together would both read
+  // the same "1 of 3 used" and both take the second slot.
+  const { data: waived } = await admin.rpc("consume_free_listing", {
+    p_listing_id: id,
+    p_seller_id: user.id,
+  });
+
+  if (waived?.ok === true) {
+    const { error } = await admin
+      .from("listings")
+      .update({ status: "pending_review", rejection_reason: null })
+      .eq("id", id);
+    if (error) return fail("listing_submit_failed", 500, error);
+
+    await admin
+      .rpc("enqueue_notification", {
+        p_user_id: user.id,
+        p_kind: "listing_submitted",
+        p_title: "Annonce envoyée à la vérification",
+        p_body:
+          `« ${listing.title} » est en cours de vérification. `
+          + `Cette publication vous est offerte`
+          + (waived.remaining > 0
+            ? `, il vous en reste ${waived.remaining}.`
+            : ` — c'était la dernière de votre allocation de bienvenue.`),
+        p_link: "/account/listings",
+      })
+      .then(() => {}, () => {});
+
+    logAction(req, user, "listing.submit.welcome", { id, remaining: waived.remaining });
+    return NextResponse.json({
+      status: "pending_review",
+      paidWith: "welcome",
+      remaining: waived.remaining,
+    });
   }
 
   // Reuse an actionable payment so a double-submit can't create two.
