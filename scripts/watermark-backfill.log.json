@@ -1,0 +1,3218 @@
+[
+  {
+    "id": "0046c15b-d419-4361-80c8-3ad52028ebe8",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/71/4.webp",
+    "to": "watermarked/1772bbc1-3759-4afb-a944-35d1a79f16cd/0046c15b-d419-4361-80c8-3ad52028ebe8.webp",
+    "at": "2026-09-08T17:18:01.764Z"
+  },
+  {
+    "id": "00a22557-6018-4c58-9f43-d561f5146a96",
+    "from": "ca683283-dab0-4520-b16e-1f48a26ea1ea/annonce-1788571111692-729629-1.webp",
+    "to": "watermarked/27d5d725-6ff1-412b-9e9f-9f2ed1ed014e/00a22557-6018-4c58-9f43-d561f5146a96.webp",
+    "at": "2026-09-08T17:18:16.842Z"
+  },
+  {
+    "id": "015cfeba-e528-4686-9639-47e6203a91c5",
+    "from": "57510ad5-91b1-4669-9e3b-4324b3721969/annonce-1788571063298-714011-2.webp",
+    "to": "watermarked/0023bbd6-384b-4af0-bdc9-f1f8ed5142d4/015cfeba-e528-4686-9639-47e6203a91c5.webp",
+    "at": "2026-09-08T17:18:18.071Z"
+  },
+  {
+    "id": "015f79d1-79bc-482e-8d2d-8fb1b56920d3",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/108/3.webp",
+    "to": "watermarked/08c13c67-1286-4555-a60c-41f488cdcfe8/015f79d1-79bc-482e-8d2d-8fb1b56920d3.webp",
+    "at": "2026-09-08T17:18:19.109Z"
+  },
+  {
+    "id": "01b51c9d-6249-4f47-84f8-a67000b9c666",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/93/1.webp",
+    "to": "watermarked/2fdaf636-ae06-4454-86f5-8a8df8fc24d7/01b51c9d-6249-4f47-84f8-a67000b9c666.webp",
+    "at": "2026-09-08T17:18:20.285Z"
+  },
+  {
+    "id": "01d6ad5a-2c6b-42bb-974b-a9f3f1f30b31",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/87/1.webp",
+    "to": "watermarked/8b53fe1a-c30f-4b38-a25c-5d9620c62570/01d6ad5a-2c6b-42bb-974b-a9f3f1f30b31.webp",
+    "at": "2026-09-08T17:18:21.282Z"
+  },
+  {
+    "id": "0233dee0-6dd6-4387-93f7-dff1552946a2",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a2539eea849fd3c0e15abb2/0.webp",
+    "to": "watermarked/f3df67fd-d279-4d58-b596-3f18c0606c5e/0233dee0-6dd6-4387-93f7-dff1552946a2.webp",
+    "at": "2026-09-08T17:18:22.588Z"
+  },
+  {
+    "id": "02d6132b-d9de-47d3-8165-a38414834fd2",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/113/0.webp",
+    "to": "watermarked/9c5842db-bbe3-4d04-8d3e-ca413ae0213c/02d6132b-d9de-47d3-8165-a38414834fd2.webp",
+    "at": "2026-09-08T17:18:23.393Z"
+  },
+  {
+    "id": "03c5001a-49ee-4d2b-88da-786fa5648aa0",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/127/0.webp",
+    "to": "watermarked/d1738b44-798b-4c5b-b423-70d37f2d4b5f/03c5001a-49ee-4d2b-88da-786fa5648aa0.webp",
+    "at": "2026-09-08T17:18:24.160Z"
+  },
+  {
+    "id": "041eabc6-798d-401c-bc13-c19e28a97e32",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/65/3.webp",
+    "to": "watermarked/fea69082-ff2c-4cbf-a634-9c01047665b3/041eabc6-798d-401c-bc13-c19e28a97e32.webp",
+    "at": "2026-09-08T17:18:25.206Z"
+  },
+  {
+    "id": "047c002a-637c-4863-bc06-226dea228064",
+    "from": "1450d88f-a369-4c15-9b33-52376c1f69e6/annonce-1788571190403-61625-2.webp",
+    "to": "watermarked/32769845-c170-4684-988f-dbe705683db4/047c002a-637c-4863-bc06-226dea228064.webp",
+    "at": "2026-09-08T17:18:26.593Z"
+  },
+  {
+    "id": "051aa706-97bf-474c-bb86-23f5885dafd9",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/79/4.webp",
+    "to": "watermarked/8f10d880-4be6-486c-bb54-d10f9273708e/051aa706-97bf-474c-bb86-23f5885dafd9.webp",
+    "at": "2026-09-08T17:18:27.631Z"
+  },
+  {
+    "id": "053d8019-3d42-4dd9-a4de-637e88adee66",
+    "from": "fb59b9c3-dc96-447f-a3df-c3365c79c698/annonce-1788570822531-782809-2.webp",
+    "to": "watermarked/e700dd3e-226d-46f0-b0c0-07b0792f491e/053d8019-3d42-4dd9-a4de-637e88adee66.webp",
+    "at": "2026-09-08T17:18:28.993Z"
+  },
+  {
+    "id": "07436dc5-67cc-467e-8290-08638255fb4b",
+    "from": "5f62ec4f-f8ad-4276-94c8-36d93e596114/annonce-1788571078217-345934-1.webp",
+    "to": "watermarked/a904b21c-e60b-4506-b201-a5a012207169/07436dc5-67cc-467e-8290-08638255fb4b.webp",
+    "at": "2026-09-08T17:18:30.178Z"
+  },
+  {
+    "id": "07bb808e-24e8-41b1-b5a7-1c731eda8e6d",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/127/1.webp",
+    "to": "watermarked/d1738b44-798b-4c5b-b423-70d37f2d4b5f/07bb808e-24e8-41b1-b5a7-1c731eda8e6d.webp",
+    "at": "2026-09-08T17:18:30.974Z"
+  },
+  {
+    "id": "080a193b-812c-410a-8ae5-c25408d9414f",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a1f420a90932ca4e76acae0/5.webp",
+    "to": "watermarked/cefc9d02-aa2d-4943-95b5-464a4a0ed75d/080a193b-812c-410a-8ae5-c25408d9414f.webp",
+    "at": "2026-09-08T17:18:31.962Z"
+  },
+  {
+    "id": "082a9d8a-ded3-466e-8d26-acc35334eade",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/65/6.webp",
+    "to": "watermarked/fea69082-ff2c-4cbf-a634-9c01047665b3/082a9d8a-ded3-466e-8d26-acc35334eade.webp",
+    "at": "2026-09-08T17:18:33.063Z"
+  },
+  {
+    "id": "0859512f-6311-4498-86fc-c817125a0881",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/113/3.webp",
+    "to": "watermarked/9c5842db-bbe3-4d04-8d3e-ca413ae0213c/0859512f-6311-4498-86fc-c817125a0881.webp",
+    "at": "2026-09-08T17:18:33.913Z"
+  },
+  {
+    "id": "08c05a1e-f272-48b0-939b-5992b703e8e6",
+    "from": "d6d8d637-3633-468d-95b5-9b534ad1d4d9/annonce-1788571165462-435738-1.webp",
+    "to": "watermarked/a49fce77-45ac-46d0-ae5e-d8a5c00527ef/08c05a1e-f272-48b0-939b-5992b703e8e6.webp",
+    "at": "2026-09-08T17:18:34.958Z"
+  },
+  {
+    "id": "092f64e2-3356-481d-b502-4defbc98ff83",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a23bf3ab257aa5aca4ce048/5.webp",
+    "to": "watermarked/9b0751aa-262e-4cb9-beaf-4a3e7485c727/092f64e2-3356-481d-b502-4defbc98ff83.webp",
+    "at": "2026-09-08T17:18:35.937Z"
+  },
+  {
+    "id": "094c7b97-febe-4ec8-8542-0c1d1001ea94",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/108/7.webp",
+    "to": "watermarked/08c13c67-1286-4555-a60c-41f488cdcfe8/094c7b97-febe-4ec8-8542-0c1d1001ea94.webp",
+    "at": "2026-09-08T17:18:37.113Z"
+  },
+  {
+    "id": "0a50061a-7628-4f3f-a8a1-4ec4ccd37647",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/123/4.webp",
+    "to": "watermarked/b23c763b-7598-4b74-a679-25efba9a17c6/0a50061a-7628-4f3f-a8a1-4ec4ccd37647.webp",
+    "at": "2026-09-08T17:18:38.025Z"
+  },
+  {
+    "id": "0abb6af8-4b84-431a-87f8-9b140ed57977",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/90/3.webp",
+    "to": "watermarked/dbcf7437-33d6-4e92-a156-0a268190d490/0abb6af8-4b84-431a-87f8-9b140ed57977.webp",
+    "at": "2026-09-08T17:18:39.411Z"
+  },
+  {
+    "id": "0aeab398-a91b-4c40-9520-d80251cbe6f4",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25527fb257aa5aca4dc3ab/4.webp",
+    "to": "watermarked/2c1432f3-952e-44e0-a5a1-f75853895dcf/0aeab398-a91b-4c40-9520-d80251cbe6f4.webp",
+    "at": "2026-09-08T17:18:40.244Z"
+  },
+  {
+    "id": "0bbdc16b-ab13-4d03-b0e0-f7147b1ea290",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/110/0.webp",
+    "to": "watermarked/dc38f4aa-87c4-49db-aa7b-70dbb9f2a8b2/0bbdc16b-ab13-4d03-b0e0-f7147b1ea290.webp",
+    "at": "2026-09-08T17:18:41.367Z"
+  },
+  {
+    "id": "0bda2120-3ee6-4dee-81e2-5d46631c6835",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/71/1.webp",
+    "to": "watermarked/1772bbc1-3759-4afb-a944-35d1a79f16cd/0bda2120-3ee6-4dee-81e2-5d46631c6835.webp",
+    "at": "2026-09-08T17:18:42.223Z"
+  },
+  {
+    "id": "0c571793-b284-43e3-8508-9c31dc324ae5",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/127/3.webp",
+    "to": "watermarked/d1738b44-798b-4c5b-b423-70d37f2d4b5f/0c571793-b284-43e3-8508-9c31dc324ae5.webp",
+    "at": "2026-09-08T17:18:43.246Z"
+  },
+  {
+    "id": "0d3d4705-2cc8-4908-bbcd-e924afd131e0",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a243729b257aa5aca4d324b/3.webp",
+    "to": "watermarked/c2fae52f-ab6f-4ed8-a7d0-a023bc208ad4/0d3d4705-2cc8-4908-bbcd-e924afd131e0.webp",
+    "at": "2026-09-08T17:18:44.062Z"
+  },
+  {
+    "id": "0dd6644f-18f7-46fb-89a3-3cce5a7aec9e",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/131/5.webp",
+    "to": "watermarked/6941e056-9bb3-41d0-b6e8-b692bad292a3/0dd6644f-18f7-46fb-89a3-3cce5a7aec9e.webp",
+    "at": "2026-09-08T17:18:45.123Z"
+  },
+  {
+    "id": "0e2c69f1-609c-41d2-a747-e16b4d34630f",
+    "from": "bc06b5ec-cc6a-4124-8121-eba418915429/annonce-1788570945929-86493-0.webp",
+    "to": "watermarked/38d38edc-fefd-4db0-9b83-998d09eba2db/0e2c69f1-609c-41d2-a747-e16b4d34630f.webp",
+    "at": "2026-09-08T17:18:46.019Z"
+  },
+  {
+    "id": "0f4b29c5-d8d9-486d-8e48-e0d1887ec397",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a22ebd3b257aa5aca4c8058/6.webp",
+    "to": "watermarked/8c046e7c-7568-41f7-a21c-04db77cd3d94/0f4b29c5-d8d9-486d-8e48-e0d1887ec397.webp",
+    "at": "2026-09-08T17:18:47.091Z"
+  },
+  {
+    "id": "0fdfb6b2-93ac-4a88-9bd5-2076e7352523",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/106/0.webp",
+    "to": "watermarked/1d9fe747-1278-4351-83e5-10bed2f7af4a/0fdfb6b2-93ac-4a88-9bd5-2076e7352523.webp",
+    "at": "2026-09-08T17:18:48.122Z"
+  },
+  {
+    "id": "100cc083-6d9e-4be5-9f54-091b939bef54",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/93/3.webp",
+    "to": "watermarked/2fdaf636-ae06-4454-86f5-8a8df8fc24d7/100cc083-6d9e-4be5-9f54-091b939bef54.webp",
+    "at": "2026-09-08T17:18:49.378Z"
+  },
+  {
+    "id": "1012ebe5-cd2a-4b92-952f-2cfed3326b31",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/87/7.webp",
+    "to": "watermarked/8b53fe1a-c30f-4b38-a25c-5d9620c62570/1012ebe5-cd2a-4b92-952f-2cfed3326b31.webp",
+    "at": "2026-09-08T17:18:50.209Z"
+  },
+  {
+    "id": "110e4f80-815f-4571-83a7-ba26b0ea389c",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/71/2.webp",
+    "to": "watermarked/1772bbc1-3759-4afb-a944-35d1a79f16cd/110e4f80-815f-4571-83a7-ba26b0ea389c.webp",
+    "at": "2026-09-08T17:18:50.994Z"
+  },
+  {
+    "id": "116e3295-c594-45cb-991d-0c057612a7a8",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/114/2.webp",
+    "to": "watermarked/741cb13e-febf-4b9d-bbb1-ff7eca81d47d/116e3295-c594-45cb-991d-0c057612a7a8.webp",
+    "at": "2026-09-08T17:18:51.698Z"
+  },
+  {
+    "id": "11f69dfd-6bdd-4389-aa8b-994cc3142644",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/71/6.webp",
+    "to": "watermarked/1772bbc1-3759-4afb-a944-35d1a79f16cd/11f69dfd-6bdd-4389-aa8b-994cc3142644.webp",
+    "at": "2026-09-08T17:18:52.504Z"
+  },
+  {
+    "id": "1223d963-b2aa-47db-afaf-878489ef6004",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a1f420a90932ca4e76acae0/0.webp",
+    "to": "watermarked/cefc9d02-aa2d-4943-95b5-464a4a0ed75d/1223d963-b2aa-47db-afaf-878489ef6004.webp",
+    "at": "2026-09-08T17:18:53.495Z"
+  },
+  {
+    "id": "1366c2db-22ce-412e-8b1d-2d06f5bbccff",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/110/5.webp",
+    "to": "watermarked/dc38f4aa-87c4-49db-aa7b-70dbb9f2a8b2/1366c2db-22ce-412e-8b1d-2d06f5bbccff.webp",
+    "at": "2026-09-08T17:18:54.670Z"
+  },
+  {
+    "id": "139d53f0-6642-41f1-9560-23a282d044f8",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/111/0.webp",
+    "to": "watermarked/b3a0e180-bc6a-4f28-9103-48f3b157c8aa/139d53f0-6642-41f1-9560-23a282d044f8.webp",
+    "at": "2026-09-08T17:18:55.497Z"
+  },
+  {
+    "id": "14836cf4-ca5d-490f-be66-94e8c561046a",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/131/1.webp",
+    "to": "watermarked/6941e056-9bb3-41d0-b6e8-b692bad292a3/14836cf4-ca5d-490f-be66-94e8c561046a.webp",
+    "at": "2026-09-08T17:18:56.552Z"
+  },
+  {
+    "id": "149752a5-4bde-4feb-8b05-6a36882e39a5",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/75/3.webp",
+    "to": "watermarked/bd8445a2-2972-494d-95a2-7caf50f17c13/149752a5-4bde-4feb-8b05-6a36882e39a5.webp",
+    "at": "2026-09-08T17:18:57.759Z"
+  },
+  {
+    "id": "14d37833-8c9d-4c89-99e2-8626463788bf",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/92/7.webp",
+    "to": "watermarked/bc0f8265-94dd-435b-aefa-5745e8711af1/14d37833-8c9d-4c89-99e2-8626463788bf.webp",
+    "at": "2026-09-08T17:18:59.443Z"
+  },
+  {
+    "id": "15b0b802-a991-4848-a421-a0407c158415",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a2591c8b257aa5aca4df21b/3.webp",
+    "to": "watermarked/dce47f08-fc20-41a8-b806-44add26a43a5/15b0b802-a991-4848-a421-a0407c158415.webp",
+    "at": "2026-09-08T17:19:00.686Z"
+  },
+  {
+    "id": "15f70ac3-37b0-4e30-aaa8-0bbb51d1af02",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/114/4.webp",
+    "to": "watermarked/741cb13e-febf-4b9d-bbb1-ff7eca81d47d/15f70ac3-37b0-4e30-aaa8-0bbb51d1af02.webp",
+    "at": "2026-09-08T17:19:01.414Z"
+  },
+  {
+    "id": "16336eb5-c063-41e2-bd97-95c734627552",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/87/5.webp",
+    "to": "watermarked/31500223-482e-4206-a700-b3d15e48a8fc/16336eb5-c063-41e2-bd97-95c734627552.webp",
+    "at": "2026-09-08T17:19:03.089Z"
+  },
+  {
+    "id": "170ac826-9087-4318-b553-c81cac5dd091",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25d77aa849fd3c0e161b15/2.webp",
+    "to": "watermarked/c8f72b85-bfb6-48e6-8142-8e5390c8929b/170ac826-9087-4318-b553-c81cac5dd091.webp",
+    "at": "2026-09-08T17:19:04.570Z"
+  },
+  {
+    "id": "170af5de-8c9f-4df1-9e1d-4b343e437e67",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/92/6.webp",
+    "to": "watermarked/bc0f8265-94dd-435b-aefa-5745e8711af1/170af5de-8c9f-4df1-9e1d-4b343e437e67.webp",
+    "at": "2026-09-08T17:19:05.918Z"
+  },
+  {
+    "id": "17289916-7bd0-43ee-af66-c6baaceecc02",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/75/0.webp",
+    "to": "watermarked/bd8445a2-2972-494d-95a2-7caf50f17c13/17289916-7bd0-43ee-af66-c6baaceecc02.webp",
+    "at": "2026-09-08T17:19:07.032Z"
+  },
+  {
+    "id": "174e5c51-0a48-42c9-b36d-948d5752a435",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/137/1.webp",
+    "to": "watermarked/4ebc4bd4-3b77-48ff-b533-ea8f40a34fa8/174e5c51-0a48-42c9-b36d-948d5752a435.webp",
+    "at": "2026-09-08T17:19:08.062Z"
+  },
+  {
+    "id": "179a9482-a3fc-47e2-ac48-794502dccff6",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/108/0.webp",
+    "to": "watermarked/08c13c67-1286-4555-a60c-41f488cdcfe8/179a9482-a3fc-47e2-ac48-794502dccff6.webp",
+    "at": "2026-09-08T17:19:08.933Z"
+  },
+  {
+    "id": "18c74220-d4a7-4a12-b45e-8b2977eca02e",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/73/0.webp",
+    "to": "watermarked/5abb0574-d141-4b49-a46e-2c50e422b8e9/18c74220-d4a7-4a12-b45e-8b2977eca02e.webp",
+    "at": "2026-09-08T17:19:10.005Z"
+  },
+  {
+    "id": "1a8b5d0e-1bb2-4565-ad11-9cd1ebd8581f",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/116/1.webp",
+    "to": "watermarked/a8053469-f980-4b1e-b181-3da577ddae1b/1a8b5d0e-1bb2-4565-ad11-9cd1ebd8581f.webp",
+    "at": "2026-09-08T17:19:11.748Z"
+  },
+  {
+    "id": "1a99a8ca-7758-480f-b5e4-dfa4051e1654",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/93/5.webp",
+    "to": "watermarked/2fdaf636-ae06-4454-86f5-8a8df8fc24d7/1a99a8ca-7758-480f-b5e4-dfa4051e1654.webp",
+    "at": "2026-09-08T17:19:12.940Z"
+  },
+  {
+    "id": "1bc4ce67-49fc-4261-8e18-c733731c0051",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/78/2.webp",
+    "to": "watermarked/b1b5c3cb-62fe-4111-b0a0-4a5229d1e460/1bc4ce67-49fc-4261-8e18-c733731c0051.webp",
+    "at": "2026-09-08T17:19:14.078Z"
+  },
+  {
+    "id": "1c64dcb6-55b4-4d4d-a319-9428a91e4652",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/75/2.webp",
+    "to": "watermarked/bd8445a2-2972-494d-95a2-7caf50f17c13/1c64dcb6-55b4-4d4d-a319-9428a91e4652.webp",
+    "at": "2026-09-08T17:19:15.240Z"
+  },
+  {
+    "id": "1ca170c2-00b9-4914-be20-2969efa59649",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a257c34b257aa5aca4de27b/3.webp",
+    "to": "watermarked/39e873ae-9c72-4306-896a-5d43e546922c/1ca170c2-00b9-4914-be20-2969efa59649.webp",
+    "at": "2026-09-08T17:19:16.101Z"
+  },
+  {
+    "id": "1cf8d12e-cd69-44fe-882b-b0e31e0f5d50",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25527fb257aa5aca4dc3ab/0.webp",
+    "to": "watermarked/2c1432f3-952e-44e0-a5a1-f75853895dcf/1cf8d12e-cd69-44fe-882b-b0e31e0f5d50.webp",
+    "at": "2026-09-08T17:19:17.166Z"
+  },
+  {
+    "id": "1dbe06a6-d95f-4c9c-944f-916d1d84a492",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/50/6.webp",
+    "to": "watermarked/d435281e-90c9-453b-9bdf-fe17f54d5aae/1dbe06a6-d95f-4c9c-944f-916d1d84a492.webp",
+    "at": "2026-09-08T17:19:18.429Z"
+  },
+  {
+    "id": "1e549815-10b0-4912-b5aa-8a08dfba0285",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a2591c8b257aa5aca4df21b/6.webp",
+    "to": "watermarked/dce47f08-fc20-41a8-b806-44add26a43a5/1e549815-10b0-4912-b5aa-8a08dfba0285.webp",
+    "at": "2026-09-08T17:19:19.450Z"
+  },
+  {
+    "id": "1e87ceed-3ade-44da-ad86-96f90b5f1b2b",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/91/3.webp",
+    "to": "watermarked/a590cb65-3332-4eec-90c1-9b7891105fa0/1e87ceed-3ade-44da-ad86-96f90b5f1b2b.webp",
+    "at": "2026-09-08T17:19:20.426Z"
+  },
+  {
+    "id": "1ee54c3e-2f80-4303-85ae-c0c6a828a146",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/80/5.webp",
+    "to": "watermarked/434b9d21-d8aa-479d-9aa8-1e6b7d5071b2/1ee54c3e-2f80-4303-85ae-c0c6a828a146.webp",
+    "at": "2026-09-08T17:19:21.348Z"
+  },
+  {
+    "id": "1f3edce6-bb3c-4d6f-9517-7ed440abe7d9",
+    "from": "1ea6dd8c-c9a2-4e35-82e5-19244be62dc5/annonce-1788570952299-620711-0.webp",
+    "to": "watermarked/34221bd5-4730-43b9-bf05-08fb3389e848/1f3edce6-bb3c-4d6f-9517-7ed440abe7d9.webp",
+    "at": "2026-09-08T17:19:22.240Z"
+  },
+  {
+    "id": "1fc6222a-12b0-461e-8986-e7650f81b0d4",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a23bf3ab257aa5aca4ce048/2.webp",
+    "to": "watermarked/9b0751aa-262e-4cb9-beaf-4a3e7485c727/1fc6222a-12b0-461e-8986-e7650f81b0d4.webp",
+    "at": "2026-09-08T17:19:23.392Z"
+  },
+  {
+    "id": "208dafbc-fc93-4bca-957b-6bcb3bd4bd08",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a2539eea849fd3c0e15abb2/6.webp",
+    "to": "watermarked/f3df67fd-d279-4d58-b596-3f18c0606c5e/208dafbc-fc93-4bca-957b-6bcb3bd4bd08.webp",
+    "at": "2026-09-08T17:19:24.097Z"
+  },
+  {
+    "id": "20b5fd32-0465-4f9e-94a5-eedfcfb51a93",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/107/4.webp",
+    "to": "watermarked/22c44fcc-e292-401c-986e-41335c9fb8e8/20b5fd32-0465-4f9e-94a5-eedfcfb51a93.webp",
+    "at": "2026-09-08T17:19:25.000Z"
+  },
+  {
+    "id": "20c758b2-4fc6-4d20-a252-a406c11e3173",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/115/5.webp",
+    "to": "watermarked/293b92ba-40a9-4f2d-996e-e7b455f6d3b5/20c758b2-4fc6-4d20-a252-a406c11e3173.webp",
+    "at": "2026-09-08T17:19:26.086Z"
+  },
+  {
+    "id": "20d94207-fff0-48cb-a3b1-75db111c8c6e",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/126/4.webp",
+    "to": "watermarked/b738ddd2-560d-4af3-a2ee-18cc750a89b9/20d94207-fff0-48cb-a3b1-75db111c8c6e.webp",
+    "at": "2026-09-08T17:19:27.119Z"
+  },
+  {
+    "id": "2131593f-c3f4-409e-8153-b0a63eafaaa9",
+    "from": "57510ad5-91b1-4669-9e3b-4324b3721969/annonce-1788571055781-700635-0.webp",
+    "to": "watermarked/0023bbd6-384b-4af0-bdc9-f1f8ed5142d4/2131593f-c3f4-409e-8153-b0a63eafaaa9.webp",
+    "at": "2026-09-08T17:19:28.566Z"
+  },
+  {
+    "id": "21a78de6-9090-42f2-bda1-16eee3ca9b6d",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/79/2.webp",
+    "to": "watermarked/8f10d880-4be6-486c-bb54-d10f9273708e/21a78de6-9090-42f2-bda1-16eee3ca9b6d.webp",
+    "at": "2026-09-08T17:19:29.561Z"
+  },
+  {
+    "id": "21b652dc-cbf0-401d-95ed-25c40c83a0a9",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/83/7.webp",
+    "to": "watermarked/727f5e17-41a7-48dc-a945-55d6bca476d5/21b652dc-cbf0-401d-95ed-25c40c83a0a9.webp",
+    "at": "2026-09-08T17:19:30.101Z"
+  },
+  {
+    "id": "220a37d7-0351-434c-aa01-5ec10136dd80",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/72/4.webp",
+    "to": "watermarked/9da095c4-b4f7-42ae-bc3a-e6bed54d7be7/220a37d7-0351-434c-aa01-5ec10136dd80.webp",
+    "at": "2026-09-08T17:19:31.094Z"
+  },
+  {
+    "id": "22e91b32-02f7-45d2-a3a2-b4f60614df24",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/111/4.webp",
+    "to": "watermarked/b3a0e180-bc6a-4f28-9103-48f3b157c8aa/22e91b32-02f7-45d2-a3a2-b4f60614df24.webp",
+    "at": "2026-09-08T17:19:31.906Z"
+  },
+  {
+    "id": "23ec66b1-9eb6-4bd1-85f3-9aaa29eee616",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25527fb257aa5aca4dc3ab/2.webp",
+    "to": "watermarked/2c1432f3-952e-44e0-a5a1-f75853895dcf/23ec66b1-9eb6-4bd1-85f3-9aaa29eee616.webp",
+    "at": "2026-09-08T17:19:32.963Z"
+  },
+  {
+    "id": "249ab6c8-32f2-4785-aab9-5c3bd209ae5f",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/36/2.webp",
+    "to": "watermarked/023a0768-4f2a-4bdd-b6b7-46bd21d2d7c8/249ab6c8-32f2-4785-aab9-5c3bd209ae5f.webp",
+    "at": "2026-09-08T17:19:33.887Z"
+  },
+  {
+    "id": "24f2ca8c-ad19-4dcb-96f3-e12b4ff5a4e1",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/79/6.webp",
+    "to": "watermarked/8f10d880-4be6-486c-bb54-d10f9273708e/24f2ca8c-ad19-4dcb-96f3-e12b4ff5a4e1.webp",
+    "at": "2026-09-08T17:19:34.775Z"
+  },
+  {
+    "id": "2570c1c0-6b1c-417b-8894-76cd4ef932a0",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/65/0.webp",
+    "to": "watermarked/fea69082-ff2c-4cbf-a634-9c01047665b3/2570c1c0-6b1c-417b-8894-76cd4ef932a0.webp",
+    "at": "2026-09-08T17:19:35.564Z"
+  },
+  {
+    "id": "25bc6a49-71c6-4dcb-a440-fd4f87123bb8",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/85/5.webp",
+    "to": "watermarked/7525cf81-e3db-4bd2-9a6c-440ff403b411/25bc6a49-71c6-4dcb-a440-fd4f87123bb8.webp",
+    "at": "2026-09-08T17:19:36.561Z"
+  },
+  {
+    "id": "25d536bc-0ebd-464d-bc7d-b4bcee5dd5c8",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/77/5.webp",
+    "to": "watermarked/37639e84-4d14-4b8f-9d0e-8224fbbe6bfb/25d536bc-0ebd-464d-bc7d-b4bcee5dd5c8.webp",
+    "at": "2026-09-08T17:19:37.476Z"
+  },
+  {
+    "id": "25dd6b93-7a92-4748-a330-4d37a5871e89",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a1f420a90932ca4e76acae0/2.webp",
+    "to": "watermarked/cefc9d02-aa2d-4943-95b5-464a4a0ed75d/25dd6b93-7a92-4748-a330-4d37a5871e89.webp",
+    "at": "2026-09-08T17:19:38.420Z"
+  },
+  {
+    "id": "25ed48f6-8319-4ca5-858a-3fda309162a2",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/115/2.webp",
+    "to": "watermarked/293b92ba-40a9-4f2d-996e-e7b455f6d3b5/25ed48f6-8319-4ca5-858a-3fda309162a2.webp",
+    "at": "2026-09-08T17:19:39.370Z"
+  },
+  {
+    "id": "2717c43b-4a01-4844-83aa-6c92720faf93",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/124/3.webp",
+    "to": "watermarked/a5717126-a59b-4cf2-afee-0f174cc4e312/2717c43b-4a01-4844-83aa-6c92720faf93.webp",
+    "at": "2026-09-08T17:19:40.936Z"
+  },
+  {
+    "id": "2753247a-2283-45f8-b539-c37129fb12de",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a2570a8a849fd3c0e15d20b/0.webp",
+    "to": "watermarked/8aa86de3-4640-4124-9990-a8663c9c58a7/2753247a-2283-45f8-b539-c37129fb12de.webp",
+    "at": "2026-09-08T17:19:42.005Z"
+  },
+  {
+    "id": "2762d52e-f048-4534-ad0c-866cc55650e6",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a22ebd3b257aa5aca4c8058/3.webp",
+    "to": "watermarked/8c046e7c-7568-41f7-a21c-04db77cd3d94/2762d52e-f048-4534-ad0c-866cc55650e6.webp",
+    "at": "2026-09-08T17:19:42.790Z"
+  },
+  {
+    "id": "2769f34c-c3c0-48fb-8776-59009d74c625",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/116/0.webp",
+    "to": "watermarked/a8053469-f980-4b1e-b181-3da577ddae1b/2769f34c-c3c0-48fb-8776-59009d74c625.webp",
+    "at": "2026-09-08T17:19:43.818Z"
+  },
+  {
+    "id": "2857d7bd-2ca9-445a-aa3f-b9a6a29bfef1",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/116/4.webp",
+    "to": "watermarked/a8053469-f980-4b1e-b181-3da577ddae1b/2857d7bd-2ca9-445a-aa3f-b9a6a29bfef1.webp",
+    "at": "2026-09-08T17:19:44.544Z"
+  },
+  {
+    "id": "28c7a321-9576-441e-8d64-58e1656e9c9e",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/66/4.webp",
+    "to": "watermarked/9fb56320-f485-4136-ba7f-e81df6931908/28c7a321-9576-441e-8d64-58e1656e9c9e.webp",
+    "at": "2026-09-08T17:19:45.491Z"
+  },
+  {
+    "id": "292bf2ae-673e-441d-8e46-16f7247cda17",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/9/4.webp",
+    "to": "watermarked/9824b0db-9b6e-4c58-b12f-eb12aa3a4dd2/292bf2ae-673e-441d-8e46-16f7247cda17.webp",
+    "at": "2026-09-08T17:19:46.547Z"
+  },
+  {
+    "id": "2a4e2687-e48b-4b97-8d00-27c3bba4c57a",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/23/2.webp",
+    "to": "watermarked/10b0dce7-402d-44a1-8ba7-f5e0efcbb243/2a4e2687-e48b-4b97-8d00-27c3bba4c57a.webp",
+    "at": "2026-09-08T17:19:47.346Z"
+  },
+  {
+    "id": "2af28060-20d8-48db-91fc-49dcf30a8bd6",
+    "from": "ec96f995-e9ae-4375-a9d6-04d6de74dc07/annonce-1788571099610-645260-0.webp",
+    "to": "watermarked/62b57303-c2f3-40cb-bcbe-32272a0131e4/2af28060-20d8-48db-91fc-49dcf30a8bd6.webp",
+    "at": "2026-09-08T17:19:48.358Z"
+  },
+  {
+    "id": "2b1b6abf-0d16-41b5-99a9-d39b1d996073",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a2591c8b257aa5aca4df21b/4.webp",
+    "to": "watermarked/dce47f08-fc20-41a8-b806-44add26a43a5/2b1b6abf-0d16-41b5-99a9-d39b1d996073.webp",
+    "at": "2026-09-08T17:19:49.105Z"
+  },
+  {
+    "id": "2b1f7d4d-e0b0-4cc5-afd3-cc7f7e64e6dc",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/110/6.webp",
+    "to": "watermarked/dc38f4aa-87c4-49db-aa7b-70dbb9f2a8b2/2b1f7d4d-e0b0-4cc5-afd3-cc7f7e64e6dc.webp",
+    "at": "2026-09-08T17:19:50.183Z"
+  },
+  {
+    "id": "2b4dfc0b-51ac-4ca7-af0a-6c9afc79470a",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/50/3.webp",
+    "to": "watermarked/d435281e-90c9-453b-9bdf-fe17f54d5aae/2b4dfc0b-51ac-4ca7-af0a-6c9afc79470a.webp",
+    "at": "2026-09-08T17:19:51.123Z"
+  },
+  {
+    "id": "2b5d121b-1087-41ca-82c6-d54ead30efa9",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/108/1.webp",
+    "to": "watermarked/08c13c67-1286-4555-a60c-41f488cdcfe8/2b5d121b-1087-41ca-82c6-d54ead30efa9.webp",
+    "at": "2026-09-08T17:19:51.953Z"
+  },
+  {
+    "id": "2bf64f2b-ad76-448f-b369-6a54d5a7c59c",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25527fb257aa5aca4dc3ab/3.webp",
+    "to": "watermarked/2c1432f3-952e-44e0-a5a1-f75853895dcf/2bf64f2b-ad76-448f-b369-6a54d5a7c59c.webp",
+    "at": "2026-09-08T17:19:53.062Z"
+  },
+  {
+    "id": "2d05fad4-c4f9-4857-a702-e70389c0f36e",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25a53bb257aa5aca4dfdcc/4.webp",
+    "to": "watermarked/426267f0-30c7-4a59-8dc9-ae55ee889db2/2d05fad4-c4f9-4857-a702-e70389c0f36e.webp",
+    "at": "2026-09-08T17:19:53.828Z"
+  },
+  {
+    "id": "2d513129-bda5-40ea-84d4-97fa112e4fb4",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25d77aa849fd3c0e161b15/3.webp",
+    "to": "watermarked/c8f72b85-bfb6-48e6-8142-8e5390c8929b/2d513129-bda5-40ea-84d4-97fa112e4fb4.webp",
+    "at": "2026-09-08T17:19:54.680Z"
+  },
+  {
+    "id": "2d68c383-c2a0-47b6-8d94-9c6c274f6979",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a256a48a849fd3c0e15cd8d/0.webp",
+    "to": "watermarked/82639106-f0e2-4552-8e1c-84fa6b5306b6/2d68c383-c2a0-47b6-8d94-9c6c274f6979.webp",
+    "at": "2026-09-08T17:19:55.576Z"
+  },
+  {
+    "id": "2e0dea21-ab7e-4d0c-b637-8aadaacffb54",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/75/6.webp",
+    "to": "watermarked/92d2a9fe-6bf1-41af-8887-0cf3782bd002/2e0dea21-ab7e-4d0c-b637-8aadaacffb54.webp",
+    "at": "2026-09-08T17:19:56.421Z"
+  },
+  {
+    "id": "2eeaba32-5f7b-4b11-b824-745afe5c8cb7",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a232533b257aa5aca4ca603/1.webp",
+    "to": "watermarked/0ea0d57b-2253-4be6-a5ca-ce35e877b436/2eeaba32-5f7b-4b11-b824-745afe5c8cb7.webp",
+    "at": "2026-09-08T17:19:57.630Z"
+  },
+  {
+    "id": "2f9fabc0-5b12-49af-ac62-a752c94fb1ca",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/78/3.webp",
+    "to": "watermarked/b1b5c3cb-62fe-4111-b0a0-4a5229d1e460/2f9fabc0-5b12-49af-ac62-a752c94fb1ca.webp",
+    "at": "2026-09-08T17:19:58.820Z"
+  },
+  {
+    "id": "320f884b-6b40-409a-9acd-d89e23ff615f",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/66/2.webp",
+    "to": "watermarked/9fb56320-f485-4136-ba7f-e81df6931908/320f884b-6b40-409a-9acd-d89e23ff615f.webp",
+    "at": "2026-09-08T17:19:59.918Z"
+  },
+  {
+    "id": "324f86c6-9d3c-4601-9998-57973a213fbb",
+    "from": "5f62ec4f-f8ad-4276-94c8-36d93e596114/annonce-1788571083446-237398-2.webp",
+    "to": "watermarked/a904b21c-e60b-4506-b201-a5a012207169/324f86c6-9d3c-4601-9998-57973a213fbb.webp",
+    "at": "2026-09-08T17:20:01.464Z"
+  },
+  {
+    "id": "327fcd57-9450-4c24-9048-2f8b6ebb24d1",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25d77aa849fd3c0e161b15/4.webp",
+    "to": "watermarked/5eb0c1cd-02b6-4fb2-b2ff-5b91576dd5a8/327fcd57-9450-4c24-9048-2f8b6ebb24d1.webp",
+    "at": "2026-09-08T17:20:02.732Z"
+  },
+  {
+    "id": "32deb26b-cafd-4a82-8669-7530db1e3978",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/90/7.webp",
+    "to": "watermarked/dbcf7437-33d6-4e92-a156-0a268190d490/32deb26b-cafd-4a82-8669-7530db1e3978.webp",
+    "at": "2026-09-08T17:20:03.753Z"
+  },
+  {
+    "id": "341f65b7-4eaf-40ef-bbf2-4a68e1955fc5",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25d77aa849fd3c0e161b15/1.webp",
+    "to": "watermarked/c8f72b85-bfb6-48e6-8142-8e5390c8929b/341f65b7-4eaf-40ef-bbf2-4a68e1955fc5.webp",
+    "at": "2026-09-08T17:20:04.907Z"
+  },
+  {
+    "id": "34b6d91c-ffa0-46d3-9df9-19d3ae181103",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25d77aa849fd3c0e161b15/4.webp",
+    "to": "watermarked/c8f72b85-bfb6-48e6-8142-8e5390c8929b/34b6d91c-ffa0-46d3-9df9-19d3ae181103.webp",
+    "at": "2026-09-08T17:20:05.738Z"
+  },
+  {
+    "id": "35376e08-c862-4259-9657-fc600ad65a88",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a2539eea849fd3c0e15abb2/7.webp",
+    "to": "watermarked/f3df67fd-d279-4d58-b596-3f18c0606c5e/35376e08-c862-4259-9657-fc600ad65a88.webp",
+    "at": "2026-09-08T17:20:06.686Z"
+  },
+  {
+    "id": "3667530a-ab26-4cb7-b895-040a01697094",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/116/3.webp",
+    "to": "watermarked/a8053469-f980-4b1e-b181-3da577ddae1b/3667530a-ab26-4cb7-b895-040a01697094.webp",
+    "at": "2026-09-08T17:20:07.616Z"
+  },
+  {
+    "id": "36ec2882-b5a7-4250-9f30-fe10d0d8dc09",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a2539eea849fd3c0e15abb2/1.webp",
+    "to": "watermarked/f3df67fd-d279-4d58-b596-3f18c0606c5e/36ec2882-b5a7-4250-9f30-fe10d0d8dc09.webp",
+    "at": "2026-09-08T17:20:09.430Z"
+  },
+  {
+    "id": "37cec579-aa7f-4ce7-ae41-c033e3659563",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/70/5.webp",
+    "to": "watermarked/e3506b8f-364a-471a-ba87-53022e00a6b5/37cec579-aa7f-4ce7-ae41-c033e3659563.webp",
+    "at": "2026-09-08T17:20:10.413Z"
+  },
+  {
+    "id": "3819ba87-492e-4c30-9854-6e41ea571b73",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/108/6.webp",
+    "to": "watermarked/08c13c67-1286-4555-a60c-41f488cdcfe8/3819ba87-492e-4c30-9854-6e41ea571b73.webp",
+    "at": "2026-09-08T17:20:11.147Z"
+  },
+  {
+    "id": "389844fd-8d08-490f-b042-81827132118f",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/127/2.webp",
+    "to": "watermarked/d1738b44-798b-4c5b-b423-70d37f2d4b5f/389844fd-8d08-490f-b042-81827132118f.webp",
+    "at": "2026-09-08T17:20:12.114Z"
+  },
+  {
+    "id": "38bcacfd-2a26-4782-bcba-9eac0da8bf1f",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/36/7.webp",
+    "to": "watermarked/023a0768-4f2a-4bdd-b6b7-46bd21d2d7c8/38bcacfd-2a26-4782-bcba-9eac0da8bf1f.webp",
+    "at": "2026-09-08T17:20:13.454Z"
+  },
+  {
+    "id": "38df3c67-f256-4e1f-ba21-168a9991c97e",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/90/2.webp",
+    "to": "watermarked/dbcf7437-33d6-4e92-a156-0a268190d490/38df3c67-f256-4e1f-ba21-168a9991c97e.webp",
+    "at": "2026-09-08T17:20:14.500Z"
+  },
+  {
+    "id": "391cc5e2-d1d1-4f18-968e-d524a87b635d",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a232533b257aa5aca4ca603/7.webp",
+    "to": "watermarked/0ea0d57b-2253-4be6-a5ca-ce35e877b436/391cc5e2-d1d1-4f18-968e-d524a87b635d.webp",
+    "at": "2026-09-08T17:20:15.322Z"
+  },
+  {
+    "id": "393c6c54-cc2d-46fd-aa61-f62dbd8e4896",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a23f1c7b257aa5aca4cffc6/6.webp",
+    "to": "watermarked/c27b091e-e0a0-4000-a5d3-4de99e4c770d/393c6c54-cc2d-46fd-aa61-f62dbd8e4896.webp",
+    "at": "2026-09-08T17:20:16.475Z"
+  },
+  {
+    "id": "393e29bc-9add-41d3-8e92-65205a65cd34",
+    "from": "1450d88f-a369-4c15-9b33-52376c1f69e6/annonce-1788570814721-278767-2.webp",
+    "to": "watermarked/0ebc2014-7dd8-4ac8-acd9-26abbb17a4f5/393e29bc-9add-41d3-8e92-65205a65cd34.webp",
+    "at": "2026-09-08T17:20:17.833Z"
+  },
+  {
+    "id": "399a773f-cd85-42f6-99ec-ecc7266897ef",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a243729b257aa5aca4d324b/1.webp",
+    "to": "watermarked/c2fae52f-ab6f-4ed8-a7d0-a023bc208ad4/399a773f-cd85-42f6-99ec-ecc7266897ef.webp",
+    "at": "2026-09-08T17:20:18.789Z"
+  },
+  {
+    "id": "3a5b9a38-4277-4f02-a2ab-a5bb84ae4c12",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/70/7.webp",
+    "to": "watermarked/e3506b8f-364a-471a-ba87-53022e00a6b5/3a5b9a38-4277-4f02-a2ab-a5bb84ae4c12.webp",
+    "at": "2026-09-08T17:20:19.689Z"
+  },
+  {
+    "id": "3a8c52b8-bee6-47d8-94bf-740cd724a2bb",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/80/0.webp",
+    "to": "watermarked/434b9d21-d8aa-479d-9aa8-1e6b7d5071b2/3a8c52b8-bee6-47d8-94bf-740cd724a2bb.webp",
+    "at": "2026-09-08T17:20:20.698Z"
+  },
+  {
+    "id": "3abd13a6-8ad4-4a92-a7bf-d491db0fef62",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/93/4.webp",
+    "to": "watermarked/2fdaf636-ae06-4454-86f5-8a8df8fc24d7/3abd13a6-8ad4-4a92-a7bf-d491db0fef62.webp",
+    "at": "2026-09-08T17:20:21.649Z"
+  },
+  {
+    "id": "3afa640f-b126-4fe5-a478-edafc491f463",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/91/7.webp",
+    "to": "watermarked/a590cb65-3332-4eec-90c1-9b7891105fa0/3afa640f-b126-4fe5-a478-edafc491f463.webp",
+    "at": "2026-09-08T17:20:22.569Z"
+  },
+  {
+    "id": "3b020e55-edec-403b-bad5-1d7203d3a4e4",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/123/7.webp",
+    "to": "watermarked/b23c763b-7598-4b74-a679-25efba9a17c6/3b020e55-edec-403b-bad5-1d7203d3a4e4.webp",
+    "at": "2026-09-08T17:20:23.476Z"
+  },
+  {
+    "id": "3b1753bf-b047-4892-9455-b076861d60ad",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/70/6.webp",
+    "to": "watermarked/e3506b8f-364a-471a-ba87-53022e00a6b5/3b1753bf-b047-4892-9455-b076861d60ad.webp",
+    "at": "2026-09-08T17:20:24.584Z"
+  },
+  {
+    "id": "3b46305e-57cd-4268-94af-04f0ee3a89c9",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/114/3.webp",
+    "to": "watermarked/741cb13e-febf-4b9d-bbb1-ff7eca81d47d/3b46305e-57cd-4268-94af-04f0ee3a89c9.webp",
+    "at": "2026-09-08T17:20:25.306Z"
+  },
+  {
+    "id": "3c24feb1-8550-4b2d-8ab0-aa50161b36b6",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/123/2.webp",
+    "to": "watermarked/b23c763b-7598-4b74-a679-25efba9a17c6/3c24feb1-8550-4b2d-8ab0-aa50161b36b6.webp",
+    "at": "2026-09-08T17:20:26.346Z"
+  },
+  {
+    "id": "3dab2c9a-0487-4d94-8480-07208ba60e3b",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/112/5.webp",
+    "to": "watermarked/8dc23f12-786c-48f0-9289-a0b89f3b46bb/3dab2c9a-0487-4d94-8480-07208ba60e3b.webp",
+    "at": "2026-09-08T17:20:27.196Z"
+  },
+  {
+    "id": "3f76ae53-d9d3-449d-80a6-23fad953a739",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/126/2.webp",
+    "to": "watermarked/b738ddd2-560d-4af3-a2ee-18cc750a89b9/3f76ae53-d9d3-449d-80a6-23fad953a739.webp",
+    "at": "2026-09-08T17:20:28.267Z"
+  },
+  {
+    "id": "3ff311c4-5329-436b-886a-dd969de09ed7",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a22ebd3b257aa5aca4c8058/2.webp",
+    "to": "watermarked/8c046e7c-7568-41f7-a21c-04db77cd3d94/3ff311c4-5329-436b-886a-dd969de09ed7.webp",
+    "at": "2026-09-08T17:20:29.219Z"
+  },
+  {
+    "id": "4146d06f-0701-4eea-bc9b-ded3b3405992",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a2539eea849fd3c0e15abb2/3.webp",
+    "to": "watermarked/f3df67fd-d279-4d58-b596-3f18c0606c5e/4146d06f-0701-4eea-bc9b-ded3b3405992.webp",
+    "at": "2026-09-08T17:20:30.381Z"
+  },
+  {
+    "id": "41944cf4-9cec-46fb-8c0e-3de0783df7df",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25d77aa849fd3c0e161b15/5.webp",
+    "to": "watermarked/5eb0c1cd-02b6-4fb2-b2ff-5b91576dd5a8/41944cf4-9cec-46fb-8c0e-3de0783df7df.webp",
+    "at": "2026-09-08T17:20:31.271Z"
+  },
+  {
+    "id": "41a5a398-6cfe-46a8-9a8f-a2e522720b87",
+    "from": "d6d8d637-3633-468d-95b5-9b534ad1d4d9/annonce-1788570801979-361690-0.webp",
+    "to": "watermarked/014c0ad4-3490-44ef-99f8-5c91983531fe/41a5a398-6cfe-46a8-9a8f-a2e522720b87.webp",
+    "at": "2026-09-08T17:20:31.955Z"
+  },
+  {
+    "id": "42caa203-7afd-4ff6-89d8-ab84391c56f4",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/115/3.webp",
+    "to": "watermarked/293b92ba-40a9-4f2d-996e-e7b455f6d3b5/42caa203-7afd-4ff6-89d8-ab84391c56f4.webp",
+    "at": "2026-09-08T17:20:33.021Z"
+  },
+  {
+    "id": "431136f8-21f0-4d29-a5b0-5058271b7d0b",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/131/2.webp",
+    "to": "watermarked/6941e056-9bb3-41d0-b6e8-b692bad292a3/431136f8-21f0-4d29-a5b0-5058271b7d0b.webp",
+    "at": "2026-09-08T17:20:33.959Z"
+  },
+  {
+    "id": "4332c970-daec-4ee4-8708-cb821395434b",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25d77aa849fd3c0e161b15/1.webp",
+    "to": "watermarked/5eb0c1cd-02b6-4fb2-b2ff-5b91576dd5a8/4332c970-daec-4ee4-8708-cb821395434b.webp",
+    "at": "2026-09-08T17:20:35.041Z"
+  },
+  {
+    "id": "435755dd-a8bc-4538-9651-2349dded7346",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/125/5.webp",
+    "to": "watermarked/f622e307-e49b-4696-a3b8-a2cdeae6129f/435755dd-a8bc-4538-9651-2349dded7346.webp",
+    "at": "2026-09-08T17:20:35.986Z"
+  },
+  {
+    "id": "4489867f-b602-43e3-b95d-0e3391c6b679",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/83/6.webp",
+    "to": "watermarked/727f5e17-41a7-48dc-a945-55d6bca476d5/4489867f-b602-43e3-b95d-0e3391c6b679.webp",
+    "at": "2026-09-08T17:20:36.788Z"
+  },
+  {
+    "id": "451a184d-8514-43ec-91dc-4678aa35ac40",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/126/0.webp",
+    "to": "watermarked/b738ddd2-560d-4af3-a2ee-18cc750a89b9/451a184d-8514-43ec-91dc-4678aa35ac40.webp",
+    "at": "2026-09-08T17:20:37.715Z"
+  },
+  {
+    "id": "463c6400-0254-40d5-a0b0-3d6ea96bc94f",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/79/1.webp",
+    "to": "watermarked/8f10d880-4be6-486c-bb54-d10f9273708e/463c6400-0254-40d5-a0b0-3d6ea96bc94f.webp",
+    "at": "2026-09-08T17:20:38.701Z"
+  },
+  {
+    "id": "466527d7-c9cb-4681-b3d2-6f3b7d1c6722",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/116/6.webp",
+    "to": "watermarked/a8053469-f980-4b1e-b181-3da577ddae1b/466527d7-c9cb-4681-b3d2-6f3b7d1c6722.webp",
+    "at": "2026-09-08T17:20:39.636Z"
+  },
+  {
+    "id": "46e05749-8d88-43d0-b38d-c4e4ea6e5d56",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/83/3.webp",
+    "to": "watermarked/727f5e17-41a7-48dc-a945-55d6bca476d5/46e05749-8d88-43d0-b38d-c4e4ea6e5d56.webp",
+    "at": "2026-09-08T17:20:40.642Z"
+  },
+  {
+    "id": "47dee1b1-9432-4795-8fdf-3db09f131604",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/108/4.webp",
+    "to": "watermarked/08c13c67-1286-4555-a60c-41f488cdcfe8/47dee1b1-9432-4795-8fdf-3db09f131604.webp",
+    "at": "2026-09-08T17:20:41.730Z"
+  },
+  {
+    "id": "480c49e6-d360-44ef-9ee5-3e88d1468fe1",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a2469dab257aa5aca4d5290/1.webp",
+    "to": "watermarked/cca22ada-8a87-47e8-a128-b700eda2c08e/480c49e6-d360-44ef-9ee5-3e88d1468fe1.webp",
+    "at": "2026-09-08T17:20:43.101Z"
+  },
+  {
+    "id": "48b9847e-7899-4abc-bfda-9a7271ad3b70",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a23bf3ab257aa5aca4ce048/6.webp",
+    "to": "watermarked/9b0751aa-262e-4cb9-beaf-4a3e7485c727/48b9847e-7899-4abc-bfda-9a7271ad3b70.webp",
+    "at": "2026-09-08T17:20:44.405Z"
+  },
+  {
+    "id": "48dd9d84-76ac-4c20-b055-2df6d142d9d1",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/135/0.webp",
+    "to": "watermarked/352e9a53-a06c-463d-8160-9693e94b4413/48dd9d84-76ac-4c20-b055-2df6d142d9d1.webp",
+    "at": "2026-09-08T17:20:45.511Z"
+  },
+  {
+    "id": "48ebf23c-1166-42e2-9c50-bd5605f8b099",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/75/6.webp",
+    "to": "watermarked/bd8445a2-2972-494d-95a2-7caf50f17c13/48ebf23c-1166-42e2-9c50-bd5605f8b099.webp",
+    "at": "2026-09-08T17:20:46.495Z"
+  },
+  {
+    "id": "490bdc74-129a-4c72-a92e-3b579baa0c0b",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/111/6.webp",
+    "to": "watermarked/b3a0e180-bc6a-4f28-9103-48f3b157c8aa/490bdc74-129a-4c72-a92e-3b579baa0c0b.webp",
+    "at": "2026-09-08T17:20:47.379Z"
+  },
+  {
+    "id": "4a1376ae-d2f2-491b-b764-397538eeb05c",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/124/5.webp",
+    "to": "watermarked/a5717126-a59b-4cf2-afee-0f174cc4e312/4a1376ae-d2f2-491b-b764-397538eeb05c.webp",
+    "at": "2026-09-08T17:20:48.299Z"
+  },
+  {
+    "id": "4a5c5047-037d-4bfb-b544-0991349a9cc0",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/125/2.webp",
+    "to": "watermarked/f622e307-e49b-4696-a3b8-a2cdeae6129f/4a5c5047-037d-4bfb-b544-0991349a9cc0.webp",
+    "at": "2026-09-08T17:20:49.531Z"
+  },
+  {
+    "id": "4a6afca9-cca5-4672-9768-19659a538765",
+    "from": "1450d88f-a369-4c15-9b33-52376c1f69e6/annonce-1788571174064-52356-1.webp",
+    "to": "watermarked/32769845-c170-4684-988f-dbe705683db4/4a6afca9-cca5-4672-9768-19659a538765.webp",
+    "at": "2026-09-08T17:20:50.971Z"
+  },
+  {
+    "id": "4a939faa-d1ca-421f-b57f-26f906b05559",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/72/0.webp",
+    "to": "watermarked/9da095c4-b4f7-42ae-bc3a-e6bed54d7be7/4a939faa-d1ca-421f-b57f-26f906b05559.webp",
+    "at": "2026-09-08T17:20:52.471Z"
+  },
+  {
+    "id": "4aa8857e-54e0-4225-9d46-20b922954094",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/77/6.webp",
+    "to": "watermarked/37639e84-4d14-4b8f-9d0e-8224fbbe6bfb/4aa8857e-54e0-4225-9d46-20b922954094.webp",
+    "at": "2026-09-08T17:20:53.801Z"
+  },
+  {
+    "id": "4b187877-342d-4443-8805-0577697cadcb",
+    "from": "1ea6dd8c-c9a2-4e35-82e5-19244be62dc5/annonce-1788570848306-57078-0.webp",
+    "to": "watermarked/ea28243a-2afe-4a59-b55c-09f2c5159bd7/4b187877-342d-4443-8805-0577697cadcb.webp",
+    "at": "2026-09-08T17:20:55.623Z"
+  },
+  {
+    "id": "4c104bb1-4b65-49a5-85b0-6ebfca8ee5f7",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25bed3b257aa5aca4e10a8/2.webp",
+    "to": "watermarked/9bed9289-a43e-479a-97d2-a617ae1e740c/4c104bb1-4b65-49a5-85b0-6ebfca8ee5f7.webp",
+    "at": "2026-09-08T17:20:56.687Z"
+  },
+  {
+    "id": "4c985fbd-0b76-41b0-b6e5-58b47f095fd6",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a232533b257aa5aca4ca603/6.webp",
+    "to": "watermarked/0ea0d57b-2253-4be6-a5ca-ce35e877b436/4c985fbd-0b76-41b0-b6e5-58b47f095fd6.webp",
+    "at": "2026-09-08T17:20:57.909Z"
+  },
+  {
+    "id": "4d00fce4-81b8-4fb2-9f68-bfb2092d533f",
+    "from": "bc06b5ec-cc6a-4124-8121-eba418915429/annonce-1788570949498-747443-2.webp",
+    "to": "watermarked/38d38edc-fefd-4db0-9b83-998d09eba2db/4d00fce4-81b8-4fb2-9f68-bfb2092d533f.webp",
+    "at": "2026-09-08T17:20:59.452Z"
+  },
+  {
+    "id": "4d5009a3-354d-4e62-806a-a313bafe9a77",
+    "from": "ca683283-dab0-4520-b16e-1f48a26ea1ea/annonce-1788570792931-885601-0.webp",
+    "to": "watermarked/59522c69-7470-4057-8a83-453d4b96c5bd/4d5009a3-354d-4e62-806a-a313bafe9a77.webp",
+    "at": "2026-09-08T17:21:00.601Z"
+  },
+  {
+    "id": "4d79662f-2899-4cf0-a51d-8f57af0af507",
+    "from": "ca683283-dab0-4520-b16e-1f48a26ea1ea/annonce-1788570796975-912752-2.webp",
+    "to": "watermarked/59522c69-7470-4057-8a83-453d4b96c5bd/4d79662f-2899-4cf0-a51d-8f57af0af507.webp",
+    "at": "2026-09-08T17:21:01.938Z"
+  },
+  {
+    "id": "4d85f375-cc01-4bb2-9576-af9b67a0e5e0",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/96/2.webp",
+    "to": "watermarked/bfd43e55-0781-415c-8f15-a12903a29bad/4d85f375-cc01-4bb2-9576-af9b67a0e5e0.webp",
+    "at": "2026-09-08T17:21:03.276Z"
+  },
+  {
+    "id": "4d9153cd-ab49-4862-8a5f-cdf3e09bb800",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/80/1.webp",
+    "to": "watermarked/434b9d21-d8aa-479d-9aa8-1e6b7d5071b2/4d9153cd-ab49-4862-8a5f-cdf3e09bb800.webp",
+    "at": "2026-09-08T17:21:04.726Z"
+  },
+  {
+    "id": "4e2c1fa7-8823-4e96-892a-89bbd039cb9c",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/74/4.webp",
+    "to": "watermarked/e46445a7-a7cc-4633-a846-0d9835900489/4e2c1fa7-8823-4e96-892a-89bbd039cb9c.webp",
+    "at": "2026-09-08T17:21:06.077Z"
+  },
+  {
+    "id": "4ea4f1e7-0d0f-4c62-ab94-ef014c8619f4",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/91/5.webp",
+    "to": "watermarked/a590cb65-3332-4eec-90c1-9b7891105fa0/4ea4f1e7-0d0f-4c62-ab94-ef014c8619f4.webp",
+    "at": "2026-09-08T17:21:07.271Z"
+  },
+  {
+    "id": "4eb82cfe-b219-4f9d-a7f1-1f402dddb260",
+    "from": "d6d8d637-3633-468d-95b5-9b534ad1d4d9/annonce-1788570805005-136680-2.webp",
+    "to": "watermarked/014c0ad4-3490-44ef-99f8-5c91983531fe/4eb82cfe-b219-4f9d-a7f1-1f402dddb260.webp",
+    "at": "2026-09-08T17:21:08.707Z"
+  },
+  {
+    "id": "4ec6186a-f96e-475e-b165-949243e9b229",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25d77aa849fd3c0e161b15/5.webp",
+    "to": "watermarked/f6e8161c-7af6-4a79-8155-cadd443fb228/4ec6186a-f96e-475e-b165-949243e9b229.webp",
+    "at": "2026-09-08T17:21:09.369Z"
+  },
+  {
+    "id": "4ee8ecb1-af8c-46f8-abf0-3a83a842b3d1",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a257c34b257aa5aca4de27b/1.webp",
+    "to": "watermarked/39e873ae-9c72-4306-896a-5d43e546922c/4ee8ecb1-af8c-46f8-abf0-3a83a842b3d1.webp",
+    "at": "2026-09-08T17:21:10.520Z"
+  },
+  {
+    "id": "4f427792-6bcd-49cc-90e6-ecadf460b01d",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a23bf3ab257aa5aca4ce048/4.webp",
+    "to": "watermarked/9b0751aa-262e-4cb9-beaf-4a3e7485c727/4f427792-6bcd-49cc-90e6-ecadf460b01d.webp",
+    "at": "2026-09-08T17:21:11.607Z"
+  },
+  {
+    "id": "4f42f458-a178-4666-b68d-c69800ebc540",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/23/6.webp",
+    "to": "watermarked/10b0dce7-402d-44a1-8ba7-f5e0efcbb243/4f42f458-a178-4666-b68d-c69800ebc540.webp",
+    "at": "2026-09-08T17:21:12.704Z"
+  },
+  {
+    "id": "4f6be6de-a7e9-4d01-9c8d-5e5ed9159988",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/137/7.webp",
+    "to": "watermarked/4ebc4bd4-3b77-48ff-b533-ea8f40a34fa8/4f6be6de-a7e9-4d01-9c8d-5e5ed9159988.webp",
+    "at": "2026-09-08T17:21:13.796Z"
+  },
+  {
+    "id": "4f88193b-9c92-4761-b424-de4c58f17b31",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/65/7.webp",
+    "to": "watermarked/fea69082-ff2c-4cbf-a634-9c01047665b3/4f88193b-9c92-4761-b424-de4c58f17b31.webp",
+    "at": "2026-09-08T17:21:15.614Z"
+  },
+  {
+    "id": "4fabdab9-b3bb-4b36-a138-0f42c2ec0b51",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/72/2.webp",
+    "to": "watermarked/9da095c4-b4f7-42ae-bc3a-e6bed54d7be7/4fabdab9-b3bb-4b36-a138-0f42c2ec0b51.webp",
+    "at": "2026-09-08T17:21:17.700Z"
+  },
+  {
+    "id": "50e93f4d-ff6a-4095-96b8-8f7254cc52f9",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/92/5.webp",
+    "to": "watermarked/bc0f8265-94dd-435b-aefa-5745e8711af1/50e93f4d-ff6a-4095-96b8-8f7254cc52f9.webp",
+    "at": "2026-09-08T17:21:19.044Z"
+  },
+  {
+    "id": "50f49696-2526-4436-89a0-1c2f0b32e8e0",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/36/3.webp",
+    "to": "watermarked/023a0768-4f2a-4bdd-b6b7-46bd21d2d7c8/50f49696-2526-4436-89a0-1c2f0b32e8e0.webp",
+    "at": "2026-09-08T17:21:20.000Z"
+  },
+  {
+    "id": "5179572f-ba61-4f6e-aa93-f4c74e66d36f",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/110/7.webp",
+    "to": "watermarked/dc38f4aa-87c4-49db-aa7b-70dbb9f2a8b2/5179572f-ba61-4f6e-aa93-f4c74e66d36f.webp",
+    "at": "2026-09-08T17:21:21.228Z"
+  },
+  {
+    "id": "528735b3-6021-4311-a9a2-dcf2d078eec9",
+    "from": "fb59b9c3-dc96-447f-a3df-c3365c79c698/annonce-1788570902468-697774-1.webp",
+    "to": "watermarked/89f0ea51-e106-4fb2-9e44-8ed168898202/528735b3-6021-4311-a9a2-dcf2d078eec9.webp",
+    "at": "2026-09-08T17:21:23.915Z"
+  },
+  {
+    "id": "52974951-3e5d-438d-949c-890574281945",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/23/4.webp",
+    "to": "watermarked/10b0dce7-402d-44a1-8ba7-f5e0efcbb243/52974951-3e5d-438d-949c-890574281945.webp",
+    "at": "2026-09-08T17:21:24.960Z"
+  },
+  {
+    "id": "534d227a-719d-48e0-80d6-7df913cc2728",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/137/5.webp",
+    "to": "watermarked/4ebc4bd4-3b77-48ff-b533-ea8f40a34fa8/534d227a-719d-48e0-80d6-7df913cc2728.webp",
+    "at": "2026-09-08T17:21:26.359Z"
+  },
+  {
+    "id": "5364c1fe-2a62-46cc-97b8-d4d4f6332c95",
+    "from": "42c6841f-3c41-49db-8abd-49051d8a69d4/annonce-1788570855798-813157-0.webp",
+    "to": "watermarked/31259c34-19e9-48bb-8a95-ef183ca9db2f/5364c1fe-2a62-46cc-97b8-d4d4f6332c95.webp",
+    "at": "2026-09-08T17:21:27.542Z"
+  },
+  {
+    "id": "537e678f-7dce-408d-bf6b-5e18dcebaa8d",
+    "from": "57510ad5-91b1-4669-9e3b-4324b3721969/annonce-1788570871442-709842-0.webp",
+    "to": "watermarked/811d3afc-f506-428a-9c87-940901d72890/537e678f-7dce-408d-bf6b-5e18dcebaa8d.webp",
+    "at": "2026-09-08T17:21:29.627Z"
+  },
+  {
+    "id": "5410bbce-132c-4dcf-aed5-1f671bf680f8",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/93/2.webp",
+    "to": "watermarked/2fdaf636-ae06-4454-86f5-8a8df8fc24d7/5410bbce-132c-4dcf-aed5-1f671bf680f8.webp",
+    "at": "2026-09-08T17:21:31.162Z"
+  },
+  {
+    "id": "541abe33-c1af-4af8-b3cb-2f9f5c1bd7a9",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/107/2.webp",
+    "to": "watermarked/22c44fcc-e292-401c-986e-41335c9fb8e8/541abe33-c1af-4af8-b3cb-2f9f5c1bd7a9.webp",
+    "at": "2026-09-08T17:21:32.249Z"
+  },
+  {
+    "id": "54990a72-7267-4f6a-9c99-c5867786cebf",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/106/7.webp",
+    "to": "watermarked/1d9fe747-1278-4351-83e5-10bed2f7af4a/54990a72-7267-4f6a-9c99-c5867786cebf.webp",
+    "at": "2026-09-08T17:21:33.367Z"
+  },
+  {
+    "id": "54d67a05-9c5f-4dd4-949b-05059000c0a6",
+    "from": "ca683283-dab0-4520-b16e-1f48a26ea1ea/annonce-1788571120725-849419-2.webp",
+    "to": "watermarked/27d5d725-6ff1-412b-9e9f-9f2ed1ed014e/54d67a05-9c5f-4dd4-949b-05059000c0a6.webp",
+    "at": "2026-09-08T17:21:34.923Z"
+  },
+  {
+    "id": "54fedae5-e12a-4f3c-9eab-79b9f338cd8e",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25bed3b257aa5aca4e10a8/4.webp",
+    "to": "watermarked/9bed9289-a43e-479a-97d2-a617ae1e740c/54fedae5-e12a-4f3c-9eab-79b9f338cd8e.webp",
+    "at": "2026-09-08T17:21:35.754Z"
+  },
+  {
+    "id": "554c20ad-68bb-4d69-bf2e-04221a58eabb",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/23/3.webp",
+    "to": "watermarked/10b0dce7-402d-44a1-8ba7-f5e0efcbb243/554c20ad-68bb-4d69-bf2e-04221a58eabb.webp",
+    "at": "2026-09-08T17:21:36.668Z"
+  },
+  {
+    "id": "55dd1264-ece4-4ecb-9b5b-799d0830f15c",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/106/5.webp",
+    "to": "watermarked/1d9fe747-1278-4351-83e5-10bed2f7af4a/55dd1264-ece4-4ecb-9b5b-799d0830f15c.webp",
+    "at": "2026-09-08T17:21:37.844Z"
+  },
+  {
+    "id": "56c10106-d2b7-45df-9795-a37f94051e36",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/50/2.webp",
+    "to": "watermarked/d435281e-90c9-453b-9bdf-fe17f54d5aae/56c10106-d2b7-45df-9795-a37f94051e36.webp",
+    "at": "2026-09-08T17:21:39.225Z"
+  },
+  {
+    "id": "57e2b0bb-cc25-48bd-9d01-09e624b1db79",
+    "from": "ec96f995-e9ae-4375-a9d6-04d6de74dc07/annonce-1788570770899-44112-1.webp",
+    "to": "watermarked/c6d5aaf0-0203-4d2e-a2e7-7b20371ccb53/57e2b0bb-cc25-48bd-9d01-09e624b1db79.webp",
+    "at": "2026-09-08T17:21:39.932Z"
+  },
+  {
+    "id": "57eb981d-a3c1-4939-90e4-2aef78f9e488",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/137/2.webp",
+    "to": "watermarked/4ebc4bd4-3b77-48ff-b533-ea8f40a34fa8/57eb981d-a3c1-4939-90e4-2aef78f9e488.webp",
+    "at": "2026-09-08T17:21:40.986Z"
+  },
+  {
+    "id": "57f0745f-4fcc-4cb4-b7e7-f73de8b19f61",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/106/2.webp",
+    "to": "watermarked/1d9fe747-1278-4351-83e5-10bed2f7af4a/57f0745f-4fcc-4cb4-b7e7-f73de8b19f61.webp",
+    "at": "2026-09-08T17:21:42.081Z"
+  },
+  {
+    "id": "5881230c-2a65-4bf2-a70f-cc6d755cc45a",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/107/5.webp",
+    "to": "watermarked/22c44fcc-e292-401c-986e-41335c9fb8e8/5881230c-2a65-4bf2-a70f-cc6d755cc45a.webp",
+    "at": "2026-09-08T17:21:43.126Z"
+  },
+  {
+    "id": "588ab2d8-dab6-412c-99eb-e2cc8e40ca4d",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25d77aa849fd3c0e161b15/0.webp",
+    "to": "watermarked/f6e8161c-7af6-4a79-8155-cadd443fb228/588ab2d8-dab6-412c-99eb-e2cc8e40ca4d.webp",
+    "at": "2026-09-08T17:21:44.369Z"
+  },
+  {
+    "id": "58bda30f-4f6b-426f-86d0-e641fbf5eabf",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/113/1.webp",
+    "to": "watermarked/9c5842db-bbe3-4d04-8d3e-ca413ae0213c/58bda30f-4f6b-426f-86d0-e641fbf5eabf.webp",
+    "at": "2026-09-08T17:21:45.289Z"
+  },
+  {
+    "id": "59b0b605-229a-4ed1-8854-bfc49511acf2",
+    "from": "e88e469f-1b64-4703-b0bd-47b0f740920a/annonce-1788570828301-306605-1.webp",
+    "to": "watermarked/c88f1333-85a2-4b43-93df-a69d91e3de46/59b0b605-229a-4ed1-8854-bfc49511acf2.webp",
+    "at": "2026-09-08T17:21:46.421Z"
+  },
+  {
+    "id": "5a218dec-d868-46ad-a635-c059f6eabd05",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/112/7.webp",
+    "to": "watermarked/8dc23f12-786c-48f0-9289-a0b89f3b46bb/5a218dec-d868-46ad-a635-c059f6eabd05.webp",
+    "at": "2026-09-08T17:21:47.376Z"
+  },
+  {
+    "id": "5ac0cb0c-7c3a-4b3a-b3d1-fabcca572ef8",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/72/3.webp",
+    "to": "watermarked/9da095c4-b4f7-42ae-bc3a-e6bed54d7be7/5ac0cb0c-7c3a-4b3a-b3d1-fabcca572ef8.webp",
+    "at": "2026-09-08T17:21:48.560Z"
+  },
+  {
+    "id": "5b102aed-ecf0-4f3f-bf5d-fdd7bf339245",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/70/1.webp",
+    "to": "watermarked/e3506b8f-364a-471a-ba87-53022e00a6b5/5b102aed-ecf0-4f3f-bf5d-fdd7bf339245.webp",
+    "at": "2026-09-08T17:21:49.595Z"
+  },
+  {
+    "id": "5ba9fc84-4cda-4a65-8361-c2343e14c6f9",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/91/4.webp",
+    "to": "watermarked/a590cb65-3332-4eec-90c1-9b7891105fa0/5ba9fc84-4cda-4a65-8361-c2343e14c6f9.webp",
+    "at": "2026-09-08T17:21:50.874Z"
+  },
+  {
+    "id": "5c0faa3a-f206-4bf0-ab2f-66c574e1f7e1",
+    "from": "e88e469f-1b64-4703-b0bd-47b0f740920a/annonce-1788571199965-774335-0.webp",
+    "to": "watermarked/f5eeb087-933a-4880-b070-e18935bc1bfd/5c0faa3a-f206-4bf0-ab2f-66c574e1f7e1.webp",
+    "at": "2026-09-08T17:21:53.205Z"
+  },
+  {
+    "id": "5c457ecb-a6e9-4a1f-ac2b-52d5e21c2303",
+    "from": "aecbedd6-a171-44b3-8402-551f2bf95da3/annonce-1788571088681-969353-0.webp",
+    "to": "watermarked/25a7c7fc-b3b5-4756-8a96-0039d372db8b/5c457ecb-a6e9-4a1f-ac2b-52d5e21c2303.webp",
+    "at": "2026-09-08T17:21:53.954Z"
+  },
+  {
+    "id": "5d2aee90-b10e-4ac1-b6b9-8b2aa2b13d45",
+    "from": "42c6841f-3c41-49db-8abd-49051d8a69d4/annonce-1788570786584-811003-2.webp",
+    "to": "watermarked/9424ca11-6a33-4257-a0bf-3175ddcf09f4/5d2aee90-b10e-4ac1-b6b9-8b2aa2b13d45.webp",
+    "at": "2026-09-08T17:21:55.066Z"
+  },
+  {
+    "id": "5f90e426-4296-4afe-ba66-44577482b5a2",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/74/5.webp",
+    "to": "watermarked/e46445a7-a7cc-4633-a846-0d9835900489/5f90e426-4296-4afe-ba66-44577482b5a2.webp",
+    "at": "2026-09-08T17:21:56.483Z"
+  },
+  {
+    "id": "5f92e4d5-a462-4cf4-ab98-ba95009999b4",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/135/2.webp",
+    "to": "watermarked/352e9a53-a06c-463d-8160-9693e94b4413/5f92e4d5-a462-4cf4-ab98-ba95009999b4.webp",
+    "at": "2026-09-08T17:21:57.569Z"
+  },
+  {
+    "id": "6112b455-865a-4452-b892-d188dfcb913f",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/74/2.webp",
+    "to": "watermarked/e46445a7-a7cc-4633-a846-0d9835900489/6112b455-865a-4452-b892-d188dfcb913f.webp",
+    "at": "2026-09-08T17:21:58.785Z"
+  },
+  {
+    "id": "61744af4-e43e-4acf-9a52-ac40954cd582",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/92/3.webp",
+    "to": "watermarked/bc0f8265-94dd-435b-aefa-5745e8711af1/61744af4-e43e-4acf-9a52-ac40954cd582.webp",
+    "at": "2026-09-08T17:22:00.058Z"
+  },
+  {
+    "id": "61763948-eacf-4783-b0a9-553869eb29d1",
+    "from": "5f62ec4f-f8ad-4276-94c8-36d93e596114/annonce-1788570973505-100122-2.webp",
+    "to": "watermarked/ebf7bd44-a0b0-43d9-84be-d19b7230dc98/61763948-eacf-4783-b0a9-553869eb29d1.webp",
+    "at": "2026-09-08T17:22:02.081Z"
+  },
+  {
+    "id": "61c4228c-5a1b-4bc0-9d97-6e36fefaf597",
+    "from": "a0d5f32b-bc8b-4a50-980d-2c61674a5ac2/annonce-1788571008518-81433-0.webp",
+    "to": "watermarked/a962f8fe-c5f6-4a7a-9397-094bf095163b/61c4228c-5a1b-4bc0-9d97-6e36fefaf597.webp",
+    "at": "2026-09-08T17:22:02.736Z"
+  },
+  {
+    "id": "61fc6396-3631-4f0b-9678-e7105b6e5632",
+    "from": "d6d8d637-3633-468d-95b5-9b534ad1d4d9/annonce-1788571162960-762282-0.webp",
+    "to": "watermarked/a49fce77-45ac-46d0-ae5e-d8a5c00527ef/61fc6396-3631-4f0b-9678-e7105b6e5632.webp",
+    "at": "2026-09-08T17:22:03.606Z"
+  },
+  {
+    "id": "6201b9a2-45de-4515-8095-f595cd0a549c",
+    "from": "fb59b9c3-dc96-447f-a3df-c3365c79c698/annonce-1788570929812-345016-2.webp",
+    "to": "watermarked/89f0ea51-e106-4fb2-9e44-8ed168898202/6201b9a2-45de-4515-8095-f595cd0a549c.webp",
+    "at": "2026-09-08T17:22:05.884Z"
+  },
+  {
+    "id": "6208f631-dbb2-4247-93b4-ebbdf06357d4",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/131/2.webp",
+    "to": "watermarked/92d2a9fe-6bf1-41af-8887-0cf3782bd002/6208f631-dbb2-4247-93b4-ebbdf06357d4.webp",
+    "at": "2026-09-08T17:22:06.826Z"
+  },
+  {
+    "id": "620c755c-7b6a-4a4c-a5c0-5a1796f34044",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25bed3b257aa5aca4e10a8/6.webp",
+    "to": "watermarked/9bed9289-a43e-479a-97d2-a617ae1e740c/620c755c-7b6a-4a4c-a5c0-5a1796f34044.webp",
+    "at": "2026-09-08T17:22:07.755Z"
+  },
+  {
+    "id": "620c89e7-a604-49c2-b7ea-44555c9b3224",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/83/1.webp",
+    "to": "watermarked/727f5e17-41a7-48dc-a945-55d6bca476d5/620c89e7-a604-49c2-b7ea-44555c9b3224.webp",
+    "at": "2026-09-08T17:22:08.687Z"
+  },
+  {
+    "id": "627f2e60-fffe-44de-baa2-b43025742de2",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/110/3.webp",
+    "to": "watermarked/dc38f4aa-87c4-49db-aa7b-70dbb9f2a8b2/627f2e60-fffe-44de-baa2-b43025742de2.webp",
+    "at": "2026-09-08T17:22:09.674Z"
+  },
+  {
+    "id": "62fcd55d-3b78-4ebf-88c3-47780633b738",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a22ebd3b257aa5aca4c8058/1.webp",
+    "to": "watermarked/8c046e7c-7568-41f7-a21c-04db77cd3d94/62fcd55d-3b78-4ebf-88c3-47780633b738.webp",
+    "at": "2026-09-08T17:22:10.749Z"
+  },
+  {
+    "id": "631520ba-65be-42c6-97c2-b52fcb21441f",
+    "from": "ec96f995-e9ae-4375-a9d6-04d6de74dc07/annonce-1788570766899-753505-0.webp",
+    "to": "watermarked/c6d5aaf0-0203-4d2e-a2e7-7b20371ccb53/631520ba-65be-42c6-97c2-b52fcb21441f.webp",
+    "at": "2026-09-08T17:22:11.620Z"
+  },
+  {
+    "id": "631f1173-1179-4149-ad7f-b4b76a4975cc",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25bed3b257aa5aca4e10a8/0.webp",
+    "to": "watermarked/9bed9289-a43e-479a-97d2-a617ae1e740c/631f1173-1179-4149-ad7f-b4b76a4975cc.webp",
+    "at": "2026-09-08T17:22:13.235Z"
+  },
+  {
+    "id": "638fa9ff-225f-4d15-a0a9-b6fc481f5171",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a2469dab257aa5aca4d5290/5.webp",
+    "to": "watermarked/cca22ada-8a87-47e8-a128-b700eda2c08e/638fa9ff-225f-4d15-a0a9-b6fc481f5171.webp",
+    "at": "2026-09-08T17:22:14.317Z"
+  },
+  {
+    "id": "642ca6e1-a2c1-48c6-afa8-e41db45ad2c2",
+    "from": "1ea6dd8c-c9a2-4e35-82e5-19244be62dc5/annonce-1788570954191-635642-1.webp",
+    "to": "watermarked/34221bd5-4730-43b9-bf05-08fb3389e848/642ca6e1-a2c1-48c6-afa8-e41db45ad2c2.webp",
+    "at": "2026-09-08T17:22:15.391Z"
+  },
+  {
+    "id": "654643fd-d4c8-4804-9ba1-5514dc3cdead",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a2469dab257aa5aca4d5290/4.webp",
+    "to": "watermarked/cca22ada-8a87-47e8-a128-b700eda2c08e/654643fd-d4c8-4804-9ba1-5514dc3cdead.webp",
+    "at": "2026-09-08T17:22:16.939Z"
+  },
+  {
+    "id": "65625c95-3182-4560-a6d2-7f020cd947b6",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25527fb257aa5aca4dc3ab/1.webp",
+    "to": "watermarked/2c1432f3-952e-44e0-a5a1-f75853895dcf/65625c95-3182-4560-a6d2-7f020cd947b6.webp",
+    "at": "2026-09-08T17:22:18.145Z"
+  },
+  {
+    "id": "667bbb68-cf75-423a-9dfd-9aad7285a978",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/90/0.webp",
+    "to": "watermarked/dbcf7437-33d6-4e92-a156-0a268190d490/667bbb68-cf75-423a-9dfd-9aad7285a978.webp",
+    "at": "2026-09-08T17:22:19.127Z"
+  },
+  {
+    "id": "67477b0a-0a53-4701-84ab-5c203fff9f0a",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/65/4.webp",
+    "to": "watermarked/fea69082-ff2c-4cbf-a634-9c01047665b3/67477b0a-0a53-4701-84ab-5c203fff9f0a.webp",
+    "at": "2026-09-08T17:22:20.236Z"
+  },
+  {
+    "id": "675aac79-3c12-4dce-ba61-db2f55482a47",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/83/5.webp",
+    "to": "watermarked/727f5e17-41a7-48dc-a945-55d6bca476d5/675aac79-3c12-4dce-ba61-db2f55482a47.webp",
+    "at": "2026-09-08T17:22:21.681Z"
+  },
+  {
+    "id": "676c81bc-5b21-4141-88ca-f455e066ac42",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/36/4.webp",
+    "to": "watermarked/023a0768-4f2a-4bdd-b6b7-46bd21d2d7c8/676c81bc-5b21-4141-88ca-f455e066ac42.webp",
+    "at": "2026-09-08T17:22:22.534Z"
+  },
+  {
+    "id": "68e042ea-6981-46b0-987d-c5bc6271d159",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/125/0.webp",
+    "to": "watermarked/f622e307-e49b-4696-a3b8-a2cdeae6129f/68e042ea-6981-46b0-987d-c5bc6271d159.webp",
+    "at": "2026-09-08T17:22:23.595Z"
+  },
+  {
+    "id": "692e8624-b583-45ce-bcf5-431116367768",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/77/0.webp",
+    "to": "watermarked/37639e84-4d14-4b8f-9d0e-8224fbbe6bfb/692e8624-b583-45ce-bcf5-431116367768.webp",
+    "at": "2026-09-08T17:22:24.950Z"
+  },
+  {
+    "id": "69f59580-1ae5-4e93-bc32-7abff6bdabe7",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/90/4.webp",
+    "to": "watermarked/dbcf7437-33d6-4e92-a156-0a268190d490/69f59580-1ae5-4e93-bc32-7abff6bdabe7.webp",
+    "at": "2026-09-08T17:22:25.829Z"
+  },
+  {
+    "id": "69f7ce62-ba26-430e-8118-39c645e224fa",
+    "from": "a0d5f32b-bc8b-4a50-980d-2c61674a5ac2/annonce-1788571043000-551809-2.webp",
+    "to": "watermarked/a962f8fe-c5f6-4a7a-9397-094bf095163b/69f7ce62-ba26-430e-8118-39c645e224fa.webp",
+    "at": "2026-09-08T17:22:27.188Z"
+  },
+  {
+    "id": "6a644905-68ef-4b3b-b9fd-70eb975983c1",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/77/0.webp",
+    "to": "watermarked/92d2a9fe-6bf1-41af-8887-0cf3782bd002/6a644905-68ef-4b3b-b9fd-70eb975983c1.webp",
+    "at": "2026-09-08T17:22:28.343Z"
+  },
+  {
+    "id": "6be32305-d320-493d-88d2-f1bb6e002501",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/75/1.webp",
+    "to": "watermarked/bd8445a2-2972-494d-95a2-7caf50f17c13/6be32305-d320-493d-88d2-f1bb6e002501.webp",
+    "at": "2026-09-08T17:22:29.505Z"
+  },
+  {
+    "id": "6c255795-1e83-4425-bdf6-a1f283de68e8",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/9/1.webp",
+    "to": "watermarked/9824b0db-9b6e-4c58-b12f-eb12aa3a4dd2/6c255795-1e83-4425-bdf6-a1f283de68e8.webp",
+    "at": "2026-09-08T17:22:30.462Z"
+  },
+  {
+    "id": "6d7d39cf-35e6-4c5e-b54b-7939e4db64e4",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/78/1.webp",
+    "to": "watermarked/b1b5c3cb-62fe-4111-b0a0-4a5229d1e460/6d7d39cf-35e6-4c5e-b54b-7939e4db64e4.webp",
+    "at": "2026-09-08T17:22:31.569Z"
+  },
+  {
+    "id": "6dd9f0bb-a244-48d5-a5d4-619b0285d641",
+    "from": "bc06b5ec-cc6a-4124-8121-eba418915429/annonce-1788570947721-759890-1.webp",
+    "to": "watermarked/38d38edc-fefd-4db0-9b83-998d09eba2db/6dd9f0bb-a244-48d5-a5d4-619b0285d641.webp",
+    "at": "2026-09-08T17:22:32.932Z"
+  },
+  {
+    "id": "6ea46637-3ce4-4582-8394-17c8883b158e",
+    "from": "5f62ec4f-f8ad-4276-94c8-36d93e596114/annonce-1788570969949-962577-0.webp",
+    "to": "watermarked/ebf7bd44-a0b0-43d9-84be-d19b7230dc98/6ea46637-3ce4-4582-8394-17c8883b158e.webp",
+    "at": "2026-09-08T17:22:33.678Z"
+  },
+  {
+    "id": "6f67e005-2f21-4916-a019-b8f625a6700f",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/23/1.webp",
+    "to": "watermarked/10b0dce7-402d-44a1-8ba7-f5e0efcbb243/6f67e005-2f21-4916-a019-b8f625a6700f.webp",
+    "at": "2026-09-08T17:22:34.724Z"
+  },
+  {
+    "id": "6f71eb0e-3c17-4cd3-bd7b-7e400c43230f",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25527fb257aa5aca4dc3ab/7.webp",
+    "to": "watermarked/2c1432f3-952e-44e0-a5a1-f75853895dcf/6f71eb0e-3c17-4cd3-bd7b-7e400c43230f.webp",
+    "at": "2026-09-08T17:22:35.449Z"
+  },
+  {
+    "id": "71fd622d-79d2-4b9a-9b5a-72b18384f96c",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a23f1c7b257aa5aca4cffc6/2.webp",
+    "to": "watermarked/c27b091e-e0a0-4000-a5d3-4de99e4c770d/71fd622d-79d2-4b9a-9b5a-72b18384f96c.webp",
+    "at": "2026-09-08T17:22:36.822Z"
+  },
+  {
+    "id": "72622f29-71d6-4277-b7cf-1c4738d0d6ca",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/77/4.webp",
+    "to": "watermarked/37639e84-4d14-4b8f-9d0e-8224fbbe6bfb/72622f29-71d6-4277-b7cf-1c4738d0d6ca.webp",
+    "at": "2026-09-08T17:22:37.763Z"
+  },
+  {
+    "id": "7274f85a-11ca-421b-9f9c-90f83d489b63",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/92/2.webp",
+    "to": "watermarked/bc0f8265-94dd-435b-aefa-5745e8711af1/7274f85a-11ca-421b-9f9c-90f83d489b63.webp",
+    "at": "2026-09-08T17:22:39.315Z"
+  },
+  {
+    "id": "72cc2728-628c-4570-b77c-70c3faea590c",
+    "from": "42c6841f-3c41-49db-8abd-49051d8a69d4/annonce-1788570857674-184906-1.webp",
+    "to": "watermarked/31259c34-19e9-48bb-8a95-ef183ca9db2f/72cc2728-628c-4570-b77c-70c3faea590c.webp",
+    "at": "2026-09-08T17:22:40.825Z"
+  },
+  {
+    "id": "730ec901-eff1-4a41-a113-11086dee7c2a",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/78/6.webp",
+    "to": "watermarked/b1b5c3cb-62fe-4111-b0a0-4a5229d1e460/730ec901-eff1-4a41-a113-11086dee7c2a.webp",
+    "at": "2026-09-08T17:22:41.700Z"
+  },
+  {
+    "id": "7340456c-332c-4665-ab09-c49c43eb9c90",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/83/2.webp",
+    "to": "watermarked/727f5e17-41a7-48dc-a945-55d6bca476d5/7340456c-332c-4665-ab09-c49c43eb9c90.webp",
+    "at": "2026-09-08T17:22:42.595Z"
+  },
+  {
+    "id": "737856dc-5cf3-4cb0-ae95-a01ef0cc0fef",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/74/7.webp",
+    "to": "watermarked/e46445a7-a7cc-4633-a846-0d9835900489/737856dc-5cf3-4cb0-ae95-a01ef0cc0fef.webp",
+    "at": "2026-09-08T17:22:43.608Z"
+  },
+  {
+    "id": "7396b062-ec82-463f-be54-3a78c37901e0",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/50/0.webp",
+    "to": "watermarked/d435281e-90c9-453b-9bdf-fe17f54d5aae/7396b062-ec82-463f-be54-3a78c37901e0.webp",
+    "at": "2026-09-08T17:22:44.610Z"
+  },
+  {
+    "id": "73cba6cb-abee-480f-a1ae-0e2d8e51bdb0",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/108/5.webp",
+    "to": "watermarked/08c13c67-1286-4555-a60c-41f488cdcfe8/73cba6cb-abee-480f-a1ae-0e2d8e51bdb0.webp",
+    "at": "2026-09-08T17:22:45.352Z"
+  },
+  {
+    "id": "73dbe8cb-01f5-4e62-8ba6-8e0d30156f20",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25d77aa849fd3c0e161b15/2.webp",
+    "to": "watermarked/f6e8161c-7af6-4a79-8155-cadd443fb228/73dbe8cb-01f5-4e62-8ba6-8e0d30156f20.webp",
+    "at": "2026-09-08T17:22:46.086Z"
+  },
+  {
+    "id": "7447bed9-c0c1-4663-9dee-2d10ca37a829",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/114/6.webp",
+    "to": "watermarked/741cb13e-febf-4b9d-bbb1-ff7eca81d47d/7447bed9-c0c1-4663-9dee-2d10ca37a829.webp",
+    "at": "2026-09-08T17:22:46.746Z"
+  },
+  {
+    "id": "744abc60-1e08-43ad-b6aa-22a775cadf70",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/72/7.webp",
+    "to": "watermarked/9da095c4-b4f7-42ae-bc3a-e6bed54d7be7/744abc60-1e08-43ad-b6aa-22a775cadf70.webp",
+    "at": "2026-09-08T17:22:48.053Z"
+  },
+  {
+    "id": "74db63a6-93eb-490a-a006-517715f27212",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/87/5.webp",
+    "to": "watermarked/92d2a9fe-6bf1-41af-8887-0cf3782bd002/74db63a6-93eb-490a-a006-517715f27212.webp",
+    "at": "2026-09-08T17:22:48.820Z"
+  },
+  {
+    "id": "75039a32-b1d0-4bf9-a42c-285e7a00599a",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a256a48a849fd3c0e15cd8d/2.webp",
+    "to": "watermarked/82639106-f0e2-4552-8e1c-84fa6b5306b6/75039a32-b1d0-4bf9-a42c-285e7a00599a.webp",
+    "at": "2026-09-08T17:22:50.528Z"
+  },
+  {
+    "id": "755a2595-b151-4f54-98f5-10ea25c7afed",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/126/5.webp",
+    "to": "watermarked/b738ddd2-560d-4af3-a2ee-18cc750a89b9/755a2595-b151-4f54-98f5-10ea25c7afed.webp",
+    "at": "2026-09-08T17:22:52.524Z"
+  },
+  {
+    "id": "756cfb79-070a-4bc8-b09f-e4e2ab1937ce",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25bed3b257aa5aca4e10a8/5.webp",
+    "to": "watermarked/9bed9289-a43e-479a-97d2-a617ae1e740c/756cfb79-070a-4bc8-b09f-e4e2ab1937ce.webp",
+    "at": "2026-09-08T17:22:53.627Z"
+  },
+  {
+    "id": "761b1e6d-65cb-4913-bfb8-ae45454f92a4",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/131/3.webp",
+    "to": "watermarked/6941e056-9bb3-41d0-b6e8-b692bad292a3/761b1e6d-65cb-4913-bfb8-ae45454f92a4.webp",
+    "at": "2026-09-08T17:22:54.679Z"
+  },
+  {
+    "id": "76c812f8-791b-46db-b81a-95a2c3c5ae80",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a23bf3ab257aa5aca4ce048/3.webp",
+    "to": "watermarked/9b0751aa-262e-4cb9-beaf-4a3e7485c727/76c812f8-791b-46db-b81a-95a2c3c5ae80.webp",
+    "at": "2026-09-08T17:22:55.506Z"
+  },
+  {
+    "id": "7703be8e-0948-4fa8-af83-1367001d6206",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/137/4.webp",
+    "to": "watermarked/4ebc4bd4-3b77-48ff-b533-ea8f40a34fa8/7703be8e-0948-4fa8-af83-1367001d6206.webp",
+    "at": "2026-09-08T17:22:56.439Z"
+  },
+  {
+    "id": "773edd93-559d-45ea-b0e4-e19112e3634a",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25d77aa849fd3c0e161b15/3.webp",
+    "to": "watermarked/5eb0c1cd-02b6-4fb2-b2ff-5b91576dd5a8/773edd93-559d-45ea-b0e4-e19112e3634a.webp",
+    "at": "2026-09-08T17:22:57.528Z"
+  },
+  {
+    "id": "782dbae0-4467-4b39-933b-732f95b9f92b",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/9/5.webp",
+    "to": "watermarked/9824b0db-9b6e-4c58-b12f-eb12aa3a4dd2/782dbae0-4467-4b39-933b-732f95b9f92b.webp",
+    "at": "2026-09-08T17:22:58.485Z"
+  },
+  {
+    "id": "786595d2-d837-4b02-847b-25f1eeabf461",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/80/7.webp",
+    "to": "watermarked/434b9d21-d8aa-479d-9aa8-1e6b7d5071b2/786595d2-d837-4b02-847b-25f1eeabf461.webp",
+    "at": "2026-09-08T17:22:59.169Z"
+  },
+  {
+    "id": "788e478e-9d36-4968-b2f4-2646722ff848",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a23f1c7b257aa5aca4cffc6/1.webp",
+    "to": "watermarked/c27b091e-e0a0-4000-a5d3-4de99e4c770d/788e478e-9d36-4968-b2f4-2646722ff848.webp",
+    "at": "2026-09-08T17:23:00.433Z"
+  },
+  {
+    "id": "7a15b640-9c8e-42f8-9928-ad71404b76d2",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25d77aa849fd3c0e161b15/1.webp",
+    "to": "watermarked/f6e8161c-7af6-4a79-8155-cadd443fb228/7a15b640-9c8e-42f8-9928-ad71404b76d2.webp",
+    "at": "2026-09-08T17:23:01.099Z"
+  },
+  {
+    "id": "7a8f5d6a-b6a1-4b19-a6da-d59fcf198c0d",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a2539eea849fd3c0e15abb2/2.webp",
+    "to": "watermarked/f3df67fd-d279-4d58-b596-3f18c0606c5e/7a8f5d6a-b6a1-4b19-a6da-d59fcf198c0d.webp",
+    "at": "2026-09-08T17:23:02.204Z"
+  },
+  {
+    "id": "7b024d7f-fd79-4db5-b140-52d504ed6253",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/91/0.webp",
+    "to": "watermarked/a590cb65-3332-4eec-90c1-9b7891105fa0/7b024d7f-fd79-4db5-b140-52d504ed6253.webp",
+    "at": "2026-09-08T17:23:03.020Z"
+  },
+  {
+    "id": "7b5e1671-8fc9-4d0c-b918-bee4d036d3ac",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/79/5.webp",
+    "to": "watermarked/8f10d880-4be6-486c-bb54-d10f9273708e/7b5e1671-8fc9-4d0c-b918-bee4d036d3ac.webp",
+    "at": "2026-09-08T17:23:04.139Z"
+  },
+  {
+    "id": "7b6a4398-5e82-4e63-8893-a0a66afee103",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/78/7.webp",
+    "to": "watermarked/b1b5c3cb-62fe-4111-b0a0-4a5229d1e460/7b6a4398-5e82-4e63-8893-a0a66afee103.webp",
+    "at": "2026-09-08T17:23:04.971Z"
+  },
+  {
+    "id": "7c24afa6-ecc2-4ec5-b05e-0255b9c85769",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/124/1.webp",
+    "to": "watermarked/a5717126-a59b-4cf2-afee-0f174cc4e312/7c24afa6-ecc2-4ec5-b05e-0255b9c85769.webp",
+    "at": "2026-09-08T17:23:06.338Z"
+  },
+  {
+    "id": "7c6d846b-9ee1-4f08-9e5f-1eb1db3f2ae0",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/135/4.webp",
+    "to": "watermarked/352e9a53-a06c-463d-8160-9693e94b4413/7c6d846b-9ee1-4f08-9e5f-1eb1db3f2ae0.webp",
+    "at": "2026-09-08T17:23:07.702Z"
+  },
+  {
+    "id": "7d4300e5-314d-4131-8f41-03f98d699cbb",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/66/0.webp",
+    "to": "watermarked/9fb56320-f485-4136-ba7f-e81df6931908/7d4300e5-314d-4131-8f41-03f98d699cbb.webp",
+    "at": "2026-09-08T17:23:09.037Z"
+  },
+  {
+    "id": "7e220d3c-f9a4-4901-9d39-a7c7c9673fba",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/73/5.webp",
+    "to": "watermarked/5abb0574-d141-4b49-a46e-2c50e422b8e9/7e220d3c-f9a4-4901-9d39-a7c7c9673fba.webp",
+    "at": "2026-09-08T17:23:09.736Z"
+  },
+  {
+    "id": "7e9d3dde-f673-4e93-a183-5f293d61f57a",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/92/4.webp",
+    "to": "watermarked/bc0f8265-94dd-435b-aefa-5745e8711af1/7e9d3dde-f673-4e93-a183-5f293d61f57a.webp",
+    "at": "2026-09-08T17:23:10.762Z"
+  },
+  {
+    "id": "7eb5660d-c410-4c32-b22c-f7d61b5b12f5",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25bed3b257aa5aca4e10a8/7.webp",
+    "to": "watermarked/9bed9289-a43e-479a-97d2-a617ae1e740c/7eb5660d-c410-4c32-b22c-f7d61b5b12f5.webp",
+    "at": "2026-09-08T17:23:11.754Z"
+  },
+  {
+    "id": "7ec5459f-b18d-4ae2-b990-9b0e3dd0e529",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/113/2.webp",
+    "to": "watermarked/9c5842db-bbe3-4d04-8d3e-ca413ae0213c/7ec5459f-b18d-4ae2-b990-9b0e3dd0e529.webp",
+    "at": "2026-09-08T17:23:12.565Z"
+  },
+  {
+    "id": "7f38d154-adff-485c-85f3-6231eae1b6f1",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/96/0.webp",
+    "to": "watermarked/bfd43e55-0781-415c-8f15-a12903a29bad/7f38d154-adff-485c-85f3-6231eae1b6f1.webp",
+    "at": "2026-09-08T17:23:13.568Z"
+  },
+  {
+    "id": "7fbbdafa-9f48-41e2-a8eb-2beeb6c90d08",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/50/1.webp",
+    "to": "watermarked/d435281e-90c9-453b-9bdf-fe17f54d5aae/7fbbdafa-9f48-41e2-a8eb-2beeb6c90d08.webp",
+    "at": "2026-09-08T17:23:15.302Z"
+  },
+  {
+    "id": "81558004-6dd4-4767-a7e3-61fd4083b224",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/125/6.webp",
+    "to": "watermarked/f622e307-e49b-4696-a3b8-a2cdeae6129f/81558004-6dd4-4767-a7e3-61fd4083b224.webp",
+    "at": "2026-09-08T17:23:16.621Z"
+  },
+  {
+    "id": "81808908-5aa3-4656-985e-6d4ff83787f5",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/115/7.webp",
+    "to": "watermarked/293b92ba-40a9-4f2d-996e-e7b455f6d3b5/81808908-5aa3-4656-985e-6d4ff83787f5.webp",
+    "at": "2026-09-08T17:23:17.562Z"
+  },
+  {
+    "id": "81e079cc-c825-4147-8d5c-5374386b3ea8",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25d77aa849fd3c0e161b15/0.webp",
+    "to": "watermarked/5eb0c1cd-02b6-4fb2-b2ff-5b91576dd5a8/81e079cc-c825-4147-8d5c-5374386b3ea8.webp",
+    "at": "2026-09-08T17:23:18.395Z"
+  },
+  {
+    "id": "8268922c-13f4-4295-8c98-3991e36c68c4",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/72/6.webp",
+    "to": "watermarked/9da095c4-b4f7-42ae-bc3a-e6bed54d7be7/8268922c-13f4-4295-8c98-3991e36c68c4.webp",
+    "at": "2026-09-08T17:23:19.394Z"
+  },
+  {
+    "id": "82a4a891-f041-496a-9236-ef0fa2d73dac",
+    "from": "a0d5f32b-bc8b-4a50-980d-2c61674a5ac2/annonce-1788571144071-417930-2.webp",
+    "to": "watermarked/0d82cdde-7327-4342-b308-5dd4896f9207/82a4a891-f041-496a-9236-ef0fa2d73dac.webp",
+    "at": "2026-09-08T17:23:21.179Z"
+  },
+  {
+    "id": "836927f5-5e07-44eb-9fea-8f4825cfa86f",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/115/0.webp",
+    "to": "watermarked/293b92ba-40a9-4f2d-996e-e7b455f6d3b5/836927f5-5e07-44eb-9fea-8f4825cfa86f.webp",
+    "at": "2026-09-08T17:23:22.154Z"
+  },
+  {
+    "id": "843299cd-198e-4fe7-b0e3-e087a079d404",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a23f1c7b257aa5aca4cffc6/3.webp",
+    "to": "watermarked/c27b091e-e0a0-4000-a5d3-4de99e4c770d/843299cd-198e-4fe7-b0e3-e087a079d404.webp",
+    "at": "2026-09-08T17:23:22.913Z"
+  },
+  {
+    "id": "84c0a775-a224-4083-b74c-0c476cd1fb38",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/126/6.webp",
+    "to": "watermarked/b738ddd2-560d-4af3-a2ee-18cc750a89b9/84c0a775-a224-4083-b74c-0c476cd1fb38.webp",
+    "at": "2026-09-08T17:23:23.985Z"
+  },
+  {
+    "id": "85324e5b-457f-4b9b-ac3e-7a65fa3b0da3",
+    "from": "bc06b5ec-cc6a-4124-8121-eba418915429/annonce-1788570838710-389784-0.webp",
+    "to": "watermarked/48f507a6-ca8d-4c82-9cd8-21031e478afb/85324e5b-457f-4b9b-ac3e-7a65fa3b0da3.webp",
+    "at": "2026-09-08T17:23:24.845Z"
+  },
+  {
+    "id": "85b2679e-1a78-43ad-97f7-f870708b84ed",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/131/0.webp",
+    "to": "watermarked/6941e056-9bb3-41d0-b6e8-b692bad292a3/85b2679e-1a78-43ad-97f7-f870708b84ed.webp",
+    "at": "2026-09-08T17:23:25.865Z"
+  },
+  {
+    "id": "863fc00d-b4ec-4880-88be-70c1bb197913",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/124/0.webp",
+    "to": "watermarked/a5717126-a59b-4cf2-afee-0f174cc4e312/863fc00d-b4ec-4880-88be-70c1bb197913.webp",
+    "at": "2026-09-08T17:23:27.062Z"
+  },
+  {
+    "id": "867e4597-6959-44ea-9142-3a4d0b2e08d7",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/87/5.webp",
+    "to": "watermarked/8b53fe1a-c30f-4b38-a25c-5d9620c62570/867e4597-6959-44ea-9142-3a4d0b2e08d7.webp",
+    "at": "2026-09-08T17:23:27.958Z"
+  },
+  {
+    "id": "8745dc50-1dbf-48bf-8cef-18cd8b6578b3",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a243729b257aa5aca4d324b/0.webp",
+    "to": "watermarked/c2fae52f-ab6f-4ed8-a7d0-a023bc208ad4/8745dc50-1dbf-48bf-8cef-18cd8b6578b3.webp",
+    "at": "2026-09-08T17:23:28.951Z"
+  },
+  {
+    "id": "8785af38-959c-4339-9f54-13c40a641d73",
+    "from": "1450d88f-a369-4c15-9b33-52376c1f69e6/annonce-1788570811956-753621-1.webp",
+    "to": "watermarked/0ebc2014-7dd8-4ac8-acd9-26abbb17a4f5/8785af38-959c-4339-9f54-13c40a641d73.webp",
+    "at": "2026-09-08T17:23:30.179Z"
+  },
+  {
+    "id": "8788c800-634d-4041-9379-18da09dd3a1e",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/91/6.webp",
+    "to": "watermarked/a590cb65-3332-4eec-90c1-9b7891105fa0/8788c800-634d-4041-9379-18da09dd3a1e.webp",
+    "at": "2026-09-08T17:23:31.290Z"
+  },
+  {
+    "id": "8810a7c2-9367-4c2a-823d-b7e6e2c2ad41",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/131/7.webp",
+    "to": "watermarked/6941e056-9bb3-41d0-b6e8-b692bad292a3/8810a7c2-9367-4c2a-823d-b7e6e2c2ad41.webp",
+    "at": "2026-09-08T17:23:32.548Z"
+  },
+  {
+    "id": "882ad4cc-2eca-4d9c-911d-bf2050bc714f",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/113/4.webp",
+    "to": "watermarked/9c5842db-bbe3-4d04-8d3e-ca413ae0213c/882ad4cc-2eca-4d9c-911d-bf2050bc714f.webp",
+    "at": "2026-09-08T17:23:33.504Z"
+  },
+  {
+    "id": "8875184c-dfee-4b84-9cae-5062cf8ec76b",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/111/5.webp",
+    "to": "watermarked/b3a0e180-bc6a-4f28-9103-48f3b157c8aa/8875184c-dfee-4b84-9cae-5062cf8ec76b.webp",
+    "at": "2026-09-08T17:23:34.339Z"
+  },
+  {
+    "id": "8a38496e-a942-4256-950c-5b09e7202e80",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/96/5.webp",
+    "to": "watermarked/bfd43e55-0781-415c-8f15-a12903a29bad/8a38496e-a942-4256-950c-5b09e7202e80.webp",
+    "at": "2026-09-08T17:23:35.126Z"
+  },
+  {
+    "id": "8a4a0cc4-2cda-4f5c-a277-ab6ba338a68c",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a2570a8a849fd3c0e15d20b/1.webp",
+    "to": "watermarked/8aa86de3-4640-4124-9990-a8663c9c58a7/8a4a0cc4-2cda-4f5c-a277-ab6ba338a68c.webp",
+    "at": "2026-09-08T17:23:36.012Z"
+  },
+  {
+    "id": "8bc3cd20-6e34-43af-8280-67dfaf58aa24",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/107/7.webp",
+    "to": "watermarked/22c44fcc-e292-401c-986e-41335c9fb8e8/8bc3cd20-6e34-43af-8280-67dfaf58aa24.webp",
+    "at": "2026-09-08T17:23:38.074Z"
+  },
+  {
+    "id": "8be28b54-9509-4cf4-89c4-1b9ac13ec695",
+    "from": "5f62ec4f-f8ad-4276-94c8-36d93e596114/annonce-1788570972062-650817-1.webp",
+    "to": "watermarked/ebf7bd44-a0b0-43d9-84be-d19b7230dc98/8be28b54-9509-4cf4-89c4-1b9ac13ec695.webp",
+    "at": "2026-09-08T17:23:40.810Z"
+  },
+  {
+    "id": "8be96eea-abf4-47e4-bd4c-a3ff427ba690",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/66/1.webp",
+    "to": "watermarked/9fb56320-f485-4136-ba7f-e81df6931908/8be96eea-abf4-47e4-bd4c-a3ff427ba690.webp",
+    "at": "2026-09-08T17:23:42.475Z"
+  },
+  {
+    "id": "8c5c2ae9-4d0c-42ff-8643-974a38e4a5a0",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25a53bb257aa5aca4dfdcc/2.webp",
+    "to": "watermarked/426267f0-30c7-4a59-8dc9-ae55ee889db2/8c5c2ae9-4d0c-42ff-8643-974a38e4a5a0.webp",
+    "at": "2026-09-08T17:23:43.455Z"
+  },
+  {
+    "id": "8c5c5d95-928a-4587-86c5-00ab2c7afe47",
+    "from": "1450d88f-a369-4c15-9b33-52376c1f69e6/annonce-1788570809028-915927-0.webp",
+    "to": "watermarked/0ebc2014-7dd8-4ac8-acd9-26abbb17a4f5/8c5c5d95-928a-4587-86c5-00ab2c7afe47.webp",
+    "at": "2026-09-08T17:23:44.661Z"
+  },
+  {
+    "id": "8e3e184e-7f6d-49ec-b83b-45791809eaf1",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a23f1c7b257aa5aca4cffc6/5.webp",
+    "to": "watermarked/c27b091e-e0a0-4000-a5d3-4de99e4c770d/8e3e184e-7f6d-49ec-b83b-45791809eaf1.webp",
+    "at": "2026-09-08T17:23:46.264Z"
+  },
+  {
+    "id": "9037b066-bb63-4983-b3de-658ca1f52cf2",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/114/7.webp",
+    "to": "watermarked/741cb13e-febf-4b9d-bbb1-ff7eca81d47d/9037b066-bb63-4983-b3de-658ca1f52cf2.webp",
+    "at": "2026-09-08T17:23:46.982Z"
+  },
+  {
+    "id": "9101f909-317d-4e04-abdb-9d2416190410",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/107/6.webp",
+    "to": "watermarked/22c44fcc-e292-401c-986e-41335c9fb8e8/9101f909-317d-4e04-abdb-9d2416190410.webp",
+    "at": "2026-09-08T17:23:47.845Z"
+  },
+  {
+    "id": "91230c33-7080-4fbb-bc7e-dd5b01e61095",
+    "from": "fb59b9c3-dc96-447f-a3df-c3365c79c698/annonce-1788570820520-959968-1.webp",
+    "to": "watermarked/e700dd3e-226d-46f0-b0c0-07b0792f491e/91230c33-7080-4fbb-bc7e-dd5b01e61095.webp",
+    "at": "2026-09-08T17:23:49.128Z"
+  },
+  {
+    "id": "91243f6b-7110-4d0c-a433-1312c0533474",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/50/5.webp",
+    "to": "watermarked/d435281e-90c9-453b-9bdf-fe17f54d5aae/91243f6b-7110-4d0c-a433-1312c0533474.webp",
+    "at": "2026-09-08T17:23:50.353Z"
+  },
+  {
+    "id": "918e8a5d-a0a0-421c-82b5-a48ab603d1c7",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/116/7.webp",
+    "to": "watermarked/a8053469-f980-4b1e-b181-3da577ddae1b/918e8a5d-a0a0-421c-82b5-a48ab603d1c7.webp",
+    "at": "2026-09-08T17:23:51.714Z"
+  },
+  {
+    "id": "91d768b9-e6c2-4ac2-a205-ed1db5e69b21",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/135/3.webp",
+    "to": "watermarked/352e9a53-a06c-463d-8160-9693e94b4413/91d768b9-e6c2-4ac2-a205-ed1db5e69b21.webp",
+    "at": "2026-09-08T17:23:52.795Z"
+  },
+  {
+    "id": "922744f1-12f6-40c0-8515-380df4432e28",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/126/3.webp",
+    "to": "watermarked/b738ddd2-560d-4af3-a2ee-18cc750a89b9/922744f1-12f6-40c0-8515-380df4432e28.webp",
+    "at": "2026-09-08T17:23:53.852Z"
+  },
+  {
+    "id": "92585f0c-024c-41fb-ab7d-ae03c38b7031",
+    "from": "aecbedd6-a171-44b3-8402-551f2bf95da3/annonce-1788571096123-605769-2.webp",
+    "to": "watermarked/25a7c7fc-b3b5-4756-8a96-0039d372db8b/92585f0c-024c-41fb-ab7d-ae03c38b7031.webp",
+    "at": "2026-09-08T17:23:55.519Z"
+  },
+  {
+    "id": "926bdc6e-0208-4c1e-ba53-7a4cb23fbed5",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/85/6.webp",
+    "to": "watermarked/7525cf81-e3db-4bd2-9a6c-440ff403b411/926bdc6e-0208-4c1e-ba53-7a4cb23fbed5.webp",
+    "at": "2026-09-08T17:23:56.700Z"
+  },
+  {
+    "id": "927b4752-15f0-4d0c-94cd-3e89788d3b26",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a251209a849fd3c0e159831/5.webp",
+    "to": "watermarked/59cf8afb-d41f-45b0-893e-98b3a9886f62/927b4752-15f0-4d0c-94cd-3e89788d3b26.webp",
+    "at": "2026-09-08T17:23:57.593Z"
+  },
+  {
+    "id": "92ab19de-996f-4605-9e40-d90672ed902d",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a232533b257aa5aca4ca603/5.webp",
+    "to": "watermarked/0ea0d57b-2253-4be6-a5ca-ce35e877b436/92ab19de-996f-4605-9e40-d90672ed902d.webp",
+    "at": "2026-09-08T17:23:58.915Z"
+  },
+  {
+    "id": "936250c8-0a31-4434-baa2-eae4e440aa36",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/114/1.webp",
+    "to": "watermarked/741cb13e-febf-4b9d-bbb1-ff7eca81d47d/936250c8-0a31-4434-baa2-eae4e440aa36.webp",
+    "at": "2026-09-08T17:23:59.636Z"
+  },
+  {
+    "id": "9373e81d-58fe-4022-b43a-400218989e62",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/112/0.webp",
+    "to": "watermarked/8dc23f12-786c-48f0-9289-a0b89f3b46bb/9373e81d-58fe-4022-b43a-400218989e62.webp",
+    "at": "2026-09-08T17:24:01.112Z"
+  },
+  {
+    "id": "93ce8088-ce65-4f55-997a-517261e70de7",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/112/6.webp",
+    "to": "watermarked/8dc23f12-786c-48f0-9289-a0b89f3b46bb/93ce8088-ce65-4f55-997a-517261e70de7.webp",
+    "at": "2026-09-08T17:24:02.397Z"
+  },
+  {
+    "id": "93daed9c-0385-41f6-b48d-62160c9f566b",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a251209a849fd3c0e159831/0.webp",
+    "to": "watermarked/59cf8afb-d41f-45b0-893e-98b3a9886f62/93daed9c-0385-41f6-b48d-62160c9f566b.webp",
+    "at": "2026-09-08T17:24:03.517Z"
+  },
+  {
+    "id": "941ba5c0-eec1-46d3-9d31-c828c846460a",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/106/1.webp",
+    "to": "watermarked/1d9fe747-1278-4351-83e5-10bed2f7af4a/941ba5c0-eec1-46d3-9d31-c828c846460a.webp",
+    "at": "2026-09-08T17:24:04.766Z"
+  },
+  {
+    "id": "961c509a-289c-479b-879b-0d4b5124c2d6",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/73/2.webp",
+    "to": "watermarked/5abb0574-d141-4b49-a46e-2c50e422b8e9/961c509a-289c-479b-879b-0d4b5124c2d6.webp",
+    "at": "2026-09-08T17:24:06.102Z"
+  },
+  {
+    "id": "962d0a10-14b7-4169-a498-312d20bdd5ea",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a243729b257aa5aca4d324b/6.webp",
+    "to": "watermarked/c2fae52f-ab6f-4ed8-a7d0-a023bc208ad4/962d0a10-14b7-4169-a498-312d20bdd5ea.webp",
+    "at": "2026-09-08T17:24:07.311Z"
+  },
+  {
+    "id": "9656b819-25e8-480d-82ae-333673d89c96",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a23bf3ab257aa5aca4ce048/1.webp",
+    "to": "watermarked/9b0751aa-262e-4cb9-beaf-4a3e7485c727/9656b819-25e8-480d-82ae-333673d89c96.webp",
+    "at": "2026-09-08T17:24:08.561Z"
+  },
+  {
+    "id": "96d9e631-83f4-4e3e-9ed8-29765da518d2",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a23bf3ab257aa5aca4ce048/7.webp",
+    "to": "watermarked/9b0751aa-262e-4cb9-beaf-4a3e7485c727/96d9e631-83f4-4e3e-9ed8-29765da518d2.webp",
+    "at": "2026-09-08T17:24:09.759Z"
+  },
+  {
+    "id": "96e89f5d-d8f1-4e21-a32d-ab9277b8f79e",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/72/5.webp",
+    "to": "watermarked/9da095c4-b4f7-42ae-bc3a-e6bed54d7be7/96e89f5d-d8f1-4e21-a32d-ab9277b8f79e.webp",
+    "at": "2026-09-08T17:24:11.028Z"
+  },
+  {
+    "id": "9708cc7d-e731-47f3-8385-7f5a5ce26ba4",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/115/6.webp",
+    "to": "watermarked/293b92ba-40a9-4f2d-996e-e7b455f6d3b5/9708cc7d-e731-47f3-8385-7f5a5ce26ba4.webp",
+    "at": "2026-09-08T17:24:12.527Z"
+  },
+  {
+    "id": "975903a7-ae2a-46b0-b2ae-a64637552b6c",
+    "from": "e88e469f-1b64-4703-b0bd-47b0f740920a/annonce-1788570826309-875914-0.webp",
+    "to": "watermarked/c88f1333-85a2-4b43-93df-a69d91e3de46/975903a7-ae2a-46b0-b2ae-a64637552b6c.webp",
+    "at": "2026-09-08T17:24:13.743Z"
+  },
+  {
+    "id": "99639686-d67f-48e0-9d16-bb4919383e99",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25a53bb257aa5aca4dfdcc/0.webp",
+    "to": "watermarked/426267f0-30c7-4a59-8dc9-ae55ee889db2/99639686-d67f-48e0-9d16-bb4919383e99.webp",
+    "at": "2026-09-08T17:24:14.837Z"
+  },
+  {
+    "id": "99bb05d9-7b8c-4fd6-8afe-0d191dea125b",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/127/6.webp",
+    "to": "watermarked/d1738b44-798b-4c5b-b423-70d37f2d4b5f/99bb05d9-7b8c-4fd6-8afe-0d191dea125b.webp",
+    "at": "2026-09-08T17:24:15.807Z"
+  },
+  {
+    "id": "9a028454-7866-4e70-af3a-766831de80ba",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/23/0.webp",
+    "to": "watermarked/10b0dce7-402d-44a1-8ba7-f5e0efcbb243/9a028454-7866-4e70-af3a-766831de80ba.webp",
+    "at": "2026-09-08T17:24:16.722Z"
+  },
+  {
+    "id": "9a41c120-ba04-4219-bc6e-7f3c8b4eaa9b",
+    "from": "57510ad5-91b1-4669-9e3b-4324b3721969/annonce-1788571060334-264638-1.webp",
+    "to": "watermarked/0023bbd6-384b-4af0-bdc9-f1f8ed5142d4/9a41c120-ba04-4219-bc6e-7f3c8b4eaa9b.webp",
+    "at": "2026-09-08T17:24:17.942Z"
+  },
+  {
+    "id": "9acdfc2c-f339-4d12-8424-526d94bf456e",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/74/0.webp",
+    "to": "watermarked/e46445a7-a7cc-4633-a846-0d9835900489/9acdfc2c-f339-4d12-8424-526d94bf456e.webp",
+    "at": "2026-09-08T17:24:19.008Z"
+  },
+  {
+    "id": "9b8c163c-f10b-4139-80bc-a871615e1650",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/71/0.webp",
+    "to": "watermarked/1772bbc1-3759-4afb-a944-35d1a79f16cd/9b8c163c-f10b-4139-80bc-a871615e1650.webp",
+    "at": "2026-09-08T17:24:19.784Z"
+  },
+  {
+    "id": "9ce9f8f8-139a-42ab-8534-0e73ace0e3c9",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/110/4.webp",
+    "to": "watermarked/dc38f4aa-87c4-49db-aa7b-70dbb9f2a8b2/9ce9f8f8-139a-42ab-8534-0e73ace0e3c9.webp",
+    "at": "2026-09-08T17:24:20.766Z"
+  },
+  {
+    "id": "9d2cf371-12c5-437c-821b-fa25378a74dd",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/107/1.webp",
+    "to": "watermarked/22c44fcc-e292-401c-986e-41335c9fb8e8/9d2cf371-12c5-437c-821b-fa25378a74dd.webp",
+    "at": "2026-09-08T17:24:21.657Z"
+  },
+  {
+    "id": "9e182d87-0966-48d2-a403-9c0bcf6a3732",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/50/7.webp",
+    "to": "watermarked/d435281e-90c9-453b-9bdf-fe17f54d5aae/9e182d87-0966-48d2-a403-9c0bcf6a3732.webp",
+    "at": "2026-09-08T17:24:23.384Z"
+  },
+  {
+    "id": "9e986e91-79c9-4278-a2ce-03aa05622315",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25527fb257aa5aca4dc3ab/5.webp",
+    "to": "watermarked/2c1432f3-952e-44e0-a5a1-f75853895dcf/9e986e91-79c9-4278-a2ce-03aa05622315.webp",
+    "at": "2026-09-08T17:24:26.173Z"
+  },
+  {
+    "id": "9ec22556-5dfa-4b94-8d43-af40545a587f",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/123/0.webp",
+    "to": "watermarked/b23c763b-7598-4b74-a679-25efba9a17c6/9ec22556-5dfa-4b94-8d43-af40545a587f.webp",
+    "at": "2026-09-08T17:24:27.675Z"
+  },
+  {
+    "id": "9eca021e-2c64-4c8a-94f0-db3e696adb09",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/80/4.webp",
+    "to": "watermarked/434b9d21-d8aa-479d-9aa8-1e6b7d5071b2/9eca021e-2c64-4c8a-94f0-db3e696adb09.webp",
+    "at": "2026-09-08T17:24:28.823Z"
+  },
+  {
+    "id": "9f221718-e359-4038-a0ce-ed2bf637c826",
+    "from": "a0d5f32b-bc8b-4a50-980d-2c61674a5ac2/annonce-1788571021486-255307-1.webp",
+    "to": "watermarked/a962f8fe-c5f6-4a7a-9397-094bf095163b/9f221718-e359-4038-a0ce-ed2bf637c826.webp",
+    "at": "2026-09-08T17:24:29.732Z"
+  },
+  {
+    "id": "9fdc692c-ae67-48d8-9d4b-9cc60e78e23a",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/36/0.webp",
+    "to": "watermarked/023a0768-4f2a-4bdd-b6b7-46bd21d2d7c8/9fdc692c-ae67-48d8-9d4b-9cc60e78e23a.webp",
+    "at": "2026-09-08T17:24:31.364Z"
+  },
+  {
+    "id": "a01b2fc1-6130-4f5d-aace-713438f90f15",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/123/5.webp",
+    "to": "watermarked/b23c763b-7598-4b74-a679-25efba9a17c6/a01b2fc1-6130-4f5d-aace-713438f90f15.webp",
+    "at": "2026-09-08T17:24:32.192Z"
+  },
+  {
+    "id": "a06234c8-cfe5-4c1e-807f-1c482c5621d4",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/116/2.webp",
+    "to": "watermarked/a8053469-f980-4b1e-b181-3da577ddae1b/a06234c8-cfe5-4c1e-807f-1c482c5621d4.webp",
+    "at": "2026-09-08T17:24:33.427Z"
+  },
+  {
+    "id": "a1c6dd9e-deb3-467b-a4fa-35fab5db060c",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a22ebd3b257aa5aca4c8058/4.webp",
+    "to": "watermarked/8c046e7c-7568-41f7-a21c-04db77cd3d94/a1c6dd9e-deb3-467b-a4fa-35fab5db060c.webp",
+    "at": "2026-09-08T17:24:34.980Z"
+  },
+  {
+    "id": "a33d1646-43bd-4e01-86c4-6e4858ffd9fc",
+    "from": "42c6841f-3c41-49db-8abd-49051d8a69d4/annonce-1788570776398-553265-0.webp",
+    "to": "watermarked/9424ca11-6a33-4257-a0bf-3175ddcf09f4/a33d1646-43bd-4e01-86c4-6e4858ffd9fc.webp",
+    "at": "2026-09-08T17:24:36.068Z"
+  },
+  {
+    "id": "a36cd64f-2787-4599-8640-2e68c64e29ec",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/23/5.webp",
+    "to": "watermarked/10b0dce7-402d-44a1-8ba7-f5e0efcbb243/a36cd64f-2787-4599-8640-2e68c64e29ec.webp",
+    "at": "2026-09-08T17:24:36.831Z"
+  },
+  {
+    "id": "a39b2b3b-7fae-47d9-94f9-8964d220bfe1",
+    "from": "1450d88f-a369-4c15-9b33-52376c1f69e6/annonce-1788571172736-136822-0.webp",
+    "to": "watermarked/32769845-c170-4684-988f-dbe705683db4/a39b2b3b-7fae-47d9-94f9-8964d220bfe1.webp",
+    "at": "2026-09-08T17:24:38.072Z"
+  },
+  {
+    "id": "a4232839-14aa-4d7f-809d-07e99992c6e4",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/91/1.webp",
+    "to": "watermarked/a590cb65-3332-4eec-90c1-9b7891105fa0/a4232839-14aa-4d7f-809d-07e99992c6e4.webp",
+    "at": "2026-09-08T17:24:39.485Z"
+  },
+  {
+    "id": "a500e110-17da-4cb0-9b8b-01ed4e7a83a9",
+    "from": "a0d5f32b-bc8b-4a50-980d-2c61674a5ac2/annonce-1788571135133-741420-0.webp",
+    "to": "watermarked/0d82cdde-7327-4342-b308-5dd4896f9207/a500e110-17da-4cb0-9b8b-01ed4e7a83a9.webp",
+    "at": "2026-09-08T17:24:42.029Z"
+  },
+  {
+    "id": "a53d7607-f567-4e63-ab81-8ebd876f8473",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/66/5.webp",
+    "to": "watermarked/9fb56320-f485-4136-ba7f-e81df6931908/a53d7607-f567-4e63-ab81-8ebd876f8473.webp",
+    "at": "2026-09-08T17:24:43.273Z"
+  },
+  {
+    "id": "a56bdb57-e291-4111-92e6-4fddf5be6d9a",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a257c34b257aa5aca4de27b/5.webp",
+    "to": "watermarked/39e873ae-9c72-4306-896a-5d43e546922c/a56bdb57-e291-4111-92e6-4fddf5be6d9a.webp",
+    "at": "2026-09-08T17:24:46.461Z"
+  },
+  {
+    "id": "a5e30a0a-7c1b-4135-bd70-be96273c9dc6",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25a53bb257aa5aca4dfdcc/7.webp",
+    "to": "watermarked/426267f0-30c7-4a59-8dc9-ae55ee889db2/a5e30a0a-7c1b-4135-bd70-be96273c9dc6.webp",
+    "at": "2026-09-08T17:24:47.385Z"
+  },
+  {
+    "id": "a635da19-5996-4c11-ae75-d3ff7b7ff9ad",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/80/6.webp",
+    "to": "watermarked/434b9d21-d8aa-479d-9aa8-1e6b7d5071b2/a635da19-5996-4c11-ae75-d3ff7b7ff9ad.webp",
+    "at": "2026-09-08T17:24:48.410Z"
+  },
+  {
+    "id": "a72b8860-a924-44e6-b751-e7294520f01e",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a2469dab257aa5aca4d5290/3.webp",
+    "to": "watermarked/cca22ada-8a87-47e8-a128-b700eda2c08e/a72b8860-a924-44e6-b751-e7294520f01e.webp",
+    "at": "2026-09-08T17:24:49.479Z"
+  },
+  {
+    "id": "a7c3b84b-c7f0-48f7-b56f-c5d39e2ffbee",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a257c34b257aa5aca4de27b/4.webp",
+    "to": "watermarked/39e873ae-9c72-4306-896a-5d43e546922c/a7c3b84b-c7f0-48f7-b56f-c5d39e2ffbee.webp",
+    "at": "2026-09-08T17:24:50.628Z"
+  },
+  {
+    "id": "a7c5e420-6497-4c3e-852c-e67ff3e49d90",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a256a48a849fd3c0e15cd8d/1.webp",
+    "to": "watermarked/82639106-f0e2-4552-8e1c-84fa6b5306b6/a7c5e420-6497-4c3e-852c-e67ff3e49d90.webp",
+    "at": "2026-09-08T17:24:51.394Z"
+  },
+  {
+    "id": "a7d53ed5-1b2d-4c95-a3b3-7be5729bfbb3",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/113/5.webp",
+    "to": "watermarked/9c5842db-bbe3-4d04-8d3e-ca413ae0213c/a7d53ed5-1b2d-4c95-a3b3-7be5729bfbb3.webp",
+    "at": "2026-09-08T17:24:52.405Z"
+  },
+  {
+    "id": "a8406c5f-7c25-4733-ad37-4961b8ec7bf1",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/72/1.webp",
+    "to": "watermarked/9da095c4-b4f7-42ae-bc3a-e6bed54d7be7/a8406c5f-7c25-4733-ad37-4961b8ec7bf1.webp",
+    "at": "2026-09-08T17:24:53.961Z"
+  },
+  {
+    "id": "a87240a4-736f-400f-9db2-db09395d4f7c",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a2539eea849fd3c0e15abb2/5.webp",
+    "to": "watermarked/f3df67fd-d279-4d58-b596-3f18c0606c5e/a87240a4-736f-400f-9db2-db09395d4f7c.webp",
+    "at": "2026-09-08T17:24:54.755Z"
+  },
+  {
+    "id": "a87df3f9-3213-4598-8a86-23825bb7fa41",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/114/0.webp",
+    "to": "watermarked/741cb13e-febf-4b9d-bbb1-ff7eca81d47d/a87df3f9-3213-4598-8a86-23825bb7fa41.webp",
+    "at": "2026-09-08T17:24:55.656Z"
+  },
+  {
+    "id": "a9ee2e96-1f93-4a36-990a-d654c2e2e3a4",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/106/3.webp",
+    "to": "watermarked/1d9fe747-1278-4351-83e5-10bed2f7af4a/a9ee2e96-1f93-4a36-990a-d654c2e2e3a4.webp",
+    "at": "2026-09-08T17:24:57.917Z"
+  },
+  {
+    "id": "aa828dbc-b035-4fdd-8b53-52cb80940cb0",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/73/6.webp",
+    "to": "watermarked/5abb0574-d141-4b49-a46e-2c50e422b8e9/aa828dbc-b035-4fdd-8b53-52cb80940cb0.webp",
+    "at": "2026-09-08T17:24:58.667Z"
+  },
+  {
+    "id": "ab90253f-b9f1-4598-895a-35d59c0c7521",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a23bf3ab257aa5aca4ce048/0.webp",
+    "to": "watermarked/9b0751aa-262e-4cb9-beaf-4a3e7485c727/ab90253f-b9f1-4598-895a-35d59c0c7521.webp",
+    "at": "2026-09-08T17:24:59.320Z"
+  },
+  {
+    "id": "abfcf277-c40a-49f3-a3fb-6232d057c2bd",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/96/3.webp",
+    "to": "watermarked/bfd43e55-0781-415c-8f15-a12903a29bad/abfcf277-c40a-49f3-a3fb-6232d057c2bd.webp",
+    "at": "2026-09-08T17:25:00.483Z"
+  },
+  {
+    "id": "ac89e3d2-11c6-4f7b-8922-76163589edfa",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/112/1.webp",
+    "to": "watermarked/8dc23f12-786c-48f0-9289-a0b89f3b46bb/ac89e3d2-11c6-4f7b-8922-76163589edfa.webp",
+    "at": "2026-09-08T17:25:01.666Z"
+  },
+  {
+    "id": "acd9864a-1294-41af-b8ad-4817da2ba37d",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/125/1.webp",
+    "to": "watermarked/f622e307-e49b-4696-a3b8-a2cdeae6129f/acd9864a-1294-41af-b8ad-4817da2ba37d.webp",
+    "at": "2026-09-08T17:25:03.140Z"
+  },
+  {
+    "id": "ae3fabd4-e378-41a4-92eb-2b42814abf52",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a23f1c7b257aa5aca4cffc6/4.webp",
+    "to": "watermarked/c27b091e-e0a0-4000-a5d3-4de99e4c770d/ae3fabd4-e378-41a4-92eb-2b42814abf52.webp",
+    "at": "2026-09-08T17:25:04.191Z"
+  },
+  {
+    "id": "aede4159-d012-4bf8-80f8-594e6208c811",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/96/4.webp",
+    "to": "watermarked/bfd43e55-0781-415c-8f15-a12903a29bad/aede4159-d012-4bf8-80f8-594e6208c811.webp",
+    "at": "2026-09-08T17:25:05.125Z"
+  },
+  {
+    "id": "af47f469-e17a-4991-819c-65022f4a1293",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/126/1.webp",
+    "to": "watermarked/b738ddd2-560d-4af3-a2ee-18cc750a89b9/af47f469-e17a-4991-819c-65022f4a1293.webp",
+    "at": "2026-09-08T17:25:05.956Z"
+  },
+  {
+    "id": "af49ee6d-3e36-46b2-83e5-b098b842914e",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/114/5.webp",
+    "to": "watermarked/741cb13e-febf-4b9d-bbb1-ff7eca81d47d/af49ee6d-3e36-46b2-83e5-b098b842914e.webp",
+    "at": "2026-09-08T17:25:06.576Z"
+  },
+  {
+    "id": "af5fb462-481f-43eb-8a7c-e5325c0702e9",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a23f1c7b257aa5aca4cffc6/7.webp",
+    "to": "watermarked/c27b091e-e0a0-4000-a5d3-4de99e4c770d/af5fb462-481f-43eb-8a7c-e5325c0702e9.webp",
+    "at": "2026-09-08T17:25:07.683Z"
+  },
+  {
+    "id": "af67973e-c0c8-4d73-aea1-20622ddaabc6",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/111/7.webp",
+    "to": "watermarked/b3a0e180-bc6a-4f28-9103-48f3b157c8aa/af67973e-c0c8-4d73-aea1-20622ddaabc6.webp",
+    "at": "2026-09-08T17:25:08.468Z"
+  },
+  {
+    "id": "af6e3955-7ac7-4405-8bce-cf85c4a18a97",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/131/4.webp",
+    "to": "watermarked/6941e056-9bb3-41d0-b6e8-b692bad292a3/af6e3955-7ac7-4405-8bce-cf85c4a18a97.webp",
+    "at": "2026-09-08T17:25:09.297Z"
+  },
+  {
+    "id": "b01bf6bf-a8ad-4c85-adb5-9d77b7c2f08d",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a251209a849fd3c0e159831/2.webp",
+    "to": "watermarked/59cf8afb-d41f-45b0-893e-98b3a9886f62/b01bf6bf-a8ad-4c85-adb5-9d77b7c2f08d.webp",
+    "at": "2026-09-08T17:25:10.173Z"
+  },
+  {
+    "id": "b0748c5f-7161-40db-b291-3d9a8a444713",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/110/1.webp",
+    "to": "watermarked/dc38f4aa-87c4-49db-aa7b-70dbb9f2a8b2/b0748c5f-7161-40db-b291-3d9a8a444713.webp",
+    "at": "2026-09-08T17:25:11.006Z"
+  },
+  {
+    "id": "b0a6e083-6bdb-4f2c-be71-8678c1d8750f",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/83/0.webp",
+    "to": "watermarked/727f5e17-41a7-48dc-a945-55d6bca476d5/b0a6e083-6bdb-4f2c-be71-8678c1d8750f.webp",
+    "at": "2026-09-08T17:25:11.654Z"
+  },
+  {
+    "id": "b0f5119f-4544-4a83-8483-d4adc77fd791",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/127/7.webp",
+    "to": "watermarked/d1738b44-798b-4c5b-b423-70d37f2d4b5f/b0f5119f-4544-4a83-8483-d4adc77fd791.webp",
+    "at": "2026-09-08T17:25:12.476Z"
+  },
+  {
+    "id": "b1597028-3e20-4054-8990-99e6f50e2de7",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a243729b257aa5aca4d324b/2.webp",
+    "to": "watermarked/c2fae52f-ab6f-4ed8-a7d0-a023bc208ad4/b1597028-3e20-4054-8990-99e6f50e2de7.webp",
+    "at": "2026-09-08T17:25:13.340Z"
+  },
+  {
+    "id": "b164e1cf-a10b-4a3f-a884-c25edd6b215e",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/79/0.webp",
+    "to": "watermarked/8f10d880-4be6-486c-bb54-d10f9273708e/b164e1cf-a10b-4a3f-a884-c25edd6b215e.webp",
+    "at": "2026-09-08T17:25:14.285Z"
+  },
+  {
+    "id": "b17a86a7-0803-472f-b2bb-441523e6a2c1",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/9/6.webp",
+    "to": "watermarked/9824b0db-9b6e-4c58-b12f-eb12aa3a4dd2/b17a86a7-0803-472f-b2bb-441523e6a2c1.webp",
+    "at": "2026-09-08T17:25:16.005Z"
+  },
+  {
+    "id": "b18ab703-c9c2-4c99-ac28-152bd8e801d5",
+    "from": "fb59b9c3-dc96-447f-a3df-c3365c79c698/annonce-1788570893723-503273-0.webp",
+    "to": "watermarked/89f0ea51-e106-4fb2-9e44-8ed168898202/b18ab703-c9c2-4c99-ac28-152bd8e801d5.webp",
+    "at": "2026-09-08T17:25:17.072Z"
+  },
+  {
+    "id": "b209cfc3-8399-44b1-bbb3-bc08e8c17fcb",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a1f420a90932ca4e76acae0/6.webp",
+    "to": "watermarked/cefc9d02-aa2d-4943-95b5-464a4a0ed75d/b209cfc3-8399-44b1-bbb3-bc08e8c17fcb.webp",
+    "at": "2026-09-08T17:25:17.877Z"
+  },
+  {
+    "id": "b27f05a0-06b9-49da-953f-cc4636780f08",
+    "from": "5f62ec4f-f8ad-4276-94c8-36d93e596114/annonce-1788571075660-640346-0.webp",
+    "to": "watermarked/a904b21c-e60b-4506-b201-a5a012207169/b27f05a0-06b9-49da-953f-cc4636780f08.webp",
+    "at": "2026-09-08T17:25:18.493Z"
+  },
+  {
+    "id": "b2884643-f7dc-4530-be92-3477effeeeec",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/79/7.webp",
+    "to": "watermarked/8f10d880-4be6-486c-bb54-d10f9273708e/b2884643-f7dc-4530-be92-3477effeeeec.webp",
+    "at": "2026-09-08T17:25:19.377Z"
+  },
+  {
+    "id": "b35d9085-5729-4fc1-a1e8-21561007545e",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a232533b257aa5aca4ca603/4.webp",
+    "to": "watermarked/0ea0d57b-2253-4be6-a5ca-ce35e877b436/b35d9085-5729-4fc1-a1e8-21561007545e.webp",
+    "at": "2026-09-08T17:25:20.303Z"
+  },
+  {
+    "id": "b3c47b59-b9a7-4dd4-9bc9-8a2b2fd41191",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a251209a849fd3c0e159831/1.webp",
+    "to": "watermarked/59cf8afb-d41f-45b0-893e-98b3a9886f62/b3c47b59-b9a7-4dd4-9bc9-8a2b2fd41191.webp",
+    "at": "2026-09-08T17:25:21.051Z"
+  },
+  {
+    "id": "b40841e2-98c9-4e28-8783-1a1c504456a6",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/73/3.webp",
+    "to": "watermarked/5abb0574-d141-4b49-a46e-2c50e422b8e9/b40841e2-98c9-4e28-8783-1a1c504456a6.webp",
+    "at": "2026-09-08T17:25:21.830Z"
+  },
+  {
+    "id": "b40be3cc-ad80-4289-a873-fd9306ffa8ac",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a23f1c7b257aa5aca4cffc6/0.webp",
+    "to": "watermarked/c27b091e-e0a0-4000-a5d3-4de99e4c770d/b40be3cc-ad80-4289-a873-fd9306ffa8ac.webp",
+    "at": "2026-09-08T17:25:22.925Z"
+  },
+  {
+    "id": "b458bb58-4863-4048-b9f6-0b4c3de32dac",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/77/2.webp",
+    "to": "watermarked/37639e84-4d14-4b8f-9d0e-8224fbbe6bfb/b458bb58-4863-4048-b9f6-0b4c3de32dac.webp",
+    "at": "2026-09-08T17:25:24.038Z"
+  },
+  {
+    "id": "b57bd6c3-268c-4d33-beaa-11df5ca82036",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/71/3.webp",
+    "to": "watermarked/1772bbc1-3759-4afb-a944-35d1a79f16cd/b57bd6c3-268c-4d33-beaa-11df5ca82036.webp",
+    "at": "2026-09-08T17:25:24.765Z"
+  },
+  {
+    "id": "b6071e58-c575-4a47-bed7-661903e39130",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/106/4.webp",
+    "to": "watermarked/1d9fe747-1278-4351-83e5-10bed2f7af4a/b6071e58-c575-4a47-bed7-661903e39130.webp",
+    "at": "2026-09-08T17:25:25.592Z"
+  },
+  {
+    "id": "b60b3832-0272-4f4b-a83c-0b8a050e3531",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/77/0.webp",
+    "to": "watermarked/31500223-482e-4206-a700-b3d15e48a8fc/b60b3832-0272-4f4b-a83c-0b8a050e3531.webp",
+    "at": "2026-09-08T17:25:26.442Z"
+  },
+  {
+    "id": "b642e9c7-4bd6-48d7-95b7-d684975ad0d6",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/70/4.webp",
+    "to": "watermarked/e3506b8f-364a-471a-ba87-53022e00a6b5/b642e9c7-4bd6-48d7-95b7-d684975ad0d6.webp",
+    "at": "2026-09-08T17:25:27.517Z"
+  },
+  {
+    "id": "b6605aa8-d4e6-48f4-b17e-eab516e10f20",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/80/3.webp",
+    "to": "watermarked/434b9d21-d8aa-479d-9aa8-1e6b7d5071b2/b6605aa8-d4e6-48f4-b17e-eab516e10f20.webp",
+    "at": "2026-09-08T17:25:28.751Z"
+  },
+  {
+    "id": "b69a94d9-c4a4-469a-a16d-2d517fc656ca",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/36/5.webp",
+    "to": "watermarked/023a0768-4f2a-4bdd-b6b7-46bd21d2d7c8/b69a94d9-c4a4-469a-a16d-2d517fc656ca.webp",
+    "at": "2026-09-08T17:25:29.568Z"
+  },
+  {
+    "id": "b6f1ee05-e1b3-4173-9e19-bafe024b9c50",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/127/5.webp",
+    "to": "watermarked/d1738b44-798b-4c5b-b423-70d37f2d4b5f/b6f1ee05-e1b3-4173-9e19-bafe024b9c50.webp",
+    "at": "2026-09-08T17:25:30.316Z"
+  },
+  {
+    "id": "b73304eb-1b6c-4881-ab44-0e06abe6f909",
+    "from": "ca683283-dab0-4520-b16e-1f48a26ea1ea/annonce-1788571108120-142387-0.webp",
+    "to": "watermarked/27d5d725-6ff1-412b-9e9f-9f2ed1ed014e/b73304eb-1b6c-4881-ab44-0e06abe6f909.webp",
+    "at": "2026-09-08T17:25:30.810Z"
+  },
+  {
+    "id": "b7ebdeee-4884-43c9-8326-6b9937b58976",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/116/5.webp",
+    "to": "watermarked/a8053469-f980-4b1e-b181-3da577ddae1b/b7ebdeee-4884-43c9-8326-6b9937b58976.webp",
+    "at": "2026-09-08T17:25:31.724Z"
+  },
+  {
+    "id": "b897d70e-9d9c-4faf-ae2f-ba8bab6e9b0f",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25d77aa849fd3c0e161b15/5.webp",
+    "to": "watermarked/c8f72b85-bfb6-48e6-8142-8e5390c8929b/b897d70e-9d9c-4faf-ae2f-ba8bab6e9b0f.webp",
+    "at": "2026-09-08T17:25:32.479Z"
+  },
+  {
+    "id": "b9e72593-7e7e-4fe8-ada3-c1916b4915bc",
+    "from": "d6d8d637-3633-468d-95b5-9b534ad1d4d9/annonce-1788570803477-520893-1.webp",
+    "to": "watermarked/014c0ad4-3490-44ef-99f8-5c91983531fe/b9e72593-7e7e-4fe8-ada3-c1916b4915bc.webp",
+    "at": "2026-09-08T17:25:33.396Z"
+  },
+  {
+    "id": "baa644b8-003f-4b83-bb1d-5169e1df997a",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/111/2.webp",
+    "to": "watermarked/b3a0e180-bc6a-4f28-9103-48f3b157c8aa/baa644b8-003f-4b83-bb1d-5169e1df997a.webp",
+    "at": "2026-09-08T17:25:34.305Z"
+  },
+  {
+    "id": "bbaa1d4d-2f87-4750-8f83-4397a68255ac",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a2539eea849fd3c0e15abb2/4.webp",
+    "to": "watermarked/f3df67fd-d279-4d58-b596-3f18c0606c5e/bbaa1d4d-2f87-4750-8f83-4397a68255ac.webp",
+    "at": "2026-09-08T17:25:35.251Z"
+  },
+  {
+    "id": "bbf46259-2f75-4208-a609-6e8f86d265dd",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/70/0.webp",
+    "to": "watermarked/e3506b8f-364a-471a-ba87-53022e00a6b5/bbf46259-2f75-4208-a609-6e8f86d265dd.webp",
+    "at": "2026-09-08T17:25:36.096Z"
+  },
+  {
+    "id": "bc104ac8-1b33-4c1f-af96-693a29d51e61",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/96/1.webp",
+    "to": "watermarked/bfd43e55-0781-415c-8f15-a12903a29bad/bc104ac8-1b33-4c1f-af96-693a29d51e61.webp",
+    "at": "2026-09-08T17:25:36.958Z"
+  },
+  {
+    "id": "bc1a894d-072b-457b-b36b-a3d42e1753a4",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/131/2.webp",
+    "to": "watermarked/31500223-482e-4206-a700-b3d15e48a8fc/bc1a894d-072b-457b-b36b-a3d42e1753a4.webp",
+    "at": "2026-09-08T17:25:37.687Z"
+  },
+  {
+    "id": "bd243201-e17e-49f0-a99c-6df4e24ff1ee",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/96/7.webp",
+    "to": "watermarked/bfd43e55-0781-415c-8f15-a12903a29bad/bd243201-e17e-49f0-a99c-6df4e24ff1ee.webp",
+    "at": "2026-09-08T17:25:39.362Z"
+  },
+  {
+    "id": "bd694d81-89f6-4144-87c5-1aa678bccb5c",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a251209a849fd3c0e159831/4.webp",
+    "to": "watermarked/59cf8afb-d41f-45b0-893e-98b3a9886f62/bd694d81-89f6-4144-87c5-1aa678bccb5c.webp",
+    "at": "2026-09-08T17:25:40.232Z"
+  },
+  {
+    "id": "bd9157bc-9300-4880-aade-ab3bc71fb922",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/115/1.webp",
+    "to": "watermarked/293b92ba-40a9-4f2d-996e-e7b455f6d3b5/bd9157bc-9300-4880-aade-ab3bc71fb922.webp",
+    "at": "2026-09-08T17:25:41.193Z"
+  },
+  {
+    "id": "bd9b0f8b-253f-4d46-b753-3c5438c3c8e5",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/123/6.webp",
+    "to": "watermarked/b23c763b-7598-4b74-a679-25efba9a17c6/bd9b0f8b-253f-4d46-b753-3c5438c3c8e5.webp",
+    "at": "2026-09-08T17:25:42.072Z"
+  },
+  {
+    "id": "bddeac4f-31d4-4724-800d-b3108231b477",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a243729b257aa5aca4d324b/4.webp",
+    "to": "watermarked/c2fae52f-ab6f-4ed8-a7d0-a023bc208ad4/bddeac4f-31d4-4724-800d-b3108231b477.webp",
+    "at": "2026-09-08T17:25:42.922Z"
+  },
+  {
+    "id": "be3147cc-c119-4aaf-a7ce-a0e3df082f05",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/123/1.webp",
+    "to": "watermarked/b23c763b-7598-4b74-a679-25efba9a17c6/be3147cc-c119-4aaf-a7ce-a0e3df082f05.webp",
+    "at": "2026-09-08T17:25:43.797Z"
+  },
+  {
+    "id": "be41ee86-4685-46aa-9435-9c7b1b443e81",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/93/7.webp",
+    "to": "watermarked/2fdaf636-ae06-4454-86f5-8a8df8fc24d7/be41ee86-4685-46aa-9435-9c7b1b443e81.webp",
+    "at": "2026-09-08T17:25:44.870Z"
+  },
+  {
+    "id": "be50d3b3-a552-4c3a-886b-31b559bd6f04",
+    "from": "57510ad5-91b1-4669-9e3b-4324b3721969/annonce-1788570877941-576872-2.webp",
+    "to": "watermarked/811d3afc-f506-428a-9c87-940901d72890/be50d3b3-a552-4c3a-886b-31b559bd6f04.webp",
+    "at": "2026-09-08T17:25:46.176Z"
+  },
+  {
+    "id": "be8cf5c5-6317-4366-954f-6427ce09cbd8",
+    "from": "e88e469f-1b64-4703-b0bd-47b0f740920a/annonce-1788571210897-546223-1.webp",
+    "to": "watermarked/f5eeb087-933a-4880-b070-e18935bc1bfd/be8cf5c5-6317-4366-954f-6427ce09cbd8.webp",
+    "at": "2026-09-08T17:25:47.194Z"
+  },
+  {
+    "id": "bed365a3-97e7-4bc4-a6c8-39a4409d2bc3",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/112/3.webp",
+    "to": "watermarked/8dc23f12-786c-48f0-9289-a0b89f3b46bb/bed365a3-97e7-4bc4-a6c8-39a4409d2bc3.webp",
+    "at": "2026-09-08T17:25:47.995Z"
+  },
+  {
+    "id": "bf7e9ebf-f584-4028-99e0-657bb292bcb1",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a2591c8b257aa5aca4df21b/5.webp",
+    "to": "watermarked/dce47f08-fc20-41a8-b806-44add26a43a5/bf7e9ebf-f584-4028-99e0-657bb292bcb1.webp",
+    "at": "2026-09-08T17:25:48.845Z"
+  },
+  {
+    "id": "bf9aa198-5db9-4082-814a-4c5746cdae52",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/9/0.webp",
+    "to": "watermarked/9824b0db-9b6e-4c58-b12f-eb12aa3a4dd2/bf9aa198-5db9-4082-814a-4c5746cdae52.webp",
+    "at": "2026-09-08T17:25:49.713Z"
+  },
+  {
+    "id": "bf9b552b-1288-4db9-884d-8a88755ca07c",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/137/3.webp",
+    "to": "watermarked/4ebc4bd4-3b77-48ff-b533-ea8f40a34fa8/bf9b552b-1288-4db9-884d-8a88755ca07c.webp",
+    "at": "2026-09-08T17:25:50.717Z"
+  },
+  {
+    "id": "bfd9b4f3-6e2c-4b07-8fb5-efdddcd9b15d",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/85/1.webp",
+    "to": "watermarked/7525cf81-e3db-4bd2-9a6c-440ff403b411/bfd9b4f3-6e2c-4b07-8fb5-efdddcd9b15d.webp",
+    "at": "2026-09-08T17:25:51.799Z"
+  },
+  {
+    "id": "c0a781cd-7929-4abb-9d0e-6bdb0968bc3c",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/71/5.webp",
+    "to": "watermarked/1772bbc1-3759-4afb-a944-35d1a79f16cd/c0a781cd-7929-4abb-9d0e-6bdb0968bc3c.webp",
+    "at": "2026-09-08T17:25:52.708Z"
+  },
+  {
+    "id": "c2acf4d1-e9d4-493e-9fa9-63eed9ffe2d6",
+    "from": "fb59b9c3-dc96-447f-a3df-c3365c79c698/annonce-1788570818819-544974-0.webp",
+    "to": "watermarked/e700dd3e-226d-46f0-b0c0-07b0792f491e/c2acf4d1-e9d4-493e-9fa9-63eed9ffe2d6.webp",
+    "at": "2026-09-08T17:25:53.460Z"
+  },
+  {
+    "id": "c31ffa0d-db0f-4a6e-89e0-feca93c5ee87",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/50/4.webp",
+    "to": "watermarked/d435281e-90c9-453b-9bdf-fe17f54d5aae/c31ffa0d-db0f-4a6e-89e0-feca93c5ee87.webp",
+    "at": "2026-09-08T17:25:54.549Z"
+  },
+  {
+    "id": "c343297f-651e-4b9a-9895-d2e3727dc2aa",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/85/2.webp",
+    "to": "watermarked/7525cf81-e3db-4bd2-9a6c-440ff403b411/c343297f-651e-4b9a-9895-d2e3727dc2aa.webp",
+    "at": "2026-09-08T17:25:55.331Z"
+  },
+  {
+    "id": "c485117f-db6d-4696-a6fe-8c9042843dd6",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/77/3.webp",
+    "to": "watermarked/37639e84-4d14-4b8f-9d0e-8224fbbe6bfb/c485117f-db6d-4696-a6fe-8c9042843dd6.webp",
+    "at": "2026-09-08T17:25:56.192Z"
+  },
+  {
+    "id": "c511fe77-f559-4453-a1f7-49ee507ba0b7",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/137/6.webp",
+    "to": "watermarked/4ebc4bd4-3b77-48ff-b533-ea8f40a34fa8/c511fe77-f559-4453-a1f7-49ee507ba0b7.webp",
+    "at": "2026-09-08T17:25:57.172Z"
+  },
+  {
+    "id": "c54dc59f-fecb-484b-94d9-e84a2e1ec222",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/112/4.webp",
+    "to": "watermarked/8dc23f12-786c-48f0-9289-a0b89f3b46bb/c54dc59f-fecb-484b-94d9-e84a2e1ec222.webp",
+    "at": "2026-09-08T17:25:57.951Z"
+  },
+  {
+    "id": "c598701c-f3ab-472c-97d2-7f7f9702dca5",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/111/3.webp",
+    "to": "watermarked/b3a0e180-bc6a-4f28-9103-48f3b157c8aa/c598701c-f3ab-472c-97d2-7f7f9702dca5.webp",
+    "at": "2026-09-08T17:25:58.870Z"
+  },
+  {
+    "id": "c6038083-4ae5-4dc6-a03e-595e256c1da1",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a232533b257aa5aca4ca603/3.webp",
+    "to": "watermarked/0ea0d57b-2253-4be6-a5ca-ce35e877b436/c6038083-4ae5-4dc6-a03e-595e256c1da1.webp",
+    "at": "2026-09-08T17:25:59.749Z"
+  },
+  {
+    "id": "c61414ea-788a-44d0-baad-9127178d837a",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/77/1.webp",
+    "to": "watermarked/37639e84-4d14-4b8f-9d0e-8224fbbe6bfb/c61414ea-788a-44d0-baad-9127178d837a.webp",
+    "at": "2026-09-08T17:26:01.077Z"
+  },
+  {
+    "id": "c658073f-1d6f-48c7-b8d6-8b57d202f6f8",
+    "from": "ec96f995-e9ae-4375-a9d6-04d6de74dc07/annonce-1788571101962-894810-1.webp",
+    "to": "watermarked/62b57303-c2f3-40cb-bcbe-32272a0131e4/c658073f-1d6f-48c7-b8d6-8b57d202f6f8.webp",
+    "at": "2026-09-08T17:26:01.957Z"
+  },
+  {
+    "id": "c66ed7f4-e5dd-4aaf-9f72-427e97a14f0d",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25d77aa849fd3c0e161b15/2.webp",
+    "to": "watermarked/5eb0c1cd-02b6-4fb2-b2ff-5b91576dd5a8/c66ed7f4-e5dd-4aaf-9f72-427e97a14f0d.webp",
+    "at": "2026-09-08T17:26:02.713Z"
+  },
+  {
+    "id": "c6b631d8-ccb6-47e6-8338-86e12c527270",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/36/6.webp",
+    "to": "watermarked/023a0768-4f2a-4bdd-b6b7-46bd21d2d7c8/c6b631d8-ccb6-47e6-8338-86e12c527270.webp",
+    "at": "2026-09-08T17:26:03.503Z"
+  },
+  {
+    "id": "c6c80e27-9fd4-4a4b-a918-d1a932fde277",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/65/1.webp",
+    "to": "watermarked/fea69082-ff2c-4cbf-a634-9c01047665b3/c6c80e27-9fd4-4a4b-a918-d1a932fde277.webp",
+    "at": "2026-09-08T17:26:04.397Z"
+  },
+  {
+    "id": "c740886a-c892-42a1-a024-fb54c977c90a",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a22ebd3b257aa5aca4c8058/5.webp",
+    "to": "watermarked/8c046e7c-7568-41f7-a21c-04db77cd3d94/c740886a-c892-42a1-a024-fb54c977c90a.webp",
+    "at": "2026-09-08T17:26:05.263Z"
+  },
+  {
+    "id": "c75d4e45-af28-4456-92ed-d382a73a8a92",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/96/6.webp",
+    "to": "watermarked/bfd43e55-0781-415c-8f15-a12903a29bad/c75d4e45-af28-4456-92ed-d382a73a8a92.webp",
+    "at": "2026-09-08T17:26:06.077Z"
+  },
+  {
+    "id": "c799be9b-8dac-42b1-8d5f-e2e8eb4c662a",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/80/2.webp",
+    "to": "watermarked/434b9d21-d8aa-479d-9aa8-1e6b7d5071b2/c799be9b-8dac-42b1-8d5f-e2e8eb4c662a.webp",
+    "at": "2026-09-08T17:26:06.941Z"
+  },
+  {
+    "id": "c8871e9c-e8f3-470a-8179-a9c6e81dae94",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a243729b257aa5aca4d324b/5.webp",
+    "to": "watermarked/c2fae52f-ab6f-4ed8-a7d0-a023bc208ad4/c8871e9c-e8f3-470a-8179-a9c6e81dae94.webp",
+    "at": "2026-09-08T17:26:07.796Z"
+  },
+  {
+    "id": "c8db15fa-0c61-4a9f-9d64-49d5ed2e3121",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/66/3.webp",
+    "to": "watermarked/9fb56320-f485-4136-ba7f-e81df6931908/c8db15fa-0c61-4a9f-9d64-49d5ed2e3121.webp",
+    "at": "2026-09-08T17:26:08.681Z"
+  },
+  {
+    "id": "c9e43917-08a7-4f3c-b9e8-cb2a85cc047b",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/110/2.webp",
+    "to": "watermarked/dc38f4aa-87c4-49db-aa7b-70dbb9f2a8b2/c9e43917-08a7-4f3c-b9e8-cb2a85cc047b.webp",
+    "at": "2026-09-08T17:26:09.561Z"
+  },
+  {
+    "id": "ca631659-b2a2-45c6-ad8e-2410a3415f64",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/135/1.webp",
+    "to": "watermarked/352e9a53-a06c-463d-8160-9693e94b4413/ca631659-b2a2-45c6-ad8e-2410a3415f64.webp",
+    "at": "2026-09-08T17:26:10.822Z"
+  },
+  {
+    "id": "ca95f2ec-7f57-474e-bfa7-0a51ba7b9974",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/91/2.webp",
+    "to": "watermarked/a590cb65-3332-4eec-90c1-9b7891105fa0/ca95f2ec-7f57-474e-bfa7-0a51ba7b9974.webp",
+    "at": "2026-09-08T17:26:11.700Z"
+  },
+  {
+    "id": "cd0a8cd0-242e-4086-a812-bf754b0ece93",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a251209a849fd3c0e159831/3.webp",
+    "to": "watermarked/59cf8afb-d41f-45b0-893e-98b3a9886f62/cd0a8cd0-242e-4086-a812-bf754b0ece93.webp",
+    "at": "2026-09-08T17:26:12.683Z"
+  },
+  {
+    "id": "cdccfa43-ac19-4133-8074-2166f948ed51",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/78/4.webp",
+    "to": "watermarked/b1b5c3cb-62fe-4111-b0a0-4a5229d1e460/cdccfa43-ac19-4133-8074-2166f948ed51.webp",
+    "at": "2026-09-08T17:26:13.595Z"
+  },
+  {
+    "id": "ce2aa17f-619d-4c21-8c93-719924ab1503",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/131/6.webp",
+    "to": "watermarked/6941e056-9bb3-41d0-b6e8-b692bad292a3/ce2aa17f-619d-4c21-8c93-719924ab1503.webp",
+    "at": "2026-09-08T17:26:14.498Z"
+  },
+  {
+    "id": "ce2b57fc-b0da-4c81-9b59-92f23d299554",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25d77aa849fd3c0e161b15/0.webp",
+    "to": "watermarked/c8f72b85-bfb6-48e6-8142-8e5390c8929b/ce2b57fc-b0da-4c81-9b59-92f23d299554.webp",
+    "at": "2026-09-08T17:26:15.181Z"
+  },
+  {
+    "id": "ce5bede0-8612-4643-90d4-9b98ecceb17e",
+    "from": "a0d5f32b-bc8b-4a50-980d-2c61674a5ac2/annonce-1788571136705-392125-1.webp",
+    "to": "watermarked/0d82cdde-7327-4342-b308-5dd4896f9207/ce5bede0-8612-4643-90d4-9b98ecceb17e.webp",
+    "at": "2026-09-08T17:26:16.079Z"
+  },
+  {
+    "id": "ce9cb7b2-fe84-4180-8514-f7399a9b2efa",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/74/3.webp",
+    "to": "watermarked/e46445a7-a7cc-4633-a846-0d9835900489/ce9cb7b2-fe84-4180-8514-f7399a9b2efa.webp",
+    "at": "2026-09-08T17:26:16.962Z"
+  },
+  {
+    "id": "cedb4618-3141-45f3-a087-29b6b7a0ac01",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/87/4.webp",
+    "to": "watermarked/8b53fe1a-c30f-4b38-a25c-5d9620c62570/cedb4618-3141-45f3-a087-29b6b7a0ac01.webp",
+    "at": "2026-09-08T17:26:17.845Z"
+  },
+  {
+    "id": "cf824a79-adda-48dc-8b1b-c149448507d7",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/75/7.webp",
+    "to": "watermarked/bd8445a2-2972-494d-95a2-7caf50f17c13/cf824a79-adda-48dc-8b1b-c149448507d7.webp",
+    "at": "2026-09-08T17:26:18.572Z"
+  },
+  {
+    "id": "d0131e16-854b-4a81-becb-e6afc3884c16",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/79/3.webp",
+    "to": "watermarked/8f10d880-4be6-486c-bb54-d10f9273708e/d0131e16-854b-4a81-becb-e6afc3884c16.webp",
+    "at": "2026-09-08T17:26:19.391Z"
+  },
+  {
+    "id": "d132df2e-63f6-4afa-b11f-d1e471a81906",
+    "from": "42c6841f-3c41-49db-8abd-49051d8a69d4/annonce-1788570859334-212278-2.webp",
+    "to": "watermarked/31259c34-19e9-48bb-8a95-ef183ca9db2f/d132df2e-63f6-4afa-b11f-d1e471a81906.webp",
+    "at": "2026-09-08T17:26:20.662Z"
+  },
+  {
+    "id": "d14cfc40-fc3c-40b2-bfe3-447b98901c02",
+    "from": "ec96f995-e9ae-4375-a9d6-04d6de74dc07/annonce-1788570772767-25087-2.webp",
+    "to": "watermarked/c6d5aaf0-0203-4d2e-a2e7-7b20371ccb53/d14cfc40-fc3c-40b2-bfe3-447b98901c02.webp",
+    "at": "2026-09-08T17:26:21.669Z"
+  },
+  {
+    "id": "d15703a3-90fa-4fbe-99e7-a57b4b13cfca",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/73/4.webp",
+    "to": "watermarked/5abb0574-d141-4b49-a46e-2c50e422b8e9/d15703a3-90fa-4fbe-99e7-a57b4b13cfca.webp",
+    "at": "2026-09-08T17:26:22.657Z"
+  },
+  {
+    "id": "d228591d-68bb-4504-9293-3d2a1235bd27",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/70/2.webp",
+    "to": "watermarked/e3506b8f-364a-471a-ba87-53022e00a6b5/d228591d-68bb-4504-9293-3d2a1235bd27.webp",
+    "at": "2026-09-08T17:26:23.466Z"
+  },
+  {
+    "id": "d2ab310e-15f1-4e06-999b-fadb97d80d12",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/92/1.webp",
+    "to": "watermarked/bc0f8265-94dd-435b-aefa-5745e8711af1/d2ab310e-15f1-4e06-999b-fadb97d80d12.webp",
+    "at": "2026-09-08T17:26:24.393Z"
+  },
+  {
+    "id": "d2fdb7cc-b255-483c-a9a2-67e20e680f2e",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a1f420a90932ca4e76acae0/4.webp",
+    "to": "watermarked/cefc9d02-aa2d-4943-95b5-464a4a0ed75d/d2fdb7cc-b255-483c-a9a2-67e20e680f2e.webp",
+    "at": "2026-09-08T17:26:25.482Z"
+  },
+  {
+    "id": "d4223f07-4ca0-4681-b8d1-60a08dd4c41b",
+    "from": "42c6841f-3c41-49db-8abd-49051d8a69d4/annonce-1788570781132-912025-1.webp",
+    "to": "watermarked/9424ca11-6a33-4257-a0bf-3175ddcf09f4/d4223f07-4ca0-4681-b8d1-60a08dd4c41b.webp",
+    "at": "2026-09-08T17:26:26.784Z"
+  },
+  {
+    "id": "d4566e6a-db70-4fdf-9465-6bc3287e96fc",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/106/6.webp",
+    "to": "watermarked/1d9fe747-1278-4351-83e5-10bed2f7af4a/d4566e6a-db70-4fdf-9465-6bc3287e96fc.webp",
+    "at": "2026-09-08T17:26:28.196Z"
+  },
+  {
+    "id": "d4f29496-9291-465d-87ca-761c8f91d569",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/125/3.webp",
+    "to": "watermarked/f622e307-e49b-4696-a3b8-a2cdeae6129f/d4f29496-9291-465d-87ca-761c8f91d569.webp",
+    "at": "2026-09-08T17:26:28.960Z"
+  },
+  {
+    "id": "d522e163-cdb8-4d2b-bafd-e48770627e82",
+    "from": "57510ad5-91b1-4669-9e3b-4324b3721969/annonce-1788570873557-716047-1.webp",
+    "to": "watermarked/811d3afc-f506-428a-9c87-940901d72890/d522e163-cdb8-4d2b-bafd-e48770627e82.webp",
+    "at": "2026-09-08T17:26:29.934Z"
+  },
+  {
+    "id": "d53b8542-0aa0-4a11-bf27-d62d0a3de983",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25a53bb257aa5aca4dfdcc/1.webp",
+    "to": "watermarked/426267f0-30c7-4a59-8dc9-ae55ee889db2/d53b8542-0aa0-4a11-bf27-d62d0a3de983.webp",
+    "at": "2026-09-08T17:26:30.750Z"
+  },
+  {
+    "id": "d55f45c4-07a0-49fc-a56b-227310241978",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a22ebd3b257aa5aca4c8058/7.webp",
+    "to": "watermarked/8c046e7c-7568-41f7-a21c-04db77cd3d94/d55f45c4-07a0-49fc-a56b-227310241978.webp",
+    "at": "2026-09-08T17:26:31.670Z"
+  },
+  {
+    "id": "d58ffeae-ce29-49e9-b62b-966a263000e1",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25bed3b257aa5aca4e10a8/1.webp",
+    "to": "watermarked/9bed9289-a43e-479a-97d2-a617ae1e740c/d58ffeae-ce29-49e9-b62b-966a263000e1.webp",
+    "at": "2026-09-08T17:26:32.325Z"
+  },
+  {
+    "id": "d5bd25a1-40ef-4a86-8d68-fd6d57e56a94",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a1f420a90932ca4e76acae0/7.webp",
+    "to": "watermarked/cefc9d02-aa2d-4943-95b5-464a4a0ed75d/d5bd25a1-40ef-4a86-8d68-fd6d57e56a94.webp",
+    "at": "2026-09-08T17:26:33.102Z"
+  },
+  {
+    "id": "d5d1df0e-1a7d-452c-add4-3363be5948ca",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/87/2.webp",
+    "to": "watermarked/8b53fe1a-c30f-4b38-a25c-5d9620c62570/d5d1df0e-1a7d-452c-add4-3363be5948ca.webp",
+    "at": "2026-09-08T17:26:34.086Z"
+  },
+  {
+    "id": "d6781b16-8299-4fa4-967a-f613657547fe",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a2469dab257aa5aca4d5290/2.webp",
+    "to": "watermarked/cca22ada-8a87-47e8-a128-b700eda2c08e/d6781b16-8299-4fa4-967a-f613657547fe.webp",
+    "at": "2026-09-08T17:26:34.825Z"
+  },
+  {
+    "id": "d6c2ceb7-8c42-49c5-befa-d332bafd9621",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/70/3.webp",
+    "to": "watermarked/e3506b8f-364a-471a-ba87-53022e00a6b5/d6c2ceb7-8c42-49c5-befa-d332bafd9621.webp",
+    "at": "2026-09-08T17:26:35.581Z"
+  },
+  {
+    "id": "d6c80aa2-0a1b-473e-a2df-1103c66974b5",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/74/6.webp",
+    "to": "watermarked/e46445a7-a7cc-4633-a846-0d9835900489/d6c80aa2-0a1b-473e-a2df-1103c66974b5.webp",
+    "at": "2026-09-08T17:26:36.378Z"
+  },
+  {
+    "id": "d6f92175-f3df-404f-9a41-d456d9393331",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25a53bb257aa5aca4dfdcc/3.webp",
+    "to": "watermarked/426267f0-30c7-4a59-8dc9-ae55ee889db2/d6f92175-f3df-404f-9a41-d456d9393331.webp",
+    "at": "2026-09-08T17:26:37.175Z"
+  },
+  {
+    "id": "d7e9ffb8-530e-4959-86b8-c224f51c793c",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a2591c8b257aa5aca4df21b/2.webp",
+    "to": "watermarked/dce47f08-fc20-41a8-b806-44add26a43a5/d7e9ffb8-530e-4959-86b8-c224f51c793c.webp",
+    "at": "2026-09-08T17:26:38.078Z"
+  },
+  {
+    "id": "d7ea80de-8c42-4e40-89be-39228c81ecb0",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/78/0.webp",
+    "to": "watermarked/b1b5c3cb-62fe-4111-b0a0-4a5229d1e460/d7ea80de-8c42-4e40-89be-39228c81ecb0.webp",
+    "at": "2026-09-08T17:26:39.380Z"
+  },
+  {
+    "id": "d81cb3a5-5f0a-4c1f-b0ab-9e30f1a8780a",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/123/3.webp",
+    "to": "watermarked/b23c763b-7598-4b74-a679-25efba9a17c6/d81cb3a5-5f0a-4c1f-b0ab-9e30f1a8780a.webp",
+    "at": "2026-09-08T17:26:40.189Z"
+  },
+  {
+    "id": "d87aae94-868d-43e8-a162-703e4b8b65af",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/75/6.webp",
+    "to": "watermarked/31500223-482e-4206-a700-b3d15e48a8fc/d87aae94-868d-43e8-a162-703e4b8b65af.webp",
+    "at": "2026-09-08T17:26:40.748Z"
+  },
+  {
+    "id": "d930f5df-ca5a-49cd-bd48-73ed79cf08c3",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a2591c8b257aa5aca4df21b/0.webp",
+    "to": "watermarked/dce47f08-fc20-41a8-b806-44add26a43a5/d930f5df-ca5a-49cd-bd48-73ed79cf08c3.webp",
+    "at": "2026-09-08T17:26:41.780Z"
+  },
+  {
+    "id": "d9ad3ecb-b64d-431a-9738-54bbe26bda43",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/87/0.webp",
+    "to": "watermarked/8b53fe1a-c30f-4b38-a25c-5d9620c62570/d9ad3ecb-b64d-431a-9738-54bbe26bda43.webp",
+    "at": "2026-09-08T17:26:42.829Z"
+  },
+  {
+    "id": "d9b159b8-1d17-41f7-9a78-1db6fada2b1b",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a22ebd3b257aa5aca4c8058/0.webp",
+    "to": "watermarked/8c046e7c-7568-41f7-a21c-04db77cd3d94/d9b159b8-1d17-41f7-9a78-1db6fada2b1b.webp",
+    "at": "2026-09-08T17:26:43.540Z"
+  },
+  {
+    "id": "dbf7c13e-fd08-4f9a-ad76-0492b1e354cd",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25bed3b257aa5aca4e10a8/3.webp",
+    "to": "watermarked/9bed9289-a43e-479a-97d2-a617ae1e740c/dbf7c13e-fd08-4f9a-ad76-0492b1e354cd.webp",
+    "at": "2026-09-08T17:26:44.313Z"
+  },
+  {
+    "id": "dc03f1b1-63b6-4cc5-9264-dbcd7b92ff30",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/78/5.webp",
+    "to": "watermarked/b1b5c3cb-62fe-4111-b0a0-4a5229d1e460/dc03f1b1-63b6-4cc5-9264-dbcd7b92ff30.webp",
+    "at": "2026-09-08T17:26:45.142Z"
+  },
+  {
+    "id": "dc04adef-e251-48a6-97ed-8b4c5d528d6e",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/125/4.webp",
+    "to": "watermarked/f622e307-e49b-4696-a3b8-a2cdeae6129f/dc04adef-e251-48a6-97ed-8b4c5d528d6e.webp",
+    "at": "2026-09-08T17:26:45.980Z"
+  },
+  {
+    "id": "dc890aa4-88ef-4b4c-9ef5-d0a5739c8cce",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a257c34b257aa5aca4de27b/0.webp",
+    "to": "watermarked/39e873ae-9c72-4306-896a-5d43e546922c/dc890aa4-88ef-4b4c-9ef5-d0a5739c8cce.webp",
+    "at": "2026-09-08T17:26:46.611Z"
+  },
+  {
+    "id": "dcb301a3-347e-4d1f-a8b2-3e24c36ca1ef",
+    "from": "e88e469f-1b64-4703-b0bd-47b0f740920a/annonce-1788570829658-972561-2.webp",
+    "to": "watermarked/c88f1333-85a2-4b43-93df-a69d91e3de46/dcb301a3-347e-4d1f-a8b2-3e24c36ca1ef.webp",
+    "at": "2026-09-08T17:26:47.729Z"
+  },
+  {
+    "id": "dcd9664b-0b34-4481-989e-fe8e06de531d",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/92/0.webp",
+    "to": "watermarked/bc0f8265-94dd-435b-aefa-5745e8711af1/dcd9664b-0b34-4481-989e-fe8e06de531d.webp",
+    "at": "2026-09-08T17:26:48.853Z"
+  },
+  {
+    "id": "dd377637-850c-4b27-ac79-d91a8731f189",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/74/1.webp",
+    "to": "watermarked/e46445a7-a7cc-4633-a846-0d9835900489/dd377637-850c-4b27-ac79-d91a8731f189.webp",
+    "at": "2026-09-08T17:26:49.961Z"
+  },
+  {
+    "id": "dd40087c-7a05-4e41-8c03-d40a5937937e",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/113/6.webp",
+    "to": "watermarked/9c5842db-bbe3-4d04-8d3e-ca413ae0213c/dd40087c-7a05-4e41-8c03-d40a5937937e.webp",
+    "at": "2026-09-08T17:26:50.709Z"
+  },
+  {
+    "id": "dd437ca5-1d70-4954-8543-fcf0c74f37c8",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/23/7.webp",
+    "to": "watermarked/10b0dce7-402d-44a1-8ba7-f5e0efcbb243/dd437ca5-1d70-4954-8543-fcf0c74f37c8.webp",
+    "at": "2026-09-08T17:26:51.351Z"
+  },
+  {
+    "id": "df06be4c-da3f-41c9-a48d-6be07cd0c729",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/107/3.webp",
+    "to": "watermarked/22c44fcc-e292-401c-986e-41335c9fb8e8/df06be4c-da3f-41c9-a48d-6be07cd0c729.webp",
+    "at": "2026-09-08T17:26:52.128Z"
+  },
+  {
+    "id": "df588512-5e0c-442a-b8e3-a76de4e383d3",
+    "from": "1ea6dd8c-c9a2-4e35-82e5-19244be62dc5/annonce-1788570959383-873728-2.webp",
+    "to": "watermarked/34221bd5-4730-43b9-bf05-08fb3389e848/df588512-5e0c-442a-b8e3-a76de4e383d3.webp",
+    "at": "2026-09-08T17:26:52.890Z"
+  },
+  {
+    "id": "e0183431-fba2-4fc3-9da7-09afc790a998",
+    "from": "aecbedd6-a171-44b3-8402-551f2bf95da3/annonce-1788571093524-170253-1.webp",
+    "to": "watermarked/25a7c7fc-b3b5-4756-8a96-0039d372db8b/e0183431-fba2-4fc3-9da7-09afc790a998.webp",
+    "at": "2026-09-08T17:26:53.904Z"
+  },
+  {
+    "id": "e1124b2d-1eec-4486-a453-50987f167dfb",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a1f420a90932ca4e76acae0/3.webp",
+    "to": "watermarked/cefc9d02-aa2d-4943-95b5-464a4a0ed75d/e1124b2d-1eec-4486-a453-50987f167dfb.webp",
+    "at": "2026-09-08T17:26:54.876Z"
+  },
+  {
+    "id": "e12b8618-9f9e-4937-80cb-bb122fb0a351",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25a53bb257aa5aca4dfdcc/5.webp",
+    "to": "watermarked/426267f0-30c7-4a59-8dc9-ae55ee889db2/e12b8618-9f9e-4937-80cb-bb122fb0a351.webp",
+    "at": "2026-09-08T17:26:55.526Z"
+  },
+  {
+    "id": "e258ae98-ab34-4757-969f-d34035f6ac2b",
+    "from": "e88e469f-1b64-4703-b0bd-47b0f740920a/annonce-1788571213899-739505-2.webp",
+    "to": "watermarked/f5eeb087-933a-4880-b070-e18935bc1bfd/e258ae98-ab34-4757-969f-d34035f6ac2b.webp",
+    "at": "2026-09-08T17:26:56.444Z"
+  },
+  {
+    "id": "e2adf205-e492-4fdd-b8dd-be772f78fbc4",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/112/2.webp",
+    "to": "watermarked/8dc23f12-786c-48f0-9289-a0b89f3b46bb/e2adf205-e492-4fdd-b8dd-be772f78fbc4.webp",
+    "at": "2026-09-08T17:26:57.286Z"
+  },
+  {
+    "id": "e2b4eada-8aaa-416a-8916-e28b399319a0",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/124/4.webp",
+    "to": "watermarked/a5717126-a59b-4cf2-afee-0f174cc4e312/e2b4eada-8aaa-416a-8916-e28b399319a0.webp",
+    "at": "2026-09-08T17:26:58.189Z"
+  },
+  {
+    "id": "e3b04a58-0c12-4b76-afdd-7a78736799f1",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/113/7.webp",
+    "to": "watermarked/9c5842db-bbe3-4d04-8d3e-ca413ae0213c/e3b04a58-0c12-4b76-afdd-7a78736799f1.webp",
+    "at": "2026-09-08T17:26:59.015Z"
+  },
+  {
+    "id": "e3ddd849-6cc9-4176-8dfc-bdc3c61d3b22",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/132/0.webp",
+    "to": "watermarked/d00a0774-b055-4c39-8a88-0ba85254e9e6/e3ddd849-6cc9-4176-8dfc-bdc3c61d3b22.webp",
+    "at": "2026-09-08T17:26:59.994Z"
+  },
+  {
+    "id": "e43e7f67-877f-489a-b2c1-fb3606ed322f",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/9/7.webp",
+    "to": "watermarked/9824b0db-9b6e-4c58-b12f-eb12aa3a4dd2/e43e7f67-877f-489a-b2c1-fb3606ed322f.webp",
+    "at": "2026-09-08T17:27:00.890Z"
+  },
+  {
+    "id": "e4699c90-c756-493f-b79a-d479e98a2b29",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a2469dab257aa5aca4d5290/0.webp",
+    "to": "watermarked/cca22ada-8a87-47e8-a128-b700eda2c08e/e4699c90-c756-493f-b79a-d479e98a2b29.webp",
+    "at": "2026-09-08T17:27:01.755Z"
+  },
+  {
+    "id": "e47e6dde-117a-47fa-aec2-1e83ccf57965",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25d77aa849fd3c0e161b15/3.webp",
+    "to": "watermarked/f6e8161c-7af6-4a79-8155-cadd443fb228/e47e6dde-117a-47fa-aec2-1e83ccf57965.webp",
+    "at": "2026-09-08T17:27:02.441Z"
+  },
+  {
+    "id": "e563a097-bb13-4e4b-bd81-8af6eb648631",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a232533b257aa5aca4ca603/0.webp",
+    "to": "watermarked/0ea0d57b-2253-4be6-a5ca-ce35e877b436/e563a097-bb13-4e4b-bd81-8af6eb648631.webp",
+    "at": "2026-09-08T17:27:03.589Z"
+  },
+  {
+    "id": "e5cfaaee-c7ae-402e-a18d-dba97fb3597b",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/85/0.webp",
+    "to": "watermarked/7525cf81-e3db-4bd2-9a6c-440ff403b411/e5cfaaee-c7ae-402e-a18d-dba97fb3597b.webp",
+    "at": "2026-09-08T17:27:04.385Z"
+  },
+  {
+    "id": "e67803b9-b5a8-42e0-90c3-a3212b8b5ece",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/75/5.webp",
+    "to": "watermarked/bd8445a2-2972-494d-95a2-7caf50f17c13/e67803b9-b5a8-42e0-90c3-a3212b8b5ece.webp",
+    "at": "2026-09-08T17:27:05.340Z"
+  },
+  {
+    "id": "e7c8a901-52ed-41d1-9d38-3032777dda19",
+    "from": "d6d8d637-3633-468d-95b5-9b534ad1d4d9/annonce-1788571169282-621030-2.webp",
+    "to": "watermarked/a49fce77-45ac-46d0-ae5e-d8a5c00527ef/e7c8a901-52ed-41d1-9d38-3032777dda19.webp",
+    "at": "2026-09-08T17:27:07.130Z"
+  },
+  {
+    "id": "e8004b98-5b3f-419b-a47a-b62a5cd14c5a",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/9/2.webp",
+    "to": "watermarked/9824b0db-9b6e-4c58-b12f-eb12aa3a4dd2/e8004b98-5b3f-419b-a47a-b62a5cd14c5a.webp",
+    "at": "2026-09-08T17:27:08.156Z"
+  },
+  {
+    "id": "e8cf1e90-a374-4f44-870a-4f57febeddde",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/87/3.webp",
+    "to": "watermarked/8b53fe1a-c30f-4b38-a25c-5d9620c62570/e8cf1e90-a374-4f44-870a-4f57febeddde.webp",
+    "at": "2026-09-08T17:27:09.162Z"
+  },
+  {
+    "id": "e9d0f08a-6be2-4be7-b0ca-78576c27e96a",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/65/5.webp",
+    "to": "watermarked/fea69082-ff2c-4cbf-a634-9c01047665b3/e9d0f08a-6be2-4be7-b0ca-78576c27e96a.webp",
+    "at": "2026-09-08T17:27:10.127Z"
+  },
+  {
+    "id": "ea9e09f4-febb-45a0-a339-304064e7754c",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/126/7.webp",
+    "to": "watermarked/b738ddd2-560d-4af3-a2ee-18cc750a89b9/ea9e09f4-febb-45a0-a339-304064e7754c.webp",
+    "at": "2026-09-08T17:27:10.984Z"
+  },
+  {
+    "id": "eaa34bbd-41eb-4602-a4dd-6467d09f03f5",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a2591c8b257aa5aca4df21b/1.webp",
+    "to": "watermarked/dce47f08-fc20-41a8-b806-44add26a43a5/eaa34bbd-41eb-4602-a4dd-6467d09f03f5.webp",
+    "at": "2026-09-08T17:27:11.854Z"
+  },
+  {
+    "id": "eaf84457-721b-4cba-bcc0-cb36f753fb1f",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25d77aa849fd3c0e161b15/4.webp",
+    "to": "watermarked/f6e8161c-7af6-4a79-8155-cadd443fb228/eaf84457-721b-4cba-bcc0-cb36f753fb1f.webp",
+    "at": "2026-09-08T17:27:12.783Z"
+  },
+  {
+    "id": "ebaac0f6-1803-4010-8e2e-46d828f2c735",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/85/4.webp",
+    "to": "watermarked/7525cf81-e3db-4bd2-9a6c-440ff403b411/ebaac0f6-1803-4010-8e2e-46d828f2c735.webp",
+    "at": "2026-09-08T17:27:13.586Z"
+  },
+  {
+    "id": "ebdbba66-e66d-454b-a63a-b48f0bbae73e",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/85/7.webp",
+    "to": "watermarked/7525cf81-e3db-4bd2-9a6c-440ff403b411/ebdbba66-e66d-454b-a63a-b48f0bbae73e.webp",
+    "at": "2026-09-08T17:27:14.693Z"
+  },
+  {
+    "id": "ed423982-0b63-478f-a3b4-b68cf97a4666",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25527fb257aa5aca4dc3ab/6.webp",
+    "to": "watermarked/2c1432f3-952e-44e0-a5a1-f75853895dcf/ed423982-0b63-478f-a3b4-b68cf97a4666.webp",
+    "at": "2026-09-08T17:27:15.472Z"
+  },
+  {
+    "id": "ed7475b1-2c54-4b8c-9021-08975a49c0f5",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/36/1.webp",
+    "to": "watermarked/023a0768-4f2a-4bdd-b6b7-46bd21d2d7c8/ed7475b1-2c54-4b8c-9021-08975a49c0f5.webp",
+    "at": "2026-09-08T17:27:16.394Z"
+  },
+  {
+    "id": "ed7cf154-ca4a-4ca2-bfb6-337a2c2bf678",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a232533b257aa5aca4ca603/2.webp",
+    "to": "watermarked/0ea0d57b-2253-4be6-a5ca-ce35e877b436/ed7cf154-ca4a-4ca2-bfb6-337a2c2bf678.webp",
+    "at": "2026-09-08T17:27:17.441Z"
+  },
+  {
+    "id": "edafb7bc-37f7-4d30-8d96-d6bf4e9ec700",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a25a53bb257aa5aca4dfdcc/6.webp",
+    "to": "watermarked/426267f0-30c7-4a59-8dc9-ae55ee889db2/edafb7bc-37f7-4d30-8d96-d6bf4e9ec700.webp",
+    "at": "2026-09-08T17:27:18.238Z"
+  },
+  {
+    "id": "ef8d8740-1e7d-4b1b-9ed2-0cf3af44873b",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/111/1.webp",
+    "to": "watermarked/b3a0e180-bc6a-4f28-9103-48f3b157c8aa/ef8d8740-1e7d-4b1b-9ed2-0cf3af44873b.webp",
+    "at": "2026-09-08T17:27:19.179Z"
+  },
+  {
+    "id": "f0b8ebab-a73f-4a97-be5e-3feed4203a00",
+    "from": "bc06b5ec-cc6a-4124-8121-eba418915429/annonce-1788570840946-470455-1.webp",
+    "to": "watermarked/48f507a6-ca8d-4c82-9cd8-21031e478afb/f0b8ebab-a73f-4a97-be5e-3feed4203a00.webp",
+    "at": "2026-09-08T17:27:20.026Z"
+  },
+  {
+    "id": "f1f01812-b43e-447e-bd95-28d84feab339",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/137/0.webp",
+    "to": "watermarked/4ebc4bd4-3b77-48ff-b533-ea8f40a34fa8/f1f01812-b43e-447e-bd95-28d84feab339.webp",
+    "at": "2026-09-08T17:27:20.827Z"
+  },
+  {
+    "id": "f1fa3837-2ec1-4265-be91-f38b96dc4290",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/93/6.webp",
+    "to": "watermarked/2fdaf636-ae06-4454-86f5-8a8df8fc24d7/f1fa3837-2ec1-4265-be91-f38b96dc4290.webp",
+    "at": "2026-09-08T17:27:21.766Z"
+  },
+  {
+    "id": "f25bc276-5143-4705-b3df-7e4707d0f0fe",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/115/4.webp",
+    "to": "watermarked/293b92ba-40a9-4f2d-996e-e7b455f6d3b5/f25bc276-5143-4705-b3df-7e4707d0f0fe.webp",
+    "at": "2026-09-08T17:27:23.400Z"
+  },
+  {
+    "id": "f28a6a39-6e70-4dde-b140-5a25c728ed1a",
+    "from": "ec96f995-e9ae-4375-a9d6-04d6de74dc07/annonce-1788571105635-159697-2.webp",
+    "to": "watermarked/62b57303-c2f3-40cb-bcbe-32272a0131e4/f28a6a39-6e70-4dde-b140-5a25c728ed1a.webp",
+    "at": "2026-09-08T17:27:24.212Z"
+  },
+  {
+    "id": "f3602b17-5484-47d1-b081-4185901e7260",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/127/4.webp",
+    "to": "watermarked/d1738b44-798b-4c5b-b423-70d37f2d4b5f/f3602b17-5484-47d1-b081-4185901e7260.webp",
+    "at": "2026-09-08T17:27:25.003Z"
+  },
+  {
+    "id": "f3f312be-3be3-43b8-bf8e-85db5feaf2f9",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/93/0.webp",
+    "to": "watermarked/2fdaf636-ae06-4454-86f5-8a8df8fc24d7/f3f312be-3be3-43b8-bf8e-85db5feaf2f9.webp",
+    "at": "2026-09-08T17:27:25.919Z"
+  },
+  {
+    "id": "f440729c-ec41-45a7-8479-0a1fd05fbd3d",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/90/6.webp",
+    "to": "watermarked/dbcf7437-33d6-4e92-a156-0a268190d490/f440729c-ec41-45a7-8479-0a1fd05fbd3d.webp",
+    "at": "2026-09-08T17:27:26.704Z"
+  },
+  {
+    "id": "f47707b7-aed0-4d6e-adde-c65168ab25d2",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/107/0.webp",
+    "to": "watermarked/22c44fcc-e292-401c-986e-41335c9fb8e8/f47707b7-aed0-4d6e-adde-c65168ab25d2.webp",
+    "at": "2026-09-08T17:27:27.681Z"
+  },
+  {
+    "id": "f48e4ed6-492c-4893-9ca7-d3788c530e19",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/75/4.webp",
+    "to": "watermarked/bd8445a2-2972-494d-95a2-7caf50f17c13/f48e4ed6-492c-4893-9ca7-d3788c530e19.webp",
+    "at": "2026-09-08T17:27:28.715Z"
+  },
+  {
+    "id": "f5ea3445-027a-4c40-98a4-d6b4fede1c89",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/9/3.webp",
+    "to": "watermarked/9824b0db-9b6e-4c58-b12f-eb12aa3a4dd2/f5ea3445-027a-4c40-98a4-d6b4fede1c89.webp",
+    "at": "2026-09-08T17:27:29.622Z"
+  },
+  {
+    "id": "f5f1b642-bda4-4440-ae3f-a71fd468b235",
+    "from": "ca683283-dab0-4520-b16e-1f48a26ea1ea/annonce-1788570795111-280236-1.webp",
+    "to": "watermarked/59522c69-7470-4057-8a83-453d4b96c5bd/f5f1b642-bda4-4440-ae3f-a71fd468b235.webp",
+    "at": "2026-09-08T17:27:30.351Z"
+  },
+  {
+    "id": "f646e0c1-b5c3-4617-8b57-6cb7ee2d178a",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/65/2.webp",
+    "to": "watermarked/fea69082-ff2c-4cbf-a634-9c01047665b3/f646e0c1-b5c3-4617-8b57-6cb7ee2d178a.webp",
+    "at": "2026-09-08T17:27:31.351Z"
+  },
+  {
+    "id": "f6b46f81-693d-4fb5-8140-5fd156f8c0e6",
+    "from": "bc06b5ec-cc6a-4124-8121-eba418915429/annonce-1788570843881-348828-2.webp",
+    "to": "watermarked/48f507a6-ca8d-4c82-9cd8-21031e478afb/f6b46f81-693d-4fb5-8140-5fd156f8c0e6.webp",
+    "at": "2026-09-08T17:27:32.272Z"
+  },
+  {
+    "id": "f6ddbb8e-2e91-4765-8aeb-4fc115c739cb",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/90/5.webp",
+    "to": "watermarked/dbcf7437-33d6-4e92-a156-0a268190d490/f6ddbb8e-2e91-4765-8aeb-4fc115c739cb.webp",
+    "at": "2026-09-08T17:27:33.179Z"
+  },
+  {
+    "id": "f727785d-0362-4df6-87b6-147e07eb4164",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/83/4.webp",
+    "to": "watermarked/727f5e17-41a7-48dc-a945-55d6bca476d5/f727785d-0362-4df6-87b6-147e07eb4164.webp",
+    "at": "2026-09-08T17:27:33.922Z"
+  },
+  {
+    "id": "f7d2b2db-9c23-4fba-a4a5-83e2d83d87c8",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a1f420a90932ca4e76acae0/1.webp",
+    "to": "watermarked/cefc9d02-aa2d-4943-95b5-464a4a0ed75d/f7d2b2db-9c23-4fba-a4a5-83e2d83d87c8.webp",
+    "at": "2026-09-08T17:27:34.773Z"
+  },
+  {
+    "id": "f85f10c2-24c5-4520-a45b-ff772b9641d4",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/124/2.webp",
+    "to": "watermarked/a5717126-a59b-4cf2-afee-0f174cc4e312/f85f10c2-24c5-4520-a45b-ff772b9641d4.webp",
+    "at": "2026-09-08T17:27:35.748Z"
+  },
+  {
+    "id": "fbe339e2-7e5d-43d6-b230-2e41d5e9c98c",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/tayara/6a257c34b257aa5aca4de27b/2.webp",
+    "to": "watermarked/39e873ae-9c72-4306-896a-5d43e546922c/fbe339e2-7e5d-43d6-b230-2e41d5e9c98c.webp",
+    "at": "2026-09-08T17:27:36.568Z"
+  },
+  {
+    "id": "fc633111-e7a5-473a-8b5c-b8fbdcae5745",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/90/1.webp",
+    "to": "watermarked/dbcf7437-33d6-4e92-a156-0a268190d490/fc633111-e7a5-473a-8b5c-b8fbdcae5745.webp",
+    "at": "2026-09-08T17:27:37.492Z"
+  },
+  {
+    "id": "fe4cbff0-4fde-4bb8-b100-a994b181f2d6",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/71/7.webp",
+    "to": "watermarked/1772bbc1-3759-4afb-a944-35d1a79f16cd/fe4cbff0-4fde-4bb8-b100-a994b181f2d6.webp",
+    "at": "2026-09-08T17:27:38.268Z"
+  },
+  {
+    "id": "fefd7134-ea2a-48ac-85bc-1e884b3e22bd",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/85/3.webp",
+    "to": "watermarked/7525cf81-e3db-4bd2-9a6c-440ff403b411/fefd7134-ea2a-48ac-85bc-1e884b3e22bd.webp",
+    "at": "2026-09-08T17:27:39.072Z"
+  },
+  {
+    "id": "ffbb2988-e9cf-4bbb-9b76-77a169a581e1",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/73/1.webp",
+    "to": "watermarked/5abb0574-d141-4b49-a46e-2c50e422b8e9/ffbb2988-e9cf-4bbb-9b76-77a169a581e1.webp",
+    "at": "2026-09-08T17:27:39.981Z"
+  },
+  {
+    "id": "ffefa5fd-49ed-40ec-8975-b3b62b02ff10",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/87/6.webp",
+    "to": "watermarked/8b53fe1a-c30f-4b38-a25c-5d9620c62570/ffefa5fd-49ed-40ec-8975-b3b62b02ff10.webp",
+    "at": "2026-09-08T17:27:40.939Z"
+  },
+  {
+    "id": "fff38bc7-a7d0-4bf7-8026-be1d69311d50",
+    "from": "https://erosazbplfhelvxweeyz.supabase.co/storage/v1/object/public/auction-media/imports/mazauto/108/2.webp",
+    "to": "watermarked/08c13c67-1286-4555-a60c-41f488cdcfe8/fff38bc7-a7d0-4bf7-8026-be1d69311d50.webp",
+    "at": "2026-09-08T17:27:41.689Z"
+  },
+  {
+    "id": "bd065180-8ba2-45ae-bfc0-202977301ded",
+    "from": "d8173a9c-3673-42aa-b651-625423553a14/annonce-1788617693644-575432-0.avif",
+    "to": "watermarked/181e961b-92a7-4b36-9ce5-78906c23c470/bd065180-8ba2-45ae-bfc0-202977301ded.webp",
+    "at": "2026-09-08T17:28:34.017Z"
+  }
+]

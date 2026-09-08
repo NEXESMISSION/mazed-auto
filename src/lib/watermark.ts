@@ -9,14 +9,24 @@
  * remove it is to crop away the subject, which is exactly the trade we want to
  * force.
  *
+ * WHAT IT SAYS. The monogram alone identifies us to somebody who already
+ * knows us, which is the wrong audience — the person who matters is the one
+ * seeing the photo on somebody else's Facebook post. So the stamp carries the
+ * business name AND the domain under the mark: the name so the picture is
+ * attributable at a glance, the domain so acting on it needs no search. The
+ * caption is baked into `logo-stamp.webp` rather than drawn with `fillText`,
+ * because drawing it here would make every stamped photo depend on the web
+ * font having loaded at the instant the seller picked the file — a seller on a
+ * slow phone would get the fallback system font burnt into their photo for
+ * ever. See `scripts/make-watermark-stamp.py`.
+ *
  * WHY THIS STRENGTH. The mark has to survive being stolen, not dominate the
- * photo a seller paid to publish. Three strengths were rendered over real
- * listing photos — 34%/22%, 38%/30%, 42%/38% — and the middle one is the only
- * one that does both jobs: at 22% the monogram washes out over a bright
- * showroom floor and deters nobody, at 38% the car is behind a logo. 30% over
- * 38% of the width reads clearly at full size, stays quiet on a card-sized
- * thumbnail, and is large enough that cropping it out takes the subject with
- * it.
+ * photo a seller paid to publish. 45% opacity over 38% of the image width is
+ * where both hold on a real listing photo: the monogram reads, the caption is
+ * legible rather than merely present, and the car underneath is unobscured.
+ * The caption is what sets the floor — thin letterspaced caps disappear
+ * several stops before a solid monogram does, so a strength chosen by looking
+ * at the monogram alone leaves the words unreadable and the stamp pointless.
  *
  * WHY IT IS DRAWN, NOT COMPOSITED SERVER-SIDE. Photos go straight from the
  * browser to storage on a signed URL — the bytes never pass through our
@@ -29,12 +39,12 @@
 
 /** Fraction of the image's WIDTH the mark spans. */
 const MARK_WIDTH_RATIO = 0.38;
-/** Never smaller than this, or it vanishes on a small upload. */
-const MIN_MARK_PX = 120;
-/** How present the mark is. 0.30 reads at full size, hides on a thumbnail. */
-const MARK_OPACITY = 0.3;
-/** The trimmed monogram — gold on transparent, ~2.95:1. */
-const MARK_SRC = "/logo-mark.webp";
+/** Never smaller than this, or the caption stops being readable. */
+const MIN_MARK_PX = 160;
+/** How present the mark is. Set by the caption, not the monogram. */
+const MARK_OPACITY = 0.45;
+/** Monogram over « MAZED AUTO · MAZED.TN », gold on transparent, ~2.39:1. */
+const MARK_SRC = "/logo-stamp.webp";
 
 /**
  * The decoded mark, fetched once per page rather than per photo.
@@ -71,8 +81,19 @@ export function drawWatermark(
   width: number,
   height: number,
 ): void {
-  const markW = Math.max(MIN_MARK_PX, Math.round(width * MARK_WIDTH_RATIO));
-  const markH = Math.round(markW * (mark.naturalHeight / mark.naturalWidth));
+  const aspect = mark.naturalHeight / mark.naturalWidth;
+
+  // Fit, then centre. `MIN_MARK_PX` is a floor on legibility, not a promise
+  // that the photo is big enough to hold it: the catalogue contains a 120x120
+  // thumbnail, and asking for a 160px mark on it drew a stamp wider than the
+  // image. The canvas does not complain — it just crops the mark and produces
+  // a photo branded with a fragment of a logo.
+  let markW = Math.min(Math.max(MIN_MARK_PX, Math.round(width * MARK_WIDTH_RATIO)), width);
+  let markH = Math.round(markW * aspect);
+  if (markH > height) {
+    markH = height;
+    markW = Math.round(markH / aspect);
+  }
   const x = Math.round((width - markW) / 2);
   const y = Math.round((height - markH) / 2);
 
