@@ -87,6 +87,10 @@ const nextConfig: NextConfig = {
       ["account/bids", "account/listings"],
       ["account/wins", "account/listings"],
       ["partners", "account"],
+      // The activity hub was five tabs of auction history over tables that
+      // read zero rows. Its one surviving tab, favourites, already has its own
+      // route — and /watchlist has pointed there since the pivot.
+      ["account/activity", "account/favoris"],
     ];
 
     const gone = [

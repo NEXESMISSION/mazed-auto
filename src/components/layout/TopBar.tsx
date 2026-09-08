@@ -20,7 +20,7 @@ const NotificationBell = dynamic(
   { ssr: false, loading: () => <span className="inline-block h-9 w-9" /> },
 );
 
-const ROOT_TAB_PATHS = new Set(["/", "/properties", "/account/activity", "/account"]);
+const ROOT_TAB_PATHS = new Set(["/", "/annonces", "/account/listings", "/account"]);
 
 // Map the first path segment to the i18n key under shell.pageTitles.
 // Anything not in here falls back to the brand mark.

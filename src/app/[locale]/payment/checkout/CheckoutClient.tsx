@@ -23,7 +23,6 @@ import { compressImage } from "@/lib/imageCompress";
 import { withTimeout, isTimeout } from "@/lib/withTimeout";
 import type { ProviderInstructions } from "@/lib/payments";
 import type { PaymentProvider } from "@/lib/payments/types";
-import type { CheckoutKind } from "./page";
 
 interface Props {
   paymentId: string;
@@ -33,9 +32,8 @@ interface Props {
    *  renders anything. Asking supabase-js for it again at submit time cost
    *  a round-trip on the critical path and could stall the whole send. */
   userId: string;
-  kind: CheckoutKind;
   amount: number;
-  auction: {
+  listing: {
     id: string;
     title: string;
     governorate: string;
@@ -51,29 +49,15 @@ interface Props {
   editHref?: string;
 }
 
-const KIND_TITLES: Record<CheckoutKind, { label: string; body: string }> = {
-  deposit: {
-    label: "Caution de participation",
-    // The old copy called the caution "remboursable" and then said it was
-    // "déduite du prix final" — which contradicts itself, since a deposit
-    // applied to the price is precisely the case where it is NOT refunded.
-    // State what actually happens to the money in each outcome instead.
-    body:
-      "Montant bloqué pendant l'enchère. Déduit du prix si vous remportez la voiture, intégralement restitué après la clôture sinon.",
-  },
-  buy_now: {
-    label: "Achat",
-    body: "Paiement plein de l'annonce — clôture immédiatement la vente.",
-  },
-  final_payment: {
-    label: "Paiement final",
-    body: "Solde du prix d'adjudication, déduction faite de la caution.",
-  },
-  listing_fee: {
-    label: "Frais d'annonce",
-    body:
-      "Frais de publication + options choisies. Votre annonce passe en ligne dès validation du reçu.",
-  },
+/**
+ * There is one kind of payment. `KIND_TITLES` mapped four — caution, achat,
+ * paiement final, frais d'annonce — and the three listing ones are unreachable
+ * now that nothing can create them.
+ */
+const META = {
+  label: "Frais d'annonce",
+  body:
+    "Frais de publication + options choisies. Votre annonce part en vérification dès validation du reçu.",
 };
 
 const PROVIDER_ICONS: Record<PaymentProvider, typeof Building2> = {
@@ -229,9 +213,8 @@ const ACCEPTED_TYPES = [
 export function CheckoutClient({
   paymentId,
   userId,
-  kind,
   amount,
-  auction,
+  listing,
   instructions,
   locale,
   reupload,
@@ -271,7 +254,7 @@ export function CheckoutClient({
     () => instructions.find((p) => p.value === provider) ?? instructions[0],
     [provider, instructions],
   );
-  const meta = KIND_TITLES[kind];
+  const meta = META;
 
   // ── Where "Retour" goes ──
   // A fixed destination, NOT history.back(): this screen is reached from a
@@ -281,18 +264,10 @@ export function CheckoutClient({
   // Leaving is harmless: the payment row stays `pending` and the user can
   // resume it from /account/payments.
   //
-  // For listing-fee payments `auction` actually carries the PROPERTY summary
-  // (see fetchPropertySummary in page.tsx), so it routes to the listing, not
-  // to /auctions/<id> — which would 404 on a property id.
-  const backHref = (
-    kind === "listing_fee"
-      ? auction
-        ? `/sell/${auction.id}`
-        : "/sell"
-      : auction
-        ? `/auctions/${auction.id}`
-        : "/account/payments"
-  ) as never;
+  // Back to the annonce being paid for, or to the seller's own list when the
+  // annonce has since been deleted. Both `/sell/<id>` and `/auctions/<id>`
+  // stood here and both are deleted routes.
+  const backHref = (listing ? `/annonces/${listing.id}` : "/account/listings") as never;
 
   async function copyValue(label: string, value: string) {
     try {
@@ -533,12 +508,10 @@ export function CheckoutClient({
 
   if (submitted) {
     // Final "what happens after validation" step depends on what was paid.
-    const finalStep =
-      kind === "listing_fee"
-        ? "Votre annonce passe en ligne automatiquement."
-        : kind === "deposit"
-          ? "Votre caution devient active — vous pourrez enchérir."
-          : "La vente est confirmée et finalisée.";
+    // "passe en ligne automatiquement" was wrong even before the pivot: a
+    // captured fee moves the annonce to `pending_review`, not to `published`.
+    // Paying buys a publication, not a way past moderation.
+    const finalStep = "Votre annonce part en vérification, puis passe en ligne.";
     const steps = [
       "Notre équipe vérifie votre reçu (moins de 24 h).",
       "Vous recevez une notification : validé ou correction demandée.",
@@ -568,10 +541,10 @@ export function CheckoutClient({
                 <span className="font-bold text-foreground">
                   {formatTND(amount, locale)} TND
                 </span>
-                {auction ? (
+                {listing ? (
                   <>
                     {" "}pour{" "}
-                    <span className="font-bold text-foreground">{auction.title}</span>
+                    <span className="font-bold text-foreground">{listing.title}</span>
                   </>
                 ) : null}{" "}
                 bien reçu.
@@ -592,34 +565,20 @@ export function CheckoutClient({
             </ol>
 
             <div className="flex flex-col gap-2 border-t border-[var(--border)] p-4">
-              {kind === "deposit" && auction ? (
-                // The caution path's next surface is the bid page — it shows
-                // the "receipt under review" gate now and flips to the live
-                // composer the moment the caution is validated.
+              {/* Where a seller actually wants to go after paying: their own
+                  annonces, where this one now reads "En vérification". */}
+              <a
+                href={`/${locale}/account/listings`}
+                className="inline-flex h-11 items-center justify-center rounded-[var(--radius)] bg-[var(--gold)] px-5 text-[13px] font-bold text-white hover:bg-[var(--gold-bright)]"
+              >
+                Mes annonces <ArrowRight className="ml-1.5 h-4 w-4" />
+              </a>
+              {listing && (
                 <a
-                  href={`/${locale}/auctions/${auction.id}/bid`}
-                  className="inline-flex h-11 items-center justify-center rounded-[var(--radius)] bg-[var(--gold)] px-5 text-[13px] font-bold text-white hover:bg-[var(--gold-bright)]"
-                >
-                  Accéder à la page d&apos;enchères <ArrowRight className="ml-1.5 h-4 w-4" />
-                </a>
-              ) : (
-                <a
-                  href={`/${locale}`}
-                  className="inline-flex h-11 items-center justify-center rounded-[var(--radius)] bg-[var(--gold)] px-5 text-[13px] font-bold text-white hover:bg-[var(--gold-bright)]"
-                >
-                  Accueil <ArrowRight className="ml-1.5 h-4 w-4" />
-                </a>
-              )}
-              {auction && (
-                <a
-                  href={
-                    kind === "listing_fee"
-                      ? `/${locale}/sell`
-                      : `/${locale}/auctions/${auction.id}`
-                  }
+                  href={`/${locale}/annonces/${listing.id}`}
                   className="inline-flex h-11 items-center justify-center rounded-[var(--radius)] border border-[var(--border)] bg-[var(--surface-2)] px-5 text-[13px] font-semibold hover:border-[var(--gold-soft)]"
                 >
-                  {kind === "listing_fee" ? "Voir mes annonces" : "Retour à l'annonce"}
+                  Voir l&apos;annonce
                 </a>
               )}
             </div>
@@ -659,14 +618,14 @@ export function CheckoutClient({
         <div className="space-y-4 lg:sticky lg:top-[calc(var(--desktop-nav-h)+1.5rem)]">
         {/* ── HERO: what you're paying + how much ── */}
         <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 text-center">
-          {auction?.heroPhotoPath && (
+          {listing?.heroPhotoPath && (
             <div className="relative mb-4 hidden aspect-[16/10] overflow-hidden rounded-xl bg-[var(--surface-2)] lg:block">
               <Image
-                src={propertyPhotoUrl(auction.heroPhotoPath)}
+                src={propertyPhotoUrl(listing.heroPhotoPath)}
                 alt=""
                 fill
                 sizes="360px"
-                unoptimized={isStaticSeedPath(propertyPhotoUrl(auction.heroPhotoPath))}
+                unoptimized={isStaticSeedPath(propertyPhotoUrl(listing.heroPhotoPath))}
                 className="object-cover"
               />
             </div>
@@ -674,9 +633,9 @@ export function CheckoutClient({
           <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--gold)]">
             {meta.label}
           </div>
-          {auction && (
+          {listing && (
             <div className="mt-0.5 text-[14px] font-bold leading-tight line-clamp-1">
-              {auction.title}
+              {listing.title}
             </div>
           )}
           <div className="batta-tabular gradient-gold-text mt-3 text-[40px] font-extrabold leading-none">

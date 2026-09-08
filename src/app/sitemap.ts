@@ -55,26 +55,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       };
     });
 
-    const { data } = await sb
-      .from("auctions")
-      .select("id, updated_at, created_at, status, property:properties!inner(status)")
-      .eq("property.status", "ready")
-      .in("status", ["scheduled", "live", "extending", "ended_sold", "awarded", "sixth_offer_window"])
-      .order("created_at", { ascending: false })
-      .limit(5000);
+    // A second block listed `auctions` joined to `properties` here, emitting
+    // /fr/auctions/<id> URLs. Both tables read zero rows since the pivot, so it
+    // contributed nothing but a round trip — and any URL it had emitted would
+    // now 404, since the route was deleted with the product.
 
-    const listingRoutes: MetadataRoute.Sitemap = (data ?? []).map((row) => {
-      const r = row as { id: string; updated_at: string | null; created_at: string | null; status: string };
-      const live = r.status === "live" || r.status === "extending";
-      return {
-        url: `${base}/fr/auctions/${r.id}`,
-        lastModified: r.updated_at ?? r.created_at ?? undefined,
-        changeFrequency: live ? "hourly" : "daily",
-        priority: live ? 0.8 : 0.6,
-      };
-    });
-
-    return [...staticRoutes, ...annonceRoutes, ...listingRoutes];
+    return [...staticRoutes, ...annonceRoutes];
   } catch {
     // Never let a DB hiccup 500 the sitemap — degrade to static routes.
     return staticRoutes;

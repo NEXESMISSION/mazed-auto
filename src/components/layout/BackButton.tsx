@@ -10,8 +10,10 @@ import { resolveBack, readStack, writeStack } from "@/lib/navStack";
 // ROOT_TAB_PATHS set in TopBar.
 const ROOT_PATHS = new Set([
   "/",
-  "/properties",
-  "/account/activity",
+  // `/properties` and `/account/activity` stood here. Both were deleted with
+  // the auction product; a root path that 404s is not a root path.
+  "/annonces",
+  "/account/listings",
   "/account",
 ]);
 
