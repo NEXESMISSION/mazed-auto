@@ -338,24 +338,26 @@ export default async function LandingPage({
           inspections). Closes the page with the same "what can I do
           here" question the hero opens with, answered concretely. */}
       <section className="mt-10 px-4 lg:px-6">
+        {/* One row, one destination.
+            It was a gold-ringed panel: an eyebrow, the word « Voitures » in
+            gradient gold, the slogan « Transparence. Rapidité. Confiance. »,
+            and a glowing gold disc. Four elements to say "tap here for the
+            catalogue" — and the slogan is the kind of line every classifieds
+            site prints, which means it distinguishes nothing and is read by
+            nobody. */}
         <Link
           href={"/annonces" as never}
-          className="batta-surface-navy-luxe tap-target relative flex items-center justify-between gap-3 overflow-hidden rounded-2xl p-6 ring-1 ring-gold/25 transition active:scale-[0.99] lg:hidden"
+          className="tap-target flex items-center justify-between gap-4 rounded-2xl border border-border bg-surface px-5 py-4 transition active:scale-[0.99] lg:hidden"
         >
-          <div className="relative min-w-0">
-            <span className="batta-eyebrow">Parcourir le catalogue</span>
-            <div
-              className={`mt-2 text-[22px] font-extrabold leading-tight tracking-tight ${
-                isRTL ? "font-arabic" : ""
-              }`}
-            >
-              <span className="gradient-gold-text">{t("nav.properties")}</span>
-            </div>
-            <div className="mt-1 text-[12px] text-muted">{t("brand.slogan")}</div>
-          </div>
-          <span className="batta-gold-fill inline-flex size-10 shrink-0 items-center justify-center rounded-full ring-1 ring-black/10 shadow-[var(--shadow-gold)]">
-            <ArrowUpRight className="size-5" strokeWidth={2.5} />
+          <span className="min-w-0">
+            <span className={`block text-[15px] font-bold text-foreground ${isRTL ? "font-arabic" : ""}`}>
+              Parcourir le catalogue
+            </span>
+            <span className="mt-0.5 block text-[12.5px] text-subtle">
+              Toutes les voitures et pi&egrave;ces en ligne
+            </span>
           </span>
+          <ArrowUpRight className="size-5 shrink-0 text-muted" strokeWidth={2.2} />
         </Link>
 
         {/* Desktop spread. Not a duplicate of the mobile band — different
@@ -363,16 +365,14 @@ export default async function LandingPage({
             column gives the user three concrete next-action shortcuts so
             the page doesn't bottom-out on a single link. */}
         <div className="hidden lg:block">
-          <div className="batta-surface-navy-luxe relative overflow-hidden rounded-3xl ring-1 ring-gold/25">
+          <div className="relative overflow-hidden rounded-3xl border border-border bg-surface">
             <div className="relative grid grid-cols-12 gap-8 px-10 py-12">
               <div className="col-span-7">
                 <span className="batta-eyebrow text-[10.5px]">
                   {t("brand.slogan")}
                 </span>
-                <h2 className="mt-3 text-[48px] font-extrabold leading-[1.05] tracking-tight">
-                  <span className="gradient-gold-text">
-                    {t("home.heroBrandTitle")}
-                  </span>
+                <h2 className="mt-3 text-[48px] font-extrabold leading-[1.05] tracking-tight text-foreground">
+                  {t("home.heroBrandTitle")}
                 </h2>
                 <p className="mt-4 max-w-prose text-[14px] leading-relaxed text-muted">
                   {t("home.trustEscrowBody")}
@@ -380,14 +380,14 @@ export default async function LandingPage({
                 <div className="mt-7 flex items-center gap-3">
                   <Link
                     href={"/annonces" as never}
-                    className="batta-gold-fill inline-flex items-center gap-2 rounded-full px-5 py-3 text-[12.5px] font-extrabold uppercase tracking-[0.14em] shadow-[var(--shadow-gold)] transition active:scale-[0.99]"
+                    className="batta-btn-luxe h-11 rounded-full px-6 text-[13px]"
                   >
                     {t("home.heroBrowseCta")}
                     <ArrowUpRight className="size-4" strokeWidth={2.5} />
                   </Link>
                   <Link
                     href={"/annonces/nouvelle" as never}
-                    className="inline-flex items-center gap-2 rounded-full border border-gold/30 px-5 py-3 text-[12.5px] font-bold text-foreground transition hover:border-gold-soft/60 hover:bg-gold-faint"
+                    className="batta-btn-quiet h-11 rounded-full px-6 text-[13px]"
                   >
                     Vendre
                   </Link>

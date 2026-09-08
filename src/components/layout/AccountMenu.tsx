@@ -210,7 +210,7 @@ export function AccountMenu() {
               ProfileMenu. Hidden until the session resolves. */}
           {user && (
             <div className="mb-1 flex items-center gap-3 rounded-xl bg-surface-2 px-3 py-3">
-              <span className="batta-gold-fill flex size-10 shrink-0 items-center justify-center rounded-full text-[15px] font-extrabold shadow-[var(--shadow-gold)]">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-foreground text-[15px] font-extrabold text-[var(--background)]">
                 {initial || "·"}
               </span>
               <span className="min-w-0">

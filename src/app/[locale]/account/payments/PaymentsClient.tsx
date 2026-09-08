@@ -528,7 +528,7 @@ function PaymentRow({
           {canResume && aHref && (
             <Link
               href={aHref as "/payment/checkout"}
-              className="batta-gold-fill tap-target inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.12em] shadow-[var(--shadow-gold)]"
+              className="batta-btn-luxe tap-target rounded-full px-3 py-1.5 text-[11px] uppercase tracking-[0.12em]"
             >
               {actionLabel(p)}
               <ArrowRight className="size-3" strokeWidth={2.5} />

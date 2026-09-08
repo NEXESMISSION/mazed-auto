@@ -167,7 +167,7 @@ export default function HowItWorksPage() {
       <div className="mt-12 text-center">
         <Link
           href="/signup"
-          className="batta-gold-fill inline-flex h-11 items-center justify-center gap-1.5 rounded-xl px-6 text-[13px] font-extrabold shadow-[var(--shadow-gold)] ring-1 ring-black/10 transition active:scale-[0.99] lg:text-sm"
+          className="batta-btn-luxe h-11 rounded-xl px-6 text-[13px] lg:text-sm"
         >
           Commencer maintenant
           <ArrowRight className="size-4" />

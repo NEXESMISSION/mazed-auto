@@ -79,6 +79,7 @@ type SearchParams = {
   min?: string;
   max?: string;
   fuel?: string;
+  etat?: string;
   year_min?: string;
   year_max?: string;
   km_max?: string;
@@ -205,6 +206,9 @@ export default async function AnnoncesPage({
     if (yMax) q = q.filter("attributes->year", "lte", yMax);
     if (kMax) q = q.filter("attributes->mileage", "lte", kMax);
     if (sp.fuel) q = q.contains("attributes", { fuel: sp.fuel });
+    // Neuf / occasion. `contains` is a jsonb @> match, answered by the
+    // GIN index added in 0179.
+    if (sp.etat) q = q.contains("attributes", { condition: sp.etat });
     if (sp.boite) q = q.contains("attributes", { transmission: sp.boite });
     // `make` means two different things depending on what you are browsing.
     // On a PART it is compatibility, resolved through listing_fitments above.
@@ -274,7 +278,7 @@ export default async function AnnoncesPage({
   const pageQuery: Record<string, string> = {};
   for (const k of [
     "kind", "cat", "gov", "q", "make", "model", "year",
-    "min", "max", "fuel", "boite", "sort",
+    "min", "max", "fuel", "boite", "etat", "sort",
   ] as const) {
     const v = sp[k];
     if (v) pageQuery[k] = v;
@@ -317,7 +321,7 @@ export default async function AnnoncesPage({
   const filterState = {
     kind: kind ?? "", cat: sp.cat ?? "", gov: sp.gov ?? "", q: sp.q ?? "",
     make: sp.make ?? "", model: sp.model ?? "", year: sp.year ?? "",
-    min: sp.min ?? "", max: sp.max ?? "", fuel: sp.fuel ?? "",
+    min: sp.min ?? "", max: sp.max ?? "", fuel: sp.fuel ?? "", etat: sp.etat ?? "",
     boite: sp.boite ?? "", sort: sp.sort ?? "",
     year_min: sp.year_min ?? "", year_max: sp.year_max ?? "", km_max: sp.km_max ?? "",
   };
@@ -329,12 +333,13 @@ export default async function AnnoncesPage({
 
   return (
     <main className="mx-auto max-w-[var(--max-w-wide)] px-4 py-5 lg:px-6 lg:py-8">
-      <header className="lg:mb-6">
-        <h1 className="text-[24px] font-extrabold tracking-tight lg:text-[30px]">Annonces</h1>
-        <p className="mt-1 text-[13px] text-muted">
-          Voitures et pi&egrave;ces de rechange. Le prix est affich&eacute;, vous appelez le vendeur.
-        </p>
-      </header>
+      {/* No page title, no strapline.
+          A visitor reaches this screen by tapping « Annonces », from a bar
+          that already says Mazed Auto — being told a third time what they are
+          looking at costs a third of the first screen on a phone and tells
+          nobody anything. The results are the heading. The h1 stays for
+          assistive tech and for search engines, which do still need it. */}
+      <h1 className="sr-only">Annonces — voitures et pi&egrave;ces de rechange</h1>
 
       {/* Rail beside the results on desktop. On a phone the rail becomes a
           sheet and this collapses to one column. */}

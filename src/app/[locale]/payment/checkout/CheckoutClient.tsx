@@ -569,7 +569,7 @@ export function CheckoutClient({
                   annonces, where this one now reads "En vérification". */}
               <a
                 href={`/${locale}/account/listings`}
-                className="inline-flex h-11 items-center justify-center rounded-[var(--radius)] batta-gold-fill px-5 text-[13px] font-bold text-white hover:bg-[var(--gold-bright)]"
+                className="batta-btn-luxe h-11 px-5 text-[13px]"
               >
                 Mes annonces <ArrowRight className="ml-1.5 h-4 w-4" />
               </a>

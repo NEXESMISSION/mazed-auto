@@ -536,8 +536,11 @@ function FeaturedCard({
       />
 
       <div className={"absolute inset-x-0 top-0 flex items-start justify-between gap-3 " + (compact ? "p-3" : "p-6")}>
+        {/* The same black pill as the category badge opposite it. It was a
+            glowing gold lozenge, which made an editorial label compete with
+            the price underneath it. */}
         <span className={
-          "batta-gold-fill inline-flex items-center gap-1.5 rounded-full font-extrabold uppercase tracking-wider gold-rim " +
+          "inline-flex items-center gap-1.5 rounded-full bg-black/60 font-bold uppercase tracking-wider text-white ring-1 ring-white/15 backdrop-blur-md " +
           (compact ? "h-7 px-2.5 text-[10px]" : "h-8 px-3 text-[11px]")
         }>
           <Sparkles className={compact ? "size-3" : "h-3.5 w-3.5"} />

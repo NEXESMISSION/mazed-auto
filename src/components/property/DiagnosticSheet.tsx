@@ -56,7 +56,7 @@ export function DiagnosticBadge({ diagnostic }: { diagnostic: Diagnostic | null 
   return (
     <a
       href="#diagnostic-mazed"
-      className="inline-flex items-center gap-1.5 rounded-full bg-[var(--gold-faint)] px-2.5 py-1 text-[11px] font-extrabold text-[var(--gold)] ring-1 ring-[var(--gold-soft)] transition hover:bg-[var(--gold)] hover:text-white"
+      className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-extrabold text-foreground ring-1 ring-white/20 transition hover:bg-white/[0.16]"
     >
       <Icon className="size-3.5" strokeWidth={2.4} />
       {VERDICT_LABEL[diagnostic.verdict]}
@@ -101,8 +101,8 @@ export async function DiagnosticSheet({
 
       {/* What the badge means — stated in full, because "vérifié" is exactly
           the kind of word a marketplace usually leaves vague. */}
-      <div className="mt-2 flex items-start gap-3 rounded-2xl bg-[var(--gold-faint)] p-4 ring-1 ring-[var(--gold-soft)]">
-        <BadgeCheck className="mt-0.5 size-6 shrink-0 text-[var(--gold)]" strokeWidth={2.2} />
+      <div className="mt-2 flex items-start gap-3 rounded-2xl bg-white/[0.06] p-4 ring-1 ring-white/15">
+        <BadgeCheck className="mt-0.5 size-6 shrink-0 text-foreground" strokeWidth={2.2} />
         <div className="min-w-0">
           <div className="text-[15px] font-extrabold leading-tight text-foreground">
             {VERDICT_LABEL[diagnostic.verdict]}

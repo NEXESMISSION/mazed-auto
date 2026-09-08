@@ -6,7 +6,7 @@ import { useRouter } from "@/i18n/navigation";
 import { useScrollLock } from "@/lib/scrollLock";
 import { cn } from "@/lib/utils";
 import { Overlay, LAYER } from "@/components/ui/Overlay";
-import { CAR_MAKES, FUELS, TRANSMISSIONS, modelsFor } from "@/lib/vehicles";
+import { CAR_MAKES, CONDITIONS, FUELS, TRANSMISSIONS, modelsFor } from "@/lib/vehicles";
 import {
   ArrowDownWideNarrow, Car, Check, LayoutGrid, Search, SlidersHorizontal, Wrench, X,
 } from "lucide-react";
@@ -36,13 +36,13 @@ import {
 export type FilterState = {
   kind: string; cat: string; gov: string; q: string;
   make: string; model: string; year: string;
-  min: string; max: string; fuel: string; boite: string; sort: string;
+  min: string; max: string; fuel: string; boite: string; etat: string; sort: string;
   year_min: string; year_max: string; km_max: string;
 };
 
 export const EMPTY: FilterState = {
   kind: "", cat: "", gov: "", q: "", make: "", model: "", year: "",
-  min: "", max: "", fuel: "", boite: "", sort: "",
+  min: "", max: "", fuel: "", boite: "", etat: "", sort: "",
   year_min: "", year_max: "", km_max: "",
 };
 
@@ -79,6 +79,7 @@ function chipsFor(f: FilterState, categories: Props["categories"]): {
   if (f.min) out.push({ key: "min", label: `à partir de ${f.min} TND` });
   if (f.max) out.push({ key: "max", label: `jusqu'à ${f.max} TND` });
   if (f.fuel) out.push({ key: "fuel", label: FUELS.find((x) => x.value === f.fuel)?.label ?? f.fuel });
+  if (f.etat) out.push({ key: "etat", label: CONDITIONS.find((x) => x.value === f.etat)?.label ?? f.etat });
   if (f.year_min || f.year_max) {
     out.push({
       key: "year_min",
@@ -312,6 +313,16 @@ function FilterBody({
             </div>
           </Group>
 
+          {/* First of the vehicle groups: « neuf ou occasion » is the
+              question a car buyer answers before fuel or gearbox, because it
+              decides their whole budget. */}
+          <Group label="État">
+            <Pills
+              value={f.etat}
+              options={CONDITIONS.map((x) => ({ v: x.value, label: x.label }))}
+              onPick={(v) => push({ etat: v })}
+            />
+          </Group>
           <Group label="Carburant">
             <Pills
               value={f.fuel}

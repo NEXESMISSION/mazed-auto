@@ -56,10 +56,10 @@ export function BackButton() {
       aria-label={t("shell.back")}
       className="
         group relative h-9 w-9 rounded-full shrink-0
-        bg-[var(--surface)] border border-[var(--gold-soft)]
-        text-[var(--gold)]
+        bg-[var(--surface)] border border-border
+        text-foreground
         flex items-center justify-center
-        hover:bg-[var(--gold-faint)] hover:border-[var(--gold)]
+        hover:bg-[var(--surface-2)] hover:border-[var(--muted)]
         active:scale-95
         transition-all duration-150
       "

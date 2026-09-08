@@ -86,7 +86,7 @@ export default function AboutPage() {
       <div className="mt-10 text-center">
         <Link
           href="/annonces"
-          className="batta-gold-fill inline-flex h-11 items-center justify-center gap-1.5 rounded-xl px-6 text-[13px] font-extrabold shadow-[var(--shadow-gold)] ring-1 ring-black/10 transition active:scale-[0.99] lg:text-sm"
+          className="batta-btn-luxe h-11 rounded-xl px-6 text-[13px] lg:text-sm"
         >
           Parcourir les annonces
           <ArrowRight className="size-4" />

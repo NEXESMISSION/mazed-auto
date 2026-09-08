@@ -11,9 +11,9 @@ import { activeTabFor, TAB_HREFS, type TabId } from "@/lib/nav/tabs";
  *   - Frosted dark background that lets the page peek through subtly,
  *     anchored to the bottom edge. A single hairline top border keeps
  *     it crisp without competing with content.
- *   - Five cells. Cell 3 is the metallic gold "Sell" FAB — a saturated
+ *   - Five cells. Cell 3 is the "Sell" FAB — the one saturated
  *     disc that lifts above the bar's top edge so it pops as the action.
- *   - Active tab: gold icon + label + v1's glowing gold pin hanging from
+ *   - Active tab: light icon + label + a pin hanging from
  *     the bar's top edge. Inactive: muted. Hover lightly brightens.
  *   - Safe-area aware: the visible icon row is `--bottombar-h` tall;
  *     the bar background extends below it for the iPhone home indicator.
@@ -25,7 +25,7 @@ type Tab = {
    *  the existing `watchlist` string rather than duplicating it). */
   labelKey: "home" | "browse" | "sell" | "watchlist" | "account";
   Icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
-  /** Renders the floating gold "Sell" FAB instead of a regular cell. */
+  /** Renders the floating "Sell" FAB instead of a regular cell. */
   isCenter?: boolean;
 };
 
@@ -95,7 +95,7 @@ export function BottomTabBar() {
             href={href}
             className={`relative flex h-full min-w-0 flex-col items-center justify-center gap-1 px-1 transition-colors ${
               active
-                ? "text-[var(--gold)]"
+                ? "text-foreground"
                 : "text-[var(--foreground-muted)] hover:text-[var(--foreground)]"
             }`}
             aria-label={t(tab.labelKey)}
@@ -108,10 +108,10 @@ export function BottomTabBar() {
             <span className="max-w-full truncate text-[10px] font-semibold leading-tight">
               {t(tab.labelKey)}
             </span>
-            {/* Active indicator — v1's glowing gold pin hanging from the
+            {/* Active indicator — a pin hanging from the
                 bar's top edge. */}
             {active && (
-              <span className="absolute top-0 h-1 w-10 rounded-b-full bg-[var(--gold)] shadow-[0_0_12px_var(--gold-glow)]" />
+              <span className="absolute top-0 h-1 w-10 rounded-b-full bg-foreground" />
             )}
           </Link>
         );

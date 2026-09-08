@@ -61,7 +61,7 @@ export default function OfflinePage() {
 
       <a
         href=""
-        className="mt-6 inline-flex h-11 w-full max-w-60 items-center justify-center rounded-full batta-gold-fill px-6 text-[13px] font-bold text-white shadow-[var(--shadow-gold)] transition-all hover:bg-[var(--gold-bright)] active:scale-[0.98]"
+        className="batta-btn-luxe mt-6 h-11 w-full max-w-60 rounded-full px-6 text-[13px]"
       >
         Réessayer
       </a>

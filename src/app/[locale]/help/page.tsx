@@ -403,7 +403,7 @@ export default function HelpPage() {
         <div className="mt-4 flex flex-wrap items-center gap-2.5">
           <Link
             href="/contact"
-            className="batta-gold-fill inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-extrabold uppercase tracking-wider shadow-[var(--shadow-gold)] transition active:scale-95"
+            className="batta-btn-luxe rounded-full px-4 py-2 text-[12px] uppercase tracking-wider"
           >
             <LifeBuoy className="size-4" strokeWidth={2.2} />
             Contactez-nous

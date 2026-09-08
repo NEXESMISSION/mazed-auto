@@ -23,7 +23,7 @@ export default function NotFound() {
       {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
       <a
         href="/"
-        className="tap-target mt-6 inline-flex h-11 items-center justify-center gap-1.5 rounded-full batta-gold-fill px-6 text-[13px] font-bold text-white shadow-[var(--shadow-gold)] transition-all hover:bg-[var(--gold-bright)] active:scale-[0.98]"
+        className="batta-btn-luxe tap-target mt-6 h-11 rounded-full px-6 text-[13px]"
       >
         <Home className="size-4" strokeWidth={2.2} />
         Retour à l&apos;accueil

@@ -170,7 +170,7 @@ export function FeaturedCarousel({
                 aria-current={i === index ? "true" : undefined}
                 className={`pointer-events-auto h-1.5 rounded-full transition-all duration-300 ${
                   i === index
-                    ? "w-5 bg-[var(--gold)]"
+                    ? "w-5 bg-foreground"
                     : "w-1.5 bg-white/45 hover:bg-white/70"
                 }`}
               />

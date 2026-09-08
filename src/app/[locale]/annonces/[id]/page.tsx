@@ -7,6 +7,7 @@ import { avatarUrl } from "@/lib/avatar";
 import { formatTND } from "@/lib/utils";
 import { PhotoCarousel } from "@/components/listing/PhotoCarousel";
 import { ContactReveal } from "./ContactReveal";
+import { ShareButton } from "@/components/listing/ShareButton";
 import { FavoriteButton } from "@/components/property/FavoriteButton";
 import { RelatedListings } from "@/components/listing/RelatedListings";
 import { ViewTracker } from "@/components/listing/ViewTracker";
@@ -249,7 +250,7 @@ export default async function AnnoncePage({
                 question being asked at this exact moment: do I call? */}
             {badge === true && (
               <BadgeCheck
-                className="size-4 shrink-0 text-gold"
+                className="size-4 shrink-0 text-muted"
                 strokeWidth={2.4}
                 aria-label="Vendeur vérifié"
               />
@@ -312,7 +313,7 @@ export default async function AnnoncePage({
                 </span>
               )}
               {badge === true && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-gold-faint px-2.5 py-1 text-[11px] font-extrabold text-gold ring-1 ring-gold-soft">
+                <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-extrabold text-foreground ring-1 ring-white/20">
                   <BadgeCheck className="size-3.5" strokeWidth={2.4} /> Vendeur vérifié
                 </span>
               )}
@@ -424,7 +425,7 @@ export default async function AnnoncePage({
             <div className="mt-6">
               <Link
                 href={"/annonces" as never}
-                className="text-[13px] font-bold text-gold hover:underline"
+                className="text-[13px] font-bold text-foreground hover:underline"
               >
                 ← Toutes les annonces
               </Link>
@@ -453,6 +454,11 @@ export default async function AnnoncePage({
         attributes={l.attributes}
         locale={locale}
       />
+
+      {/* Floats over everything, on every scroll position — the moment a buyer
+          decides someone else should see this car is as likely to be halfway
+          down the photos as at the bottom. */}
+      <ShareButton title={l.title} />
     </main>
   );
 }

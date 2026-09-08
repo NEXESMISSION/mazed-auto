@@ -201,7 +201,7 @@ export function NotificationsClient({
               onClick={() => setFilter(key)}
               className={`inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-[12.5px] font-bold transition-colors ${
                 active
-                  ? "batta-gold-fill shadow-[var(--shadow-gold)]"
+                  ? "bg-foreground text-[var(--background)]"
                   : "bg-surface text-muted ring-1 ring-border hover:text-foreground hover:ring-gold-soft/60"
               }`}
             >
