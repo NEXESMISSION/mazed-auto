@@ -98,15 +98,20 @@ export function DesktopNav() {
           >
             {/* The MA monogram, in a WIDE box — see the note in TopBar. The
                 round `object-cover` crop it replaces cut the speed lines and
-                most of the A off a mark that is nearly 3:1. */}
+                most of the A off a mark that is nearly 3:1.
+
+                `h-8` (32px) in a 72px nav, down from `h-10`. Same reasoning as
+                the top bar: at 40px tall the 3:1 mark was 118px wide, wider
+                than any two nav links put together, so the eye read it as a
+                banner rather than as the thing that takes you home. */}
             <Image
               src="/logo-mark.webp"
               alt=""
               width={842}
               height={285}
               priority
-              sizes="140px"
-              className="h-10 w-auto shrink-0"
+              sizes="100px"
+              className="h-8 w-auto shrink-0"
             />
             {/* Visible, not `sr-only` — see the note in TopBar: a monogram
                 does not say the name on its own. */}

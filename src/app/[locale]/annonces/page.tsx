@@ -13,6 +13,19 @@ import { formatTND } from "@/lib/utils";
 import { GOVERNORATES } from "@/lib/governorates";
 import { listingIdsMatching } from "@/lib/fitment";
 import { CatalogSidebar, CatalogToolbar } from "./CatalogFilters";
+import { ReelsFeed } from "@/components/annonces/ReelsFeed";
+import {
+  applyCatalogFilters,
+  FILTER_KEYS,
+  LISTING_SELECT,
+  normalizeKind,
+  one,
+  sortFor,
+  toReelItem,
+  FEED_PAGE_SIZE,
+  type CatalogSearchParams,
+  type ListingRow,
+} from "@/lib/catalog/query";
 import { FavoriteButton } from "@/components/property/FavoriteButton";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { BadgeCheck, ImageOff, Images, MapPin, SearchX, Wrench, Car } from "lucide-react";
@@ -68,25 +81,11 @@ export const dynamic = "force-dynamic";
  *      which no amount of full-text search over a description does reliably.
  */
 
-type SearchParams = {
-  kind?: string;        // vehicle | part
-  cat?: string;         // category id
-  gov?: string;
-  q?: string;
-  make?: string;
-  model?: string;
-  year?: string;
-  min?: string;
-  max?: string;
-  fuel?: string;
-  etat?: string;
-  year_min?: string;
-  year_max?: string;
-  km_max?: string;
-  boite?: string;
-  sort?: string;
-  page?: string;
-};
+// SearchParams, the row shape, the SELECT list and the filter chain all live
+// in @/lib/catalog/query now — the reels feed pages from an API route and has
+// to run the identical query, and a second copy of that chain is how a feed
+// ends up showing rows the filters excluded.
+type SearchParams = CatalogSearchParams;
 
 /**
  * The catalog pages rather than truncating. It used to `.limit(60)` and print
@@ -96,17 +95,6 @@ type SearchParams = {
  * unreachable because nothing linked to it.
  */
 const PAGE_SIZE = 24;
-
-type ListingRow = {
-  id: string; title: string; price: number | null; price_on_request: boolean;
-  negotiable: boolean; governorate: string; condition: string | null;
-  published_at: string | null; seller_id: string;
-  attributes: Record<string, unknown> | null;
-  category: { label_fr: string; kind: string } | { label_fr: string; kind: string }[] | null;
-  photos: { storage_path: string; sort_order: number; is_cover?: boolean | null }[] | null;
-};
-
-const one = <T,>(v: T | T[] | null): T | null => (Array.isArray(v) ? v[0] ?? null : v);
 
 export default async function AnnoncesPage({
   searchParams,
@@ -136,7 +124,7 @@ export default async function AnnoncesPage({
   const cats = catRows;
   const leaves = cats.filter((c) => c.parent_id != null);
 
-  const kind = sp.kind === "part" || sp.kind === "vehicle" ? sp.kind : null;
+  const kind = normalizeKind(sp.kind);
   const visibleCats = kind ? leaves.filter((c) => c.kind === kind) : leaves;
 
   // ── Fitment first: it narrows the set before anything else does ──────────
@@ -166,70 +154,19 @@ export default async function AnnoncesPage({
 
   const page = Math.max(1, Math.floor(Number(sp.page)) || 1);
 
-  const LISTING_SELECT = `id, title, price, price_on_request, negotiable, governorate,
-     condition, published_at, seller_id, attributes,
-     category:categories (label_fr, kind),
-     photos:listing_photos (storage_path, sort_order, is_cover)`;
+  // The feed takes smaller bites than the grid: 24 cards is a screenful of
+  // thumbnails and two dozen full-bleed photos. One query either way — the
+  // size just changes.
+  const isReels = sp.view === "reels";
+  const pageSize = isReels ? FEED_PAGE_SIZE : PAGE_SIZE;
 
-  /** The subset of the query builder these filters need. */
-  type Filterable = {
-    eq: (column: string, value: unknown) => Filterable;
-    in: (column: string, values: readonly unknown[]) => Filterable;
-    ilike: (column: string, pattern: string) => Filterable;
-    lte: (column: string, value: unknown) => Filterable;
-    gte: (column: string, value: unknown) => Filterable;
-    contains: (column: string, value: unknown) => Filterable;
-    // jsonb range comparisons go through the generic filter()
-    filter: (column: string, operator: string, value: unknown) => Filterable;
-  };
+  // The filter chain is shared with /api/annonces/feed — see the note on the
+  // import. `visibleCatIds` and `fitmentIds` are the two inputs it cannot work
+  // out for itself, because each needs its own database read.
+  const filterOpts = { visibleCatIds: visibleCats.map((c) => c.id), fitmentIds };
+  const applyFilters = <T,>(builder: T): T => applyCatalogFilters(builder, sp, filterOpts);
 
-  // One filter chain, applied to both the page read and the count-only read,
-  // so the total can never describe a different set than the cards shown.
-  function applyFilters<T>(builder: T): T {
-    let q = builder as Filterable;
-    if (sp.cat) q = q.eq("category_id", sp.cat);
-    else if (kind) q = q.in("category_id", visibleCats.map((c) => c.id));
-    if (sp.gov) q = q.eq("governorate", sp.gov);
-    if (sp.q) q = q.ilike("search_text", `%${sp.q.trim().toLowerCase()}%`);
-    if (sp.min && Number(sp.min) > 0) q = q.gte("price", Number(sp.min));
-    if (sp.max && Number(sp.max) > 0) q = q.lte("price", Number(sp.max));
-    // Spec filters live in the jsonb the seller filled in. `contains` is an
-    // index-friendly @> rather than a text match on a rendered value.
-    // Ranges over the jsonb the seller filled in. `->` (not `->>`) keeps the
-    // comparison numeric — as text, "9" would sort after "10 000".
-    const num = (v: string | undefined) => {
-      const n = Number(v);
-      return Number.isFinite(n) && n > 0 ? n : null;
-    };
-    const yMin = num(sp.year_min), yMax = num(sp.year_max), kMax = num(sp.km_max);
-    if (yMin) q = q.filter("attributes->year", "gte", yMin);
-    if (yMax) q = q.filter("attributes->year", "lte", yMax);
-    if (kMax) q = q.filter("attributes->mileage", "lte", kMax);
-    if (sp.fuel) q = q.contains("attributes", { fuel: sp.fuel });
-    // Neuf / occasion. `contains` is a jsonb @> match, answered by the
-    // GIN index added in 0179.
-    if (sp.etat) q = q.contains("attributes", { condition: sp.etat });
-    if (sp.boite) q = q.contains("attributes", { transmission: sp.boite });
-    // `make` means two different things depending on what you are browsing.
-    // On a PART it is compatibility, resolved through listing_fitments above.
-    // On a VEHICLE it is the car's own marque, which lives in the attributes
-    // the seller filled in — filtering a car through the fitments table
-    // returned nothing at all, which is why the marque filter looked dead.
-    if (fitmentIds) {
-      // No fitment matched → no results, without a pointless second query.
-      if (fitmentIds.length === 0) q = q.eq("id", "00000000-0000-0000-0000-000000000000");
-      else q = q.in("id", fitmentIds);
-    } else if (sp.make) {
-      q = q.contains("attributes", { make: sp.make });
-      if (sp.model) q = q.contains("attributes", { model: sp.model });
-    }
-    return q as T;
-  }
-
-  // Sorting by price puts "prix sur demande" (null) last either way — a row
-  // with no price is not the cheapest car on the site.
-  const sortColumn = sp.sort === "price_asc" || sp.sort === "price_desc" ? "price" : "published_at";
-  const sortAsc = sp.sort === "price_asc";
+  const { column: sortColumn, ascending: sortAsc } = sortFor(sp);
 
   const pagedQuery = (offset: number) =>
     applyFilters(
@@ -238,7 +175,7 @@ export default async function AnnoncesPage({
         .select(LISTING_SELECT, { count: "exact" })
         .eq("status", "published")
         .order(sortColumn, { ascending: sortAsc, nullsFirst: false })
-        .range(offset, offset + PAGE_SIZE - 1),
+        .range(offset, offset + pageSize - 1),
     );
 
   const countQuery = () =>
@@ -249,7 +186,7 @@ export default async function AnnoncesPage({
         .eq("status", "published"),
     );
 
-  const { data, count } = await pagedQuery((page - 1) * PAGE_SIZE);
+  const { data, count } = await pagedQuery((page - 1) * pageSize);
   let rows = (data ?? []) as ListingRow[];
   let total = count ?? rows.length;
 
@@ -263,26 +200,24 @@ export default async function AnnoncesPage({
     const { count: realTotal } = await countQuery();
     total = realTotal ?? 0;
     if (total > 0) {
-      const last = Math.max(1, Math.ceil(total / PAGE_SIZE));
-      const { data: clamped } = await pagedQuery((last - 1) * PAGE_SIZE);
+      const last = Math.max(1, Math.ceil(total / pageSize));
+      const { data: clamped } = await pagedQuery((last - 1) * pageSize);
       rows = (clamped ?? []) as ListingRow[];
     }
   }
 
-  const lastPage = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const lastPage = Math.max(1, Math.ceil(total / pageSize));
   const shownPage = Math.min(page, lastPage);
 
   // Paging must carry the active filters, or "Suivant" quietly drops the
   // buyer back into the unfiltered catalog. Empty values are left out so the
   // URL stays readable.
   const pageQuery: Record<string, string> = {};
-  for (const k of [
-    "kind", "cat", "gov", "q", "make", "model", "year",
-    "min", "max", "fuel", "boite", "etat", "sort",
-  ] as const) {
+  for (const k of FILTER_KEYS) {
     const v = sp[k];
     if (v) pageQuery[k] = v;
   }
+  if (sp.view) pageQuery.view = sp.view;
 
   // Which of these the viewer already saved — one read, through their own
   // session so RLS decides what they can see.
@@ -324,12 +259,70 @@ export default async function AnnoncesPage({
     min: sp.min ?? "", max: sp.max ?? "", fuel: sp.fuel ?? "", etat: sp.etat ?? "",
     boite: sp.boite ?? "", sort: sp.sort ?? "",
     year_min: sp.year_min ?? "", year_max: sp.year_max ?? "", km_max: sp.km_max ?? "",
+    view: sp.view === "reels" ? "reels" : "",
   };
   const filterProps = {
     categories: visibleCats.map((c) => ({ id: c.id, label: c.label_fr, kind: c.kind })),
     governorates: [...GOVERNORATES],
     current: filterState,
   };
+
+  // ── The vertical feed ───────────────────────────────────────────────────
+  // A different page, not a different grid: it fills the shell exactly, and
+  // the browser — not the document — does the scrolling inside it, so a flick
+  // snaps to the next annonce instead of scrolling the site.
+  if (isReels) {
+    const feedQuery = new URLSearchParams(pageQuery);
+    feedQuery.delete("page");
+    feedQuery.delete("view");
+
+    return (
+      <div
+        // The exact height the shell leaves: below the top bar and above the
+        // tab bar on a phone, below the desktop nav above lg. `.batta-shell-main`
+        // pads for both, and these subtract the same values back off.
+        className="flex flex-col
+          h-[calc(100dvh-var(--batta-topbar-h)-var(--batta-safe-top)-var(--batta-bottombar-total)-var(--batta-safe-bottom))]
+          lg:h-[calc(100dvh-var(--desktop-nav-h))]"
+      >
+        <h1 className="sr-only">Annonces — vue reels</h1>
+
+        <div className="shrink-0 border-b border-border lg:mx-auto lg:w-full lg:max-w-[440px] lg:px-4">
+          <CatalogToolbar {...filterProps} total={total} compact />
+        </div>
+
+        <div className="min-h-0 flex-1">
+          {rows.length === 0 ? (
+            <div className="flex h-full flex-col items-center justify-center gap-3 px-8 text-center">
+              <span className="grid size-12 place-items-center rounded-full bg-surface-2 text-muted">
+                <SearchX className="size-6" />
+              </span>
+              <p className="text-[15px] font-bold text-foreground">Aucune annonce ne correspond</p>
+              <Link href={"/annonces?view=reels" as never} className="batta-btn-luxe mt-2 inline-flex px-5 py-2.5 text-[13px]">
+                Voir toutes les annonces
+              </Link>
+            </div>
+          ) : (
+            // On a phone the feed is the screen. On a desktop it is a column
+            // the shape of a phone, centred — the same answer Instagram
+            // reached, because a full-bleed portrait photo on a 27" monitor is
+            // mostly letterbox.
+            <div className="mx-auto h-full w-full overflow-hidden lg:max-w-[440px] lg:rounded-2xl lg:border lg:border-border lg:my-3 lg:h-[calc(100%-1.5rem)]">
+              <ReelsFeed
+                initialItems={rows.map((r) => toReelItem(r, badged))}
+                initialSaved={[...savedIds]}
+                loggedIn={user !== null}
+                locale={locale}
+                filterQuery={feedQuery.toString()}
+                nextPage={shownPage < lastPage ? shownPage + 1 : null}
+                total={total}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <main className="mx-auto max-w-[var(--max-w-wide)] px-4 py-5 lg:px-6 lg:py-8">

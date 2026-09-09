@@ -102,13 +102,22 @@ export function TopBar() {
 
 function BrandMark() {
   const t = useTranslations("brand");
-  // `h-8` (32px) inside a 56px bar (`--batta-topbar-h`). It was `h-11`, which
-  // left six pixels of air above and below a nearly 3:1 mark — the logo
-  // stopped reading as a logo and started reading as the bar itself; it came
-  // down again to make room for the name beside it. The width auto-scales via
-  // `w-auto`. `priority` skips the lazy-load — this is above-the-fold on every
-  // page that shows the bar — and the asset is also `<link rel="preload">`-ed
-  // in the root layout, so by the time this paints it's already in cache.
+  // `h-7` (28px) inside a 56px bar (`--batta-topbar-h`).
+  //
+  // Height is the wrong thing to judge this mark by. It is nearly 3:1, so
+  // every pixel of height costs three of WIDTH: at `h-8` the monogram was
+  // 94px across, a quarter of a 375px phone, and it read as the loudest thing
+  // in the bar before the name beside it had said anything. 28px puts it at
+  // ~83px and about 1.9x the cap height of the name, which is where a mark
+  // sits next to its own wordmark.
+  //
+  // (It was `h-11` before that, which left six pixels of air above and below
+  // and stopped reading as a logo at all.)
+  //
+  // The width auto-scales via `w-auto`. `priority` skips the lazy-load — this
+  // is above-the-fold on every page that shows the bar — and the asset is also
+  // `<link rel="preload">`-ed in the root layout, so by the time this paints
+  // it's already in cache.
   return (
     <Link href="/" className="flex items-center gap-2" aria-label={t("name")}>
       {/* The MA monogram, in a WIDE box.
@@ -123,8 +132,8 @@ function BrandMark() {
         width={842}
         height={285}
         priority
-        sizes="100px"
-        className="h-8 w-auto shrink-0"
+        sizes="90px"
+        className="h-7 w-auto shrink-0"
       />
       {/* The name, back beside the mark and visible.
           It was `sr-only`, on the reasoning that a logo is the name. That

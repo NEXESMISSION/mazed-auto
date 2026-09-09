@@ -8,7 +8,8 @@ import { cn } from "@/lib/utils";
 import { Overlay, LAYER } from "@/components/ui/Overlay";
 import { CAR_MAKES, CONDITIONS, FUELS, TRANSMISSIONS, modelsFor } from "@/lib/vehicles";
 import {
-  ArrowDownWideNarrow, Car, Check, LayoutGrid, Search, SlidersHorizontal, Wrench, X,
+  ArrowDownWideNarrow, Car, Check, LayoutGrid, PlaySquare, Search,
+  SlidersHorizontal, Wrench, X,
 } from "lucide-react";
 
 /**
@@ -38,12 +39,21 @@ export type FilterState = {
   make: string; model: string; year: string;
   min: string; max: string; fuel: string; boite: string; etat: string; sort: string;
   year_min: string; year_max: string; km_max: string;
+  /**
+   * "" = the grid, "reels" = the vertical feed.
+   *
+   * Carried in FilterState rather than handled separately, because `toQuery`
+   * serialises this whole object: narrowing to Peugeot while in the feed has
+   * to leave you in the feed, and a filter change that silently threw you back
+   * to the grid would be the most annoying bug on this page.
+   */
+  view: string;
 };
 
 export const EMPTY: FilterState = {
   kind: "", cat: "", gov: "", q: "", make: "", model: "", year: "",
   min: "", max: "", fuel: "", boite: "", etat: "", sort: "",
-  year_min: "", year_max: "", km_max: "",
+  year_min: "", year_max: "", km_max: "", view: "",
 };
 
 export const SORTS = [
@@ -57,6 +67,13 @@ type Props = {
   governorates: string[];
   current: FilterState;
   total: number;
+  /**
+   * The feed's variant: one slim row — filters, count, view toggle — because
+   * every pixel here is a pixel taken off the photo below it. Same component,
+   * and therefore the same filter sheet: a second copy of that sheet is how
+   * two views end up filtering differently.
+   */
+  compact?: boolean;
 };
 
 function toQuery(f: FilterState) {
@@ -419,7 +436,9 @@ export function CatalogSidebar(props: Omit<Props, "total">) {
  * Search, result count, sort and the active-filter chips — the row above the
  * results — plus the mobile filter sheet, whose trigger lives here.
  */
-export function CatalogToolbar({ categories, governorates, current, total }: Props) {
+export function CatalogToolbar({
+  categories, governorates, current, total, compact = false,
+}: Props) {
   const { f, push, pushDebounced, pending } = useFilters(current);
   const [sheet, setSheet] = useState(false);
   const isPart = f.kind === "part";
@@ -430,6 +449,131 @@ export function CatalogToolbar({ categories, governorates, current, total }: Pro
   // Reference-counted (see scrollLock): an alert opening over this sheet used
   // to leave the page unscrollable after both had closed.
   useScrollLock(sheet);
+
+  /** Grille | Reels. Segmented, so the alternative is visible before it is used. */
+  const viewToggle = (
+    <div
+      role="group"
+      aria-label="Affichage"
+      className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-border bg-surface p-0.5"
+    >
+      {([
+        { v: "", label: "Grille", Icon: LayoutGrid },
+        { v: "reels", label: "Reels", Icon: PlaySquare },
+      ] as const).map((o) => {
+        const on = (f.view || "") === o.v;
+        return (
+          <button
+            key={o.v || "grid"}
+            type="button"
+            onClick={() => push({ view: o.v })}
+            aria-pressed={on}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-bold transition",
+              on
+                ? "bg-gold-faint text-gold ring-1 ring-gold-soft"
+                : "text-muted hover:text-foreground",
+            )}
+          >
+            <o.Icon className="size-3.5" />
+            {o.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  // One sheet, rendered by whichever branch is active below. Lifted out of the
+  // JSX rather than duplicated: two copies of the filter body is how the grid
+  // and the feed would end up filtering differently.
+  const sheetNode = (
+    <Overlay open onClose={() => setSheet(false)} z={LAYER.modal} className="max-w-lg p-0 lg:hidden">
+      <div className="flex max-h-[calc(100dvh-4rem)] flex-col">
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <span className="text-[15px] font-extrabold">Filtres</span>
+          <button
+            onClick={() => setSheet(false)}
+            aria-label="Fermer"
+            className="rounded-lg p-1.5 text-muted hover:bg-surface-2 hover:text-foreground"
+          >
+            <X className="size-5" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-4 py-4">
+          <FilterBody
+            categories={categories}
+            governorates={governorates}
+            current={current}
+          />
+        </div>
+
+        <div className="border-t border-border bg-background px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+          <button
+            type="button"
+            onClick={() => setSheet(false)}
+            className="batta-btn-luxe tap-target flex h-12 w-full items-center justify-center gap-2 text-[14px]"
+          >
+            <Check className="size-4" />
+            Voir {total} annonce{total > 1 ? "s" : ""}
+          </button>
+        </div>
+      </div>
+    </Overlay>
+  );
+
+  const filtersButton = (
+    <button
+      type="button"
+      onClick={() => setSheet(true)}
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-xl font-bold transition lg:hidden",
+        compact ? "h-9 shrink-0 rounded-full px-3 text-[12px]" : "h-12 px-4 text-[13px]",
+        activeCount > 0
+          ? "bg-gold-faint text-gold ring-1 ring-gold-soft"
+          : "bg-surface text-foreground ring-1 ring-border",
+      )}
+    >
+      <SlidersHorizontal className={compact ? "size-3.5" : "size-4"} />
+      Filtres
+      {activeCount > 0 && (
+        <span
+          className={cn(
+            "grid place-items-center rounded-full bg-[var(--gold)] font-extrabold text-black",
+            compact ? "size-4 text-[9px]" : "size-5 text-[10px]",
+          )}
+        >
+          {activeCount}
+        </span>
+      )}
+    </button>
+  );
+
+  const countLabel = pending
+    ? "Mise à jour…"
+    : total === 0
+      ? "Aucun résultat"
+      : `${total} annonce${total > 1 ? "s" : ""}`;
+
+  // ── The feed's slim row. Everything the grid's toolbar offers is still
+  //    reachable (the sheet on a phone, the rail on desktop); what it gives up
+  //    is the search box and the chips, which together are ~120px of a screen
+  //    whose whole point is one photograph filling it.
+  if (compact) {
+    return (
+      <>
+        <RouteProgress active={pending} />
+        <div className="flex items-center gap-2 px-4 py-2 lg:px-0">
+          {filtersButton}
+          <p className="min-w-0 flex-1 truncate text-[12.5px] font-semibold text-muted">
+            {countLabel}
+          </p>
+          {viewToggle}
+        </div>
+        {sheet && sheetNode}
+      </>
+    );
+  }
 
   return (
     <>
@@ -450,27 +594,10 @@ export function CatalogToolbar({ categories, governorates, current, total }: Pro
         </label>
 
         {/* Mobile: open the sheet. Desktop: the rail is already open. */}
-        <button
-          type="button"
-          onClick={() => setSheet(true)}
-          className={cn(
-            "inline-flex h-12 items-center gap-1.5 rounded-xl px-4 text-[13px] font-bold transition lg:hidden",
-            activeCount > 0
-              ? "bg-gold-faint text-gold ring-1 ring-gold-soft"
-              : "bg-surface text-foreground ring-1 ring-border",
-          )}
-        >
-          <SlidersHorizontal className="size-4" />
-          Filtres
-          {activeCount > 0 && (
-            <span className="grid size-5 place-items-center rounded-full bg-[var(--gold)] text-[10px] font-extrabold text-black">
-              {activeCount}
-            </span>
-          )}
-        </button>
+        {filtersButton}
       </div>
 
-      {/* ── Count + sort ── */}
+      {/* ── Count + view + sort ── */}
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
         {/* The count doubles as the progress indicator. During a transition the
             results below stay on screen — telling the user something is
@@ -482,24 +609,21 @@ export function CatalogToolbar({ categories, governorates, current, total }: Pro
               className="inline-block size-3.5 shrink-0 animate-spin rounded-full border-2 border-[var(--border)] border-t-[var(--gold)]"
             />
           )}
-          <span className={pending ? "text-muted" : undefined}>
-            {pending
-              ? "Mise à jour…"
-              : total === 0
-                ? "Aucun résultat"
-                : `${total} annonce${total > 1 ? "s" : ""}`}
-          </span>
+          <span className={pending ? "text-muted" : undefined}>{countLabel}</span>
         </p>
-        <label className="inline-flex items-center gap-1.5 text-[12.5px] text-muted">
-          <ArrowDownWideNarrow className="size-3.5" />
-          <select
-            value={f.sort}
-            onChange={(e) => push({ sort: e.target.value })}
-            className="cursor-pointer rounded-lg border border-border bg-surface px-2 py-1.5 text-[12.5px] font-semibold text-foreground focus:border-gold focus:outline-none"
-          >
-            {SORTS.map((s) => <option key={s.v || "recent"} value={s.v}>{s.label}</option>)}
-          </select>
-        </label>
+        <div className="flex items-center gap-2">
+          {viewToggle}
+          <label className="inline-flex items-center gap-1.5 text-[12.5px] text-muted">
+            <ArrowDownWideNarrow className="size-3.5" />
+            <select
+              value={f.sort}
+              onChange={(e) => push({ sort: e.target.value })}
+              className="cursor-pointer rounded-lg border border-border bg-surface px-2 py-1.5 text-[12.5px] font-semibold text-foreground focus:border-gold focus:outline-none"
+            >
+              {SORTS.map((s) => <option key={s.v || "recent"} value={s.v}>{s.label}</option>)}
+            </select>
+          </label>
+        </div>
       </div>
 
       {/* ── Active filters ── */}
@@ -525,44 +649,10 @@ export function CatalogToolbar({ categories, governorates, current, total }: Pro
         </div>
       )}
 
-      {/* ── Mobile sheet ── */}
-      {/* Centred like every other layer in the app, instead of a panel
+      {/* ── Mobile sheet ──
+          Centred like every other layer in the app, instead of a panel
           anchored to the bottom edge — see components/ui/Overlay. */}
-      {sheet && (
-        <Overlay open onClose={() => setSheet(false)} z={LAYER.modal} className="max-w-lg p-0 lg:hidden">
-          <div className="flex max-h-[calc(100dvh-4rem)] flex-col">
-            <div className="flex items-center justify-between border-b border-border px-4 py-3">
-              <span className="text-[15px] font-extrabold">Filtres</span>
-              <button
-                onClick={() => setSheet(false)}
-                aria-label="Fermer"
-                className="rounded-lg p-1.5 text-muted hover:bg-surface-2 hover:text-foreground"
-              >
-                <X className="size-5" />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto px-4 py-4">
-              <FilterBody
-                categories={categories}
-                governorates={governorates}
-                current={current}
-              />
-            </div>
-
-            <div className="border-t border-border bg-background px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
-              <button
-                type="button"
-                onClick={() => setSheet(false)}
-                className="batta-btn-luxe tap-target flex h-12 w-full items-center justify-center gap-2 text-[14px]"
-              >
-                <Check className="size-4" />
-                Voir {total} annonce{total > 1 ? "s" : ""}
-              </button>
-            </div>
-          </div>
-        </Overlay>
-      )}
+      {sheet && sheetNode}
     </>
   );
 }

@@ -463,16 +463,12 @@ function BrandSlide({
               word floating next to it on the baseline. */}
           {hasLiveCount && (
             <div className="flex flex-col items-center leading-none">
+              {/* Flat gold — see the note on .gradient-gold-text in globals.css.
+                  A vertical ramp clipped to a 56px numeral banded every digit
+                  across the waist. */}
               <span
-                className="batta-tabular text-[56px] font-black leading-[0.95] tracking-tight md:text-[64px]"
-                style={{
-                  background:
-                    "linear-gradient(180deg, #f7e4a3 0%, #d4af37 55%, #b08a1f 100%)",
-                  WebkitBackgroundClip: "text",
-                  backgroundClip: "text",
-                  color: "transparent",
-                  textShadow: "0 4px 24px rgba(212,175,55,0.25)",
-                }}
+                className="batta-tabular text-[56px] font-black leading-[0.95] tracking-tight text-gold md:text-[64px]"
+                style={{ textShadow: "0 4px 24px rgba(212,175,55,0.25)" }}
               >
                 {slide.liveCount}
               </span>
@@ -485,15 +481,7 @@ function BrandSlide({
           {/* Headline — gold for the last word so the eye lands. */}
           <h2 className="mt-3 max-w-[18ch] text-balance text-[20px] font-extrabold leading-[1.1] tracking-tight text-white md:text-[24px]">
             Les enchères auto{" "}
-            <span
-              style={{
-                background:
-                  "linear-gradient(180deg, #f7e4a3 0%, #d4af37 60%, #b08a1f 100%)",
-                WebkitBackgroundClip: "text",
-                backgroundClip: "text",
-                color: "transparent",
-              }}
-            >
+            <span className="text-gold">
               tunisiennes
             </span>
           </h2>

@@ -75,20 +75,6 @@
     var(--gold-shade) 100%
   );
 
-  /* Same ramp, angled — for wide surfaces and for type, where a purely
-     horizontal band lands across the middle of every letter and reads as a
-     stripe rather than a sheen. */
-  --gold-metal-angled: linear-gradient(
-    115deg,
-    var(--gold-shade)  0%,
-    var(--gold-amber) 16%,
-    var(--gold-mid)   32%,
-    var(--gold-lum)   44%,
-    var(--gold-pale)  52%,
-    var(--gold-mid)   66%,
-    var(--gold-amber) 82%,
-    var(--gold-shade) 100%
-  );
 
   /* Accent — RED. The second accent the user asked for. Used
      sparingly: live-now pulse, sale badges, the "Live · X auctions"
@@ -346,19 +332,17 @@ html, body { overscroll-behavior-y: contain; }
   background-color: var(--gold); /* fallback */
 }
 
-/* Gradient-clipped text — for the brand wordmark and headline
-   prices we want metallic weight without losing legibility. The
-   `-webkit-` prefix is needed for Safari/iOS support. */
+/* Gold TYPE is FLAT. Not a gradient clipped to text.
+   A ramp clipped to a glyph is not the same object as a ramp on a surface:
+   over 20px of digit it lands a pale band across the waist of every number and
+   a dark one at its foot, and at that size it stops reading as metal and
+   starts reading as a rendering fault. The price is the one thing on a
+   classifieds page that has to be crisp, so it gets one solid colour.
+   The gradient still belongs on FILLS — see .gold-rim / batta-gold-fill. */
 .gradient-gold-text,
 .batta-gold-text,
 .batta-gradient-gold-text {
-  /* Angled, not vertical: on a single line of type a horizontal band lands
-     across the middle of every letter and reads as a stripe. */
-  background-image: var(--gold-metal-angled);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: var(--gold-deep); /* fallback for browsers that can't clip */
+  color: var(--gold);
   letter-spacing: -0.01em;
 }
 
