@@ -51,6 +51,8 @@ export type PanelListing = {
   categoryKind: string;
   sellerName: string;
   sellerPhone: string | null;
+  /** The shop it is published under; null for a personal annonce. */
+  shopName: string | null;
   contactName: string | null;
   contactPhone: string | null;
   showPhone: boolean;
@@ -66,7 +68,7 @@ export type PanelListing = {
   renewedCount: number;
   attestation: { version: string; at: string | null } | null;
   payment: { amount: number; status: string; kind: string; uploadedAt: string | null } | null;
-  paidWith: "credit" | "payment" | "waived" | "none";
+  paidWith: "credit" | "payment" | "waived" | "subscription" | "free" | "none";
   diagnostic: Diagnostic | null;
 };
 
@@ -74,6 +76,8 @@ const PAID_WITH_LABEL: Record<PanelListing["paidWith"], string> = {
   credit: "Forfait du vendeur",
   payment: "Paiement à l'unité",
   waived: "Offerte par un admin",
+  subscription: "Abonnement de la boutique",
+  free: "Gratuite (particulier)",
   none: "Rien de rattaché",
 };
 
@@ -223,6 +227,7 @@ export function ListingDetail({
 
           <Group title="Vendeur et contact">
             <Row label="Compte">{l.sellerName}</Row>
+            {l.shopName && <Row label="Boutique">{l.shopName}</Row>}
             {l.sellerPhone && <Row label="Tél. du compte">{l.sellerPhone}</Row>}
             <Row label="Sur l'annonce">
               {l.contactPhone ? (

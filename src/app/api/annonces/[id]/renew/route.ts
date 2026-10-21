@@ -5,21 +5,24 @@ import { isSameOrigin } from "@/lib/sameOrigin";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { refuseIfSuspended } from "@/lib/http/suspended";
+import { refusalResponse } from "@/lib/http/refusal";
 import { PRODUCT_SELECT, isFree, resolveListingFee, toProduct } from "@/lib/products";
+import { decidePublication, publicationErrorFromDb, type ListingType } from "@/lib/publication";
+import { quotaStatus, shopSummary } from "@/lib/shops/server";
 
 /**
  * POST /api/annonces/[id]/renew — put an expired annonce back online.
  *
  * Expiry is what keeps the catalog honest (D2), so renewal is the other half of
- * that bargain: nothing is lost, the seller just pays again — or spends a pack
- * credit — and the listing goes back through the queue.
+ * that bargain: nothing is lost, and the listing goes back through the queue —
+ * NEVER straight to published. A renewed listing is re-checked, because the
+ * reason it is worth publishing is that someone looks at it.
  *
- * It follows the same order as /submit, deliberately: credit first, payment
- * otherwise, and NEVER straight to published. A renewed listing is re-checked,
- * because the reason it is worth paying for is that someone looks at it.
- *
- * Priced by the `renewal` product when one is active, falling back to the
- * ordinary publication fee for that category — a renewal is a publication.
+ * It decides exactly as /submit does (`decidePublication`): a shop annonce
+ * under its subscription, a personal one free within the limit (D-P1), and —
+ * only while `personal_limits.free` is off — the fee, priced by the `renewal`
+ * product when one is active, falling back to the ordinary publication fee for
+ * that category, because a renewal is a publication.
  */
 export async function POST(
   req: NextRequest,
@@ -42,7 +45,7 @@ export async function POST(
 
   const { data: listing } = await admin
     .from("listings")
-    .select("id, seller_id, category_id, status, title, contact_phone, renewed_count")
+    .select("id, seller_id, category_id, status, title, contact_phone, renewed_count, shop_id, listing_type")
     .eq("id", id)
     .maybeSingle();
   if (!listing) return NextResponse.json({ error: "listing_not_found" }, { status: 404 });
@@ -68,6 +71,39 @@ export async function POST(
     );
   }
 
+  // ── Who pays: a subscription, the free personal allowance, or a fee ───────
+  const shopId = (listing.shop_id as string | null) ?? null;
+  const [shop, quota] = await Promise.all([
+    shopId ? shopSummary(admin, shopId) : Promise.resolve(null),
+    quotaStatus(admin, user.id, shopId, listing.listing_type as ListingType, id),
+  ]);
+  const decision = decidePublication({ shopId, shop, quota });
+  if (decision.kind === "refused") return refusalResponse(decision);
+
+  if (decision.kind !== "legacy_fee") {
+    const reason = decision.kind === "subscription" ? "subscription" : "personal_free";
+    const { error } = await admin
+      .from("listings")
+      .update({
+        status: "pending_review",
+        rejection_reason: null,
+        fee_waived_reason: reason,
+        fee_payment_id: null,
+        seller_credit_id: null,
+        renewed_count: (listing.renewed_count as number) + 1,
+      })
+      .eq("id", id);
+    if (error) {
+      const refusal = publicationErrorFromDb(error);
+      return refusal ? refusalResponse(refusal) : fail("listing_renew_failed", 500, error);
+    }
+
+    const remaining = Math.max(quota.remaining - 1, 0);
+    logAction(req, user, `listing.renew.${reason}`, { id, shopId, remaining });
+    return NextResponse.json({ status: "pending_review", paidWith: reason, remaining });
+  }
+
+  // ── The per-annonce fee: only while `personal_limits.free` is off ─────────
   // ── A credit, if they hold one ────────────────────────────────────────────
   const { data: credited } = await admin.rpc("consume_listing_credit", {
     p_seller: user.id,

@@ -15,6 +15,14 @@ import {
   toProduct,
   type Product,
 } from "@/lib/products";
+import {
+  describePublishing,
+  listingTypeFor,
+  pickScope,
+  type ListingKind,
+  type PublishingNote,
+} from "@/lib/publication";
+import { memberShops, quotaStatus } from "@/lib/shops/server";
 
 export const dynamic = "force-dynamic";
 
@@ -99,30 +107,56 @@ export default async function NewListingPage() {
     toProduct(r as Parameters<typeof toProduct>[0]),
   );
 
+  // How publishing works for this person, per kind of annonce — under one of
+  // their shops or personally, free or not, and how much room is left. The
+  // same `pickScope` the draft route files the annonce with, so what the
+  // wizard says is what will happen.
+  const shops = await memberShops(admin, user!.id);
+  const kinds: ListingKind[] = ["vehicle", "part"];
+  const notes = await Promise.all(
+    kinds.map(async (kind) => {
+      const personal = await quotaStatus(admin, user!.id, null, listingTypeFor(kind));
+      const scope = pickScope(shops, kind);
+      const summary = "kind" in scope ? undefined : shops.find((s) => s.id === scope.shopId);
+      const shop = summary && !("kind" in scope)
+        ? { summary, quota: await quotaStatus(admin, user!.id, summary.id, scope.listingType) }
+        : null;
+      return { personal, note: describePublishing({ kind, personal, shop }) };
+    }),
+  );
+  const publishing = { vehicle: notes[0].note, part: notes[1].note } as Record<ListingKind, PublishingNote>;
+  // The per-annonce fee, packs and welcome allowance only exist while the
+  // free switch is off (D-P1); otherwise there is nothing to spend them on.
+  const legacyFee = notes[0].personal.free === false;
+
   // What each category costs, resolved here so the wizard never guesses. The
   // parent goes in too: a price set on « Pièces de rechange » covers all of its
   // sub-categories (0167), which is how parts are free.
   const parentOf = new Map(catRows.map((c) => [c.id, c.parent_id]));
   const feeByCategory: Record<string, number | null> = {};
   for (const c of categories) {
-    feeByCategory[c.id] =
-      resolveListingFee(products, c.id, parentOf.get(c.id) ?? null)?.price ?? null;
+    feeByCategory[c.id] = publishing[c.kind].free
+      ? 0
+      : resolveListingFee(products, c.id, parentOf.get(c.id) ?? null)?.price ?? null;
   }
 
   const now = Date.now();
-  const creditsLeft = (creditRes.data ?? []).reduce((n, c) => {
+  const creditsLeft = !legacyFee ? 0 : (creditRes.data ?? []).reduce((n, c) => {
     if (new Date(c.expires_at as string).getTime() <= now) return n;
     return n + Math.max(0, (c.quota_total as number) - (c.quota_used as number));
   }, 0);
 
   // Read-only: showing the offer must never be what consumes it. The claim
   // happens once, in /api/annonces/[id]/submit, under a lock.
-  const { data: freeStatus } = await admin.rpc("free_listing_status", {
-    p_seller_id: user!.id,
-  });
-  const freeLeft = (freeStatus as { enabled?: boolean; remaining?: number } | null)?.enabled
-    ? Number((freeStatus as { remaining?: number }).remaining) || 0
-    : 0;
+  let freeLeft = 0;
+  if (legacyFee) {
+    const { data: freeStatus } = await admin.rpc("free_listing_status", {
+      p_seller_id: user!.id,
+    });
+    freeLeft = (freeStatus as { enabled?: boolean; remaining?: number } | null)?.enabled
+      ? Number((freeStatus as { remaining?: number }).remaining) || 0
+      : 0;
+  }
 
   return (
     <PublishWizard
@@ -130,6 +164,7 @@ export default async function NewListingPage() {
       feeByCategory={feeByCategory}
       creditsLeft={creditsLeft}
       freeLeft={freeLeft}
+      publishing={publishing}
       defaultContactName={(profRes.data?.full_name as string | null) ?? ""}
       defaultContactPhone={(profRes.data?.phone as string | null) ?? ""}
       initialDraft={(draftRes.data as unknown as InitialDraft | null) ?? null}

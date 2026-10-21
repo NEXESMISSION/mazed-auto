@@ -48,7 +48,13 @@ async function seedListing(
     status,
     ...extra,
   };
-  if (status !== "draft") row.seller_attestation_version = "v1";
+  if (status !== "draft") {
+    row.seller_attestation_version = "v1";
+    // Fixtures stand for annonces published by hand, so the live-annonce quota
+    // (0189, tested in shops_quota.test.ts) does not cap how many this suite
+    // seeds for one seller.
+    row.fee_waived_by = sellerId;
+  }
   if (status === "published") {
     row.published_at = now.toISOString();
     row.expires_at = new Date(now.getTime() + 30 * 86_400_000).toISOString();

@@ -46,6 +46,7 @@ const STATUS: Record<string, { label: string; tone: string; hint?: string }> = {
   expired:         { label: "Expirée",      tone: "bg-surface-2 text-muted ring-1 ring-border", hint: "Renouvelez-la pour la remettre en ligne." },
   sold:            { label: "Vendue",       tone: "batta-tone-ok" },
   archived:        { label: "Retirée",      tone: "bg-surface-2 text-muted ring-1 ring-border" },
+  paused:          { label: "En pause",     tone: "batta-tone-warn", hint: "Retirée du catalogue, rien n'est perdu : elle revient quand votre boutique est en règle." },
 };
 
 /**
@@ -58,7 +59,7 @@ const TABS = [
   { key: "en-ligne",     label: "En ligne",   statuses: ["published"],                          tone: "text-emerald-400" },
   { key: "verification", label: "En cours",   statuses: ["pending_payment", "pending_review"],  tone: "text-amber-400" },
   { key: "a-corriger",   label: "À corriger", statuses: ["rejected", "draft"],                  tone: "text-[var(--danger)]" },
-  { key: "terminees",    label: "Terminées",  statuses: ["expired", "archived", "sold"],        tone: "text-muted" },
+  { key: "terminees",    label: "Terminées",  statuses: ["expired", "archived", "sold", "paused"], tone: "text-muted" },
 ] as const;
 
 const RENEWABLE = ["expired", "archived", "sold"];

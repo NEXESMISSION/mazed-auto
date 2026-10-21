@@ -11,9 +11,10 @@ import {
   CAR_MAKES, MOTO_MAKES, PART_BRANDS, FUELS, TRANSMISSIONS, CONDITIONS,
   modelsFor, modelYears,
 } from "@/lib/vehicles";
+import type { PublishingNote } from "@/lib/publication";
 import {
   Car, Wrench, Check, Tag, Camera, Wallet, Phone,
-  ClipboardList, Loader2, MapPin, Plus, Trash2, Gift, Ticket, ImageOff,
+  ClipboardList, Loader2, MapPin, Plus, Trash2, Gift, Ticket, ImageOff, TriangleAlert,
 } from "lucide-react";
 
 /**
@@ -121,6 +122,7 @@ export function PublishWizard({
   feeByCategory,
   creditsLeft,
   freeLeft,
+  publishing,
   defaultContactName,
   defaultContactPhone,
   initialDraft,
@@ -131,6 +133,8 @@ export function PublishWizard({
   creditsLeft: number;
   /** Publications remaining in this seller's welcome allowance. */
   freeLeft: number;
+  /** Per kind: free or not, refused as things stand, and the sentence to show. */
+  publishing: Record<"vehicle" | "part", PublishingNote>;
   defaultContactName: string;
   defaultContactPhone: string;
   initialDraft: InitialDraft | null;
@@ -205,6 +209,11 @@ export function PublishWizard({
   // costs nothing, then the welcome allowance. Mirrored here so the number the
   // seller is shown is the one they will actually be charged.
   const usingWelcome = !usingCredit && !free && fee != null && fee > 0 && freeLeft > 0;
+  // Free personal annonces (D-P1) and shop subscriptions say so in their own
+  // words, with the room left; a reached limit is a warning, not good news.
+  const plan = category ? publishing[category.kind] : null;
+  const note = plan?.note ?? null;
+  const blocked = plan?.blocked ?? false;
 
   const makeList = isMoto ? MOTO_MAKES : CAR_MAKES;
   const models = useMemo(
@@ -459,6 +468,8 @@ export function PublishWizard({
             <> Il vous reste {done.remaining} publication{done.remaining > 1 ? "s" : ""}.</>
           )}
           {done.paidWith === "free" && <> La publication était gratuite dans cette catégorie.</>}
+          {done.paidWith === "personal_free" && <> La publication est gratuite.</>}
+          {done.paidWith === "subscription" && <> Elle est incluse dans l&apos;abonnement de votre boutique.</>}
           {done.paidWith === "welcome" && (
             <> Cette publication vous a été offerte
               {typeof done.remaining === "number" && done.remaining > 0
@@ -633,17 +644,23 @@ export function PublishWizard({
 
             {/* The price of publishing, said once, instead of repeated on
                 every tile. */}
-            {category && fee != null && (
+            {category && (note || fee != null) && (
               <p
                 className={cn(
-                  "mt-2.5 inline-flex items-center gap-1.5 text-[12.5px] font-bold",
-                  free ? "text-[var(--success,#4ade80)]" : "text-muted",
+                  "mt-2.5 inline-flex items-start gap-1.5 text-[12.5px] font-bold",
+                  blocked
+                    ? "text-[var(--danger)]"
+                    : free ? "text-[var(--success,#4ade80)]" : "text-muted",
                 )}
               >
-                {free ? (
+                {blocked ? (
+                  <><TriangleAlert className="mt-0.5 size-3.5 shrink-0" /> {note}</>
+                ) : note ? (
+                  <><Gift className="mt-0.5 size-3.5 shrink-0" /> {note}</>
+                ) : free ? (
                   <><Gift className="size-3.5" /> Publication gratuite dans cette catégorie.</>
                 ) : (
-                  <>Publication : {formatTND(fee, locale)} TND</>
+                  <>Publication : {formatTND(fee ?? 0, locale)} TND</>
                 )}
               </p>
             )}
@@ -1000,12 +1017,19 @@ export function PublishWizard({
                         : `${formatTND(fee, locale)} TND`}
                 </span>
               </div>
-              <p className="mt-1.5 text-[11.5px] leading-snug text-muted">
-                {usingCredit
-                  ? "Aucun paiement : une publication est décomptée de votre forfait."
-                  : free
-                    ? "Gratuit dans cette catégorie : votre annonce part directement en vérification."
-                    : "Vous serez redirigé vers le paiement. L'annonce part en vérification dès la réception du reçu."}
+              <p
+                className={cn(
+                  "mt-1.5 text-[11.5px] leading-snug",
+                  blocked ? "font-bold text-[var(--danger)]" : "text-muted",
+                )}
+              >
+                {blocked
+                  ? note
+                  : usingCredit
+                    ? "Aucun paiement : une publication est décomptée de votre forfait."
+                    : free
+                      ? `${note ?? "Gratuit dans cette catégorie."} Votre annonce part directement en vérification.`
+                      : "Vous serez redirigé vers le paiement. L'annonce part en vérification dès la réception du reçu."}
               </p>
             </div>
           </div>
@@ -1121,8 +1145,10 @@ export function PublishWizard({
           )}
         </button>
         <p className="mt-2 text-center text-[11px] text-muted lg:mt-3">
-          {free
-            ? "Publication gratuite dans cette catégorie."
+          {blocked
+            ? "Limite atteinte : l'annonce sera enregistrée, mais pas mise en ligne."
+            : free
+            ? (note ?? "Publication gratuite dans cette catégorie.")
             : usingCredit
               ? `Utilise 1 de vos ${creditsLeft} publications.`
               : usingWelcome

@@ -68,6 +68,7 @@ const STATUS: Record<string, Entry> = {
   expired: { label: "Expirée", tone: "neutral" },
   archived: { label: "Archivée", tone: "neutral" },
   sold: { label: "Vendue", tone: "info" },
+  paused: { label: "En pause", tone: "warn" },
 
   // payment_status — `pending_review` is shared with listings above and means
   // the same thing to an admin: a human has to look at it.

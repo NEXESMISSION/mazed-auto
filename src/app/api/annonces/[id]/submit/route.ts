@@ -5,22 +5,35 @@ import { isSameOrigin } from "@/lib/sameOrigin";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { refuseIfSuspended } from "@/lib/http/suspended";
+import { refusalResponse } from "@/lib/http/refusal";
 import { PRODUCT_SELECT, resolveListingFee, toProduct } from "@/lib/products";
+import { decidePublication, publicationErrorFromDb, type ListingType } from "@/lib/publication";
+import { quotaStatus, shopSummary } from "@/lib/shops/server";
 
 /**
  * POST /api/annonces/[id]/submit — send a draft listing for publication.
  *
  * This is the one place that decides how a publication is paid for, and it
- * decides server-side because the client must never get a vote on price:
+ * decides server-side because the client must never get a vote on price.
+ * `decidePublication` (src/lib/publication.ts) picks one of:
  *
- *   0. The category costs nothing              → straight to verification
- *   0b. The seller has a welcome allowance left → straight to verification
- *   1. The seller holds a pack with quota left  → spend one credit, straight to
- *      the moderation queue, no payment step.
- *   2. Otherwise                                → create a `listing_fee` payment
- *      for THIS category's price and hand back the id, so the browser can go to
- *      /payment/checkout and upload a receipt. The listing waits in
- *      `pending_payment` until an admin captures it.
+ *   • a shop annonce, under a current subscription and within its plan's
+ *     limit                                     → straight to verification
+ *   • a personal annonce within the free limit (1 vehicle, 5 parts live —
+ *     D-P1)                                      → straight to verification
+ *   • refused: limit reached, no subscription, shop not active — with a
+ *     sentence for the seller
+ *   • only while `personal_limits.free` is switched off, the per-annonce fee,
+ *     in the order it has always had:
+ *       0. the category costs nothing           → straight to verification
+ *       0b. a welcome allowance left            → straight to verification
+ *       1. a pack with quota left               → spend one credit
+ *       2. otherwise                            → a `listing_fee` payment for
+ *          THIS category's price; the listing waits in `pending_payment`
+ *          until an admin captures the receipt.
+ *
+ * The limit itself is enforced by the database (`_listings_quota`, 0189); the
+ * check here only answers before it does.
  *
  * Returns { status: "pending_review" } or { status: "pending_payment", paymentId }.
  *
@@ -49,7 +62,7 @@ export async function POST(
 
   const { data: listing } = await admin
     .from("listings")
-    .select("id, seller_id, category_id, status, title, contact_phone, seller_attestation_version")
+    .select("id, seller_id, category_id, status, title, contact_phone, seller_attestation_version, shop_id, listing_type, fee_payment_id")
     .eq("id", id)
     .maybeSingle();
   if (!listing) return NextResponse.json({ error: "listing_not_found" }, { status: 404 });
@@ -93,6 +106,87 @@ export async function POST(
     );
   }
 
+  // ── Who pays: a subscription, the free personal allowance, or a fee ───────
+  const shopId = (listing.shop_id as string | null) ?? null;
+  const [shop, quota] = await Promise.all([
+    shopId ? shopSummary(admin, shopId) : Promise.resolve(null),
+    quotaStatus(admin, user.id, shopId, listing.listing_type as ListingType, id),
+  ]);
+  const decision = decidePublication({ shopId, shop, quota });
+  if (decision.kind === "refused") return refusalResponse(decision);
+
+  if (decision.kind !== "legacy_fee") {
+    const reason = decision.kind === "subscription" ? "subscription" : "personal_free";
+
+    // A listing that was waiting on a fee no longer owes it. A payment still
+    // `pending` (no receipt yet) is cancelled, compare-and-set like the
+    // seller's own cancel button, so a receipt can never be captured later
+    // for an annonce that went out free. One already under review means money
+    // may have moved: that one is left to an admin.
+    if (listing.status === "pending_payment" && listing.fee_payment_id) {
+      const { data: open } = await admin
+        .from("payments")
+        .select("id, status")
+        .eq("id", listing.fee_payment_id as string)
+        .maybeSingle();
+      if (open?.status === "pending_review") {
+        return NextResponse.json(
+          {
+            error: "payment_under_review",
+            detail: "Votre reçu est en cours de vérification : l'annonce partira en vérification dès sa validation.",
+          },
+          { status: 409 },
+        );
+      }
+      if (open?.status === "pending") {
+        await admin
+          .from("payments")
+          .update({
+            status: "failed",
+            admin_notes: reason === "subscription"
+              ? "Annulé : publication couverte par l'abonnement de la boutique"
+              : "Annulé : publication gratuite pour un particulier",
+            reviewed_at: new Date().toISOString(),
+          })
+          .eq("id", open.id as string)
+          .eq("status", "pending");
+      }
+    }
+
+    const { error } = await admin
+      .from("listings")
+      .update({
+        status: "pending_review",
+        rejection_reason: null,
+        fee_waived_reason: reason,
+        // Unlink only the fee that was never paid; a captured one (an annonce
+        // paid for, rejected, now resubmitted) stays on the record.
+        ...(listing.status === "pending_payment" ? { fee_payment_id: null } : {}),
+      })
+      .eq("id", id);
+    if (error) {
+      const refusal = publicationErrorFromDb(error);
+      return refusal ? refusalResponse(refusal) : fail("listing_submit_failed", 500, error);
+    }
+
+    await admin
+      .rpc("enqueue_notification", {
+        p_user_id: user.id,
+        p_kind: "listing_submitted",
+        p_title: "Annonce envoyée à la vérification",
+        p_body: reason === "subscription"
+          ? `« ${listing.title} » est en cours de vérification. Elle est incluse dans l'abonnement de ${shop?.name ?? "votre boutique"}.`
+          : `« ${listing.title} » est en cours de vérification. La publication est gratuite.`,
+        p_link: "/account/listings",
+      })
+      .then(() => {}, () => {});
+
+    const remaining = Math.max(quota.remaining - 1, 0);
+    logAction(req, user, `listing.submit.${reason}`, { id, shopId, remaining });
+    return NextResponse.json({ status: "pending_review", paidWith: reason, remaining });
+  }
+
+  // ── The per-annonce fee: only while `personal_limits.free` is off ─────────
   // ── 1. A pack credit, if they have one ────────────────────────────────────
   const { data: credited } = await admin.rpc("consume_listing_credit", {
     p_seller: user.id,

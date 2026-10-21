@@ -5,6 +5,9 @@ import { isSameOrigin } from "@/lib/sameOrigin";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { refuseIfSuspended } from "@/lib/http/suspended";
+import { pickScope, publicationErrorFromDb, type ListingKind } from "@/lib/publication";
+import { refusalResponse } from "@/lib/http/refusal";
+import { memberShops } from "@/lib/shops/server";
 
 /**
  * POST /api/annonces — create or update the seller's draft listing.
@@ -13,11 +16,14 @@ import { refuseIfSuspended } from "@/lib/http/suspended";
  * photo stage doesn't lose the details typed two screens earlier. Pass `id` to
  * update the draft that was already created.
  *
- * The server owns three things the client cannot be trusted with:
+ * The server owns four things the client cannot be trusted with:
  *   • seller_id — always the caller, never the body
  *   • status    — a draft is a draft; publication goes through /submit and
  *                 moderation (0154's guard refuses anything else anyway)
  *   • the attestation timestamp — server clock, on the version string only
+ *   • the scope — personal, or one of the caller's shops. `pickScope` decides
+ *     from the memberships read here; the body may only ask (`as`, `shop_id`,
+ *     `listing_type`), and the database checks the answer again (0187).
  */
 
 type Body = {
@@ -40,6 +46,9 @@ type Body = {
   attestation_version?: unknown;
   photos?: unknown;    // [{ storage_path, sort_order }]
   fitments?: unknown;  // [{ make, model, year_from, year_to, engine }]
+  as?: unknown;            // "personal" to publish personally despite a shop
+  shop_id?: unknown;       // one of the caller's shops
+  listing_type?: unknown;  // "location_auto" for a rental
 };
 
 const MAX_PHOTOS = 12;
@@ -96,10 +105,11 @@ export async function POST(req: NextRequest) {
 
   // The category must exist and be a leaf — a listing filed under "Véhicules"
   // instead of "Voitures" is invisible to every filter.
+  let categoryKind: ListingKind | null = null;
   if (categoryId) {
     const { data: cat } = await admin
       .from("categories")
-      .select("id, parent_id, is_active")
+      .select("id, parent_id, is_active, kind")
       .eq("id", categoryId)
       .maybeSingle();
     if (!cat || !cat.is_active) {
@@ -111,6 +121,7 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
+    categoryKind = cat.kind === "part" ? "part" : "vehicle";
   }
 
   const priceOnRequest = body.price_on_request === true;
@@ -150,12 +161,18 @@ export async function POST(req: NextRequest) {
     fields.seller_attestation_version = text(body.attestation_version, 20);
   }
 
+  // Personal or shop. Decided on creation, and again on an edit that asks for
+  // it — a category change alone keeps the scope (the database re-derives the
+  // type and refuses a part under a car shop).
+  const scopeAsked = "as" in body || "shop_id" in body || "listing_type" in body;
+  const requestedScope = { as: body.as, shopId: body.shop_id, listingType: body.listing_type };
+
   let listingId = id;
 
   if (listingId) {
     const { data: owned } = await admin
       .from("listings")
-      .select("id, seller_id, status")
+      .select("id, seller_id, status, category_id")
       .eq("id", listingId)
       .maybeSingle();
     if (!owned || owned.seller_id !== user.id) {
@@ -169,19 +186,53 @@ export async function POST(req: NextRequest) {
         { status: 409 },
       );
     }
+    if (scopeAsked) {
+      let kind = categoryKind;
+      if (!kind) {
+        const { data: current } = await admin
+          .from("categories")
+          .select("kind")
+          .eq("id", owned.category_id as string)
+          .maybeSingle();
+        kind = current?.kind === "part" ? "part" : "vehicle";
+      }
+      const scope = pickScope(await memberShops(admin, user.id), kind, requestedScope);
+      if ("kind" in scope) return refusalResponse(scope);
+      fields.shop_id = scope.shopId;
+      fields.listing_type = scope.listingType;
+    }
     if (Object.keys(fields).length > 0) {
       const { error } = await admin.from("listings").update(fields).eq("id", listingId);
-      if (error) return fail("listing_update_failed", 500, error);
+      if (error) {
+        const refusal = publicationErrorFromDb(error);
+        return refusal ? refusalResponse(refusal) : fail("listing_update_failed", 500, error);
+      }
     }
   } else {
+    const scope = pickScope(
+      await memberShops(admin, user.id),
+      categoryKind ?? "vehicle",
+      requestedScope,
+    );
+    if ("kind" in scope) return refusalResponse(scope);
+
     const { data: created, error } = await admin
       .from("listings")
-      .insert({ ...fields, seller_id: user.id, status: "draft" })
+      .insert({
+        ...fields,
+        shop_id: scope.shopId,
+        listing_type: scope.listingType,
+        seller_id: user.id,
+        status: "draft",
+      })
       .select("id")
       .single();
-    if (error || !created) return fail("listing_create_failed", 500, error);
+    if (error || !created) {
+      const refusal = publicationErrorFromDb(error);
+      return refusal ? refusalResponse(refusal) : fail("listing_create_failed", 500, error);
+    }
     listingId = created.id as string;
-    logAction(req, user, "listing.create", { id: listingId });
+    logAction(req, user, "listing.create", { id: listingId, shopId: scope.shopId });
   }
 
   // ── Photos: the wizard uploads to storage first, then sends the paths ─────

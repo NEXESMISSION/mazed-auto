@@ -347,8 +347,9 @@ async function loadPanel(admin: Admin, id: string): Promise<PanelListing | null>
        created_at, published_at, expires_at, featured_rank, featured_until,
        view_count, contact_reveal_count, renewed_count,
        seller_attestation_version, seller_attestation_at,
-       seller_credit_id, fee_payment_id, fee_waived_by,
+       seller_credit_id, fee_payment_id, fee_waived_by, fee_waived_reason,
        seller:profiles!listings_seller_id_fkey (full_name, phone),
+       shop:shops (name),
        category:categories (label_fr, kind),
        photos:listing_photos (storage_path, sort_order, is_cover)`,
     )
@@ -368,7 +369,9 @@ async function loadPanel(admin: Admin, id: string): Promise<PanelListing | null>
     view_count: number; contact_reveal_count: number; renewed_count: number;
     seller_attestation_version: string | null; seller_attestation_at: string | null;
     seller_credit_id: string | null; fee_payment_id: string | null; fee_waived_by: string | null;
+    fee_waived_reason: string | null;
     seller: { full_name: string | null; phone: string | null } | null;
+    shop: { name: string } | null;
     category: { label_fr: string; kind: string } | null;
     photos: { storage_path: string; sort_order: number; is_cover: boolean }[] | null;
   };
@@ -414,13 +417,20 @@ async function loadPanel(admin: Admin, id: string): Promise<PanelListing | null>
     | { amount: number; status: string; kind: string; receipt_uploaded_at: string | null }
     | null;
 
+  // Most specific first. An annonce covered by its shop's subscription, or
+  // published free by a private seller (D-P1), owes nothing — it must not sit
+  // in the queue looking like an unsettled fee.
   const paidWith: PanelListing["paidWith"] = r.fee_waived_by
     ? "waived"
     : r.seller_credit_id
       ? "credit"
       : r.fee_payment_id
         ? "payment"
-        : "none";
+        : r.fee_waived_reason === "subscription"
+          ? "subscription"
+          : r.fee_waived_reason === "personal_free" || r.fee_waived_reason === "welcome"
+            ? "free"
+            : "none";
 
   const photos = [...(r.photos ?? [])]
     .sort((a, b) => a.sort_order - b.sort_order)
@@ -443,6 +453,7 @@ async function loadPanel(admin: Admin, id: string): Promise<PanelListing | null>
     categoryKind: r.category?.kind ?? "vehicle",
     sellerName: r.seller?.full_name ?? "Sans nom",
     sellerPhone: r.seller?.phone ?? null,
+    shopName: r.shop?.name ?? null,
     contactName: r.contact_name,
     contactPhone: r.contact_phone,
     showPhone: r.show_phone,
