@@ -416,11 +416,11 @@ export default function HelpPage() {
             contact@mazedauto.com
           </a>
           <a
-            href="tel:+21670000000"
+            href="tel:+21698120622"
             className="inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-4 py-2 text-[12px] font-bold text-foreground ring-1 ring-border transition hover:ring-gold-soft/60"
           >
             <Phone className="size-4 text-gold" strokeWidth={2} />
-            +216 70 000 000
+            +216 98 120 622
           </a>
         </div>
       </section>

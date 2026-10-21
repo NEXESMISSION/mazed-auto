@@ -11,7 +11,7 @@ export const dynamic = "force-static";
 
 const ITEMS = [
   { Icon: Mail, label: "E-mail", value: "contact@mazedauto.com", href: "mailto:contact@mazedauto.com" },
-  { Icon: Phone, label: "Téléphone", value: "+216 70 000 000", href: "tel:+21670000000" },
+  { Icon: Phone, label: "Téléphone", value: "+216 98 120 622", href: "tel:+21698120622" },
   { Icon: MapPin, label: "Adresse", value: "Sfax, Tunisie", href: null },
   { Icon: Clock, label: "Horaires", value: "Lun – Ven, 9h – 17h", href: null },
 ];
