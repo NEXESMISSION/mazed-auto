@@ -4,10 +4,13 @@ import { useState } from "react";
 import { Link } from "@/i18n/navigation";
 import { AdminButton } from "@/components/admin/AdminButton";
 import { TextField, FieldGrid, useAdminAction, EYEBROW } from "@/components/admin/kit";
-import { Save, ArrowRight, Gift } from "lucide-react";
+import { Save, ArrowRight, Gift, Store } from "lucide-react";
 
 /** The welcome allowance: the first `count` paid publications are offered. */
 export type FreeListings = { enabled: boolean; count: number };
+
+/** What a private seller may have live at once, and whether it is free (D-P1, 0189). */
+export type PersonalLimits = { vehicles: number; parts: number; free: boolean };
 
 export type PayeeSettings = {
   payee_name: string;
@@ -31,14 +34,27 @@ export type PayeeSettings = {
 export function SettingsForm({
   initial,
   initialFree,
+  initialPersonal,
+  initialProShops,
 }: {
   initial: PayeeSettings;
   initialFree: FreeListings;
+  initialPersonal: PersonalLimits;
+  initialProShops: boolean;
 }) {
   const { run, pending, done } = useAdminAction();
   const [form, setForm] = useState<PayeeSettings>(initial);
   const [free, setFree] = useState<FreeListings>(initialFree);
   const freeAction = useAdminAction();
+  const [personal, setPersonal] = useState<PersonalLimits>(initialPersonal);
+  const personalAction = useAdminAction();
+  const [proShops, setProShops] = useState(initialProShops);
+  const shopsAction = useAdminAction();
+  const personalDirty =
+    personal.vehicles !== initialPersonal.vehicles
+    || personal.parts !== initialPersonal.parts
+    || personal.free !== initialPersonal.free;
+  const whole = (v: string) => Math.max(0, Math.trunc(Number(v) || 0));
 
   const set = (k: keyof PayeeSettings) => (v: string) =>
     setForm((prev) => ({ ...prev, [k]: v }));
@@ -174,6 +190,128 @@ export function SettingsForm({
                 method: "POST",
                 body: { free_listings: free },
                 success: "Allocation enregistrée.",
+              })
+            }
+          >
+            Enregistrer
+          </AdminButton>
+        </div>
+      </section>
+
+      <section className="mt-8 border-t border-border pt-5">
+        <h2 className={EYEBROW}>Annonces des particuliers</h2>
+        <p className="mt-1.5 max-w-xl text-[12.5px] text-subtle">
+          Combien d&apos;annonces un particulier peut avoir en ligne à la fois (en vérification ou
+          publiées). La base de données applique ces nombres à chaque publication ; ce qui est
+          déjà en ligne n&apos;est jamais retiré.
+        </p>
+
+        <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-4">
+          <label className="inline-flex items-center gap-2.5">
+            <span className="text-[12.5px] text-subtle">Véhicules</span>
+            <input
+              type="number"
+              min={0}
+              max={20}
+              value={personal.vehicles}
+              onChange={(e) => setPersonal((p) => ({ ...p, vehicles: whole(e.target.value) }))}
+              className="w-20 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-[13px] tabular-nums text-foreground focus:border-[var(--gold)] focus:outline-none"
+            />
+          </label>
+          <label className="inline-flex items-center gap-2.5">
+            <span className="text-[12.5px] text-subtle">Pièces</span>
+            <input
+              type="number"
+              min={0}
+              max={100}
+              value={personal.parts}
+              onChange={(e) => setPersonal((p) => ({ ...p, parts: whole(e.target.value) }))}
+              className="w-20 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-[13px] tabular-nums text-foreground focus:border-[var(--gold)] focus:outline-none"
+            />
+          </label>
+          <label className="inline-flex cursor-pointer items-center gap-2.5">
+            <input
+              type="checkbox"
+              checked={personal.free}
+              onChange={(e) => setPersonal((p) => ({ ...p, free: e.target.checked }))}
+              className="size-4 accent-[var(--gold)]"
+            />
+            <span className="text-[13px] font-medium text-foreground">Gratuites</span>
+          </label>
+        </div>
+
+        <p className="mt-3 text-[12px] text-subtle">
+          {personal.free
+            ? `Un particulier publie gratuitement jusqu'à ${personal.vehicles} véhicule${personal.vehicles > 1 ? "s" : ""} et ${personal.parts} pièce${personal.parts > 1 ? "s" : ""} à la fois.`
+            : "Payantes : chaque annonce au prix fixé dans Offres & prix — réactivez-y « annonce-standard » et « renouvellement », désactivés tant que la publication est gratuite. Les limites s'appliquent toujours."}
+        </p>
+
+        <div className="mt-4 flex items-center gap-3">
+          <AdminButton
+            variant="primary"
+            size="md"
+            pending={personalAction.pending}
+            done={personalAction.done}
+            doneLabel="Enregistré"
+            disabled={!personalDirty}
+            disabledReason="Rien n'a changé."
+            icon={<Save className="size-3.5" strokeWidth={2.4} />}
+            onClick={() =>
+              personalAction.run({
+                url: "/api/admin/settings",
+                method: "POST",
+                body: { personal_limits: personal },
+                success: "Limites enregistrées.",
+              })
+            }
+          >
+            Enregistrer
+          </AdminButton>
+        </div>
+      </section>
+
+      <section className="mt-8 border-t border-border pt-5">
+        <h2 className={EYEBROW}>Boutiques professionnelles</h2>
+        <p className="mt-1.5 max-w-xl text-[12.5px] text-subtle">
+          L&apos;annuaire, les pages de chaque boutique et le lien « Publiée par la boutique » sur
+          les annonces. Désactivées, seuls les administrateurs les voient — un visiteur obtient une
+          page introuvable.
+        </p>
+
+        <label className="mt-4 inline-flex cursor-pointer items-center gap-2.5">
+          <input
+            type="checkbox"
+            checked={proShops}
+            onChange={(e) => setProShops(e.target.checked)}
+            className="size-4 accent-[var(--gold)]"
+          />
+          <span className="text-[13px] font-medium text-foreground">Ouvrir les pages boutiques au public</span>
+        </label>
+
+        <p className="mt-3 inline-flex items-center gap-1.5 text-[12px] text-subtle">
+          <Store className="size-3.5 shrink-0" />
+          {proShops ? "Publiques : tout le monde voit /boutiques." : "Aperçu : visibles par les administrateurs seulement."}
+          <Link href={"/boutiques" as never} className="font-medium text-[var(--gold)] hover:underline">
+            Voir /boutiques
+          </Link>
+        </p>
+
+        <div className="mt-4 flex items-center gap-3">
+          <AdminButton
+            variant="primary"
+            size="md"
+            pending={shopsAction.pending}
+            done={shopsAction.done}
+            doneLabel="Enregistré"
+            disabled={proShops === initialProShops}
+            disabledReason="Rien n'a changé."
+            icon={<Save className="size-3.5" strokeWidth={2.4} />}
+            onClick={() =>
+              shopsAction.run({
+                url: "/api/admin/settings",
+                method: "POST",
+                body: { pro_shops: { enabled: proShops } },
+                success: proShops ? "Boutiques ouvertes au public." : "Boutiques en aperçu.",
               })
             }
           >

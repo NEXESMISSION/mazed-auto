@@ -34,6 +34,10 @@ const MAX = 120;
  */
 const MAX_FREE = 50;
 
+/** Ceilings for the personal limits — beyond these a seller is a shop. */
+const MAX_PERSONAL_VEHICLES = 20;
+const MAX_PERSONAL_PARTS = 100;
+
 export async function POST(req: NextRequest) {
   const gate = await requireAdmin(req);
   if (gate instanceof NextResponse) return gate;
@@ -63,6 +67,27 @@ export async function POST(req: NextRequest) {
       value: { enabled: raw.enabled === true && count > 0, count },
       updated_by: user.id,
     });
+  }
+
+  // Personal limits (D-P1, 0189): how many annonces a private seller may have
+  // live, and whether they are free. The database enforces the numbers on
+  // every publication, so a change here takes effect at once and only for
+  // what is published next — nothing live is pulled down.
+  if (body.personal_limits && typeof body.personal_limits === "object") {
+    const raw = body.personal_limits as { vehicles?: unknown; parts?: unknown; free?: unknown };
+    const clamp = (v: unknown, max: number) => Math.min(Math.max(Math.trunc(Number(v) || 0), 0), max);
+    rows.push({
+      key: "personal_limits",
+      value: { vehicles: clamp(raw.vehicles, MAX_PERSONAL_VEHICLES), parts: clamp(raw.parts, MAX_PERSONAL_PARTS), free: raw.free !== false },
+      updated_by: user.id,
+    });
+  }
+
+  // The public switch for shop pages (directory, storefronts, shop links on
+  // annonces). Off, they are visible to admins only.
+  if (body.pro_shops && typeof body.pro_shops === "object") {
+    const raw = body.pro_shops as { enabled?: unknown };
+    rows.push({ key: "pro_shops", value: { enabled: raw.enabled === true }, updated_by: user.id });
   }
 
   if (rows.length === 0) {

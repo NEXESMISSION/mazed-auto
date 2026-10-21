@@ -1,7 +1,12 @@
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { AdminPage, EYEBROW } from "@/components/admin/kit";
 import { SiteTabs } from "@/components/admin/kit/SiteTabs";
-import { SettingsForm, type PayeeSettings, type FreeListings } from "./SettingsForm";
+import {
+  SettingsForm,
+  type PayeeSettings,
+  type FreeListings,
+  type PersonalLimits,
+} from "./SettingsForm";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -32,16 +37,32 @@ export default async function AdminSettingsPage() {
   // a missing row has to fall back to — reading "enabled" off undefined would
   // otherwise render the toggle as on.
   let freeListings: FreeListings = { enabled: false, count: 3 };
+  // The shapes 0189 seeds, for the same reason.
+  let personal: PersonalLimits = { vehicles: 1, parts: 5, free: true };
+  let proShops = false;
 
   if (admin) {
     const { data } = await admin
       .from("app_settings")
       .select("key, value")
-      .in("key", [...KEYS, "free_listings"]);
+      .in("key", [...KEYS, "free_listings", "personal_limits", "pro_shops"]);
     for (const row of data ?? []) {
       if (row.key === "free_listings") {
         const v = (row.value ?? {}) as { enabled?: boolean; count?: number };
         freeListings = { enabled: v.enabled === true, count: Number(v.count) || 0 };
+        continue;
+      }
+      if (row.key === "personal_limits") {
+        const v = (row.value ?? {}) as { vehicles?: number; parts?: number; free?: boolean };
+        personal = {
+          vehicles: Number.isFinite(v.vehicles) ? Number(v.vehicles) : 1,
+          parts: Number.isFinite(v.parts) ? Number(v.parts) : 5,
+          free: v.free !== false,
+        };
+        continue;
+      }
+      if (row.key === "pro_shops") {
+        proShops = (row.value as { enabled?: boolean } | null)?.enabled === true;
         continue;
       }
       const key = row.key as (typeof KEYS)[number];
@@ -63,7 +84,12 @@ export default async function AdminSettingsPage() {
           vivent dans Offres &amp; prix, et nulle part ailleurs.
         </p>
       </header>
-      <SettingsForm initial={settings} initialFree={freeListings} />
+      <SettingsForm
+        initial={settings}
+        initialFree={freeListings}
+        initialPersonal={personal}
+        initialProShops={proShops}
+      />
     </AdminPage>
   );
 }

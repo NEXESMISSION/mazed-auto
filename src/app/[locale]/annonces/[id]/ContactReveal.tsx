@@ -14,21 +14,28 @@ import { Phone, MessageCircle, Loader2 } from "lucide-react";
  * in them; to collect numbers it has to make a thousand deliberate requests
  * from one address, which is exactly the pattern the log catches.
  */
-export function ContactReveal({ listingId }: { listingId: string }) {
+export function ContactReveal({
+  listingId,
+  endpoint,
+}: {
+  listingId?: string;
+  /** Where to ask. Defaults to the annonce's route; a shop passes its own. */
+  endpoint?: string;
+}) {
   const { toast } = useToast();
   const [busy, setBusy] = useState(false);
-  const [contact, setContact] = useState<{ phone: string; whatsapp: string | null } | null>(null);
+  const [contact, setContact] = useState<{ phone: string | null; whatsapp: string | null } | null>(null);
 
   async function reveal() {
     setBusy(true);
     try {
-      const res = await fetch(`/api/annonces/${listingId}/contact`, { method: "POST" });
+      const res = await fetch(endpoint ?? `/api/annonces/${listingId}/contact`, { method: "POST" });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) {
         toast(j.detail ?? "Numéro indisponible.", res.status === 429 ? "warning" : "error");
         return;
       }
-      setContact({ phone: j.phone, whatsapp: j.whatsapp ?? null });
+      setContact({ phone: j.phone ?? null, whatsapp: j.whatsapp ?? null });
     } catch {
       toast("Erreur réseau.", "error");
     } finally {
@@ -37,16 +44,18 @@ export function ContactReveal({ listingId }: { listingId: string }) {
   }
 
   if (contact) {
-    const wa = (contact.whatsapp ?? contact.phone).replace(/\D/g, "");
+    const wa = (contact.whatsapp ?? contact.phone ?? "").replace(/\D/g, "");
     return (
       <div className="space-y-2">
-        <a
-          href={`tel:${contact.phone}`}
-          className="batta-btn-luxe tap-target flex w-full items-center justify-center gap-2 px-5 py-3.5 text-[15px]"
-        >
-          <Phone className="size-4" strokeWidth={2.5} />
-          <span className="batta-tabular">{contact.phone}</span>
-        </a>
+        {contact.phone && (
+          <a
+            href={`tel:${contact.phone}`}
+            className="batta-btn-luxe tap-target flex w-full items-center justify-center gap-2 px-5 py-3.5 text-[15px]"
+          >
+            <Phone className="size-4" strokeWidth={2.5} />
+            <span className="batta-tabular">{contact.phone}</span>
+          </a>
+        )}
         <a
           href={`https://wa.me/${wa}`}
           target="_blank"

@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createHash } from "node:crypto";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
-import { clientIp } from "@/lib/clientIp";
+import { overRevealLimit, revealIpHash, REVEAL_LIMITED_DETAIL } from "@/lib/http/revealLimit";
 import { fail } from "@/lib/http/errors";
 import { log } from "@/lib/log";
 
@@ -21,17 +20,9 @@ import { log } from "@/lib/log";
  *   • it is rate-limited per IP, so the whole catalog cannot be walked.
  *
  * Only PUBLISHED listings reveal, and only when the seller left show_phone on.
- * The IP is hashed, never stored raw.
+ * The IP is hashed, never stored raw. The throttle is shared with shop
+ * numbers (src/lib/http/revealLimit.ts).
  */
-
-const MAX_REVEALS_PER_IP_PER_HOUR = 40;
-
-function hashIp(ip: string): string {
-  // Salted with a server secret so the table cannot be reversed into a list of
-  // IP addresses by anyone who gets a copy of it.
-  const salt = process.env.CRON_SECRET ?? process.env.SUPABASE_SERVICE_ROLE_KEY ?? "mazed";
-  return createHash("sha256").update(`${salt}:${ip}`).digest("hex").slice(0, 32);
-}
 
 export async function POST(
   req: NextRequest,
@@ -45,23 +36,14 @@ export async function POST(
   const admin = getServiceSupabase();
   if (!admin) return fail("server_misconfigured", 500);
 
-  const ip = clientIp(req) || "unknown";
-  const ipHash = hashIp(ip);
+  const ipHash = revealIpHash(req);
 
   // Per-IP throttle. A buyer looks at a handful of listings in an evening; a
   // harvester looks at hundreds. check_rate_limit records the hit and returns
   // true once over the cap.
-  const { data: over } = await admin.rpc("check_rate_limit", {
-    p_key: `reveal:${ipHash}`,
-    p_max: MAX_REVEALS_PER_IP_PER_HOUR,
-    p_window_secs: 3600,
-  });
-  if (over === true) {
+  if (await overRevealLimit(admin, ipHash)) {
     return NextResponse.json(
-      {
-        error: "rate_limited",
-        detail: "Trop de numéros consultés depuis cet appareil. Réessayez plus tard.",
-      },
+      { error: "rate_limited", detail: REVEAL_LIMITED_DETAIL },
       { status: 429 },
     );
   }

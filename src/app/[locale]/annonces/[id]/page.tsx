@@ -13,6 +13,7 @@ import { FavoriteButton } from "@/components/property/FavoriteButton";
 import { RelatedListings } from "@/components/listing/RelatedListings";
 import { ViewTracker } from "@/components/listing/ViewTracker";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { shopsGate } from "@/lib/shops/public";
 import {
   DiagnosticSheet,
   DiagnosticBadge,
@@ -41,15 +42,20 @@ type Row = {
   status: string; published_at: string | null; expires_at: string | null;
   reference: string | null;
   seller_id: string;
+  shop_id: string | null;
+  shop: ShopRef | ShopRef[] | null;
   category: { id: string; label_fr: string; kind: string } | { id: string; label_fr: string; kind: string }[] | null;
   photos: { storage_path: string; sort_order: number }[] | null;
   fitments: { make: string; model: string | null; year_from: number | null; year_to: number | null }[] | null;
 };
 
+type ShopRef = { slug: string; name: string; status: string; verification_status: string };
+
 const SELECT = `
   id, title, description, price, price_on_request, negotiable, condition,
   governorate, delegation, attributes, contact_name, show_phone, status,
-  published_at, expires_at, seller_id, reference,
+  published_at, expires_at, seller_id, reference, shop_id,
+  shop:shops (slug, name, status, verification_status),
   category:categories (id, label_fr, kind),
   photos:listing_photos (storage_path, sort_order),
   fitments:listing_fitments (make, model, year_from, year_to)
@@ -220,6 +226,12 @@ export default async function AnnoncePage({
     </div>
   );
 
+  // The shop behind this annonce, linked only while shop pages are public (or
+  // to an admin previewing them) and only while the shop is active.
+  const shopRef = one(l.shop);
+  const shopLink =
+    shopRef && shopRef.status === "active" && admin && (await shopsGate(admin)).visible ? shopRef : null;
+
   const sellerCard = (
     <section className="rounded-2xl border border-border bg-surface p-4">
       <div className="flex items-center gap-3">
@@ -261,6 +273,26 @@ export default async function AnnoncePage({
 
         <FavoriteButton listingId={l.id} initialSaved={saved} loggedIn={user !== null} />
       </div>
+
+      {shopLink && (
+        <Link
+          href={`/boutiques/${shopLink.slug}` as never}
+          className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-surface-2 px-3 py-2.5 ring-1 ring-border transition hover:ring-gold-soft"
+        >
+          <span className="min-w-0">
+            <span className="block text-[10px] font-extrabold uppercase tracking-[0.14em] text-muted">
+              Publiée par la boutique
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="truncate text-[13.5px] font-bold text-foreground">{shopLink.name}</span>
+              {shopLink.verification_status === "verified" && (
+                <BadgeCheck className="size-4 shrink-0 text-gold" aria-label="Boutique vérifiée" />
+              )}
+            </span>
+          </span>
+          <span className="shrink-0 text-[12px] font-bold text-gold">Voir la boutique</span>
+        </Link>
+      )}
 
       <div className="mt-4">
         <ContactReveal listingId={l.id} />

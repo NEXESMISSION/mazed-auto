@@ -60,7 +60,28 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // contributed nothing but a round trip — and any URL it had emitted would
     // now 404, since the route was deleted with the product.
 
-    return [...staticRoutes, ...annonceRoutes];
+    // Shop pages, once they are public (`pro_shops`, 0189). Before that they
+    // 404 for a crawler, so listing them would only teach it dead URLs.
+    const { data: flag } = await sb.from("app_settings").select("value").eq("key", "pro_shops").maybeSingle();
+    let shopRoutes: MetadataRoute.Sitemap = [];
+    if ((flag?.value as { enabled?: boolean } | null)?.enabled === true) {
+      const { data: shops } = await sb
+        .from("shops")
+        .select("slug, updated_at")
+        .eq("status", "active")
+        .limit(2000);
+      shopRoutes = [
+        { url: `${base}/fr/boutiques`, changeFrequency: "daily" as const, priority: 0.7 },
+        ...(shops ?? []).map((s) => ({
+          url: `${base}/fr/boutiques/${s.slug as string}`,
+          lastModified: (s.updated_at as string | null) ?? undefined,
+          changeFrequency: "daily" as const,
+          priority: 0.7,
+        })),
+      ];
+    }
+
+    return [...staticRoutes, ...annonceRoutes, ...shopRoutes];
   } catch {
     // Never let a DB hiccup 500 the sitemap — degrade to static routes.
     return staticRoutes;
