@@ -409,11 +409,11 @@ export default function HelpPage() {
             Contactez-nous
           </Link>
           <a
-            href="mailto:contact@mazed.tn"
+            href="mailto:contact@mazedauto.com"
             className="inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-4 py-2 text-[12px] font-bold text-foreground ring-1 ring-border transition hover:ring-gold-soft/60"
           >
             <Mail className="size-4 text-gold" strokeWidth={2} />
-            contact@mazed.tn
+            contact@mazedauto.com
           </a>
           <a
             href="tel:+21670000000"
