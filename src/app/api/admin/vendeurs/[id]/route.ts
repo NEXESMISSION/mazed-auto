@@ -35,7 +35,7 @@ export async function POST(
 ) {
   const gate = await requireAdmin(req);
   if (gate instanceof NextResponse) return gate;
-  const { user } = gate;
+  const { user, supabase } = gate;
   const { id } = await ctx.params;
 
   const admin = getServiceSupabase();
@@ -69,7 +69,14 @@ export async function POST(
       );
     }
 
-    const { error } = await admin.from("profiles").update({ role }).eq("id", id);
+    // Through the admin's own session, not the service role: the profile guard
+    // refuses a role change from anyone the database does not see as an admin,
+    // and the service key is not one. admin_set_user_role (0194) checks the
+    // caller again and keeps the JWT role claim in step.
+    const { error } = await supabase.rpc("admin_set_user_role", {
+      p_user_id: id,
+      p_role: role,
+    });
     if (error) return fail("role_update_failed", 500, error);
 
     logAction(req, user, "admin.user.set_role", { id, role });

@@ -54,6 +54,7 @@ fallbacks for `SUPABASE_URL` / `SUPABASE_ANON_KEY`.
 | `place_bid.test.ts` | Rejects below_min_increment / self_bid_forbidden / deposit_required / bid_too_fast / auction_closed; accepts a valid bid + a top-bidder self-raise; extends `ends_at` inside the anti-snipe window. |
 | `close_auction_on_purchase.test.ts` | No-ops when `current_price >= buy_now_price` and when already terminal; clean buy-now sets winner + `ended_sold` and validates amount + deposit ≈ price. |
 | `request_payout.test.ts` | Two concurrent requests can't reserve more than `available` (advisory lock); `available` never goes negative. |
+| `admin_set_user_role.test.ts` | 0194: an admin's own session changes a role and the JWT `app_metadata.role` claim follows (back down from admin too); a non-admin token gets `forbidden`; anon and the service role are refused, through the RPC and through the table; no self-demotion, no retired roles. |
 | `structural_grants.test.ts` | **Hermetic, no secrets.** `authenticated` can't execute the 6-arg `enqueue_notification`; `anon` can't read `bids.ip_address`/`max_amount`; anon/authenticated can't INSERT a `captured` payment; a non-admin reads nothing of another user's profile. |
 
 Fixtures are seeded per-test via the service-role client (RLS + the payment
