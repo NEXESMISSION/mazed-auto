@@ -4,6 +4,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
+import { refuseIfSuspended } from "@/lib/http/suspended";
 import { PRODUCT_SELECT, resolveListingFee, toProduct } from "@/lib/products";
 
 /**
@@ -42,6 +43,9 @@ export async function POST(
 
   const admin = getServiceSupabase();
   if (!admin) return fail("server_misconfigured", 500);
+
+  const suspended = await refuseIfSuspended(admin, user.id);
+  if (suspended) return suspended;
 
   const { data: listing } = await admin
     .from("listings")

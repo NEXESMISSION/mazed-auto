@@ -5,6 +5,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { avatarUrl } from "@/lib/avatar";
 import { formatTND } from "@/lib/utils";
+import { jsonLdSafe } from "@/lib/jsonld";
 import { PhotoCarousel } from "@/components/listing/PhotoCarousel";
 import { ContactReveal } from "./ContactReveal";
 import { ShareButton } from "@/components/listing/ShareButton";
@@ -285,7 +286,7 @@ export default async function AnnoncePage({
     <main className="mx-auto max-w-3xl pb-16 lg:max-w-6xl">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdSafe(jsonLd) }}
       />
       {/* Renders nothing; reports from the browser that this page was really
           looked at, rather than merely prefetched. */}
