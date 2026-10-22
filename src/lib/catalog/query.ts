@@ -52,13 +52,15 @@ export const FILTER_KEYS = [
  */
 export const FEED_PAGE_SIZE = 12;
 
-export const LISTING_SELECT = `id, title, price, price_on_request, negotiable, governorate,
+export const LISTING_SELECT = `id, title, price, price_on_request, price_unit, negotiable, governorate,
      condition, published_at, seller_id, attributes,
      category:categories (label_fr, kind),
      photos:listing_photos (storage_path, sort_order, is_cover)`;
 
 export type ListingRow = {
   id: string; title: string; price: number | null; price_on_request: boolean;
+  /** 'day' for a rental (0187): the price is per day. */
+  price_unit?: string | null;
   negotiable: boolean; governorate: string; condition: string | null;
   published_at: string | null; seller_id: string;
   attributes: Record<string, unknown> | null;
@@ -163,6 +165,7 @@ export type ReelItem = {
   title: string;
   price: number | null;
   priceOnRequest: boolean;
+  perDay: boolean;
   negotiable: boolean;
   governorate: string;
   categoryLabel: string;
@@ -209,6 +212,7 @@ export function toReelItem(l: ListingRow, verifiedSellers: Set<string>): ReelIte
     title: l.title,
     price: l.price == null ? null : Number(l.price),
     priceOnRequest: l.price_on_request,
+    perDay: l.price_unit === "day",
     negotiable: l.negotiable,
     governorate: l.governorate,
     categoryLabel: cat?.label_fr ?? "",

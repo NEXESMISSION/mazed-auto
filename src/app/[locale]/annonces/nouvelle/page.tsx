@@ -165,6 +165,10 @@ export default async function NewListingPage() {
       creditsLeft={creditsLeft}
       freeLeft={freeLeft}
       publishing={publishing}
+      rentalVehicles={(() => {
+        const s = pickScope(shops, "vehicle");
+        return !("kind" in s) && s.listingType === "location_auto";
+      })()}
       defaultContactName={(profRes.data?.full_name as string | null) ?? ""}
       defaultContactPhone={(profRes.data?.phone as string | null) ?? ""}
       initialDraft={(draftRes.data as unknown as InitialDraft | null) ?? null}

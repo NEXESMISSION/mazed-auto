@@ -7,6 +7,7 @@ import { fail } from "@/lib/http/errors";
 import { refuseIfSuspended } from "@/lib/http/suspended";
 import { pickScope, publicationErrorFromDb, type ListingKind } from "@/lib/publication";
 import { refusalResponse } from "@/lib/http/refusal";
+import { sanitizeRentalAttributes } from "@/lib/rental";
 import { memberShops } from "@/lib/shops/server";
 
 /**
@@ -150,7 +151,9 @@ export async function POST(req: NextRequest) {
   if ("delegation" in body) fields.delegation = text(body.delegation, 60);
   if ("address" in body) fields.address = text(body.address, 200);
   if ("attributes" in body && body.attributes && typeof body.attributes === "object") {
-    fields.attributes = body.attributes;
+    // Rental conditions are typed here (numbers in range, availability one of
+    // two words); every other attribute passes as before.
+    fields.attributes = sanitizeRentalAttributes(body.attributes as Record<string, unknown>);
   }
   if ("contact_name" in body) fields.contact_name = text(body.contact_name, 80);
   if ("contact_phone" in body) fields.contact_phone = phone(body.contact_phone);

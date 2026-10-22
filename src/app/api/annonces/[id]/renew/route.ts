@@ -8,7 +8,7 @@ import { refuseIfSuspended } from "@/lib/http/suspended";
 import { refusalResponse } from "@/lib/http/refusal";
 import { PRODUCT_SELECT, isFree, resolveListingFee, toProduct } from "@/lib/products";
 import { decidePublication, publicationErrorFromDb, type ListingType } from "@/lib/publication";
-import { quotaStatus, shopSummary } from "@/lib/shops/server";
+import { CAN_EDIT_SHOP, memberRole, quotaStatus, shopSummary } from "@/lib/shops/server";
 
 /**
  * POST /api/annonces/[id]/renew — put an expired annonce back online.
@@ -49,8 +49,13 @@ export async function POST(
     .eq("id", id)
     .maybeSingle();
   if (!listing) return NextResponse.json({ error: "listing_not_found" }, { status: 404 });
+  // The seller — or, for a shop annonce, the shop's owner or a manager, who
+  // renew annonces any member published.
   if (listing.seller_id !== user.id) {
-    return NextResponse.json({ error: "not_owner" }, { status: 403 });
+    const role = listing.shop_id ? await memberRole(admin, user.id, listing.shop_id as string) : null;
+    if (!role || !CAN_EDIT_SHOP.includes(role)) {
+      return NextResponse.json({ error: "not_owner" }, { status: 403 });
+    }
   }
 
   // Only something that has actually come down can be renewed. A live listing
@@ -75,7 +80,7 @@ export async function POST(
   const shopId = (listing.shop_id as string | null) ?? null;
   const [shop, quota] = await Promise.all([
     shopId ? shopSummary(admin, shopId) : Promise.resolve(null),
-    quotaStatus(admin, user.id, shopId, listing.listing_type as ListingType, id),
+    quotaStatus(admin, listing.seller_id as string, shopId, listing.listing_type as ListingType, id),
   ]);
   const decision = decidePublication({ shopId, shop, quota });
   if (decision.kind === "refused") return refusalResponse(decision);

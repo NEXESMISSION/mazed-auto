@@ -32,6 +32,26 @@ export async function memberShops(admin: SupabaseClient, userId: string): Promis
     .map(toSummary);
 }
 
+export type MemberRole = "owner" | "manager" | "staff";
+
+/** This person's role in this shop, or null if they are not a member. */
+export async function memberRole(
+  admin: SupabaseClient,
+  userId: string,
+  shopId: string,
+): Promise<MemberRole | null> {
+  const { data } = await admin
+    .from("shop_members")
+    .select("role")
+    .eq("shop_id", shopId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  return (data?.role as MemberRole | undefined) ?? null;
+}
+
+/** Who may change the shop itself (its page, its legal details): not staff. */
+export const CAN_EDIT_SHOP: MemberRole[] = ["owner", "manager"];
+
 export async function shopSummary(admin: SupabaseClient, shopId: string): Promise<ShopSummary | null> {
   const { data } = await admin
     .from("shops")

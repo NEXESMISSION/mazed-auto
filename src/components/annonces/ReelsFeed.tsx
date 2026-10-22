@@ -300,7 +300,7 @@ const Reel = function Reel({
   const price =
     item.priceOnRequest || item.price == null
       ? "Sur demande"
-      : `${formatTND(item.price, locale)} TND`;
+      : `${formatTND(item.price, locale)} TND${item.perDay ? " / jour" : ""}`;
 
   return (
     <article

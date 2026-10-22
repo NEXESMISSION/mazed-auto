@@ -14,6 +14,7 @@ import { RelatedListings } from "@/components/listing/RelatedListings";
 import { ViewTracker } from "@/components/listing/ViewTracker";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { shopsGate } from "@/lib/shops/public";
+import { rentalConditionRows } from "@/lib/rental";
 import {
   DiagnosticSheet,
   DiagnosticBadge,
@@ -43,6 +44,7 @@ type Row = {
   reference: string | null;
   seller_id: string;
   shop_id: string | null;
+  price_unit: string;
   shop: ShopRef | ShopRef[] | null;
   category: { id: string; label_fr: string; kind: string } | { id: string; label_fr: string; kind: string }[] | null;
   photos: { storage_path: string; sort_order: number }[] | null;
@@ -54,7 +56,7 @@ type ShopRef = { slug: string; name: string; status: string; verification_status
 const SELECT = `
   id, title, description, price, price_on_request, negotiable, condition,
   governorate, delegation, attributes, contact_name, show_phone, status,
-  published_at, expires_at, seller_id, reference, shop_id,
+  published_at, expires_at, seller_id, reference, shop_id, price_unit,
   shop:shops (slug, name, status, verification_status),
   category:categories (id, label_fr, kind),
   photos:listing_photos (storage_path, sort_order),
@@ -210,6 +212,8 @@ export default async function AnnoncePage({
   // Written once here and placed twice rather than duplicated by hand. Only one
   // copy is ever visible (the other is display:none at that width), so the
   // second never reaches the screen.
+  const rentalRows = l.price_unit === "day" ? rentalConditionRows(l.attributes) : [];
+
   const priceBlock = (
     <div>
       <div className="batta-tabular gradient-gold-text text-[34px] font-extrabold leading-none">
@@ -217,7 +221,9 @@ export default async function AnnoncePage({
           ? "Prix sur demande"
           : `${formatTND(Number(l.price), locale)} `}
         {!l.price_on_request && l.price != null && (
-          <span className="text-[13px] font-bold uppercase tracking-[0.16em] text-gold/80">TND</span>
+          <span className="text-[13px] font-bold uppercase tracking-[0.16em] text-gold/80">
+            TND{l.price_unit === "day" ? " / jour" : ""}
+          </span>
         )}
       </div>
       {l.negotiable && !l.price_on_request && (
@@ -410,6 +416,29 @@ export default async function AnnoncePage({
                     </div>
                   ))}
                 </dl>
+              </section>
+            )}
+
+            {/* ── Rental conditions: declared by the agency, no calendar ── */}
+            {l.price_unit === "day" && rentalRows.length > 0 && (
+              <section className="mt-6">
+                <h2 className="batta-eyebrow">Conditions de location</h2>
+                <dl className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {rentalRows.map((r) => (
+                    <div key={r.label} className="min-w-0 rounded-xl bg-surface-2 p-3 ring-1 ring-border">
+                      <dt className="text-[10.5px] uppercase tracking-[0.1em] text-muted">{r.label}</dt>
+                      <dd className="mt-0.5 break-words text-[13.5px] font-bold text-foreground">{r.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+                {typeof l.attributes?.rental_terms === "string" && (
+                  <p className="mt-2 whitespace-pre-line text-[13px] leading-relaxed text-foreground/85">
+                    {l.attributes.rental_terms}
+                  </p>
+                )}
+                <p className="mt-2 text-[11.5px] text-muted">
+                  La réservation se fait directement avec l&apos;agence : appelez-la pour vérifier les dates.
+                </p>
               </section>
             )}
 

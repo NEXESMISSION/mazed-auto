@@ -28,6 +28,31 @@ export async function shopsGate(admin: SupabaseClient): Promise<{
   return { enabled, preview: isAdmin, visible: isAdmin };
 }
 
+/**
+ * May the person looking see THIS shop's page? Yes when shop pages are public
+ * or they are an admin (`shopsGate`) — and also, before launch, when it is
+ * their own shop: an owner should see and complete their page before buyers
+ * can. Returns how they see it, so the page can say so.
+ */
+export async function shopViewer(
+  admin: SupabaseClient,
+  shopId: string,
+): Promise<"public" | "admin" | "owner" | null> {
+  const gate = await shopsGate(admin);
+  if (gate.enabled) return "public";
+  if (gate.preview) return "admin";
+  const supabase = await getServerSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data } = await admin
+    .from("shop_members")
+    .select("role")
+    .eq("shop_id", shopId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  return data ? "owner" : null;
+}
+
 /** Public URL of a logo or banner in the `shop-media` bucket (0185). */
 export function shopMediaUrl(path: string | null | undefined): string | null {
   if (!path) return null;

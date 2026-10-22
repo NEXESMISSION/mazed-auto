@@ -17,6 +17,7 @@ import {
   ArrowRight, AlertTriangle, Inbox,
 } from "lucide-react";
 import { RenewButton } from "./RenewButton";
+import { WithdrawButton } from "./WithdrawButton";
 import { PRODUCT_SELECT, isFree, resolveListingFee, toProduct, type Product } from "@/lib/products";
 import { formatTND as fmt } from "@/lib/utils";
 
@@ -80,12 +81,12 @@ export default async function MyListingsPage({
   const admin = getServiceSupabase();
   const db = admin ?? supabase;
 
-  const [listRes, creditRes, prodRes, catRes, payRes] = await Promise.all([
+  const [listRes, creditRes, prodRes, catRes, limitsRes, payRes] = await Promise.all([
     db
       .from("listings")
       .select(
         `id, title, price, price_on_request, status, rejection_reason, published_at,
-         expires_at, created_at, category_id, category:categories (label_fr),
+         expires_at, created_at, category_id, shop_id, category:categories (label_fr),
          photos:listing_photos (storage_path, sort_order, is_cover)`,
       )
       .eq("seller_id", user.id)
@@ -97,6 +98,8 @@ export default async function MyListingsPage({
       .eq("status", "active"),
     db.from("products").select(PRODUCT_SELECT).eq("is_active", true),
     db.from("categories").select("id, parent_id"),
+    // personal_limits.free (D-P1, 0189): while on, a personal renewal is free.
+    db.from("app_settings").select("value").eq("key", "personal_limits").maybeSingle(),
     // The open fee payment per listing, so "À payer" can be paid from this
     // page instead of only from the notification that announced it.
     //
@@ -141,6 +144,7 @@ export default async function MyListingsPage({
     expires_at: string | null; created_at: string;
     category: { label_fr: string } | { label_fr: string }[] | null;
     category_id: string;
+    shop_id: string | null;
     photos: { storage_path: string; sort_order: number; is_cover?: boolean | null }[] | null;
   };
   const all = (listRes.data ?? []) as Row[];
@@ -156,7 +160,14 @@ export default async function MyListingsPage({
   // What renewing costs. Mirrors the renew route exactly, including its
   // exception: a category that publishes for free renews for free, so a part
   // is never quoted 15 TND.
+  const personalFree =
+    (limitsRes.data?.value as { free?: boolean } | null | undefined)?.free !== false;
   const renewLabel = (l: Row): string | null => {
+    // What the renew route will actually do (src/lib/publication.ts): a shop
+    // annonce is covered by its subscription, a personal one is free while
+    // the D-P1 switch is on. Only otherwise does a product price apply.
+    if (l.shop_id) return "incluse dans l'abonnement";
+    if (personalFree) return "Gratuit";
     const categoryFee = resolveListingFee(products, l.category_id, parentOf.get(l.category_id) ?? null);
     const p = isFree(categoryFee) ? categoryFee : renewalProduct ?? categoryFee;
     if (!p) return null;
@@ -202,9 +213,9 @@ export default async function MyListingsPage({
       );
     }
     if (RENEWABLE.includes(l.status)) {
-      return <RenewButton listingId={l.id} usesCredit={creditsLeft > 0} feeLabel={renewLabel(l)} />;
+      return <RenewButton listingId={l.id} usesCredit={creditsLeft > 0 && !l.shop_id && !personalFree} feeLabel={renewLabel(l)} />;
     }
-    return (
+    const view = (
       <Link
         href={`/annonces/${l.id}` as never}
         className={
@@ -216,6 +227,16 @@ export default async function MyListingsPage({
         Voir <ArrowRight className="size-3.5" />
       </Link>
     );
+    // Live or in review: the seller can take it down — and free its place.
+    if (l.status === "published" || l.status === "pending_review") {
+      return (
+        <div className={block ? "space-y-2" : "flex flex-wrap items-center gap-3"}>
+          {view}
+          <WithdrawButton listingId={l.id} title={l.title} />
+        </div>
+      );
+    }
+    return view;
   }
 
   return (

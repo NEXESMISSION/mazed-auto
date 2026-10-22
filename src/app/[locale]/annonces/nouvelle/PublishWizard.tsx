@@ -14,7 +14,7 @@ import {
 import type { PublishingNote } from "@/lib/publication";
 import {
   Car, Wrench, Check, Tag, Camera, Wallet, Phone,
-  ClipboardList, Loader2, MapPin, Plus, Trash2, Gift, Ticket, ImageOff, TriangleAlert,
+  ClipboardList, Loader2, MapPin, Plus, Trash2, Gift, Ticket, ImageOff, TriangleAlert, KeyRound,
 } from "lucide-react";
 
 /**
@@ -56,7 +56,12 @@ export const SELLER_ATTESTATION_VERSION = "v1";
  * kind has no field for is dropped now.
  */
 const ATTR_KEYS: Record<"vehicle" | "part", readonly string[]> = {
-  vehicle: ["make", "model", "year", "mileage", "fuel", "transmission", "color"],
+  vehicle: [
+    "make", "model", "year", "mileage", "fuel", "transmission", "color",
+    // Rental conditions (src/lib/rental.ts) — only filled for a rental shop.
+    "rental_deposit", "rental_min_age", "rental_license_years", "rental_km_per_day",
+    "rental_availability", "rental_terms",
+  ],
   part: ["part_name", "brand", "reference", "quantity"],
 };
 
@@ -123,6 +128,7 @@ export function PublishWizard({
   creditsLeft,
   freeLeft,
   publishing,
+  rentalVehicles = false,
   defaultContactName,
   defaultContactPhone,
   initialDraft,
@@ -135,6 +141,8 @@ export function PublishWizard({
   freeLeft: number;
   /** Per kind: free or not, refused as things stand, and the sentence to show. */
   publishing: Record<"vehicle" | "part", PublishingNote>;
+  /** A vehicle annonce goes to this person's RENTAL shop: priced per day, with conditions. */
+  rentalVehicles?: boolean;
   defaultContactName: string;
   defaultContactPhone: string;
   initialDraft: InitialDraft | null;
@@ -211,6 +219,7 @@ export function PublishWizard({
   const usingWelcome = !usingCredit && !free && fee != null && fee > 0 && freeLeft > 0;
   // Free personal annonces (D-P1) and shop subscriptions say so in their own
   // words, with the room left; a reached limit is a warning, not good news.
+  const isRental = rentalVehicles && category != null && !isPart;
   const plan = category ? publishing[category.kind] : null;
   const note = plan?.note ?? null;
   const blocked = plan?.blocked ?? false;
@@ -862,6 +871,55 @@ export function PublishWizard({
           )}
         </section>
 
+      {/* ── Rental conditions (location_auto only) ──
+          Declared by the agency, in words. No booking calendar on purpose
+          (brief, recette 3): the renter calls to book, and a calendar the
+          agency does not keep up would be a promise we cannot keep. */}
+      {isRental && (
+        <section id="f-rental" className="scroll-mt-24 rounded-2xl border border-border bg-surface p-4 sm:p-5">
+          <SectionHead icon={KeyRound} title="Conditions de location" />
+          <p className="mt-1 text-[13px] text-muted">
+            Pas de calendrier : indiquez si le véhicule est disponible, le client vous appelle pour réserver.
+          </p>
+          <div className="mt-4 space-y-4">
+            <Chips
+              label="Disponibilité"
+              value={attrs.rental_availability ?? ""}
+              onChange={(v) => setAttrs((s) => ({ ...s, rental_availability: v }))}
+              options={[
+                { value: "available", label: "Disponible" },
+                { value: "on_request", label: "Sur demande" },
+              ]}
+            />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Caution" type="number" suffix="TND" compact
+                value={attrs.rental_deposit ?? ""} placeholder="500"
+                onChange={(v) => setAttrs((s) => ({ ...s, rental_deposit: v }))} />
+              <Field label="Kilométrage inclus (0 = illimité)" type="number" suffix="km/j" compact
+                value={attrs.rental_km_per_day ?? ""} placeholder="250"
+                onChange={(v) => setAttrs((s) => ({ ...s, rental_km_per_day: v }))} />
+              <Field label="Âge minimum du conducteur" type="number" suffix="ans" compact
+                value={attrs.rental_min_age ?? ""} placeholder="21"
+                onChange={(v) => setAttrs((s) => ({ ...s, rental_min_age: v }))} />
+              <Field label="Permis depuis" type="number" suffix="ans" compact
+                value={attrs.rental_license_years ?? ""} placeholder="2"
+                onChange={(v) => setAttrs((s) => ({ ...s, rental_license_years: v }))} />
+            </div>
+            <label className="block">
+              <Label>Autres conditions</Label>
+              <textarea
+                value={attrs.rental_terms ?? ""}
+                onChange={(e) => setAttrs((s) => ({ ...s, rental_terms: e.target.value }))}
+                rows={3}
+                maxLength={600}
+                placeholder="Carburant rendu plein, livraison possible à l'aéroport…"
+                className="mt-1 w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-[14px] text-foreground placeholder:text-muted focus:border-gold focus:outline-none"
+              />
+            </label>
+          </div>
+        </section>
+      )}
+
       {/* ── STEP 4 · Price & description ── */}
               <section id="f-price" className={`scroll-mt-24 rounded-2xl border border-border bg-surface p-4 sm:p-5${flagCls("f-price")}`}>
           <SectionHead icon={Wallet} title="Titre et prix" />
@@ -882,7 +940,7 @@ export function PublishWizard({
             </div>
 
             <div>
-              <Label>Prix {!onRequest && <span className="text-gold">*</span>}</Label>
+              <Label>{isRental ? "Prix par jour" : "Prix"} {!onRequest && <span className="text-gold">*</span>}</Label>
               <div className="relative mt-1">
                 <input
                   type="number"
@@ -890,11 +948,11 @@ export function PublishWizard({
                   value={price}
                   disabled={onRequest}
                   onChange={(e) => setPrice(e.target.value)}
-                  placeholder="45000"
-                  className="w-full rounded-xl border border-border bg-surface px-3 py-3 pe-16 text-[16px] font-bold text-foreground placeholder:font-normal placeholder:text-muted focus:border-gold focus:outline-none disabled:opacity-40"
+                  placeholder={isRental ? "120" : "45000"}
+                  className="w-full rounded-xl border border-border bg-surface px-3 py-3 pe-24 text-[16px] font-bold text-foreground placeholder:font-normal placeholder:text-muted focus:border-gold focus:outline-none disabled:opacity-40"
                 />
                 <span className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-[13px] font-bold text-muted">
-                  TND
+                  {isRental ? "TND / jour" : "TND"}
                 </span>
               </div>
               <div className="mt-2.5 flex flex-wrap gap-2">
@@ -979,7 +1037,7 @@ export function PublishWizard({
                   <p className="batta-tabular mt-1 text-[13px] font-extrabold">
                     {onRequest || !(Number(price) > 0)
                       ? "Sur demande"
-                      : `${formatTND(Number(price), locale)} TND`}
+                      : `${formatTND(Number(price), locale)} TND${isRental ? " / jour" : ""}`}
                   </p>
                   <p className="mt-0.5 inline-flex items-center gap-1 text-[10px] text-muted">
                     <MapPin className="size-2.5" /> {governorate}

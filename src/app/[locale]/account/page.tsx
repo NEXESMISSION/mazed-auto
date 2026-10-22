@@ -44,6 +44,7 @@ export default async function AccountPage() {
   let fullName: string | null = null;
   let kycStatus: string = "none";
   let role: string = "individual";
+  let shopName: string | null = null;
 
   try {
     const supabase = await getServerSupabase();
@@ -51,11 +52,20 @@ export default async function AccountPage() {
     if (user) {
       userId = user.id;
       userEmail = user.email ?? null;
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("full_name, kyc_status, role, phone")
-        .eq("id", user.id)
-        .single();
+      const [{ data: profile }, { data: membership }] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("full_name, kyc_status, role, phone")
+          .eq("id", user.id)
+          .single(),
+        // The person's own memberships are readable with their own token
+        // (shop_members_read, 0185), and a shop's name is public.
+        supabase.from("shop_members").select("shop:shops (name, status)").eq("user_id", user.id).limit(5),
+      ]);
+      const open = ((membership ?? []) as unknown as { shop: { name: string; status: string } | null }[])
+        .map((m) => m.shop)
+        .find((s) => s && s.status !== "closed");
+      shopName = open?.name ?? null;
       fullName = profile?.full_name ?? null;
       // The account is a PHONE account: `user.email` is the synthetic
       // 216…@phone.mazedauto.app that signup mints for Supabase. Showing it
@@ -138,8 +148,11 @@ export default async function AccountPage() {
   if (role === "admin") {
     // Not "Annonces, KYC, experts" — KYC and the expert network are both gone.
     roleActions.push({ href: "/admin", Icon: LayoutDashboard, title: "Console admin", body: "Annonces, tarifs, vendeurs." });
-  } else if (role === "bank" || role === "agency" || role === "bailiff") {
-    roleActions.push({ href: "/partners/dashboard", Icon: Briefcase, title: "Espace partenaire", body: "Portefeuille banque / agence." });
+  }
+  // « Espace partenaire » pointed at /partners/dashboard, which redirects to
+  // /account — a loop. A member of a shop now gets their pro space instead.
+  if (shopName) {
+    roleActions.push({ href: "/pro/dashboard", Icon: Briefcase, title: "Ma boutique", body: `${shopName} · annonces, page, abonnement.` });
   }
 
   // Grouped by journey so a buyer is not handed a seller dashboard and vice

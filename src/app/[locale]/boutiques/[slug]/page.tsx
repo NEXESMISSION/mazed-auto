@@ -4,7 +4,7 @@ import { getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { jsonLdSafe } from "@/lib/jsonld";
-import { SHOP_PUBLIC_SELECT, shopMediaUrl, shopsGate, type PublicShop } from "@/lib/shops/public";
+import { SHOP_PUBLIC_SELECT, shopMediaUrl, shopViewer, type PublicShop } from "@/lib/shops/public";
 import {
   activityLabel,
   isShopVerified,
@@ -53,9 +53,8 @@ export async function generateMetadata({
   // The head is rendered even when the page is a 404: without the gate here, a
   // hidden shop's name and description would ship in <title> and <meta>.
   const admin = getServiceSupabase();
-  if (!admin || !(await shopsGate(admin)).visible) return { title: "Boutique" };
-  const shop = await fetchShop(slug);
-  if (!shop) return { title: "Boutique" };
+  const shop = admin ? await fetchShop(slug) : null;
+  if (!admin || !shop || !(await shopViewer(admin, shop.id))) return { title: "Boutique" };
   return {
     title: `${shop.name} — ${activityLabel(shop.activity_type)} · Mazed Auto`,
     description:
@@ -72,11 +71,12 @@ export default async function BoutiquePage({
   const { slug } = await params;
   const admin = getServiceSupabase();
   if (!admin) notFound();
-  const gate = await shopsGate(admin);
-  if (!gate.visible) notFound();
-
   const shop = await fetchShop(slug);
   if (!shop) notFound();
+  // Public once shop pages are open; before that, admins and the shop's own
+  // members only — everyone else gets the same not-found as a missing shop.
+  const viewer = await shopViewer(admin, shop.id);
+  if (!viewer) notFound();
   const locale = await getLocale();
 
   const { data } = await admin
@@ -113,9 +113,9 @@ export default async function BoutiquePage({
     <main className="mx-auto max-w-5xl pb-16 lg:px-8 lg:pt-6">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(jsonLd) }} />
 
-      {gate.preview && (
+      {viewer !== "public" && (
         <div className="px-4 pt-4 lg:px-0 lg:pt-0">
-          <ShopsPreviewBanner />
+          <ShopsPreviewBanner who={viewer} />
         </div>
       )}
 

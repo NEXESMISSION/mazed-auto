@@ -495,7 +495,7 @@ export default async function AnnoncesPage({
                       <p className="batta-tabular mt-auto pt-2 text-[15px] font-extrabold text-gold lg:pt-3 lg:text-[18px]">
                         {l.price_on_request || l.price == null
                           ? "Sur demande"
-                          : `${formatTND(Number(l.price), locale)} TND`}
+                          : `${formatTND(Number(l.price), locale)} TND${l.price_unit === "day" ? " / jour" : ""}`}
                       </p>
 
                       <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-muted lg:text-[12px]">

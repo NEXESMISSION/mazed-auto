@@ -3,7 +3,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { overRevealLimit, revealIpHash, REVEAL_LIMITED_DETAIL } from "@/lib/http/revealLimit";
-import { shopsGate } from "@/lib/shops/public";
+import { shopViewer } from "@/lib/shops/public";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 
@@ -29,9 +29,6 @@ export async function POST(
   const admin = getServiceSupabase();
   if (!admin) return fail("server_misconfigured", 500);
 
-  const gate = await shopsGate(admin);
-  if (!gate.visible) return NextResponse.json({ error: "not_available" }, { status: 404 });
-
   const ipHash = revealIpHash(req);
   if (await overRevealLimit(admin, ipHash)) {
     return NextResponse.json({ error: "rate_limited", detail: REVEAL_LIMITED_DETAIL }, { status: 429 });
@@ -42,7 +39,9 @@ export async function POST(
     .select("id, name, phone, whatsapp, status")
     .eq("slug", slug)
     .maybeSingle();
-  if (!shop || shop.status !== "active") {
+  // Same answer for a missing shop, an inactive one, and one whose page this
+  // visitor may not see yet (`shopViewer`: public, admin, or its own members).
+  if (!shop || shop.status !== "active" || !(await shopViewer(admin, shop.id as string))) {
     return NextResponse.json({ error: "not_available" }, { status: 404 });
   }
   if (!shop.phone && !shop.whatsapp) {
