@@ -72,6 +72,23 @@ export function shopSchemaType(a: string | null | undefined): string {
   return "AutoDealer";
 }
 
+/**
+ * A URL slug from a shop's name — the same rule as the agency backfill (0190):
+ * accents folded, everything else a hyphen, 3 to 50 characters. Uniqueness is
+ * the caller's job; this only gives the base.
+ */
+export function slugifyShopName(name: string): string {
+  const base = name
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 50)
+    .replace(/-+$/g, "");
+  return base.length >= 3 ? base : `boutique-${base || "pro"}`.slice(0, 50);
+}
+
 /** The badge is a verification by Mazed, never a paid option (brief, recette 10). */
 export function isShopVerified(s: { verification_status?: string | null }): boolean {
   return s.verification_status === "verified";

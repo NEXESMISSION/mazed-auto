@@ -4,14 +4,16 @@
 import { getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getProContext } from "@/lib/shops/proContext";
-import { quotaStatus } from "@/lib/shops/server";
+import { CAN_EDIT_SHOP, quotaStatus } from "@/lib/shops/server";
+import { boostForSale } from "@/lib/shops/plans";
 import { coverPhoto } from "@/lib/listingCover";
 import { formatTND } from "@/lib/utils";
 import type { ListingType } from "@/lib/publication";
 import { ListingImage } from "@/components/media/ListingImage";
 import { RenewButton } from "@/app/[locale]/account/listings/RenewButton";
 import { WithdrawButton } from "@/app/[locale]/account/listings/WithdrawButton";
-import { Eye, ImageOff, PencilLine, Phone, Plus } from "lucide-react";
+import { PostButton } from "../PostButton";
+import { Eye, ImageOff, Pause, PencilLine, Phone, Play, Plus, Rocket } from "lucide-react";
 
 const STATUS: Record<string, { label: string; tone: string }> = {
   draft: { label: "Brouillon", tone: "bg-surface-2 text-muted ring-1 ring-border" },
@@ -25,12 +27,19 @@ const STATUS: Record<string, { label: string; tone: string }> = {
   paused: { label: "En pause", tone: "batta-tone-warn" },
 };
 
+const PAUSED_BECAUSE: Record<string, string> = {
+  owner: "mise en pause par vous",
+  subscription_expired: "abonnement terminé — elle revient dès le prochain paiement",
+  over_limit: "au-delà de la limite de la formule",
+};
+
 const ORDER = ["rejected", "pending_review", "published", "draft", "paused", "expired", "archived", "sold", "pending_payment"];
 
 type Row = {
   id: string; title: string; status: string; price: number | null; price_on_request: boolean;
   price_unit: string; seller_id: string; rejection_reason: string | null; expires_at: string | null;
   view_count: number; contact_reveal_count: number;
+  paused_reason: string | null; sponsored_until: string | null;
   photos: { storage_path: string; sort_order: number; is_cover?: boolean | null }[] | null;
 };
 
@@ -43,24 +52,27 @@ type Row = {
 export default async function ProListingsPage() {
   const ctx = await getProContext();
   if (ctx.kind !== "shop") return null;
-  const { admin, user, shop } = ctx;
+  const { admin, user, shop, role } = ctx;
+  const canManage = CAN_EDIT_SHOP.includes(role);
   const locale = await getLocale();
 
-  const [{ data }, quota] = await Promise.all([
+  const [{ data }, quota, boost] = await Promise.all([
     admin
       .from("listings")
       .select(
         `id, title, status, price, price_on_request, price_unit, seller_id, rejection_reason, expires_at,
-         view_count, contact_reveal_count, photos:listing_photos (storage_path, sort_order, is_cover)`,
+         view_count, contact_reveal_count, paused_reason, sponsored_until, photos:listing_photos (storage_path, sort_order, is_cover)`,
       )
       .eq("shop_id", shop.id)
       .order("created_at", { ascending: false }),
     quotaStatus(admin, user.id, shop.id, shop.activity_type as ListingType),
+    boostForSale(admin),
   ]);
   const rows = ((data ?? []) as unknown as Row[]).sort(
     (a, b) => ORDER.indexOf(a.status) - ORDER.indexOf(b.status),
   );
   const now = Date.now();
+  const day = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 
   return (
     <div>
@@ -101,6 +113,11 @@ export default async function ProListingsPage() {
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className={`rounded-full px-2 py-0.5 text-[10.5px] font-extrabold ${st.tone}`}>{st.label}</span>
+                    {l.sponsored_until && new Date(l.sponsored_until).getTime() > now && (
+                      <span className="rounded-full bg-gold-faint px-2 py-0.5 text-[10.5px] font-extrabold text-gold ring-1 ring-gold-soft">
+                        Sponsorisée jusqu&apos;au {day(l.sponsored_until)}
+                      </span>
+                    )}
                     {days != null && days <= 7 && (
                       <span className="text-[11px] font-bold text-[var(--tone-warn)]">expire dans {Math.max(days, 0)} j</span>
                     )}
@@ -113,12 +130,42 @@ export default async function ProListingsPage() {
                     <span className="ml-3 inline-flex items-center gap-1"><Eye className="size-3" /> {l.view_count}</span>
                     <span className="ml-2 inline-flex items-center gap-1"><Phone className="size-3" /> {l.contact_reveal_count}</span>
                   </p>
+                  {l.status === "paused" && l.paused_reason && (
+                    <p className="mt-1 text-[11.5px] text-muted">En pause : {PAUSED_BECAUSE[l.paused_reason] ?? l.paused_reason}</p>
+                  )}
                   {l.status === "rejected" && l.rejection_reason && (
                     <p className="mt-1 text-[11.5px] text-[var(--danger)]">Refusée : {l.rejection_reason}</p>
                   )}
                   <div className="mt-2 flex flex-wrap items-center gap-2">
                     {["published", "pending_review"].includes(l.status) && (
                       <WithdrawButton listingId={l.id} title={l.title} />
+                    )}
+                    {canManage && l.status === "published" && boost && (
+                      <PostButton
+                        url="/api/pro/checkout"
+                        body={{ listing_id: l.id, product: "boost-7j" }}
+                        className="inline-flex items-center gap-1 text-[12px] font-bold text-gold hover:underline"
+                      >
+                        <Rocket className="size-3.5" /> Booster {boost.days} j · {formatTND(boost.price, locale)} TND
+                      </PostButton>
+                    )}
+                    {canManage && ["published", "pending_review"].includes(l.status) && (
+                      <PostButton
+                        url={`/api/pro/listings/${l.id}/pause`}
+                        success="Annonce mise en pause."
+                        className="inline-flex items-center gap-1 text-[12px] font-bold text-muted hover:text-foreground"
+                      >
+                        <Pause className="size-3.5" /> Pause
+                      </PostButton>
+                    )}
+                    {canManage && l.status === "paused" && (
+                      <PostButton
+                        url={`/api/pro/listings/${l.id}/resume`}
+                        success="Annonce réactivée."
+                        className="inline-flex items-center gap-1 text-[12px] font-bold text-gold hover:underline"
+                      >
+                        <Play className="size-3.5" /> Réactiver
+                      </PostButton>
                     )}
                     {["expired", "archived", "sold"].includes(l.status) && (
                       <RenewButton listingId={l.id} usesCredit={false} feeLabel="incluse dans l'abonnement" />

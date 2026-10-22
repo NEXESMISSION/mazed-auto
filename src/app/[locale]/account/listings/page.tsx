@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { RenewButton } from "./RenewButton";
 import { WithdrawButton } from "./WithdrawButton";
+import { PaymentStatus } from "@/app/[locale]/pro/dashboard/abonnement/PaymentStatus";
 import { PRODUCT_SELECT, isFree, resolveListingFee, toProduct, type Product } from "@/lib/products";
 import { formatTND as fmt } from "@/lib/utils";
 
@@ -68,7 +69,7 @@ const RENEWABLE = ["expired", "archived", "sold"];
 export default async function MyListingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ statut?: string }>;
+  searchParams: Promise<{ statut?: string; payment?: string }>;
 }) {
   const sp = await searchParams;
   const locale = await getLocale();
@@ -263,6 +264,10 @@ export default async function MyListingsPage({
           </Link>
         </div>
       </div>
+
+      {sp.payment && /^[0-9a-f-]{36}$/i.test(sp.payment) && (
+        <div className="mt-4"><PaymentStatus paymentId={sp.payment} /></div>
+      )}
 
       {/* ── Tabs ───────────────────────────────────────────────────────────
           The count and the filter are one control. On a phone they scroll

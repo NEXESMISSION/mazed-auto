@@ -4,7 +4,8 @@ import { getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getProContext } from "@/lib/shops/proContext";
 import { activityLabel, isShopVerified, shopInitials } from "@/lib/shops/format";
-import { shopMediaUrl } from "@/lib/shops/public";
+import { shopMediaUrl, shopsGate } from "@/lib/shops/public";
+import { getServiceSupabase } from "@/lib/supabase/admin";
 import { ProTabs } from "./ProTabs";
 import { ArrowUpRight, BadgeCheck, Store } from "lucide-react";
 
@@ -19,8 +20,8 @@ export const dynamic = "force-dynamic";
  * Espace pro — the frame around every dashboard page: which shop this is, its
  * sections, and the way to its public page.
  *
- * Signed out → login, then back here. Signed in without a shop → a plain
- * explanation; opening a shop online comes with plans and payment (lot 4).
+ * Signed out → login, then back here. Signed in without a shop → the way to
+ * open one (/pro/creer) once shops are open, otherwise a plain explanation.
  */
 export default async function ProDashboardLayout({ children }: { children: React.ReactNode }) {
   const ctx = await getProContext();
@@ -30,6 +31,8 @@ export default async function ProDashboardLayout({ children }: { children: React
   }
 
   if (ctx.kind === "no_shop") {
+    const admin = getServiceSupabase();
+    const canOpen = admin ? (await shopsGate(admin)).visible : false;
     return (
       <main className="mx-auto max-w-xl px-4 py-12 text-center">
         <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-surface-2 text-muted ring-1 ring-border">
@@ -37,13 +40,17 @@ export default async function ProDashboardLayout({ children }: { children: React
         </span>
         <h1 className="mt-4 text-[22px] font-extrabold tracking-tight">Vous n&apos;avez pas de boutique</h1>
         <p className="mt-2 text-[13.5px] leading-relaxed text-muted">
-          L&apos;espace pro sert aux concessionnaires, loueurs et vendeurs de pièces. L&apos;ouverture
-          d&apos;une boutique en ligne arrive bientôt ; en attendant, notre équipe peut l&apos;ouvrir
-          pour vous.
+          L&apos;espace pro sert aux concessionnaires, loueurs et vendeurs de pièces.{" "}
+          {canOpen
+            ? "Ouvrez la vôtre en quelques minutes : elle est en ligne dès le paiement de la formule."
+            : "L'ouverture d'une boutique en ligne arrive bientôt ; en attendant, notre équipe peut l'ouvrir pour vous."}
         </p>
         <div className="mt-5 flex flex-wrap justify-center gap-2">
-          <Link href={"/contact" as never} className="batta-btn-luxe tap-target px-4 py-2.5 text-[13px]">
-            Nous contacter
+          <Link
+            href={(canOpen ? "/pro/creer" : "/contact") as never}
+            className="batta-btn-luxe tap-target px-4 py-2.5 text-[13px]"
+          >
+            {canOpen ? "Ouvrir ma boutique" : "Nous contacter"}
           </Link>
           <Link
             href={"/account/listings" as never}

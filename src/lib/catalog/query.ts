@@ -53,7 +53,7 @@ export const FILTER_KEYS = [
 export const FEED_PAGE_SIZE = 12;
 
 export const LISTING_SELECT = `id, title, price, price_on_request, price_unit, negotiable, governorate,
-     condition, published_at, seller_id, attributes,
+     condition, published_at, seller_id, attributes, sponsored_until,
      category:categories (label_fr, kind),
      photos:listing_photos (storage_path, sort_order, is_cover)`;
 
@@ -64,6 +64,8 @@ export type ListingRow = {
   negotiable: boolean; governorate: string; condition: string | null;
   published_at: string | null; seller_id: string;
   attributes: Record<string, unknown> | null;
+  /** A paid 7-day boost (0191): ranked first and labelled « Sponsorisé ». */
+  sponsored_until?: string | null;
   category: { label_fr: string; kind: string } | { label_fr: string; kind: string }[] | null;
   photos: { storage_path: string; sort_order: number; is_cover?: boolean | null }[] | null;
 };
@@ -142,11 +144,19 @@ export function applyCatalogFilters<T>(
   return q as T;
 }
 
-/** Sorting by price puts "prix sur demande" (null) last either way. */
+/**
+ * Sorting by price puts "prix sur demande" (null) last either way. The default
+ * order puts sponsored annonces first (a paid boost, labelled as such); a
+ * buyer who asks for a price order gets exactly that.
+ */
 export function sortFor(sp: CatalogSearchParams) {
-  const column = sp.sort === "price_asc" || sp.sort === "price_desc" ? "price" : "published_at";
-  return { column, ascending: sp.sort === "price_asc" };
+  const byPrice = sp.sort === "price_asc" || sp.sort === "price_desc";
+  return { column: byPrice ? "price" : "published_at", ascending: sp.sort === "price_asc", sponsoredFirst: !byPrice };
 }
+
+/** Whether the boost is still running — `expire_boosts()` clears it within 15 minutes of the end. */
+export const isSponsored = (l: Pick<ListingRow, "sponsored_until">, now = Date.now()) =>
+  !!l.sponsored_until && new Date(l.sponsored_until).getTime() > now;
 
 // ──────────────────────────────────────────────────────────────────────────
 // The reel

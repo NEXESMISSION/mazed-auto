@@ -1,0 +1,199 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSupabase } from "@/lib/supabase/server";
+import { getServiceSupabase } from "@/lib/supabase/admin";
+import { isSameOrigin } from "@/lib/sameOrigin";
+import { refuseIfSuspended } from "@/lib/http/suspended";
+import { logAction } from "@/lib/activity";
+import { fail } from "@/lib/http/errors";
+import { CAN_EDIT_SHOP, memberRole } from "@/lib/shops/server";
+import { konnectConfig, konnectInitPayment } from "@/lib/payments/konnect";
+
+/**
+ * POST /api/pro/checkout — order a plan for a shop, or a 7-day boost for an
+ * annonce, and say where to pay it.
+ *
+ *   { shop_id, plan_code }            → a subscription period
+ *   { listing_id, product: "boost-7j" } → a boost
+ *   (+ provider: "manual" to pay by transfer even when Konnect is on)
+ *
+ * THE PRICE IS READ HERE, from `products`, never from the request (brief). It
+ * is written on the order as `expected_amount`, which the capture checks again
+ * (0191). An order still open for the same thing is reused rather than
+ * duplicated.
+ *
+ * WHERE TO PAY. Konnect when it is configured: the order gets Konnect's
+ * reference and the buyer is sent to its page; nothing is activated until the
+ * webhook or the return page has asked Konnect and it says « completed ».
+ * Otherwise the existing transfer / D17 page, where the buyer uploads a
+ * receipt and an admin captures it.
+ */
+export async function POST(req: NextRequest) {
+  if (!isSameOrigin(req)) {
+    return NextResponse.json({ error: "cross_origin_blocked" }, { status: 403 });
+  }
+  const supabase = await getServerSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "auth" }, { status: 401 });
+  const admin = getServiceSupabase();
+  if (!admin) return fail("server_misconfigured", 500);
+  const suspended = await refuseIfSuspended(admin, user.id);
+  if (suspended) return suspended;
+
+  const body = (await req.json().catch(() => ({}))) as {
+    shop_id?: unknown; plan_code?: unknown; listing_id?: unknown; product?: unknown; provider?: unknown;
+  };
+
+  let kind: "subscription" | "promo";
+  let shopId: string | null = null;
+  let listingId: string | null = null;
+  type Offer = { id: string; slug: string; price: number; name_fr: string; plan_code: string | null };
+  let product: Offer | null = null;
+
+  if (typeof body.plan_code === "string" && typeof body.shop_id === "string") {
+    kind = "subscription";
+    shopId = body.shop_id;
+    const role = /^[0-9a-f-]{36}$/i.test(shopId) ? await memberRole(admin, user.id, shopId) : null;
+    if (!role || !CAN_EDIT_SHOP.includes(role)) {
+      return NextResponse.json({ error: "not_shop_member", detail: "Vous ne gérez pas cette boutique." }, { status: 403 });
+    }
+    const { data: shop } = await admin.from("shops").select("status").eq("id", shopId).maybeSingle();
+    if (!shop || ["suspended", "closed", "rejected"].includes(shop.status as string)) {
+      return NextResponse.json({ error: "shop_not_allowed", detail: "Cette boutique ne peut pas souscrire d'abonnement." }, { status: 409 });
+    }
+    const { data } = await admin
+      .from("products")
+      .select("id, slug, price, name_fr, plan_code")
+      .eq("plan_code", body.plan_code)
+      .eq("kind", "subscription")
+      .eq("is_active", true)
+      .maybeSingle();
+    product = (data as Offer | null) ?? null;
+  } else if (body.product === "boost-7j" && typeof body.listing_id === "string") {
+    kind = "promo";
+    listingId = body.listing_id;
+    const { data: listing } = await admin
+      .from("listings")
+      .select("id, seller_id, shop_id, status")
+      .eq("id", listingId)
+      .maybeSingle();
+    if (!listing) return NextResponse.json({ error: "listing_not_found" }, { status: 404 });
+    let allowed = listing.seller_id === user.id;
+    if (!allowed && listing.shop_id) {
+      const role = await memberRole(admin, user.id, listing.shop_id as string);
+      allowed = role !== null && CAN_EDIT_SHOP.includes(role);
+    }
+    if (!allowed) return NextResponse.json({ error: "not_owner" }, { status: 403 });
+    if (listing.status !== "published") {
+      return NextResponse.json({ error: "not_published", detail: "Seule une annonce en ligne peut être boostée." }, { status: 409 });
+    }
+    shopId = (listing.shop_id as string | null) ?? null;
+    // A shop boosts while a period is running — not in grace (brief, 0192).
+    if (shopId) {
+      const nowIso = new Date().toISOString();
+      const { data: period } = await admin
+        .from("subscriptions")
+        .select("id")
+        .eq("shop_id", shopId)
+        .in("status", ["active", "grace"])
+        .lte("starts_at", nowIso)
+        .gt("ends_at", nowIso)
+        .limit(1);
+      if (!period?.length) {
+        return NextResponse.json(
+          { error: "no_current_period", detail: "Renouvelez l'abonnement de la boutique pour booster ses annonces." },
+          { status: 409 },
+        );
+      }
+    }
+    const { data } = await admin
+      .from("products")
+      .select("id, slug, price, name_fr, plan_code")
+      .eq("slug", "boost-7j")
+      .eq("is_active", true)
+      .maybeSingle();
+    product = (data as Offer | null) ?? null;
+  } else {
+    return NextResponse.json({ error: "bad_request" }, { status: 400 });
+  }
+
+  if (!product) {
+    return NextResponse.json(
+      { error: "not_for_sale", detail: "Cette offre n'est pas encore en vente." },
+      { status: 409 },
+    );
+  }
+
+  const cfg = body.provider === "manual" ? null : konnectConfig();
+  const provider = cfg ? "konnect" : "bank_transfer";
+  const site = (process.env.NEXT_PUBLIC_SITE_URL || req.nextUrl.origin).replace(/\/$/, "");
+
+  // An order already open for the same thing is the order.
+  let q = admin
+    .from("payments")
+    .select("id, provider, status, metadata")
+    .eq("user_id", user.id)
+    .eq("kind", kind)
+    .in("status", ["pending", "pending_review"])
+    .eq("provider", provider)
+    .contains("metadata", { product_id: product.id, ...(listingId ? { listing_id: listingId } : {}) })
+    .gte("created_at", new Date(Date.now() - 2 * 3600_000).toISOString())
+    .order("created_at", { ascending: false })
+    .limit(1);
+  if (shopId) q = q.eq("shop_id", shopId);
+  const { data: open } = await q;
+  const reuse = open?.[0] as { id: string; provider: string; metadata: { pay_url?: string } } | undefined;
+  if (reuse) {
+    const redirect = reuse.provider === "konnect" && reuse.metadata?.pay_url
+      ? reuse.metadata.pay_url
+      : `/payment/checkout?payment=${reuse.id}`;
+    return NextResponse.json({ paymentId: reuse.id, provider: reuse.provider, redirect, reused: true });
+  }
+
+  const metadata = {
+    product_id: product.id,
+    product_slug: product.slug,
+    plan_code: product.plan_code,
+    expected_amount: Number(product.price),
+    ...(listingId ? { listing_id: listingId } : {}),
+    initiated_at: new Date().toISOString(),
+  };
+  const { data: pay, error } = await admin
+    .from("payments")
+    .insert({ user_id: user.id, kind, provider, amount: product.price, status: "pending", shop_id: shopId, metadata })
+    .select("id")
+    .single();
+  if (error || !pay) return fail("payment_create_failed", 500, error);
+
+  if (!cfg) {
+    logAction(req, user, `checkout.${kind}`, { paymentId: pay.id, provider, shopId });
+    return NextResponse.json({ paymentId: pay.id, provider, redirect: `/payment/checkout?payment=${pay.id}` });
+  }
+
+  try {
+    // Back where the buyer can see the answer: the shop's subscription page,
+    // or a private seller's annonces.
+    const back = shopId
+      ? `${site}/fr/pro/dashboard/abonnement?payment=${pay.id}`
+      : `${site}/fr/account/listings?payment=${pay.id}`;
+    const { payUrl, paymentRef } = await konnectInitPayment(cfg, {
+      amountTnd: Number(product.price),
+      orderId: pay.id as string,
+      description: kind === "subscription" ? `Mazed Auto — formule ${product.name_fr}` : "Mazed Auto — boost 7 jours",
+      webhookUrl: `${site}/api/payments/konnect/webhook`,
+      successUrl: back,
+      failUrl: back,
+    });
+    await admin
+      .from("payments")
+      .update({ provider_ref: paymentRef, metadata: { ...metadata, pay_url: payUrl } })
+      .eq("id", pay.id);
+    logAction(req, user, `checkout.${kind}`, { paymentId: pay.id, provider, shopId });
+    return NextResponse.json({ paymentId: pay.id, provider, redirect: payUrl });
+  } catch (e) {
+    await admin
+      .from("payments")
+      .update({ status: "failed", admin_notes: "Konnect indisponible à la création" })
+      .eq("id", pay.id);
+    return fail("konnect_unavailable", 502, e);
+  }
+}

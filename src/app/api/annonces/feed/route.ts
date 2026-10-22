@@ -86,11 +86,10 @@ export async function GET(req: NextRequest) {
   const sort = sortFor(sp);
   const offset = (page - 1) * FEED_PAGE_SIZE;
 
+  let base = admin.from("listings").select(LISTING_SELECT, { count: "exact" }).eq("status", "published");
+  if (sort.sponsoredFirst) base = base.order("sponsored_until", { ascending: false, nullsFirst: false });
   const { data, count, error } = await applyCatalogFilters(
-    admin
-      .from("listings")
-      .select(LISTING_SELECT, { count: "exact" })
-      .eq("status", "published")
+    base
       .order(sort.column, { ascending: sort.ascending, nullsFirst: false })
       .range(offset, offset + FEED_PAGE_SIZE - 1),
     sp,

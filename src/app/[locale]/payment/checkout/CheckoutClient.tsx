@@ -47,6 +47,9 @@ interface Props {
    *  seller can go back and fix the listing before paying. Full locale-prefixed
    *  href to the edit page (which returns here after saving). */
   editHref?: string;
+  /** A shop's order (plan or boost): « Retour » and the after-sending link go
+   *  to its subscription page rather than the private seller's annonces. */
+  shopOrder?: boolean;
 }
 
 /**
@@ -219,6 +222,7 @@ export function CheckoutClient({
   locale,
   reupload,
   editHref,
+  shopOrder = false,
 }: Props) {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -267,7 +271,9 @@ export function CheckoutClient({
   // Back to the annonce being paid for, or to the seller's own list when the
   // annonce has since been deleted. Both `/sell/<id>` and `/auctions/<id>`
   // stood here and both are deleted routes.
-  const backHref = (listing ? `/annonces/${listing.id}` : "/account/listings") as never;
+  const backHref = (
+    shopOrder ? "/pro/dashboard/abonnement" : listing ? `/annonces/${listing.id}` : "/account/listings"
+  ) as never;
 
   async function copyValue(label: string, value: string) {
     try {
@@ -568,10 +574,10 @@ export function CheckoutClient({
               {/* Where a seller actually wants to go after paying: their own
                   annonces, where this one now reads "En vérification". */}
               <a
-                href={`/${locale}/account/listings`}
+                href={`/${locale}/${shopOrder ? "pro/dashboard/abonnement" : "account/listings"}`}
                 className="batta-btn-luxe h-11 px-5 text-[13px]"
               >
-                Mes annonces <ArrowRight className="ml-1.5 h-4 w-4" />
+                {shopOrder ? "Mon abonnement" : "Mes annonces"} <ArrowRight className="ml-1.5 h-4 w-4" />
               </a>
               {listing && (
                 <a

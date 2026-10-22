@@ -189,7 +189,7 @@ export default async function PaymentSuccess({
 
   const { data: payment } = await supabase
     .from("payments")
-    .select("id, kind, amount, status, currency, created_at, auction_id")
+    .select("id, kind, amount, status, currency, created_at, auction_id, shop_id")
     .eq("id", id)
     .maybeSingle();
 
@@ -213,7 +213,9 @@ export default async function PaymentSuccess({
   // and not on the home page.
   const needsSellerAction = view.tone === "bad" || status === "pending";
   const dest = (
-    needsSellerAction
+    payment.shop_id
+      ? "/pro/dashboard/abonnement"
+      : needsSellerAction
       ? "/account/listings"
       : returnUrl && returnUrl.startsWith("/")
         ? returnUrl
@@ -222,7 +224,9 @@ export default async function PaymentSuccess({
           : safeReturn
   ) as `/${string}`;
 
-  const ctaLabel = needsSellerAction
+  const ctaLabel = payment.shop_id
+    ? "Mon abonnement"
+    : needsSellerAction
     ? "Reprendre depuis mes annonces"
     : view.tone === "ok"
       ? "Continuer"

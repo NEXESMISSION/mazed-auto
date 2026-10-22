@@ -54,15 +54,18 @@ export default async function ProSummaryPage() {
   const alerts: { tone: "bad" | "warn"; text: string; href?: string; cta?: string }[] = [];
   if (shop.status === "suspended") {
     alerts.push({ tone: "bad", text: `Boutique suspendue${shop.rejection_reason ? ` : ${shop.rejection_reason}` : "."} Ses annonces ne peuvent pas être mises en ligne.` });
+  } else if (shop.status === "draft") {
+    alerts.push({ tone: "warn", text: "Choisissez une formule pour ouvrir votre boutique : elle sera en ligne dès le paiement confirmé.", href: "/pro/dashboard/abonnement", cta: "Choisir" });
   } else if (shop.status !== "active") {
     alerts.push({ tone: "warn", text: "Boutique en attente de validation par notre équipe." });
   }
-  if (!current && !inGrace) {
-    alerts.push({ tone: "bad", text: "Aucun abonnement en cours : vos annonces ne peuvent pas être mises en ligne." });
+  // A draft has never had a period; the line above already says what to do.
+  if (!current && !inGrace && shop.status !== "draft") {
+    alerts.push({ tone: "bad", text: "Aucun abonnement en cours : vos annonces ne peuvent pas être mises en ligne.", href: "/pro/dashboard/abonnement", cta: "Choisir une formule" });
   } else if (inGrace) {
-    alerts.push({ tone: "bad", text: `Abonnement terminé le ${date(sub!.ends_at)}. Vos annonces restent en ligne jusqu'au ${date(sub!.grace_ends_at)}, mais rien de nouveau ne part.` });
+    alerts.push({ tone: "bad", text: `Abonnement terminé le ${date(sub!.ends_at)}. Vos annonces restent en ligne jusqu'au ${date(sub!.grace_ends_at)}, mais rien de nouveau ne part.`, href: "/pro/dashboard/abonnement", cta: "Renouveler" });
   } else if (daysLeft != null && daysLeft <= 14) {
-    alerts.push({ tone: "warn", text: `Votre abonnement se termine dans ${daysLeft} jour${daysLeft > 1 ? "s" : ""}, le ${date(sub!.ends_at)}.` });
+    alerts.push({ tone: "warn", text: `Votre abonnement se termine dans ${daysLeft} jour${daysLeft > 1 ? "s" : ""}, le ${date(sub!.ends_at)}.`, href: "/pro/dashboard/abonnement", cta: "Renouveler" });
   }
   if (quota.limit > 0 && quota.remaining === 0) {
     alerts.push({ tone: "warn", text: `Les ${quota.limit} ${bucketWord} de votre formule sont en ligne : retirez-en une pour en publier une autre.`, href: "/pro/dashboard/annonces", cta: "Gérer" });
@@ -137,7 +140,9 @@ export default async function ProSummaryPage() {
           ) : (
             <p className="mt-2 text-[13px] text-muted">Aucun abonnement.</p>
           )}
-          <p className="mt-2 text-[11.5px] text-muted">Le renouvellement en ligne arrive bientôt.</p>
+          <Link href={"/pro/dashboard/abonnement" as never} className="mt-2 inline-block text-[12px] font-bold text-gold hover:underline">
+            Gérer l&apos;abonnement
+          </Link>
         </section>
 
         <section className="rounded-2xl border border-border bg-surface p-4">

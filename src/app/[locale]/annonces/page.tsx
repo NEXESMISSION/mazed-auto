@@ -22,6 +22,7 @@ import {
   one,
   sortFor,
   toReelItem,
+  isSponsored,
   FEED_PAGE_SIZE,
   type CatalogSearchParams,
   type ListingRow,
@@ -166,17 +167,15 @@ export default async function AnnoncesPage({
   const filterOpts = { visibleCatIds: visibleCats.map((c) => c.id), fitmentIds };
   const applyFilters = <T,>(builder: T): T => applyCatalogFilters(builder, sp, filterOpts);
 
-  const { column: sortColumn, ascending: sortAsc } = sortFor(sp);
+  const { column: sortColumn, ascending: sortAsc, sponsoredFirst } = sortFor(sp);
 
-  const pagedQuery = (offset: number) =>
-    applyFilters(
-      admin
-        .from("listings")
-        .select(LISTING_SELECT, { count: "exact" })
-        .eq("status", "published")
-        .order(sortColumn, { ascending: sortAsc, nullsFirst: false })
-        .range(offset, offset + pageSize - 1),
+  const pagedQuery = (offset: number) => {
+    let base = admin.from("listings").select(LISTING_SELECT, { count: "exact" }).eq("status", "published");
+    if (sponsoredFirst) base = base.order("sponsored_until", { ascending: false, nullsFirst: false });
+    return applyFilters(
+      base.order(sortColumn, { ascending: sortAsc, nullsFirst: false }).range(offset, offset + pageSize - 1),
     );
+  };
 
   const countQuery = () =>
     applyFilters(
@@ -443,6 +442,12 @@ export default async function AnnoncesPage({
                         aria-hidden
                         className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/45 to-transparent"
                       />
+
+                      {isSponsored(l) && (
+                        <span className="absolute bottom-2 end-2 rounded-md bg-gold px-1.5 py-0.5 text-[9.5px] font-extrabold uppercase tracking-[0.1em] text-black">
+                          Sponsoris&eacute;
+                        </span>
+                      )}
 
                       {badged.has(l.seller_id) && (
                         <span className="absolute start-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/70 px-2 py-0.5 text-[9.5px] font-extrabold uppercase tracking-[0.1em] text-white backdrop-blur-sm">

@@ -64,7 +64,7 @@ export default async function CheckoutEntry({
   // a 404 — which is exactly how a stale column reference stays invisible.
   const { data: pay, error } = await supabase
     .from("payments")
-    .select("id, user_id, kind, amount, status, metadata")
+    .select("id, user_id, kind, amount, status, metadata, shop_id")
     .eq("id", paymentParam)
     .maybeSingle();
 
@@ -92,6 +92,7 @@ export default async function CheckoutEntry({
       })}
       locale={locale}
       reupload={pay.status === "pending_review"}
+      shopOrder={pay.shop_id != null}
       // A rejected receipt is often a rejected LISTING in disguise, so the
       // seller can go back and fix the annonce before paying again.
       editHref={

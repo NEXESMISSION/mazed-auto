@@ -5,6 +5,7 @@ import {
   openingHoursRows,
   shopInitials,
   shopSchemaType,
+  slugifyShopName,
 } from "./format";
 
 describe("shopInitials", () => {
@@ -35,6 +36,18 @@ describe("openingHoursRows", () => {
     expect(openingHoursRows({ mon: "", tue: 9, xyz: "8h" })).toEqual([]);
     expect(openingHoursRows(null)).toEqual([]);
     expect(openingHoursRows(["mon"])).toEqual([]);
+  });
+});
+
+describe("slugifyShopName", () => {
+  it("matches the agency backfill's slugs", () => {
+    expect(slugifyShopName("Auto Deal · Tunis")).toBe("auto-deal-tunis");
+    expect(slugifyShopName("Garage Démo · Sousse")).toBe("garage-demo-sousse");
+  });
+  it("always gives a usable slug", () => {
+    expect(slugifyShopName("AB")).toBe("boutique-ab");
+    expect(slugifyShopName("···")).toBe("boutique-pro");
+    expect(slugifyShopName("x".repeat(80))).toHaveLength(50);
   });
 });
 

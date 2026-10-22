@@ -35,11 +35,14 @@ export default async function PricingPage() {
   const admin = getServiceSupabase();
   let products: Product[] = [];
   let personal = { vehicles: 1, parts: 5, free: true };
+  let shopsOpen = false;
   if (admin) {
-    const [{ data }, { data: limits }] = await Promise.all([
+    const [{ data }, { data: limits }, { data: shopsSetting }] = await Promise.all([
       admin.from("products").select(PRODUCT_SELECT).eq("is_active", true).order("sort_order"),
       admin.from("app_settings").select("value").eq("key", "personal_limits").maybeSingle(),
+      admin.from("app_settings").select("value").eq("key", "pro_shops").maybeSingle(),
     ]);
+    shopsOpen = (shopsSetting?.value as { enabled?: boolean } | null)?.enabled === true;
     products = (data ?? []).map((r) => toProduct(r as Parameters<typeof toProduct>[0]));
     const v = (limits?.value ?? {}) as { vehicles?: number; parts?: number; free?: boolean };
     personal = {
@@ -53,6 +56,8 @@ export default async function PricingPage() {
   const part = products.find((p) => p.slug === "annonce-piece") ?? null;
   const renewal = products.find((p) => p.kind === "renewal") ?? null;
   const promos = products.filter((p) => p.kind === "promo");
+  // Shops are for sale once their pages are public AND a plan is active.
+  const shopsForSale = shopsOpen && products.some((p) => p.kind === "subscription");
 
   const price = (p: Product | null) =>
     p == null ? "—" : p.price <= 0 ? "Gratuit" : `${p.price} TND`;
@@ -96,11 +101,23 @@ export default async function PricingPage() {
 
       {personal.free && (
         <p className="mt-4 text-center text-[12.5px] text-muted">
-          Plus d&apos;annonces ? Les boutiques professionnelles arrivent bientôt.{" "}
-          <Link href="/contact" className="font-semibold text-gold hover:underline">
-            Parlons-en
-          </Link>
-          .
+          {shopsForSale ? (
+            <>
+              Plus d&apos;annonces ?{" "}
+              <Link href={"/pro" as never} className="font-semibold text-gold hover:underline">
+                Ouvrez une boutique professionnelle
+              </Link>
+              .
+            </>
+          ) : (
+            <>
+              Plus d&apos;annonces ? Les boutiques professionnelles arrivent bientôt.{" "}
+              <Link href="/contact" className="font-semibold text-gold hover:underline">
+                Parlons-en
+              </Link>
+              .
+            </>
+          )}
         </p>
       )}
 
