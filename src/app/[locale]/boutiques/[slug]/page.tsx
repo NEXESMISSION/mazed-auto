@@ -9,12 +9,15 @@ import {
   activityLabel,
   isShopVerified,
   openingHoursRows,
+  openingHoursSpec,
   shopInitials,
   shopSchemaType,
 } from "@/lib/shops/format";
+import { siteUrl } from "@/lib/siteUrl";
 import { ListingCard, LISTING_CARD_SELECT, type CardListing } from "@/components/listing/ListingCard";
 import { ContactReveal } from "../../annonces/[id]/ContactReveal";
 import { ShopsPreviewBanner } from "../ShopsPreviewBanner";
+import { ShopViewTracker } from "@/components/shops/ShopViewTracker";
 import { ArrowLeft, BadgeCheck, Clock, MapPin, Store } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -55,11 +58,17 @@ export async function generateMetadata({
   const admin = getServiceSupabase();
   const shop = admin ? await fetchShop(slug) : null;
   if (!admin || !shop || !(await shopViewer(admin, shop.id))) return { title: "Boutique" };
+  const title = `${shop.name} — ${activityLabel(shop.activity_type)} · Mazed Auto`;
+  const description =
+    shop.description?.slice(0, 160)
+    ?? `${shop.name}, ${activityLabel(shop.activity_type).toLowerCase()} à ${shop.governorate}. Annonces et contact.`;
+  const picture = shopMediaUrl(shop.banner_path) ?? shopMediaUrl(shop.logo_path);
+  const url = `${siteUrl()}/fr/boutiques/${shop.slug}`;
   return {
-    title: `${shop.name} — ${activityLabel(shop.activity_type)} · Mazed Auto`,
-    description:
-      shop.description?.slice(0, 160)
-      ?? `${shop.name}, ${activityLabel(shop.activity_type).toLowerCase()} à ${shop.governorate}. Annonces et contact.`,
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: { type: "website", url, title, description, siteName: "Mazed Auto", locale: "fr_TN", ...(picture ? { images: [picture] } : {}) },
   };
 }
 
@@ -94,12 +103,21 @@ export default async function BoutiquePage({
   const hours = openingHoursRows(shop.opening_hours);
   const place = [shop.address, shop.city, shop.governorate].filter(Boolean).join(", ");
 
+  // What a search engine files this page as. No telephone, on purpose: the
+  // number is revealed on request only, and JSON-LD is the easiest thing on a
+  // page to scrape.
+  const site = siteUrl();
+  const url = `${site}/fr/boutiques/${shop.slug}`;
+  const hoursSpec = openingHoursSpec(shop.opening_hours);
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": shopSchemaType(shop.activity_type),
+    "@id": `${url}#shop`,
+    url,
     name: shop.name,
     description: shop.description ?? undefined,
-    image: logo ?? undefined,
+    logo: logo ?? undefined,
+    image: banner ?? logo ?? undefined,
     address: {
       "@type": "PostalAddress",
       addressRegion: shop.governorate,
@@ -107,11 +125,28 @@ export default async function BoutiquePage({
       streetAddress: shop.address ?? undefined,
       addressCountry: "TN",
     },
+    ...(hoursSpec.length ? { openingHoursSpecification: hoursSpec } : {}),
+    ...(listings.length
+      ? {
+          hasOfferCatalog: {
+            "@type": "OfferCatalog",
+            name: `Annonces de ${shop.name}`,
+            itemListElement: listings.slice(0, 30).map((l) => ({
+              "@type": "Offer",
+              url: `${site}/fr/annonces/${l.id}`,
+              priceCurrency: "TND",
+              ...(l.price != null && !l.price_on_request ? { price: Number(l.price) } : {}),
+              itemOffered: { "@type": "Product", name: l.title },
+            })),
+          },
+        }
+      : {}),
   };
 
   return (
     <main className="mx-auto max-w-5xl pb-16 lg:px-8 lg:pt-6">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(jsonLd) }} />
+      <ShopViewTracker slug={shop.slug} />
 
       {viewer !== "public" && (
         <div className="px-4 pt-4 lg:px-0 lg:pt-0">
@@ -199,7 +234,10 @@ export default async function BoutiquePage({
               ni dans la location.
             </p>
             <div className="mt-3">
-              <ContactReveal endpoint={`/api/boutiques/${shop.slug}/contact`} />
+              <ContactReveal
+                endpoint={`/api/boutiques/${shop.slug}/contact`}
+                trackWhatsApp={`/api/boutiques/${shop.slug}/event`}
+              />
             </div>
           </section>
 
@@ -223,7 +261,7 @@ export default async function BoutiquePage({
             href={"/boutiques" as never}
             className="inline-flex items-center gap-1 text-[12.5px] font-bold text-gold hover:underline"
           >
-            <ArrowLeft className="size-3.5" /> Toutes les boutiques
+            <ArrowLeft className="size-3.5 rtl:rotate-180" /> Toutes les boutiques
           </Link>
         </aside>
       </div>

@@ -77,7 +77,7 @@ export function CreateShopWizard({ plans }: { plans: Plan[] }) {
         <section className="mt-5 grid gap-3">
           {ACTIVITIES.map(({ value, label, Icon, body }) => (
             <button key={value} type="button" onClick={() => { setActivity(value); setStep(2); }}
-              className={`flex items-center gap-3 rounded-2xl border bg-surface p-4 text-left transition hover:border-gold-soft ${activity === value ? "border-gold-soft" : "border-border"}`}>
+              className={`flex items-center gap-3 rounded-2xl border bg-surface p-4 text-start transition hover:border-gold-soft ${activity === value ? "border-gold-soft" : "border-border"}`}>
               <Icon className="size-6 shrink-0 text-gold" />
               <span>
                 <span className="block text-[14.5px] font-extrabold">{label}</span>
@@ -126,7 +126,7 @@ export function CreateShopWizard({ plans }: { plans: Plan[] }) {
               const n = activity === "pieces_auto" ? `${p.limits.parts.toLocaleString("fr-FR")} pièces` : `${p.limits.vehicles} véhicules`;
               return (
                 <button key={p.code} type="button" onClick={() => setPlan(p.code)}
-                  className={`flex w-full items-center justify-between gap-3 rounded-2xl border bg-surface p-4 text-left transition ${plan === p.code ? "border-gold-soft" : "border-border hover:border-gold-soft"}`}>
+                  className={`flex w-full items-center justify-between gap-3 rounded-2xl border bg-surface p-4 text-start transition ${plan === p.code ? "border-gold-soft" : "border-border hover:border-gold-soft"}`}>
                   <span>
                     <span className="flex items-center gap-1.5 text-[15px] font-extrabold">
                       {plan === p.code && <Check className="size-4 text-gold" />} {p.name}

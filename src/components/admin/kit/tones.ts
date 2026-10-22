@@ -70,6 +70,16 @@ const STATUS: Record<string, Entry> = {
   sold: { label: "Vendue", tone: "info" },
   paused: { label: "En pause", tone: "warn" },
 
+  // shops (0185) — draft, pending_review and rejected read as above
+  active: { label: "Active", tone: "ok" },
+  suspended: { label: "Suspendue", tone: "bad" },
+  closed: { label: "Fermée", tone: "neutral" },
+  // shops.verification_status and shop_documents.status
+  unverified: { label: "Non vérifiée", tone: "neutral" },
+  verified: { label: "Vérifiée", tone: "info" },
+  submitted: { label: "À examiner", tone: "warn" },
+  accepted: { label: "Accepté", tone: "ok" },
+
   // payment_status — `pending_review` is shared with listings above and means
   // the same thing to an admin: a human has to look at it.
   pending: { label: "En attente", tone: "warn" },

@@ -20,6 +20,7 @@ export default function robots(): MetadataRoute.Robots {
           "/fr/admin",
           "/fr/account",
           "/fr/pro/dashboard",
+          "/fr/pro/creer",
           "/fr/kyc",
           "/fr/payment",
           "/fr/sell",

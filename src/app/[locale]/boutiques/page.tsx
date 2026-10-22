@@ -7,11 +7,19 @@ import { SHOP_PUBLIC_SELECT, shopMediaUrl, shopsGate, type PublicShop } from "@/
 import { ACTIVITY_SLUG, activityLabel, isShopVerified, shopInitials } from "@/lib/shops/format";
 import { BadgeCheck, MapPin, Store } from "lucide-react";
 import { ShopsPreviewBanner } from "./ShopsPreviewBanner";
+import { jsonLdSafe } from "@/lib/jsonld";
+import { siteUrl } from "@/lib/siteUrl";
 
+const DESCRIPTION =
+  "Concessionnaires, loueurs et vendeurs de pièces auto en Tunisie : leurs annonces et leurs coordonnées.";
+
+// Filters (?activite, ?gov, ?verifie) are views of one page: they all point
+// search engines at the unfiltered directory.
 export const metadata: Metadata = {
   title: "Boutiques — Mazed Auto",
-  description:
-    "Concessionnaires, loueurs et vendeurs de pièces auto en Tunisie : leurs annonces et leurs coordonnées.",
+  description: DESCRIPTION,
+  alternates: { canonical: "/fr/boutiques" },
+  openGraph: { type: "website", url: "/fr/boutiques", title: "Boutiques — Mazed Auto", description: DESCRIPTION, siteName: "Mazed Auto", locale: "fr_TN" },
 };
 
 // Reads the shops and the public switch on every request.
@@ -82,8 +90,22 @@ export default async function BoutiquesPage({
         : "bg-surface text-foreground ring-border hover:ring-gold-soft"
     }`;
 
+  const site = siteUrl();
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: "Boutiques professionnelles",
+    itemListElement: shops.slice(0, 50).map((s, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      url: `${site}/fr/boutiques/${s.slug}`,
+      name: s.name,
+    })),
+  };
+
   return (
     <main className="mx-auto max-w-5xl px-4 pb-16 pt-6 lg:px-8 lg:pt-10">
+      {shops.length > 0 && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(jsonLd) }} />}
       {gate.preview && <ShopsPreviewBanner />}
 
       <header>
@@ -105,7 +127,7 @@ export default async function BoutiquesPage({
           href={href({ verifie: verifiedOnly ? undefined : "1" })}
           className={chip(verifiedOnly)}
         >
-          <BadgeCheck className="mr-1 size-3.5" /> Vérifiées
+          <BadgeCheck className="me-1 size-3.5" /> Vérifiées
         </Link>
       </nav>
 

@@ -5,7 +5,7 @@ import { useScrollLock } from "@/lib/scrollLock";
 import { Link, usePathname } from "@/i18n/navigation";
 import {
   LayoutDashboard, Inbox, Receipt, Tag, Users, FolderTree,
-  SlidersHorizontal, ExternalLink, Menu, X, Car,
+  SlidersHorizontal, ExternalLink, Menu, X, Car, Store,
   type LucideIcon,
 } from "lucide-react";
 import { NavIcon } from "./kit/LinkPending";
@@ -36,7 +36,7 @@ type Item = {
   Icon: LucideIcon;
   hint: string;
   /** Key into the `counts` map — a badge for work that is waiting. */
-  countKey?: "annonces" | "paiements";
+  countKey?: "annonces" | "paiements" | "boutiques";
 };
 
 const NAV: Item[] = [
@@ -67,6 +67,13 @@ const NAV: Item[] = [
     hint: "Annonces, packs, mises en avant, badge",
   },
   {
+    label: "Boutiques",
+    href: "/admin/boutiques",
+    Icon: Store,
+    hint: "Vérifications, justificatifs, abonnements",
+    countKey: "boutiques",
+  },
+  {
     label: "Vendeurs",
     href: "/admin/vendeurs",
     Icon: Users,
@@ -87,7 +94,7 @@ const SITE: Item = {
   hint: "Accueil, popups, documents, diffusions, réglages, journal",
 };
 
-export type AdminCounts = Partial<Record<"annonces" | "paiements", number>>;
+export type AdminCounts = Partial<Record<"annonces" | "paiements" | "boutiques", number>>;
 
 function BrandMark({ onNavigate }: { onNavigate?: () => void }) {
   return (

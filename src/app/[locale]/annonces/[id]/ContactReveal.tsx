@@ -17,10 +17,14 @@ import { Phone, MessageCircle, Loader2 } from "lucide-react";
 export function ContactReveal({
   listingId,
   endpoint,
+  trackWhatsApp,
 }: {
   listingId?: string;
   /** Where to ask. Defaults to the annonce's route; a shop passes its own. */
   endpoint?: string;
+  /** A shop counts WhatsApp taps for its statistics (0193): where to say so.
+   *  A beacon, so it never holds the link up. */
+  trackWhatsApp?: string;
 }) {
   const { toast } = useToast();
   const [busy, setBusy] = useState(false);
@@ -60,6 +64,14 @@ export function ContactReveal({
           href={`https://wa.me/${wa}`}
           target="_blank"
           rel="noreferrer"
+          onClick={() => {
+            if (!trackWhatsApp) return;
+            try {
+              navigator.sendBeacon(trackWhatsApp, new Blob([JSON.stringify({ kind: "whatsapp_click" })], { type: "text/plain" }));
+            } catch {
+              /* a missed count is not the visitor's problem */
+            }
+          }}
           className="tap-target flex w-full items-center justify-center gap-2 rounded-full border border-border bg-surface px-5 py-3 text-[13.5px] font-bold text-foreground transition hover:border-gold-soft"
         >
           <MessageCircle className="size-4" strokeWidth={2.2} />

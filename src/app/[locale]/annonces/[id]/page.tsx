@@ -14,6 +14,8 @@ import { RelatedListings } from "@/components/listing/RelatedListings";
 import { ViewTracker } from "@/components/listing/ViewTracker";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { shopsGate } from "@/lib/shops/public";
+import { shopSchemaType } from "@/lib/shops/format";
+import { siteUrl } from "@/lib/siteUrl";
 import { rentalConditionRows } from "@/lib/rental";
 import {
   DiagnosticSheet,
@@ -51,13 +53,13 @@ type Row = {
   fitments: { make: string; model: string | null; year_from: number | null; year_to: number | null }[] | null;
 };
 
-type ShopRef = { slug: string; name: string; status: string; verification_status: string };
+type ShopRef = { slug: string; name: string; status: string; verification_status: string; activity_type: string };
 
 const SELECT = `
   id, title, description, price, price_on_request, negotiable, condition,
   governorate, delegation, attributes, contact_name, show_phone, status,
   published_at, expires_at, seller_id, reference, shop_id, price_unit,
-  shop:shops (slug, name, status, verification_status),
+  shop:shops (slug, name, status, verification_status, activity_type),
   category:categories (id, label_fr, kind),
   photos:listing_photos (storage_path, sort_order),
   fitments:listing_fitments (make, model, year_from, year_to)
@@ -173,10 +175,7 @@ export default async function AnnoncePage({
   // Product with bidding fields — wrong here, and the reason this is written
   // fresh rather than reused. The seller's phone is deliberately NOT included:
   // JSON-LD is the easiest thing on a page to scrape.
-  const siteUrl = (
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://mazed-auto.vercel.app")
-  ).replace(/\/$/, "");
+  const site = siteUrl();
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -192,7 +191,7 @@ export default async function AnnoncePage({
           : "https://schema.org/UsedCondition",
     offers: {
       "@type": "Offer",
-      url: `${siteUrl}/${locale}/annonces/${l.id}`,
+      url: `${site}/${locale}/annonces/${l.id}`,
       priceCurrency: "TND",
       ...(l.price != null && !l.price_on_request ? { price: Number(l.price) } : {}),
       availability: "https://schema.org/InStock",
@@ -235,8 +234,24 @@ export default async function AnnoncePage({
   // The shop behind this annonce, linked only while shop pages are public (or
   // to an admin previewing them) and only while the shop is active.
   const shopRef = one(l.shop);
-  const shopLink =
-    shopRef && shopRef.status === "active" && admin && (await shopsGate(admin)).visible ? shopRef : null;
+  const gate = shopRef && shopRef.status === "active" && admin ? await shopsGate(admin) : null;
+  const shopLink = gate?.visible ? shopRef : null;
+  // Search engines learn who sells it only once shop pages are public — not
+  // from an admin's preview.
+  const structured = gate?.enabled && shopRef
+    ? {
+        ...jsonLd,
+        offers: {
+          ...jsonLd.offers,
+          seller: {
+            "@type": shopSchemaType(shopRef.activity_type),
+            "@id": `${site}/fr/boutiques/${shopRef.slug}#shop`,
+            name: shopRef.name,
+            url: `${site}/fr/boutiques/${shopRef.slug}`,
+          },
+        },
+      }
+    : jsonLd;
 
   const sellerCard = (
     <section className="rounded-2xl border border-border bg-surface p-4">
@@ -324,7 +339,7 @@ export default async function AnnoncePage({
     <main className="mx-auto max-w-3xl pb-16 lg:max-w-6xl">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: jsonLdSafe(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdSafe(structured) }}
       />
       {/* Renders nothing; reports from the browser that this page was really
           looked at, rather than merely prefetched. */}

@@ -114,7 +114,7 @@ export default async function ProSubscriptionPage({
               const lim = planLimitFor(p, shop.activity_type);
               return (
                 <div key={p.code} className={`rounded-xl border p-3 ${currentCode === p.code ? "border-gold-soft" : "border-border"}`}>
-                  <p className="font-extrabold">{p.name}{currentCode === p.code && <span className="ml-1 text-[11px] font-bold text-gold">· actuelle</span>}</p>
+                  <p className="font-extrabold">{p.name}{currentCode === p.code && <span className="ms-1 text-[11px] font-bold text-gold">· actuelle</span>}</p>
                   <p className="batta-tabular text-[18px] font-black">{p.price.toLocaleString("fr-FR")} TND</p>
                   <p className="text-[11.5px] text-muted">{lim.n.toLocaleString("fr-FR")} {lim.word} · {p.durationDays} jours</p>
                   {canBuy && (

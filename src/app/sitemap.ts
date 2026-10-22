@@ -72,6 +72,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .limit(2000);
       shopRoutes = [
         { url: `${base}/fr/boutiques`, changeFrequency: "daily" as const, priority: 0.7 },
+        { url: `${base}/fr/pro`, changeFrequency: "weekly" as const, priority: 0.5 },
         ...(shops ?? []).map((s) => ({
           url: `${base}/fr/boutiques/${s.slug as string}`,
           lastModified: (s.updated_at as string | null) ?? undefined,

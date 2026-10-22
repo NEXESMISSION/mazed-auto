@@ -3,6 +3,7 @@ import {
   activityLabel,
   isShopVerified,
   openingHoursRows,
+  openingHoursSpec,
   shopInitials,
   shopSchemaType,
   slugifyShopName,
@@ -68,5 +69,24 @@ describe("labels and types", () => {
     for (const s of ["unverified", "pending", "rejected", null]) {
       expect(isShopVerified({ verification_status: s })).toBe(false);
     }
+  });
+});
+
+describe("openingHoursSpec", () => {
+  const day = (d: string) => `https://schema.org/${d}`;
+
+  it("reads the ways owners write hours", () => {
+    expect(openingHoursSpec({ mon: "8h30 - 18h", tue: "9:00-12:00 / 14:00-18:00", wed: "9h à 17h" })).toEqual([
+      { "@type": "OpeningHoursSpecification", dayOfWeek: day("Monday"), opens: "08:30", closes: "18:00" },
+      { "@type": "OpeningHoursSpecification", dayOfWeek: day("Tuesday"), opens: "09:00", closes: "12:00" },
+      { "@type": "OpeningHoursSpecification", dayOfWeek: day("Tuesday"), opens: "14:00", closes: "18:00" },
+      { "@type": "OpeningHoursSpecification", dayOfWeek: day("Wednesday"), opens: "09:00", closes: "17:00" },
+    ]);
+  });
+
+  it("leaves out what it cannot read instead of inventing it", () => {
+    expect(openingHoursSpec({ sun: "Fermé", sat: "Sur rendez-vous", fri: "25h-30h", thu: "18h-9h" })).toEqual([]);
+    expect(openingHoursSpec(null)).toEqual([]);
+    expect(openingHoursSpec(["9h-18h"])).toEqual([]);
   });
 });

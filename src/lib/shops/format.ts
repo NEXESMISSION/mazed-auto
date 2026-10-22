@@ -65,6 +65,39 @@ export function openingHoursRows(raw: unknown): { day: string; hours: string }[]
   return rows;
 }
 
+const SCHEMA_DAY: Record<string, string> = {
+  mon: "Monday", tue: "Tuesday", wed: "Wednesday", thu: "Thursday", fri: "Friday", sat: "Saturday", sun: "Sunday",
+};
+
+/**
+ * The opening hours as schema.org `OpeningHoursSpecification`, for search
+ * engines. Owners type hours freely (« 8h30 - 18h », « 9:00-12:00 / 14:00-18:00 »,
+ * « Fermé »), so this keeps only what it can read without guessing: every
+ * « HH[h:]MM - HH[h:]MM » range of a day becomes one entry; a day with none
+ * (closed, « sur rendez-vous ») is left out rather than invented.
+ */
+export function openingHoursSpec(raw: unknown): { "@type": "OpeningHoursSpecification"; dayOfWeek: string; opens: string; closes: string }[] {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return [];
+  const out: { "@type": "OpeningHoursSpecification"; dayOfWeek: string; opens: string; closes: string }[] = [];
+  const time = (h: string, m: string | undefined) => {
+    const hh = Number(h);
+    const mm = Number(m ?? 0);
+    return hh <= 24 && mm < 60 ? `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}` : null;
+  };
+  for (const [key] of SHOP_DAYS) {
+    const v = (raw as Record<string, unknown>)[key];
+    if (typeof v !== "string") continue;
+    for (const m of v.matchAll(/(\d{1,2})\s*(?:[h:]\s*(\d{2})?)?\s*(?:-|–|à|a)\s*(\d{1,2})\s*(?:[h:]\s*(\d{2})?)?/gi)) {
+      const opens = time(m[1], m[2]);
+      const closes = time(m[3], m[4]);
+      if (opens && closes && opens < closes) {
+        out.push({ "@type": "OpeningHoursSpecification", dayOfWeek: `https://schema.org/${SCHEMA_DAY[key]}`, opens, closes });
+      }
+    }
+  }
+  return out;
+}
+
 /** The schema.org type a search engine should file this shop under. */
 export function shopSchemaType(a: string | null | undefined): string {
   if (a === "location_auto") return "AutoRental";

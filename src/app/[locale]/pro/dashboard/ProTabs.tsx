@@ -5,6 +5,7 @@ import { Link, usePathname } from "@/i18n/navigation";
 const TABS = [
   { href: "/pro/dashboard", label: "Résumé" },
   { href: "/pro/dashboard/annonces", label: "Annonces" },
+  { href: "/pro/dashboard/statistiques", label: "Statistiques" },
   { href: "/pro/dashboard/abonnement", label: "Abonnement" },
   { href: "/pro/dashboard/boutique", label: "Ma boutique" },
 ] as const;

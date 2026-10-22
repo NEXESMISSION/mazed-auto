@@ -127,8 +127,8 @@ export default async function ProListingsPage() {
                     {l.price_on_request || l.price == null
                       ? "Sur demande"
                       : `${formatTND(Number(l.price), locale)} TND${l.price_unit === "day" ? " / jour" : ""}`}
-                    <span className="ml-3 inline-flex items-center gap-1"><Eye className="size-3" /> {l.view_count}</span>
-                    <span className="ml-2 inline-flex items-center gap-1"><Phone className="size-3" /> {l.contact_reveal_count}</span>
+                    <span className="ms-3 inline-flex items-center gap-1"><Eye className="size-3" /> {l.view_count}</span>
+                    <span className="ms-2 inline-flex items-center gap-1"><Phone className="size-3" /> {l.contact_reveal_count}</span>
                   </p>
                   {l.status === "paused" && l.paused_reason && (
                     <p className="mt-1 text-[11.5px] text-muted">En pause : {PAUSED_BECAUSE[l.paused_reason] ?? l.paused_reason}</p>

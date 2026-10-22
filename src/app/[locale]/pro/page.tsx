@@ -8,10 +8,14 @@ import { plansForSale } from "@/lib/shops/plans";
 import { ShopsPreviewBanner } from "../boutiques/ShopsPreviewBanner";
 import { BadgeCheck, Car, KeyRound, Wrench, Check, ArrowRight } from "lucide-react";
 
+const DESCRIPTION =
+  "Concessionnaires, loueurs et vendeurs de pièces : votre boutique sur Mazed Auto, vos annonces dans le catalogue, vos clients vous appellent directement.";
+
 export const metadata: Metadata = {
   title: "Boutiques professionnelles — Mazed Auto",
-  description:
-    "Concessionnaires, loueurs et vendeurs de pièces : votre boutique sur Mazed Auto, vos annonces dans le catalogue, vos clients vous appellent directement.",
+  description: DESCRIPTION,
+  alternates: { canonical: "/fr/pro" },
+  openGraph: { type: "website", url: "/fr/pro", title: "Boutiques professionnelles — Mazed Auto", description: DESCRIPTION, siteName: "Mazed Auto", locale: "fr_TN" },
 };
 
 export const dynamic = "force-dynamic";
@@ -50,7 +54,7 @@ export default async function ProLandingPage() {
           href={(hasShop ? "/pro/dashboard" : "/pro/creer") as never}
           className="batta-btn-luxe tap-target mt-5 inline-flex h-12 items-center gap-2 px-6 text-[14px]"
         >
-          {hasShop ? "Mon espace pro" : "Ouvrir ma boutique"} <ArrowRight className="size-4" />
+          {hasShop ? "Mon espace pro" : "Ouvrir ma boutique"} <ArrowRight className="size-4 rtl:rotate-180" />
         </Link>
       </header>
 

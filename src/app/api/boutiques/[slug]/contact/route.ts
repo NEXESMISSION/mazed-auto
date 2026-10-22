@@ -53,8 +53,15 @@ export async function POST(
 
   const supabase = await getServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
-  // Counted per shop in the activity log until shop statistics land (lot 5).
   logAction(req, user, "shop.contact_reveal", { shopId: shop.id, ipHash });
+  // The shop's statistics (0193): once a day per visitor, members excluded.
+  await admin.rpc("record_shop_event", {
+    p_shop: shop.id,
+    p_listing: null,
+    p_kind: "phone_reveal",
+    p_viewer_key: user ? `u:${user.id}` : `a:${ipHash}`,
+    p_user: user?.id ?? null,
+  });
 
   return NextResponse.json({
     phone: shop.phone,
