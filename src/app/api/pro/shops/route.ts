@@ -3,6 +3,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { refuseIfSuspended } from "@/lib/http/suspended";
+import { overLimit, tooMany } from "@/lib/http/rateLimit";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { shopsGate } from "@/lib/shops/public";
@@ -34,6 +35,7 @@ export async function POST(req: NextRequest) {
   if (!admin) return fail("server_misconfigured", 500);
   const suspended = await refuseIfSuspended(admin, user.id);
   if (suspended) return suspended;
+  if (await overLimit(admin, `shop_create:${user.id}`, 10, 3600)) return tooMany();
 
   // Opening shops online follows the same switch as the shop pages.
   if (!(await shopsGate(admin)).visible) {

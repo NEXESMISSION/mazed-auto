@@ -4,6 +4,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { fail } from "@/lib/http/errors";
 import { checkKonnectPayment } from "@/lib/payments/konnectCheck";
+import { overLimit, tooMany } from "@/lib/http/rateLimit";
 
 /**
  * POST /api/pro/payments/[id]/verify — the buyer is back from Konnect: where
@@ -27,6 +28,7 @@ export async function POST(
   if (!user) return NextResponse.json({ error: "auth" }, { status: 401 });
   const admin = getServiceSupabase();
   if (!admin) return fail("server_misconfigured", 500);
+  if (await overLimit(admin, `pay_verify:${user.id}`, 60, 3600)) return tooMany();
 
   const { data: pay } = await admin
     .from("payments")

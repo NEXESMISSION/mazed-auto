@@ -6,6 +6,7 @@ import { publicationErrorFromDb } from "@/lib/publication";
 import { refusalResponse } from "@/lib/http/refusal";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
+import { refuseIfSuspended } from "@/lib/http/suspended";
 
 /**
  * POST /api/pro/listings/[id]/pause | resume — the shop chooses which of its
@@ -33,6 +34,10 @@ export async function POST(
 
   const gate = await requireShopRole(req, listing.shop_id as string, CAN_EDIT_SHOP);
   if (gate instanceof NextResponse) return gate;
+  if (action === "resume") {
+    const suspended = await refuseIfSuspended(admin, gate.user.id);
+    if (suspended) return suspended;
+  }
 
   const { data, error } = await admin.rpc(action === "pause" ? "pause_shop_listing" : "resume_shop_listing", {
     p_listing: id,

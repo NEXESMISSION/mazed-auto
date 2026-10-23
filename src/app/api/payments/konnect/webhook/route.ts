@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { checkKonnectPayment } from "@/lib/payments/konnectCheck";
+import { overLimit } from "@/lib/http/rateLimit";
+import { revealIpHash } from "@/lib/http/revealLimit";
 
 /**
  * GET /api/payments/konnect/webhook?payment_ref=… — Konnect tells us a payment
@@ -16,6 +18,12 @@ import { checkKonnectPayment } from "@/lib/payments/konnectCheck";
  * Either way the answer is 200 for anything we understood — an unknown
  * reference included — so Konnect does not keep retrying a call we have
  * already logged.
+ *
+ * LIMITS. Konnect calls from its own few addresses, so a per-IP cap would end
+ * up refusing real confirmations. Instead: an address may leave at most 30
+ * « unknown reference » entries an hour (that is noise, not payments), and one
+ * reference is looked up at Konnect at most 60 times an hour — anything past
+ * that waits for the reconciliation job, which confirms it anyway.
  */
 export async function GET(req: NextRequest) {
   const ref = req.nextUrl.searchParams.get("payment_ref") ?? req.nextUrl.searchParams.get("paymentRef");
@@ -35,13 +43,16 @@ export async function GET(req: NextRequest) {
     .maybeSingle();
 
   if (!pay) {
-    await admin.from("payment_events").insert({
-      provider: "konnect", provider_ref: ref, source: "webhook", outcome: "unknown_ref",
-    });
+    if (!(await overLimit(admin, `konnect_unknown:${revealIpHash(req)}`, 30, 3600))) {
+      await admin.from("payment_events").insert({
+        provider: "konnect", provider_ref: ref, source: "webhook", outcome: "unknown_ref",
+      });
+    }
     return NextResponse.json({ ok: true, outcome: "unknown_ref" });
   }
 
-  const outcome = await checkKonnectPayment(
+  const deferred = pay.status !== "captured" && (await overLimit(admin, `konnect_ref:${ref}`, 60, 3600));
+  const outcome = deferred ? "deferred" : await checkKonnectPayment(
     admin,
     pay as { id: string; amount: number; provider_ref: string; status: string },
     "webhook",

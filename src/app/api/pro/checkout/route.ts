@@ -3,6 +3,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { refuseIfSuspended } from "@/lib/http/suspended";
+import { overLimit, tooMany } from "@/lib/http/rateLimit";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { CAN_EDIT_SHOP, memberRole } from "@/lib/shops/server";
@@ -38,6 +39,7 @@ export async function POST(req: NextRequest) {
   if (!admin) return fail("server_misconfigured", 500);
   const suspended = await refuseIfSuspended(admin, user.id);
   if (suspended) return suspended;
+  if (await overLimit(admin, `checkout:${user.id}`, 20, 3600)) return tooMany();
 
   const body = (await req.json().catch(() => ({}))) as {
     shop_id?: unknown; plan_code?: unknown; listing_id?: unknown; product?: unknown; provider?: unknown;
