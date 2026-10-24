@@ -45,12 +45,13 @@ const TABS: Tab[] = [
 
 export function BottomTabBar() {
   const t = useTranslations("shell.tabs");
+  const tShell = useTranslations("shell");
   const pathname = usePathname();
   const activeId = activeTabFor(pathname);
 
   return (
     <nav
-      aria-label="Navigation principale"
+      aria-label={tShell("mainNav")}
       className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 items-center border-t border-border bg-surface/80 backdrop-blur-xl shadow-[0_-4px_20px_-8px_rgba(15,23,42,0.06)] lg:hidden"
       style={{
         height: "calc(var(--batta-bottombar-h) + env(safe-area-inset-bottom))",

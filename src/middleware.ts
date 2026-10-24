@@ -1,16 +1,16 @@
 import createIntlMiddleware from "next-intl/middleware";
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { routing } from "./i18n/routing";
+import { LOCALE_COOKIE, routing } from "./i18n/routing";
 import { log } from "./lib/log";
 import { logActivity } from "./lib/activity";
 import { AUCTIONS_VISIBLE } from "./lib/features";
 
 const intlMiddleware = createIntlMiddleware(routing);
 
-// Legacy locale prefixes we used to support. Now redirected to /fr to
-// preserve bookmarks, share links, and any indexed URLs.
-const LEGACY_LOCALES = ["ar", "en"] as const;
+// Legacy locale prefix we used to support. Redirected to /fr to preserve
+// bookmarks, share links, and any indexed URLs. (Arabic is back, as /ar.)
+const LEGACY_LOCALES = ["en"] as const;
 
 /**
  * Two-stage middleware:
@@ -49,7 +49,7 @@ export async function middleware(req: NextRequest) {
   const t0 = performance.now();
   const { pathname, search } = req.nextUrl;
 
-  // Legacy /ar/* and /en/* → /fr/* (preserve querystring + hash).
+  // Legacy /en/* → /fr/* (preserve querystring + hash).
   for (const legacy of LEGACY_LOCALES) {
     if (pathname === `/${legacy}` || pathname.startsWith(`/${legacy}/`)) {
       const rest = pathname.slice(legacy.length + 1) || "/";
@@ -57,6 +57,20 @@ export async function middleware(req: NextRequest) {
       mwLog.info(`redirect ${pathname} → ${target.pathname}`);
       return NextResponse.redirect(target, 308);
     }
+  }
+
+  // An unprefixed URL ("/", an old link, a typed address) goes to the language
+  // the visitor chose with the switch. next-intl's detection is off (see
+  // routing.ts), so without this it would always be French.
+  const chosen = req.cookies.get(LOCALE_COOKIE)?.value;
+  if (
+    chosen &&
+    chosen !== routing.defaultLocale &&
+    (routing.locales as readonly string[]).includes(chosen) &&
+    !routing.locales.some((l) => pathname === `/${l}` || pathname.startsWith(`/${l}/`))
+  ) {
+    const target = new URL(`/${chosen}${pathname === "/" ? "" : pathname}${search}`, req.url);
+    return NextResponse.redirect(target, 307);
   }
 
   const res = intlMiddleware(req);

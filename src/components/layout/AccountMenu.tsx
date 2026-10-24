@@ -1,28 +1,28 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import {
-  User, Activity, Receipt, Heart, ClipboardCheck, ShieldCheck, Plus,
+  User, Activity, Receipt, Heart, ShieldCheck, Plus,
   Bell, Settings, LogOut, Loader2,
 } from "lucide-react";
 import { accountLabel } from "@/lib/identity";
+import { LocaleChoice } from "@/components/i18n/LocaleSwitch";
 
-type Item = { href: string; label: string; sub?: string; Icon: typeof User };
+/** `key` names the item's label and sub-line under `accountMenu.items`. */
+type Item = { href: string; key: string; Icon: typeof User };
 
 const ITEMS: Item[] = [
-  { href: "/account", label: "Mon compte", sub: "Profil et vérification", Icon: User },
-  { href: "/account/listings", label: "Mes annonces", sub: "Publiées, en attente, expirées", Icon: Activity },
-  { href: "/account/payments", label: "Mes paiements", sub: "Frais de publication et reçus", Icon: Receipt },
-  { href: "/account/favoris", label: "Favoris", sub: "Vos annonces enregistrées", Icon: Heart },
-  ...(false
-    ? [{ href: "/account/inspections", label: "Inspections", sub: "Rapports d'expertise", Icon: ClipboardCheck }]
-    : []),
-  { href: "/account/notifications", label: "Notifications", sub: "Alertes et activité", Icon: Bell },
-  { href: "/account/settings", label: "Paramètres", sub: "Mot de passe et compte", Icon: Settings },
-  { href: "/annonces/nouvelle", label: "Publier une annonce", sub: "Voiture ou pièce de rechange", Icon: Plus },
+  { href: "/account", key: "account", Icon: User },
+  { href: "/account/listings", key: "listings", Icon: Activity },
+  { href: "/account/payments", key: "payments", Icon: Receipt },
+  { href: "/account/favoris", key: "favorites", Icon: Heart },
+  { href: "/account/notifications", key: "notifications", Icon: Bell },
+  { href: "/account/settings", key: "settings", Icon: Settings },
+  { href: "/annonces/nouvelle", key: "publish", Icon: Plus },
 ];
 
 /**
@@ -60,6 +60,7 @@ function toMenuUser(u: unknown): MenuUser | null {
  * page). For guests it's just a "Connexion" link.
  */
 export function AccountMenu() {
+  const t = useTranslations("accountMenu");
   const [authed, setAuthed] = useState<boolean | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [user, setUser] = useState<MenuUser | null>(null);
@@ -128,7 +129,7 @@ export function AccountMenu() {
 
   function onMenuKey(e: React.KeyboardEvent) {
     const items = Array.from(
-      menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [],
+      menuRef.current?.querySelectorAll<HTMLElement>('[role^="menuitem"]') ?? [],
     );
     if (items.length === 0) return;
     const idx = items.indexOf(document.activeElement as HTMLElement);
@@ -167,11 +168,10 @@ export function AccountMenu() {
     return (
       <Link
         href="/login"
-        aria-label="Connexion"
         className="inline-flex h-10 items-center gap-1.5 rounded-full border border-border px-4 text-[13px] font-semibold text-muted transition-colors hover:border-gold-soft/60 hover:text-foreground"
       >
         <User className="size-4.5" strokeWidth={2} />
-        Connexion
+        {t("login")}
       </Link>
     );
   }
@@ -184,7 +184,7 @@ export function AccountMenu() {
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label="Mon compte"
+        aria-label={t("items.account.label")}
         className={`inline-flex size-10 items-center justify-center rounded-full border transition-colors ${
           open
             ? "border-gold-soft bg-gold-faint text-gold"
@@ -202,7 +202,7 @@ export function AccountMenu() {
         <div
           ref={menuRef}
           role="menu"
-          aria-label="Mon compte"
+          aria-label={t("items.account.label")}
           onKeyDown={onMenuKey}
           className="absolute end-0 mt-2 w-64 overflow-hidden rounded-2xl border border-border bg-surface p-1.5 shadow-[0_20px_50px_-18px_rgba(0,0,0,0.45)]"
         >
@@ -235,8 +235,8 @@ export function AccountMenu() {
             >
               <ShieldCheck className="size-4 shrink-0 text-gold" strokeWidth={2.2} />
               <span className="min-w-0">
-                <span className="block text-[13px] font-bold leading-tight text-gold">Console admin</span>
-                <span className="block truncate text-[10.5px] leading-tight text-gold/70">Gérer la plateforme</span>
+                <span className="block text-[13px] font-bold leading-tight text-gold">{t("admin")}</span>
+                <span className="block truncate text-[10.5px] leading-tight text-gold/70">{t("adminSub")}</span>
               </span>
             </Link>
           )}
@@ -252,16 +252,21 @@ export function AccountMenu() {
               <it.Icon className="size-4 shrink-0 text-muted" strokeWidth={2} />
               <span className="min-w-0">
                 <span className="block text-[13px] font-semibold leading-tight text-foreground/85">
-                  {it.label}
+                  {t(`items.${it.key}.label`)}
                 </span>
-                {it.sub && (
-                  <span className="block truncate text-[10.5px] leading-tight text-subtle">
-                    {it.sub}
-                  </span>
-                )}
+                <span className="block truncate text-[10.5px] leading-tight text-subtle">
+                  {t(`items.${it.key}.sub`)}
+                </span>
               </span>
             </Link>
           ))}
+
+          <div aria-hidden className="my-1 h-px bg-border" />
+
+          <div className="flex items-center justify-between gap-3 px-3 py-1.5">
+            <span className="text-[12px] font-semibold text-muted">{t("language")}</span>
+            <LocaleChoice itemRole="menuitemradio" />
+          </div>
 
           <div aria-hidden className="my-1 h-px bg-border" />
 
@@ -273,7 +278,7 @@ export function AccountMenu() {
             className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-bold text-red-400 transition-colors hover:bg-red-500/10 disabled:opacity-60"
           >
             {loggingOut ? <Loader2 className="size-4 shrink-0 animate-spin" /> : <LogOut className="size-4 shrink-0" strokeWidth={2.2} />}
-            Se déconnecter
+            {t("logout")}
           </button>
         </div>
       )}

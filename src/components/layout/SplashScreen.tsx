@@ -64,8 +64,8 @@ export function SplashScreen() {
     >
       {/* Soft white halos for depth — same recipe as the favorites
           empty-state and the notification modal header. */}
-      <div className="batta-gradient-blob batta-gradient-blob-lg -top-20 -right-12" />
-      <div className="batta-gradient-blob batta-gradient-blob-lg -bottom-24 -left-16" />
+      <div className="batta-gradient-blob batta-gradient-blob-lg -top-20 -end-12" />
+      <div className="batta-gradient-blob batta-gradient-blob-lg -bottom-24 -start-16" />
 
       {/* Logo — preloaded in <head>, served via <picture> so AVIF wins where
           supported, with a WebP fallback.

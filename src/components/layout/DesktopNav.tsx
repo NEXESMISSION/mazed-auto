@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { activeTabFor, TAB_HREFS, type TabId } from "@/lib/nav/tabs";
 import { AccountMenu } from "./AccountMenu";
+import { LocaleSwitch } from "@/components/i18n/LocaleSwitch";
 import { normalizeSearchQuery } from "@/lib/search";
 import { SearchIcon, SearchSweep, SearchStatus } from "@/components/ui/SearchBusy";
 
@@ -65,6 +66,8 @@ function isActive(pathname: string, href: string): boolean {
 export function DesktopNav() {
   const t = useTranslations("shell.tabs");
   const ts = useTranslations("search");
+  const tShell = useTranslations("shell");
+  const tBrand = useTranslations("brand");
   const pathname = usePathname();
   const router = useRouter();
   const [q, setQ] = useState("");
@@ -94,7 +97,7 @@ export function DesktopNav() {
           <Link
             href="/"
             className="flex shrink-0 items-center"
-            aria-label="Mazed Auto"
+            aria-label={tBrand("name")}
           >
             {/* Emblem + the logo's own wordmark as one image — see the note in
                 TopBar. `h-9` (36px) in a 72px nav: ~236px across. */}
@@ -109,7 +112,7 @@ export function DesktopNav() {
             />
           </Link>
 
-          <nav className="flex items-center gap-1" aria-label="Navigation principale">
+          <nav className="flex items-center gap-1" aria-label={tShell("mainNav")}>
             {LINKS.map((l) => {
               const active = isActive(pathname, l.href);
               return (
@@ -135,7 +138,7 @@ export function DesktopNav() {
           <div className="relative flex w-full max-w-md items-center overflow-hidden rounded-full">
             <SearchIcon
               active={searching}
-              className="pointer-events-none absolute size-4 text-muted ltr:left-4 rtl:right-4"
+              className="pointer-events-none absolute start-4 size-4 text-muted"
             />
             <SearchSweep active={searching} />
             <SearchStatus active={searching} />
@@ -145,14 +148,15 @@ export function DesktopNav() {
               onChange={(e) => setQ(e.target.value)}
               placeholder={ts("placeholder")}
               aria-label={ts("placeholder")}
-              className={`h-11 w-full rounded-full border bg-surface-2 text-[13px] text-foreground placeholder:text-muted transition-colors focus:bg-surface focus:outline-none focus:ring-2 focus:ring-gold-faint ltr:pl-11 ltr:pr-4 rtl:pl-4 rtl:pr-11 ${searching ? "border-gold-soft" : "border-border focus:border-gold-soft/70"}`}
+              className={`h-11 w-full rounded-full border bg-surface-2 text-[13px] text-foreground placeholder:text-muted transition-colors focus:bg-surface focus:outline-none focus:ring-2 focus:ring-gold-faint ps-11 pe-4 ${searching ? "border-gold-soft" : "border-border focus:border-gold-soft/70"}`}
             />
           </div>
         </form>
 
-        {/* ── Right zone: notifications + account (v1 keeps the header
-            quiet on the right — selling lives in the nav links). ── */}
+        {/* ── Right zone (left in Arabic): language, notifications, account
+            (v1 keeps the header quiet here — selling lives in the nav links). ── */}
         <div className="flex shrink-0 items-center gap-2">
+          <LocaleSwitch />
           <NotificationBell />
           <AccountMenu />
         </div>

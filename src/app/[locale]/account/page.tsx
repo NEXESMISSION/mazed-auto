@@ -4,6 +4,7 @@ import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { accountLabel } from "@/lib/identity";
 import { SignOutButton } from "@/components/auth/SignOutButton";
+import { LocaleChoice } from "@/components/i18n/LocaleSwitch";
 import {
   Plus,
   Wallet,
@@ -86,7 +87,7 @@ export default async function AccountPage() {
           {/* Ambient gold blob behind the card, very low opacity. */}
           <div
             aria-hidden
-            className="batta-gradient-blob batta-gradient-blob-lg absolute -left-1/3 -top-1/4 -z-10 opacity-20"
+            className="batta-gradient-blob batta-gradient-blob-lg absolute -start-1/3 -top-1/4 -z-10 opacity-20"
           />
 
           <div className="relative overflow-hidden rounded-3xl bg-surface ring-1 ring-border shadow-[var(--shadow-md)]">
@@ -103,7 +104,7 @@ export default async function AccountPage() {
                   <span className="gradient-gold-text">{t("guestTitle")}</span>
                 </h1>
                 <p className="mt-2 text-[12.5px] text-muted">
-                  Connectez-vous pour continuer.
+                  {t("guestBody")}
                 </p>
               </div>
 
@@ -128,7 +129,7 @@ export default async function AccountPage() {
                 href="/annonces"
                 className="inline-flex items-center gap-1.5 text-[12px] font-bold text-muted transition hover:text-gold-bright"
               >
-                Explorer sans compte
+                {t("guestExplore")}
                 <ArrowRight
                   className={`size-3 ${isRTL ? "rotate-180" : ""}`}
                   strokeWidth={2.4}
@@ -147,12 +148,12 @@ export default async function AccountPage() {
   // the day the network was deleted; they only kept their imports alive.
   if (role === "admin") {
     // Not "Annonces, KYC, experts" — KYC and the expert network are both gone.
-    roleActions.push({ href: "/admin", Icon: LayoutDashboard, title: "Console admin", body: "Annonces, tarifs, vendeurs." });
+    roleActions.push({ href: "/admin", Icon: LayoutDashboard, title: t("actions.admin.title"), body: t("actions.admin.body") });
   }
   // « Espace partenaire » pointed at /partners/dashboard, which redirects to
   // /account — a loop. A member of a shop now gets their pro space instead.
   if (shopName) {
-    roleActions.push({ href: "/pro/dashboard", Icon: Briefcase, title: "Ma boutique", body: `${shopName} · annonces, page, abonnement.` });
+    roleActions.push({ href: "/pro/dashboard", Icon: Briefcase, title: t("actions.shop.title"), body: t("actions.shop.body", { shop: shopName }) });
   }
 
   // Grouped by journey so a buyer is not handed a seller dashboard and vice
@@ -166,21 +167,22 @@ export default async function AccountPage() {
   // and its own card advertised "Enchères, achats et favoris". A buyer here has
   // exactly two things of their own: what they saved, and what they paid.
   const buyerActions: ActionItem[] = [
-    { href: "/account/favoris", Icon: Heart, title: "Favoris", body: "Les annonces que vous avez enregistrées." },
+    { href: "/account/favoris", Icon: Heart, title: t("actions.favorites.title"), body: t("actions.favorites.body") },
     { href: "/account/payments", Icon: Wallet, title: t("sections.payments"), body: t("sections.paymentsBody") },
   ];
   // "Tableau du vendeur" pointed at /sell — the v2 auction form, complete with
   // mise à prix and caution. Selling in v3 is: publish an annonce, then manage
   // the ones you have.
   const sellerActions: ActionItem[] = [
-    { href: "/annonces/nouvelle", Icon: Plus, title: "Publier une annonce", body: "Une voiture ou une pièce. Les pièces sont gratuites." },
-    { href: "/account/listings", Icon: Building2, title: "Mes annonces", body: "Statut, expiration et renouvellement." },
+    { href: "/annonces/nouvelle", Icon: Plus, title: t("actions.publish.title"), body: t("actions.publish.body") },
+    { href: "/account/listings", Icon: Building2, title: t("actions.listings.title"), body: t("actions.listings.body") },
   ];
   const groups: { label: string; items: ActionItem[] }[] = [
-    { label: "Mon compte", items: accountActions },
-    { label: "Acheteur", items: buyerActions },
-    { label: "Vendeur", items: sellerActions },
+    { label: t("groups.account"), items: accountActions },
+    { label: t("groups.buyer"), items: buyerActions },
+    { label: t("groups.seller"), items: sellerActions },
   ];
+  const kycLabel = t(`kyc.${["verified", "submitted", "pending", "rejected"].includes(kycStatus) ? kycStatus : "none"}`);
 
   const identity = (
     <section className="batta-surface-navy-luxe relative overflow-hidden rounded-2xl p-6 ring-1 ring-gold/25">
@@ -200,7 +202,7 @@ export default async function AccountPage() {
             <div className="mt-0.5 truncate text-[11px] text-muted">{userEmail}</div>
           )}
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
-            <KycPill status={kycStatus} />
+            <KycPill status={kycStatus} label={kycLabel} />
             {role !== "individual" && <span className="batta-pill-gold">{role}</span>}
           </div>
         </div>
@@ -215,7 +217,7 @@ export default async function AccountPage() {
         className="tap-target mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gold-faint px-4 py-2.5 text-[13px] font-bold text-gold ring-1 ring-gold-soft/60 transition hover:bg-gold-faint/80"
       >
         <Heart className="size-4" strokeWidth={2.2} />
-        Favoris
+        {t("actions.favorites.title")}
       </Link>
     </section>
   );
@@ -238,8 +240,15 @@ export default async function AccountPage() {
             </div>
           </section>
         ))}
+        <section className="mt-5">
+          <p className="batta-eyebrow mb-2">{t("sections.language")}</p>
+          <div className="flex items-center justify-between gap-3 rounded-xl bg-surface p-4 ring-1 ring-border">
+            <span className="text-[14px] font-bold text-foreground">{t("languageRow")}</span>
+            <LocaleChoice />
+          </div>
+        </section>
         <div className="mt-6">
-          <SignOutButton label="Se déconnecter" />
+          <SignOutButton label={t("logout")} />
         </div>
       </div>
 
@@ -254,7 +263,7 @@ export default async function AccountPage() {
               <h1 className={`text-[24px] font-extrabold tracking-tight ${isRTL ? "font-arabic" : ""}`}>
                 {fullName ?? userEmail ?? ""}
               </h1>
-              <KycPill status={kycStatus} />
+              <KycPill status={kycStatus} label={kycLabel} />
               {role !== "individual" && <span className="batta-pill-gold">{role}</span>}
             </div>
             {fullName && userEmail && (
@@ -262,14 +271,15 @@ export default async function AccountPage() {
             )}
           </div>
           <div className="flex shrink-0 items-center gap-2.5">
+            <LocaleChoice />
             <Link
               href={FAVORIS_HREF}
               className="inline-flex items-center gap-2 rounded-xl bg-gold-faint px-4 py-2.5 text-[13.5px] font-bold text-gold ring-1 ring-gold-soft/60 transition hover:bg-gold-faint/80"
             >
               <Heart className="size-4" strokeWidth={2.2} />
-              Favoris
+              {t("actions.favorites.title")}
             </Link>
-            <SignOutButton label="Se déconnecter" />
+            <SignOutButton label={t("logout")} />
           </div>
         </section>
 
@@ -317,18 +327,12 @@ function ActionTile({ href, Icon, title, body, isRTL }: ActionItem & { isRTL: bo
   );
 }
 
-function KycPill({ status }: { status: string }) {
+function KycPill({ status, label }: { status: string; label: string }) {
   const tone =
     status === "verified" ? "batta-tone-ok"
     : status === "submitted" || status === "pending" ? "batta-tone-warn"
     : status === "rejected" ? "batta-tone-bad"
     : "bg-surface-2 text-muted border border-border";
-  const label =
-    status === "verified" ? "Identité vérifiée"
-    : status === "submitted" ? "En cours de vérification"
-    : status === "pending" ? "Vérification en attente"
-    : status === "rejected" ? "Vérification refusée"
-    : "Vérification requise";
   return (
     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-[0.14em] ${tone}`}>
       {label}

@@ -46,7 +46,9 @@
       "sell": "Tableau du vendeur",
       "admin": "Console admin",
       "payment": "Paiement"
-    }
+    },
+    "skipToContent": "Aller au contenu",
+    "mainNav": "Navigation principale"
   },
   "watchlistPage": {
     "title": "Votre liste",
@@ -67,6 +69,43 @@
       "payments": "Paiements",
       "paymentsBody": "Dépôts, commissions, remboursements.",
       "language": "Langue"
+    },
+    "guestExplore": "Explorer sans compte",
+    "languageRow": "Langue du site",
+    "logout": "Se déconnecter",
+    "groups": {
+      "account": "Mon compte",
+      "buyer": "Acheteur",
+      "seller": "Vendeur"
+    },
+    "actions": {
+      "admin": {
+        "title": "Console admin",
+        "body": "Annonces, tarifs, vendeurs."
+      },
+      "shop": {
+        "title": "Ma boutique",
+        "body": "{shop} · annonces, page, abonnement."
+      },
+      "favorites": {
+        "title": "Favoris",
+        "body": "Les annonces que vous avez enregistrées."
+      },
+      "publish": {
+        "title": "Publier une annonce",
+        "body": "Une voiture ou une pièce. Les pièces sont gratuites."
+      },
+      "listings": {
+        "title": "Mes annonces",
+        "body": "Statut, expiration et renouvellement."
+      }
+    },
+    "kyc": {
+      "verified": "Identité vérifiée",
+      "submitted": "En cours de vérification",
+      "pending": "Vérification en attente",
+      "rejected": "Vérification refusée",
+      "none": "Vérification requise"
     }
   },
   "landing": {
@@ -503,6 +542,225 @@
       "tooShort": "L'enchère doit durer au moins 30 minutes.",
       "tooLong": "L'enchère ne peut pas durer plus de 60 jours.",
       "couldNotSchedule": "Impossible de programmer l'enchère. Réessayez."
+    }
+  },
+  "language": {
+    "label": "Langue",
+    "switchTo": {
+      "fr": "Afficher le site en français",
+      "ar": "Afficher le site en arabe"
+    }
+  },
+  "network": {
+    "offline": "Hors ligne — reconnexion automatique…",
+    "reconnected": "Connexion rétablie"
+  },
+  "notFound": {
+    "title": "Page introuvable",
+    "body": "Le lien que vous avez suivi n'existe pas ou a été déplacé.",
+    "home": "Retour à l'accueil"
+  },
+  "errorPage": {
+    "title": "Quelque chose s'est mal passé",
+    "body": "Une erreur inattendue a interrompu la page. Vous pouvez réessayer ; si le problème persiste, signalez-le à l'équipe.",
+    "networkTitle": "Connexion interrompue",
+    "networkBody": "Votre appareil semble hors ligne. La page se rechargera automatiquement dès que la connexion revient.",
+    "retry": "Réessayer",
+    "retrying": "Reconnexion…",
+    "home": "Accueil"
+  },
+  "accountMenu": {
+    "login": "Connexion",
+    "admin": "Console admin",
+    "adminSub": "Gérer la plateforme",
+    "language": "Langue",
+    "logout": "Se déconnecter",
+    "items": {
+      "account": {
+        "label": "Mon compte",
+        "sub": "Profil et vérification"
+      },
+      "listings": {
+        "label": "Mes annonces",
+        "sub": "Publiées, en attente, expirées"
+      },
+      "payments": {
+        "label": "Mes paiements",
+        "sub": "Frais de publication et reçus"
+      },
+      "favorites": {
+        "label": "Favoris",
+        "sub": "Vos annonces enregistrées"
+      },
+      "notifications": {
+        "label": "Notifications",
+        "sub": "Alertes et activité"
+      },
+      "settings": {
+        "label": "Paramètres",
+        "sub": "Mot de passe et compte"
+      },
+      "publish": {
+        "label": "Publier une annonce",
+        "sub": "Voiture ou pièce de rechange"
+      }
+    }
+  },
+  "phone": {
+    "label": "Téléphone",
+    "number": "Numéro de téléphone",
+    "dialCode": "Indicatif pays — actuellement {country}",
+    "dialCodes": "Liste des indicatifs",
+    "invalid": "Numéro invalide.",
+    "errors": {
+      "empty": "Tapez votre numéro de téléphone.",
+      "tunisianLength": "Un numéro tunisien doit faire 8 chiffres — vous en avez tapé {count}.",
+      "tooShort": "Numéro trop court — il faut au moins 6 chiffres après l'indicatif {dialCode}.",
+      "tooLong": "Numéro trop long — maximum 15 chiffres après l'indicatif."
+    },
+    "countries": {
+      "1": "USA / Canada",
+      "20": "Égypte",
+      "31": "Pays-Bas",
+      "32": "Belgique",
+      "33": "France",
+      "34": "Espagne",
+      "39": "Italie",
+      "41": "Suisse",
+      "44": "Royaume-Uni",
+      "49": "Allemagne",
+      "90": "Turquie",
+      "212": "Maroc",
+      "213": "Algérie",
+      "216": "Tunisie",
+      "961": "Liban",
+      "962": "Jordanie",
+      "965": "Koweït",
+      "966": "Arabie saoudite",
+      "968": "Oman",
+      "971": "Émirats",
+      "973": "Bahreïn",
+      "974": "Qatar"
+    }
+  },
+  "auth": {
+    "errors": {
+      "network": "Impossible de joindre le serveur. Vérifiez votre connexion et réessayez."
+    },
+    "password": {
+      "label": "Mot de passe",
+      "show": "Afficher le mot de passe",
+      "hide": "Masquer le mot de passe",
+      "new": "Nouveau mot de passe (min 8)",
+      "confirm": "Confirmer",
+      "tooShort": "Le mot de passe doit comporter au moins 8 caractères.",
+      "mismatch": "Les deux mots de passe ne correspondent pas.",
+      "update": "Mettre à jour le mot de passe",
+      "updating": "Mise à jour…"
+    },
+    "login": {
+      "welcomeBack": "Bon <gold>retour</gold>",
+      "subtitle": "Connectez-vous pour continuer",
+      "forgot": "Mot de passe oublié ?",
+      "noAccount": "Pas encore de compte ?",
+      "submitting": "Connexion…",
+      "errors": {
+        "rateLimited": "Trop de tentatives. Patientez quelques minutes avant de réessayer — vos identifiants ne sont peut-être pas en cause.",
+        "unavailable": "Service indisponible pour le moment. Réessayez dans un instant.",
+        "invalid": "Identifiants invalides. Vérifiez le numéro et le mot de passe."
+      }
+    },
+    "signup": {
+      "title": "Rejoignez <gold>{brand}</gold>",
+      "subtitle": "Créez votre compte pour publier une annonce et enregistrer vos favoris",
+      "haveAccount": "Déjà inscrit ?",
+      "fullName": "Nom complet",
+      "password": "Mot de passe (min 8)",
+      "accept": "<l>J'accepte les</l> <terms>conditions d'utilisation</terms> <l>et la</l> <privacy>politique de confidentialité</privacy>.",
+      "acceptFirst": "Acceptez les conditions d'utilisation",
+      "mustAccept": "Veuillez accepter les conditions d'utilisation et la politique de confidentialité.",
+      "submitting": "Création du compte…",
+      "terms": "Conditions d'utilisation",
+      "privacy": "Politique de confidentialité",
+      "partnerNote": "Compte partenaire (agence, expert, banque) ? Créez un compte ici puis candidatez depuis <b>Compte</b>.",
+      "errors": {
+        "phone_taken": "Ce numéro est déjà associé à un compte. Connectez-vous.",
+        "weak_password": "Mot de passe trop court (8 caractères minimum).",
+        "invalid_phone": "Numéro de téléphone invalide.",
+        "rate_limited": "Trop de tentatives. Réessayez dans un instant.",
+        "phone_not_verified": "Vérification du numéro requise. Réessayez.",
+        "generic": "Impossible de créer le compte. Réessayez."
+      }
+    },
+    "otp": {
+      "title": "Vérifiez votre numéro",
+      "sentTo": "Entrez le code à 6 chiffres envoyé par SMS au <phone>{number}</phone>.",
+      "codeLabel": "Code de vérification à 6 chiffres",
+      "enterCode": "Entrez le code à 6 chiffres.",
+      "verifying": "Vérification…",
+      "verify": "Vérifier le code",
+      "verifyAndCreate": "Vérifier et créer le compte",
+      "resend": "Renvoyer le code",
+      "resendIn": "Renvoyer le code ({seconds}s)",
+      "editInfo": "Modifier mes informations",
+      "changeNumber": "Changer de numéro",
+      "errors": {
+        "wrong_code": "Code incorrect.",
+        "expired": "Code expiré. Redemandez-en un.",
+        "no_code": "Aucun code en cours. Redemandez-en un.",
+        "too_many_attempts": "Trop de tentatives. Redemandez un code.",
+        "failed": "Échec de la vérification.",
+        "network": "Erreur réseau. Réessayez.",
+        "resendFailed": "Échec du renvoi. Réessayez.",
+        "sendFailed": "Impossible d'envoyer le code SMS. Réessayez dans un instant."
+      }
+    },
+    "forgot": {
+      "title": "Mot de passe oublié",
+      "subtitle": "Entrez votre numéro — nous vous enverrons un code SMS pour réinitialiser votre mot de passe.",
+      "remember": "Vous vous en souvenez ?",
+      "login": "Se connecter",
+      "smsUnavailable": "La réinitialisation par SMS n'est pas disponible pour le moment. Contactez le support.",
+      "sendCode": "Envoyer le code SMS",
+      "sending": "Envoi…",
+      "updated": "Mot de passe mis à jour",
+      "signingIn": "Connexion à votre compte…",
+      "toLogin": "Redirection vers la page de connexion…",
+      "errors": {
+        "expired": "Vérification expirée. Recommencez la procédure.",
+        "weak_password": "Mot de passe trop court (8 caractères minimum).",
+        "no_account": "Aucun compte n'est associé à ce numéro.",
+        "rate_limited": "Trop de tentatives. Réessayez dans un instant.",
+        "generic": "Impossible de réinitialiser le mot de passe. Réessayez."
+      }
+    },
+    "reset": {
+      "title": "Nouveau mot de passe",
+      "subtitle": "Choisissez un nouveau mot de passe pour votre compte.",
+      "checking": "Vérification du lien…",
+      "invalid": "Lien invalide ou expiré. <link>Demander un nouveau lien</link>.",
+      "signedIn": "Vous êtes connecté. Redirection…"
+    },
+    "hero": {
+      "eyebrow": "Annonces vérifiées · Tunisie",
+      "title": "Voitures et <gold>pièces de rechange</gold>.",
+      "body": "Achetez et vendez en toute confiance — chaque annonce est relue avant sa publication, et vous traitez directement avec le vendeur.",
+      "features": {
+        "verified": {
+          "title": "Annonces vérifiées",
+          "sub": "Relues avant publication"
+        },
+        "price": {
+          "title": "Prix affiché",
+          "sub": "Ni enchère, ni attente"
+        },
+        "contact": {
+          "title": "Contact direct",
+          "sub": "Vous appelez le vendeur"
+        }
+      },
+      "checkedTitle": "Chaque annonce est vérifiée",
+      "checkedBody": "Relue par notre équipe avant publication"
     }
   }
 }

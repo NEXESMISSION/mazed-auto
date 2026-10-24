@@ -184,10 +184,14 @@
   --color-batta-gold-deep: var(--gold-deep);
   --color-batta-gold-dark: var(--gold-deep);
 
-  --font-sans: var(--font-jakarta), "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
-  --font-display: var(--font-jakarta), "Plus Jakarta Sans", system-ui, sans-serif;
-  --font-arabic: var(--font-cairo), system-ui, sans-serif;
-  --font-serif: var(--font-jakarta), system-ui, sans-serif;
+  /* Cairo comes right after Jakarta in every stack. Its @font-face is limited
+     to the Arabic unicode-range ([locale]/layout.tsx), so Latin letters and
+     digits stay in Jakarta and Arabic letters fall through to Cairo — on any
+     element, whatever font utility it carries. */
+  --font-sans: var(--font-jakarta), var(--font-cairo), "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-jakarta), var(--font-cairo), "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-arabic: var(--font-cairo), var(--font-jakarta), system-ui, sans-serif;
+  --font-serif: var(--font-jakarta), var(--font-cairo), system-ui, sans-serif;
 }
 
 /* ============================================
@@ -222,6 +226,31 @@ body {
 }
 
 html[dir="rtl"] body { font-family: var(--font-arabic); }
+
+/* Arabic is cursive: letter-spacing pulls the joined letters apart (and the
+   negative tracking of the headings crushes them), and it has no capitals to
+   upper-case. Arabic letters also reach higher and lower than Latin ones, so
+   the tight leading of the display headings clips them. */
+html:lang(ar) [class*="tracking-"],
+html:lang(ar) .batta-eyebrow,
+html:lang(ar) .batta-eyebrow-muted,
+html:lang(ar) .batta-serif {
+  letter-spacing: normal;
+}
+html:lang(ar) .batta-eyebrow,
+html:lang(ar) .uppercase {
+  text-transform: none;
+}
+html:lang(ar) .batta-eyebrow { font-size: 11.5px; }
+html:lang(ar) :is(h1, h2, h3) { line-height: 1.35; }
+
+/* A run that must stay left-to-right inside Arabic text: a phone number, a
+   price with its grouping spaces, a plate. Without the isolate, "+216 98 120
+   622" comes out as "622 120 98 216+". */
+.ltr-island {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
 
 .batta-serif {
   font-family: var(--font-sans);

@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname, Link } from "@/i18n/navigation";
 import { BackButton } from "./BackButton";
-import { LocaleSwitcher } from "./LocaleSwitcher";
+import { LocaleSwitch } from "@/components/i18n/LocaleSwitch";
 
 // Lazy-loaded: the bell pulls in ~40 lucide icons, opens a realtime socket,
 // and fetches /api/notifications on mount — none of which is needed for first
@@ -90,10 +90,11 @@ export function TopBar() {
           )}
         </div>
 
-        {/* TRAILING — notifications bell + locale switcher */}
-        <div className="flex items-center gap-1">
+        {/* TRAILING — notifications bell + the other language. In Arabic the
+            whole bar mirrors: the logo goes to the right, these to the left. */}
+        <div className="flex items-center gap-1.5">
           <NotificationBell />
-          <LocaleSwitcher />
+          <LocaleSwitch />
         </div>
       </div>
     </header>
