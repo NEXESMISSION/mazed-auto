@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { getServiceSupabase } from "@/lib/supabase/admin";
+import { routing } from "@/i18n/routing";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ||
@@ -19,17 +20,27 @@ export const revalidate = 3600;
  *
  * Authenticated areas (admin/account/kyc/payment/sell) are excluded here and
  * in robots.ts. Uses the cookieless service-role client like the home feed.
+ *
+ * Every page is listed once per language (/fr/…, /ar/…), each entry naming
+ * the other versions — the sitemap form of hreflang.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = SITE_URL?.replace(/\/$/, "") ?? "";
 
+  /** One entry per locale for a path without its locale ("" for home). */
+  const localized = (path: string, entry: Omit<MetadataRoute.Sitemap[number], "url">): MetadataRoute.Sitemap => {
+    const languages = Object.fromEntries(routing.locales.map((l) => [l, `${base}/${l}${path}`]));
+    return routing.locales.map((l) => ({ url: `${base}/${l}${path}`, ...entry, alternates: { languages } }));
+  };
+
+  // /properties is gone from here: the auction gate redirects it to the
+  // catalogue, and a sitemap should only list pages that answer 200.
   const staticRoutes: MetadataRoute.Sitemap = [
-    { url: `${base}/fr`, changeFrequency: "hourly", priority: 1 },
-    { url: `${base}/fr/annonces`, changeFrequency: "hourly", priority: 1 },
-    { url: `${base}/fr/properties`, changeFrequency: "hourly", priority: 0.9 },
-    { url: `${base}/fr/terms`, changeFrequency: "yearly", priority: 0.2 },
-    { url: `${base}/fr/privacy`, changeFrequency: "yearly", priority: 0.2 },
-    { url: `${base}/fr/contact`, changeFrequency: "monthly", priority: 0.3 },
+    ...localized("", { changeFrequency: "hourly", priority: 1 }),
+    ...localized("/annonces", { changeFrequency: "hourly", priority: 1 }),
+    ...localized("/terms", { changeFrequency: "yearly", priority: 0.2 }),
+    ...localized("/privacy", { changeFrequency: "yearly", priority: 0.2 }),
+    ...localized("/contact", { changeFrequency: "monthly", priority: 0.3 }),
   ];
 
   const sb = getServiceSupabase();
@@ -45,14 +56,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .order("published_at", { ascending: false })
       .limit(5000);
 
-    const annonceRoutes: MetadataRoute.Sitemap = (annonces ?? []).map((row) => {
+    const annonceRoutes: MetadataRoute.Sitemap = (annonces ?? []).flatMap((row) => {
       const r = row as { id: string; updated_at: string | null; published_at: string | null };
-      return {
-        url: `${base}/fr/annonces/${r.id}`,
+      return localized(`/annonces/${r.id}`, {
         lastModified: r.updated_at ?? r.published_at ?? undefined,
-        changeFrequency: "daily" as const,
+        changeFrequency: "daily",
         priority: 0.8,
-      };
+      });
     });
 
     // A second block listed `auctions` joined to `properties` here, emitting
@@ -71,14 +81,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .eq("status", "active")
         .limit(2000);
       shopRoutes = [
-        { url: `${base}/fr/boutiques`, changeFrequency: "daily" as const, priority: 0.7 },
-        { url: `${base}/fr/pro`, changeFrequency: "weekly" as const, priority: 0.5 },
-        ...(shops ?? []).map((s) => ({
-          url: `${base}/fr/boutiques/${s.slug as string}`,
-          lastModified: (s.updated_at as string | null) ?? undefined,
-          changeFrequency: "daily" as const,
-          priority: 0.7,
-        })),
+        ...localized("/boutiques", { changeFrequency: "daily", priority: 0.7 }),
+        ...localized("/pro", { changeFrequency: "weekly", priority: 0.5 }),
+        ...(shops ?? []).flatMap((s) =>
+          localized(`/boutiques/${s.slug as string}`, {
+            lastModified: (s.updated_at as string | null) ?? undefined,
+            changeFrequency: "daily",
+            priority: 0.7,
+          }),
+        ),
       ];
     }
 

@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { localeAlternates } from "@/i18n/alternates";
+import { ogLocale } from "@/i18n/routing";
 import { notFound } from "next/navigation";
 import { getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
@@ -51,9 +53,9 @@ async function fetchShop(slug: string): Promise<PublicShop | null> {
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ locale: string; slug: string }>;
 }): Promise<Metadata> {
-  const { slug } = await params;
+  const { locale, slug } = await params;
   // The head is rendered even when the page is a 404: without the gate here, a
   // hidden shop's name and description would ship in <title> and <meta>.
   const admin = getServiceSupabase();
@@ -64,12 +66,12 @@ export async function generateMetadata({
     shop.description?.slice(0, 160)
     ?? `${shop.name}, ${activityLabel(shop.activity_type).toLowerCase()} à ${shop.governorate}. Annonces et contact.`;
   const picture = shopMediaUrl(shop.banner_path) ?? shopMediaUrl(shop.logo_path);
-  const url = `${siteUrl()}/fr/boutiques/${shop.slug}`;
+  const url = `${siteUrl()}/${locale}/boutiques/${shop.slug}`;
   return {
     title,
     description,
-    alternates: { canonical: url },
-    openGraph: { type: "website", url, title, description, siteName: "Mazed Auto", locale: "fr_TN", images: [picture ?? OG_IMAGE] },
+    alternates: localeAlternates(locale, `/boutiques/${shop.slug}`),
+    openGraph: { type: "website", url, title, description, siteName: "Mazed Auto", locale: ogLocale(locale), images: [picture ?? OG_IMAGE] },
   };
 }
 

@@ -1,4 +1,6 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import type { Metadata } from "next";
+import { localeAlternates } from "@/i18n/alternates";
 import { Link } from "@/i18n/navigation";
 import { HomeDesktop } from "@/components/landing/HomeDesktop";
 import { BrandRail } from "@/components/landing/BrandRail";
@@ -110,6 +112,15 @@ const TRUST_PILLARS: {
 const _sparklesKeepAlive = Sparkles;
 void _sparklesKeepAlive;
 
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  return { alternates: localeAlternates(locale, "/") };
+}
 
 export default async function LandingPage({
   params,

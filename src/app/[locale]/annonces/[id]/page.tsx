@@ -24,6 +24,7 @@ import {
 } from "@/components/property/DiagnosticSheet";
 import { BadgeCheck, MapPin, Wrench, Car, Clock, ShieldAlert, Hash} from "lucide-react";
 import type { Metadata } from "next";
+import { localeAlternates } from "@/i18n/alternates";
 
 export const dynamic = "force-dynamic";
 
@@ -83,15 +84,16 @@ async function fetchListing(id: string): Promise<Row | null> {
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ locale: string; id: string }>;
 }): Promise<Metadata> {
-  const { id } = await params;
+  const { locale, id } = await params;
   const l = await fetchListing(id);
   if (!l || l.status !== "published") return { title: "Annonce" };
   const price = l.price != null ? `${Number(l.price).toLocaleString("fr-FR")} TND` : "Prix sur demande";
   return {
     title: `${l.title} · ${price} · Mazed`,
     description: l.description?.slice(0, 160) ?? `${l.title} à ${l.governorate}.`,
+    alternates: localeAlternates(locale, `/annonces/${l.id}`),
   };
 }
 

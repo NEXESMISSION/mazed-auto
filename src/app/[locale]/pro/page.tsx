@@ -8,16 +8,25 @@ import { plansForSale } from "@/lib/shops/plans";
 import { ShopsPreviewBanner } from "../boutiques/ShopsPreviewBanner";
 import { BadgeCheck, Car, KeyRound, Wrench, Check, ArrowRight } from "lucide-react";
 import { OG_IMAGE } from "@/lib/ogImage";
+import { localeAlternates } from "@/i18n/alternates";
+import { ogLocale } from "@/i18n/routing";
 
 const DESCRIPTION =
   "Concessionnaires, loueurs et vendeurs de pièces : votre boutique sur Mazed Auto, vos annonces dans le catalogue, vos clients vous appellent directement.";
 
-export const metadata: Metadata = {
-  title: "Boutiques professionnelles — Mazed Auto",
-  description: DESCRIPTION,
-  alternates: { canonical: "/fr/pro" },
-  openGraph: { type: "website", url: "/fr/pro", title: "Boutiques professionnelles — Mazed Auto", description: DESCRIPTION, siteName: "Mazed Auto", locale: "fr_TN", images: [OG_IMAGE] },
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  return {
+    title: "Boutiques professionnelles — Mazed Auto",
+    description: DESCRIPTION,
+    alternates: localeAlternates(locale, "/pro"),
+    openGraph: { type: "website", url: `/${locale}/pro`, title: "Boutiques professionnelles — Mazed Auto", description: DESCRIPTION, siteName: "Mazed Auto", locale: ogLocale(locale), images: [OG_IMAGE] },
+  };
+}
 
 export const dynamic = "force-dynamic";
 

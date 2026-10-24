@@ -10,18 +10,27 @@ import { ShopsPreviewBanner } from "./ShopsPreviewBanner";
 import { jsonLdSafe } from "@/lib/jsonld";
 import { siteUrl } from "@/lib/siteUrl";
 import { OG_IMAGE } from "@/lib/ogImage";
+import { localeAlternates } from "@/i18n/alternates";
+import { ogLocale } from "@/i18n/routing";
 
 const DESCRIPTION =
   "Concessionnaires, loueurs et vendeurs de pièces auto en Tunisie : leurs annonces et leurs coordonnées.";
 
 // Filters (?activite, ?gov, ?verifie) are views of one page: they all point
-// search engines at the unfiltered directory.
-export const metadata: Metadata = {
-  title: "Boutiques — Mazed Auto",
-  description: DESCRIPTION,
-  alternates: { canonical: "/fr/boutiques" },
-  openGraph: { type: "website", url: "/fr/boutiques", title: "Boutiques — Mazed Auto", description: DESCRIPTION, siteName: "Mazed Auto", locale: "fr_TN", images: [OG_IMAGE] },
-};
+// search engines at the unfiltered directory, in the page's language.
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  return {
+    title: "Boutiques — Mazed Auto",
+    description: DESCRIPTION,
+    alternates: localeAlternates(locale, "/boutiques"),
+    openGraph: { type: "website", url: `/${locale}/boutiques`, title: "Boutiques — Mazed Auto", description: DESCRIPTION, siteName: "Mazed Auto", locale: ogLocale(locale), images: [OG_IMAGE] },
+  };
+}
 
 // Reads the shops and the public switch on every request.
 export const dynamic = "force-dynamic";

@@ -6,6 +6,8 @@
  * or "which badge has lapsed". There is no render to replay. */
 import { unstable_cache } from "next/cache";
 import { getLocale } from "next-intl/server";
+import type { Metadata } from "next";
+import { localeAlternates } from "@/i18n/alternates";
 import { Link } from "@/i18n/navigation";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { ListingImage } from "@/components/media/ListingImage";
@@ -96,6 +98,17 @@ type SearchParams = CatalogSearchParams;
  * unreachable because nothing linked to it.
  */
 const PAGE_SIZE = 24;
+
+// Filters and pages (?q, ?gov, ?page…) are views of one catalogue: they all
+// point search engines at the unfiltered one, in the page's language.
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  return { alternates: localeAlternates(locale, "/annonces") };
+}
 
 export default async function AnnoncesPage({
   searchParams,
