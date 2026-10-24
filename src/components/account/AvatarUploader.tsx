@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Camera, Loader2, Trash2, User } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
@@ -22,6 +23,7 @@ export function AvatarUploader({
   initialPath: string | null;
   name: string | null;
 }) {
+  const t = useTranslations("myAccount.avatar");
   const router = useRouter();
   const { toast, alert } = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -37,7 +39,7 @@ export function AvatarUploader({
     if (inputRef.current) inputRef.current.value = "";
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      alert({ title: "Choisissez une image", body: "JPG, PNG ou WebP.", variant: "warning" });
+      alert({ title: t("pickImage"), body: t("formats"), variant: "warning" });
       return;
     }
 
@@ -53,7 +55,7 @@ export function AvatarUploader({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ext }),
       });
-      if (!signed.ok) throw new Error("Impossible de préparer l'envoi.");
+      if (!signed.ok) throw new Error(t("prepareFailed"));
       const { path: target, signedUrl } = (await signed.json()) as {
         path: string; signedUrl: string;
       };
@@ -62,23 +64,23 @@ export function AvatarUploader({
       form.append("cacheControl", "31536000");
       form.append("", small);
       const put = await fetch(signedUrl, { method: "PUT", body: form });
-      if (!put.ok) throw new Error("L'envoi de la photo a échoué.");
+      if (!put.ok) throw new Error(t("uploadFailed"));
 
       const saved = await fetch("/api/account/avatar", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ path: target }),
       });
-      if (!saved.ok) throw new Error("La photo n'a pas pu être enregistrée.");
+      if (!saved.ok) throw new Error(t("saveFailed"));
 
       setPath(target);
-      toast("Photo de profil mise à jour.", "success");
+      toast(t("updated"), "success");
       router.refresh();
     } catch (err) {
       setPreview(null);
       alert({
-        title: err instanceof Error ? err.message : "Erreur",
-        body: "Réessayez dans un instant.",
+        title: err instanceof Error ? err.message : t("error"),
+        body: t("retry"),
         variant: "error",
       });
     } finally {
@@ -96,7 +98,7 @@ export function AvatarUploader({
       setPreview(null);
       router.refresh();
     } catch {
-      alert({ title: "Suppression impossible", variant: "error" });
+      alert({ title: t("removeFailed"), variant: "error" });
     } finally {
       setBusy(false);
     }
@@ -121,9 +123,9 @@ export function AvatarUploader({
       </div>
 
       <div className="min-w-0">
-        <div className="text-[14px] font-bold text-foreground">Photo de profil</div>
+        <div className="text-[14px] font-bold text-foreground">{t("title")}</div>
         <p className="mt-0.5 text-[12px] text-muted">
-          Elle apparaît sur vos annonces. Un visage rassure un acheteur.
+          {t("help")}
         </p>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <button
@@ -132,7 +134,7 @@ export function AvatarUploader({
             onClick={() => inputRef.current?.click()}
             className="tap-target inline-flex items-center gap-1.5 rounded-full border border-border px-3.5 py-2 text-[12.5px] font-bold text-foreground transition hover:border-gold-soft disabled:opacity-60"
           >
-            <Camera className="size-4" /> {path ? "Changer" : "Ajouter une photo"}
+            <Camera className="size-4" /> {path ? t("change") : t("add")}
           </button>
           {path && !busy && (
             <button
@@ -140,7 +142,7 @@ export function AvatarUploader({
               onClick={remove}
               className="tap-target inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[12.5px] font-semibold text-muted transition hover:text-[var(--danger)]"
             >
-              <Trash2 className="size-4" /> Retirer
+              <Trash2 className="size-4" /> {t("remove")}
             </button>
           )}
         </div>

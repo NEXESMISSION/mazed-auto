@@ -1,3 +1,4 @@
+import { localeFromRequest } from "@/i18n/api";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getServerSupabase } from "@/lib/supabase/server";
@@ -132,6 +133,11 @@ export async function POST(req: NextRequest) {
     user_metadata: {
       full_name: fullName || null,
       phone,
+      // The language the account was opened in. The profile trigger copies it
+      // to profiles.language (whose default, 'ar', is not a choice anyone
+      // made); the SMS and e-mail crons read it from here — see
+      // src/lib/notifications/language.ts.
+      language: localeFromRequest(req),
     },
   });
   if (createErr) {

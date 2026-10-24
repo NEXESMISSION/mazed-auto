@@ -5,6 +5,7 @@ import { isSameOrigin } from "@/lib/sameOrigin";
 import { clientIp } from "@/lib/clientIp";
 import { sendSms, isSmsConfigured } from "@/lib/winsms";
 import { hashCode } from "@/lib/otp";
+import { apiTranslations } from "@/i18n/api";
 import { log } from "@/lib/log";
 
 const oLog = log.scope("otp-send");
@@ -106,8 +107,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "store_failed" }, { status: 500 });
   }
 
-  const message = `Votre code de vérification Mazed Auto est : ${code}. Valable 10 minutes.`;
-  const sent = await sendSms({ to: phone, sms: message });
+  // In the language of the page that asked for it (signup or recovery). An
+  // Arabic code fits one UNICODE segment (70 characters).
+  const t = await apiTranslations(req, "notifications.sms");
+  const message = t("otp", { code });
+  const sent = await sendSms({ to: phone, sms: message, unicode: /[^\x00-\x7F\u00C0-\u00FF]/.test(message) });
   if (!sent.ok) {
     return NextResponse.json({ error: "send_failed" }, { status: 502 });
   }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import {
   AlertTriangle,
@@ -39,6 +40,8 @@ import {
   Wrench,
 } from "lucide-react";
 import { resolveNotificationLink } from "@/lib/notifications/target";
+import { compactTimeAgo, localizeNotification } from "@/lib/notifications/localize";
+import { formatDate } from "@/lib/dates";
 
 /** Same row shape the bell + /api/notifications use. */
 export type NotificationItem = {
@@ -86,6 +89,7 @@ export function NotificationsClient({
   initialUnread: number;
   initialHasMore: boolean;
 }) {
+  const t = useTranslations("myAccount.notifications");
   const [items, setItems] = useState<NotificationItem[]>(initial);
   const [unread, setUnread] = useState(initialUnread);
   const [filter, setFilter] = useState<"all" | "unread">("all");
@@ -177,7 +181,7 @@ export function NotificationsClient({
   // consecutive grouping is enough.
   const groups: { label: string; rows: NotificationItem[] }[] = [];
   for (const n of visible) {
-    const label = groupLabel(n.created_at);
+    const label = t(`groups.${groupKey(n.created_at)}`);
     const last = groups[groups.length - 1];
     if (last && last.label === label) last.rows.push(n);
     else groups.push({ label, rows: [n] });
@@ -189,8 +193,8 @@ export function NotificationsClient({
       <div className="mt-5 flex flex-wrap items-center gap-2">
         {(
           [
-            ["all", "Toutes", items.length],
-            ["unread", "Non lues", unread],
+            ["all", t("all"), items.length],
+            ["unread", t("unread"), unread],
           ] as const
         ).map(([key, label, count]) => {
           const active = filter === key;
@@ -224,7 +228,7 @@ export function NotificationsClient({
           className="ms-auto inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-[12px] font-bold text-gold transition hover:bg-gold-faint disabled:cursor-not-allowed disabled:text-subtle disabled:hover:bg-transparent"
         >
           <CheckCheck className="size-4" strokeWidth={2.2} />
-          Tout marquer lu
+          {t("markAll")}
         </button>
       </div>
 
@@ -236,9 +240,9 @@ export function NotificationsClient({
             <Check className="size-5 text-emerald-400" strokeWidth={2.2} />
           </span>
           <p className="mt-3 text-[13.5px] font-bold text-foreground">
-            Aucune notification non lue
+            {t("noUnreadTitle")}
           </p>
-          <p className="mt-1 text-[12px] text-muted">Vous êtes à jour.</p>
+          <p className="mt-1 text-[12px] text-muted">{t("upToDate")}</p>
         </div>
       ) : (
         <div className="mt-6 space-y-6">
@@ -268,7 +272,7 @@ export function NotificationsClient({
                 {loadingMore ? (
                   <Loader2 className="size-4 animate-spin" strokeWidth={2} />
                 ) : (
-                  "Charger plus"
+                  t("loadMore")
                 )}
               </button>
             </div>
@@ -292,6 +296,9 @@ function NotificationRowCard({
   item: NotificationItem;
   onRead: () => void;
 }) {
+  const t = useTranslations("notifications");
+  const locale = useLocale();
+  const text = localizeNotification(item, locale, t);
   const isUnread = !item.read_at;
   const { Icon, tone } = iconForKind(item.kind);
   const isUrgent = isUnread && URGENT_KINDS.has(item.kind);
@@ -317,10 +324,10 @@ function NotificationRowCard({
               isUnread ? "font-extrabold text-foreground" : "font-semibold text-muted"
             }`}
           >
-            {item.title}
+            {text.title}
             {isUrgent && (
               <span className="ms-2 inline-block translate-y-[-1px] rounded-full bg-red-600 px-1.5 py-0.5 text-[9px] font-extrabold uppercase leading-none tracking-wider text-white">
-                Urgent
+                {t("bell.urgent")}
               </span>
             )}
           </span>
@@ -331,17 +338,19 @@ function NotificationRowCard({
             />
           )}
         </div>
-        {item.body && (
+        {text.body && (
           <p
             className={`mt-1 line-clamp-2 text-[12.5px] leading-snug ${
               isUnread ? "text-foreground/80" : "text-muted"
             }`}
           >
-            {item.body}
+            {text.body}
           </p>
         )}
         <p className="batta-tabular mt-1.5 text-[11px] text-subtle">
-          {timeAgo(item.created_at)}
+          {compactTimeAgo(item.created_at, t, (d) =>
+            formatDate(d, locale, { day: "2-digit", month: "short", year: "numeric" }),
+          )}
         </p>
       </div>
     </div>
@@ -471,8 +480,8 @@ function iconForKind(kind: string): { Icon: typeof Bell; tone: string } {
   }
 }
 
-/** Bucket label for the day-group headers. */
-function groupLabel(iso: string): string {
+/** Bucket for the day-group headers — a key under `groups`. */
+function groupKey(iso: string): "today" | "yesterday" | "week" | "older" {
   const now = new Date();
   const startOfToday = new Date(
     now.getFullYear(),
@@ -480,30 +489,8 @@ function groupLabel(iso: string): string {
     now.getDate(),
   ).getTime();
   const t = new Date(iso).getTime();
-  if (Number.isNaN(t) || t >= startOfToday) return "Aujourd'hui";
-  if (t >= startOfToday - 86_400_000) return "Hier";
-  if (t >= startOfToday - 6 * 86_400_000) return "Cette semaine";
-  return "Plus ancien";
-}
-
-/** Compact French relative time — same scale as the header bell. */
-function timeAgo(iso: string): string {
-  const then = new Date(iso).getTime();
-  const s = Math.floor((Date.now() - then) / 1000);
-  if (s < 60) return "à l'instant";
-  const m = Math.floor(s / 60);
-  if (m < 60) return `il y a ${m} min`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `il y a ${h} h`;
-  const d = Math.floor(h / 24);
-  if (d < 7) return `il y a ${d} j`;
-  try {
-    return new Date(iso).toLocaleDateString("fr-FR", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  } catch {
-    return iso;
-  }
+  if (Number.isNaN(t) || t >= startOfToday) return "today";
+  if (t >= startOfToday - 86_400_000) return "yesterday";
+  if (t >= startOfToday - 6 * 86_400_000) return "week";
+  return "older";
 }

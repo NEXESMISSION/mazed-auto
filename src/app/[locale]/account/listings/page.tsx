@@ -6,12 +6,14 @@
  * or "which badge has lapsed". There is no render to replay. */
 import { redirect } from "next/navigation";
 import { coverPhoto } from "@/lib/listingCover";
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { ListingImage } from "@/components/media/ListingImage";
-import { formatTND } from "@/lib/utils";
+import { currencyLabel, formatTND } from "@/lib/utils";
+import { formatDate } from "@/lib/dates";
+import { categoryLabel } from "@/lib/labels";
 import {
   Plus, Ticket, ImageOff, Clock, CreditCard, PencilLine,
   ArrowRight, AlertTriangle, Inbox,
@@ -20,7 +22,6 @@ import { RenewButton } from "./RenewButton";
 import { WithdrawButton } from "./WithdrawButton";
 import { PaymentStatus } from "@/app/[locale]/pro/dashboard/abonnement/PaymentStatus";
 import { PRODUCT_SELECT, isFree, resolveListingFee, toProduct, type Product } from "@/lib/products";
-import { formatTND as fmt } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -39,16 +40,17 @@ export const dynamic = "force-dynamic";
  * status implies: pay, resume the draft, renew, or view.
  */
 
-const STATUS: Record<string, { label: string; tone: string; hint?: string }> = {
-  draft:           { label: "Brouillon",    tone: "bg-surface-2 text-muted ring-1 ring-border", hint: "Pas encore envoyée." },
-  pending_payment: { label: "À payer",      tone: "batta-tone-warn", hint: "Réglez les frais pour lancer la vérification." },
-  pending_review:  { label: "Vérification", tone: "batta-tone-warn", hint: "Notre équipe la contrôle — moins de 24 h." },
-  published:       { label: "En ligne",     tone: "batta-tone-ok" },
-  rejected:        { label: "À corriger",   tone: "batta-tone-bad" },
-  expired:         { label: "Expirée",      tone: "bg-surface-2 text-muted ring-1 ring-border", hint: "Renouvelez-la pour la remettre en ligne." },
-  sold:            { label: "Vendue",       tone: "batta-tone-ok" },
-  archived:        { label: "Retirée",      tone: "bg-surface-2 text-muted ring-1 ring-border" },
-  paused:          { label: "En pause",     tone: "batta-tone-warn", hint: "Retirée du catalogue, rien n'est perdu : elle revient quand votre boutique est en règle." },
+/** Tone per status; the label and the hint are `myAccount.listings.status.<status>`. */
+const STATUS: Record<string, { tone: string; hint?: true }> = {
+  draft:           { tone: "bg-surface-2 text-muted ring-1 ring-border", hint: true },
+  pending_payment: { tone: "batta-tone-warn", hint: true },
+  pending_review:  { tone: "batta-tone-warn", hint: true },
+  published:       { tone: "batta-tone-ok" },
+  rejected:        { tone: "batta-tone-bad" },
+  expired:         { tone: "bg-surface-2 text-muted ring-1 ring-border", hint: true },
+  sold:            { tone: "batta-tone-ok" },
+  archived:        { tone: "bg-surface-2 text-muted ring-1 ring-border" },
+  paused:          { tone: "batta-tone-warn", hint: true },
 };
 
 /**
@@ -57,11 +59,11 @@ const STATUS: Record<string, { label: string; tone: string; hint?: string }> = {
  * `?statut=action_required`.
  */
 const TABS = [
-  { key: "",             label: "Toutes",     statuses: null,                                   tone: "text-foreground" },
-  { key: "en-ligne",     label: "En ligne",   statuses: ["published"],                          tone: "text-emerald-400" },
-  { key: "verification", label: "En cours",   statuses: ["pending_payment", "pending_review"],  tone: "text-amber-400" },
-  { key: "a-corriger",   label: "À corriger", statuses: ["rejected", "draft"],                  tone: "text-[var(--danger)]" },
-  { key: "terminees",    label: "Terminées",  statuses: ["expired", "archived", "sold", "paused"], tone: "text-muted" },
+  { key: "",             label: "all",    statuses: null,                                   tone: "text-foreground" },
+  { key: "en-ligne",     label: "live",   statuses: ["published"],                          tone: "text-emerald-400" },
+  { key: "verification", label: "review", statuses: ["pending_payment", "pending_review"],  tone: "text-amber-400" },
+  { key: "a-corriger",   label: "fix",    statuses: ["rejected", "draft"],                  tone: "text-[var(--danger)]" },
+  { key: "terminees",    label: "done",   statuses: ["expired", "archived", "sold", "paused"], tone: "text-muted" },
 ] as const;
 
 const RENEWABLE = ["expired", "archived", "sold"];
@@ -73,6 +75,7 @@ export default async function MyListingsPage({
 }) {
   const sp = await searchParams;
   const locale = await getLocale();
+  const t = await getTranslations("myAccount");
   const supabase = await getServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -87,7 +90,7 @@ export default async function MyListingsPage({
       .from("listings")
       .select(
         `id, title, price, price_on_request, status, rejection_reason, published_at,
-         expires_at, created_at, category_id, shop_id, category:categories (label_fr),
+         expires_at, created_at, category_id, shop_id, category:categories (slug, label_fr, label_ar),
          photos:listing_photos (storage_path, sort_order, is_cover)`,
       )
       .eq("seller_id", user.id)
@@ -139,11 +142,12 @@ export default async function MyListingsPage({
     return n + Math.max(0, (c.quota_total as number) - (c.quota_used as number));
   }, 0);
 
+  type CategoryRow = { slug: string | null; label_fr: string; label_ar: string | null };
   type Row = {
     id: string; title: string; price: number | null; price_on_request: boolean;
     status: string; rejection_reason: string | null; published_at: string | null;
     expires_at: string | null; created_at: string;
-    category: { label_fr: string } | { label_fr: string }[] | null;
+    category: CategoryRow | CategoryRow[] | null;
     category_id: string;
     shop_id: string | null;
     photos: { storage_path: string; sort_order: number; is_cover?: boolean | null }[] | null;
@@ -167,21 +171,31 @@ export default async function MyListingsPage({
     // What the renew route will actually do (src/lib/publication.ts): a shop
     // annonce is covered by its subscription, a personal one is free while
     // the D-P1 switch is on. Only otherwise does a product price apply.
-    if (l.shop_id) return "incluse dans l'abonnement";
-    if (personalFree) return "Gratuit";
+    if (l.shop_id) return t("listings.renewFee.included");
+    if (personalFree) return t("listings.renewFee.free");
     const categoryFee = resolveListingFee(products, l.category_id, parentOf.get(l.category_id) ?? null);
     const p = isFree(categoryFee) ? categoryFee : renewalProduct ?? categoryFee;
     if (!p) return null;
-    return p.price <= 0 ? "Gratuit" : `${fmt(p.price, locale)} TND`;
+    return p.price <= 0 ? t("listings.renewFee.free") : `${formatTND(p.price, locale)} ${currencyLabel(locale)}`;
   };
 
   const priceOf = (l: Row) =>
     l.price_on_request || l.price == null
-      ? "Sur demande"
-      : `${formatTND(Number(l.price), locale)} TND`;
+      ? t("common.onRequest")
+      : `${formatTND(Number(l.price), locale)} ${currencyLabel(locale)}`;
 
   const date = (v: string | null) =>
-    v ? new Date(v).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+    v ? formatDate(v, locale, { day: "2-digit", month: "short", year: "numeric" }) : "—";
+
+  const statusOf = (status: string) => {
+    const s = STATUS[status];
+    if (!s) return { label: status, tone: "bg-surface-2 text-muted", hint: null };
+    return {
+      label: t(`listings.status.${status}.label`),
+      tone: s.tone,
+      hint: s.hint ? t(`listings.status.${status}.hint`) : null,
+    };
+  };
 
   /** Days left before a published annonce expires — the only date that is urgent. */
   const daysLeft = (l: Row) => {
@@ -202,14 +216,14 @@ export default async function MyListingsPage({
     if (l.status === "pending_payment" && payFor.has(l.id)) {
       return (
         <Link href={`/payment/checkout?payment=${payFor.get(l.id)}` as never} className={cls}>
-          <CreditCard className="size-3.5" /> Payer
+          <CreditCard className="size-3.5" /> {t("listings.pay")}
         </Link>
       );
     }
     if (l.status === "draft") {
       return (
         <Link href={"/annonces/nouvelle" as never} className={cls}>
-          <PencilLine className="size-3.5" /> Reprendre
+          <PencilLine className="size-3.5" /> {t("listings.resume")}
         </Link>
       );
     }
@@ -225,7 +239,7 @@ export default async function MyListingsPage({
             : "inline-flex items-center gap-1 text-[12.5px] font-bold text-gold hover:underline"
         }
       >
-        Voir <ArrowRight className="size-3.5" />
+        {t("listings.view")} <ArrowRight className="size-3.5 rtl:-scale-x-100" />
       </Link>
     );
     // Live or in review: the seller can take it down — and free its place.
@@ -245,22 +259,22 @@ export default async function MyListingsPage({
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-[24px] font-extrabold tracking-tight lg:text-[32px]">Mes annonces</h1>
+          <h1 className="text-[24px] font-extrabold tracking-tight lg:text-[32px]">{t("listings.title")}</h1>
           <p className="mt-1 text-[13px] text-muted lg:text-[14px]">
             {all.length === 0
-              ? "Vous n'avez pas encore publié."
-              : `${all.length} annonce${all.length > 1 ? "s" : ""} · gérez-les ici.`}
+              ? t("listings.none")
+              : t("listings.count", { count: all.length })}
           </p>
         </div>
         <div className="flex items-center gap-2">
           {creditsLeft > 0 && (
             <span className="inline-flex items-center gap-1.5 rounded-xl bg-gold-faint px-3 py-2 text-[12.5px] font-bold text-gold ring-1 ring-gold-soft">
               <Ticket className="size-4" />
-              {creditsLeft} restante{creditsLeft > 1 ? "s" : ""}
+              {t("listings.creditsLeft", { count: creditsLeft })}
             </span>
           )}
           <Link href={"/annonces/nouvelle" as never} className="batta-btn-luxe tap-target px-4 py-2.5 text-[13px]">
-            <Plus className="size-4" /> Publier
+            <Plus className="size-4" /> {t("listings.publish")}
           </Link>
         </div>
       </div>
@@ -275,16 +289,16 @@ export default async function MyListingsPage({
       {all.length > 0 && (
         <nav className="-mx-4 mt-5 overflow-x-auto px-4 [scrollbar-width:none] lg:mx-0 lg:overflow-visible lg:px-0">
           <div className="flex min-w-max gap-2 lg:min-w-0">
-            {TABS.map((t) => {
-              const n = countFor(t.statuses);
-              const on = t.key === active.key;
+            {TABS.map((tab) => {
+              const n = countFor(tab.statuses);
+              const on = tab.key === active.key;
               // An empty tab is noise — unless you are standing in it, in which
               // case removing it would strand you.
-              if (n === 0 && !on && t.key !== "") return null;
+              if (n === 0 && !on && tab.key !== "") return null;
               return (
                 <Link
-                  key={t.key || "all"}
-                  href={(t.key ? `/account/listings?statut=${t.key}` : "/account/listings") as never}
+                  key={tab.key || "all"}
+                  href={(tab.key ? `/account/listings?statut=${tab.key}` : "/account/listings") as never}
                   aria-current={on ? "page" : undefined}
                   className={[
                     "tap-target flex items-center gap-2 rounded-xl border px-3.5 py-2.5 text-[13px] font-bold transition",
@@ -293,8 +307,8 @@ export default async function MyListingsPage({
                       : "border-border bg-surface text-muted hover:border-gold-soft hover:text-foreground",
                   ].join(" ")}
                 >
-                  {t.label}
-                  <span className={`batta-tabular text-[13px] font-extrabold ${on ? "text-gold" : t.tone}`}>
+                  {t(`listings.tabs.${tab.label}`)}
+                  <span className={`batta-tabular text-[13px] font-extrabold ${on ? "text-gold" : tab.tone}`}>
                     {n}
                   </span>
                 </Link>
@@ -307,7 +321,7 @@ export default async function MyListingsPage({
       {/* ── PHONE · one card per annonce ───────────────────────────────── */}
       <div className="mt-4 space-y-3 lg:hidden">
         {rows.map((l) => {
-          const st = STATUS[l.status] ?? { label: l.status, tone: "bg-surface-2 text-muted" };
+          const st = statusOf(l.status);
           const cat = Array.isArray(l.category) ? l.category[0] : l.category;
           const cover = coverPhoto(l.photos);
           const left = daysLeft(l);
@@ -329,7 +343,7 @@ export default async function MyListingsPage({
                     <span className={`rounded-full px-2 py-0.5 text-[9.5px] font-extrabold uppercase tracking-[0.12em] ${st.tone}`}>
                       {st.label}
                     </span>
-                    <span className="truncate text-[11px] text-muted">{cat?.label_fr ?? "—"}</span>
+                    <span className="truncate text-[11px] text-muted">{cat ? categoryLabel(cat, locale) : "—"}</span>
                   </div>
                   <Link href={`/annonces/${l.id}` as never} className="mt-1 block truncate text-[14.5px] font-bold text-foreground">
                     {l.title}
@@ -350,7 +364,7 @@ export default async function MyListingsPage({
               {left !== null && (
                 <p className={`mt-2 inline-flex items-center gap-1 text-[11.5px] ${left <= 3 ? "font-bold text-amber-400" : "text-muted"}`}>
                   <Clock className="size-3" />
-                  {left <= 0 ? "Expire aujourd'hui" : `Encore ${left} jour${left > 1 ? "s" : ""} en ligne`}
+                  {left <= 0 ? t("listings.expiresToday") : t("listings.daysLeft", { count: left })}
                 </p>
               )}
 
@@ -368,17 +382,17 @@ export default async function MyListingsPage({
         <table className="w-full text-[13px]">
           <thead className="bg-surface-2 text-[10px] uppercase tracking-[0.14em] text-muted">
             <tr>
-              <th className="px-5 py-3.5 text-start font-extrabold">Annonce</th>
-              <th className="px-3 py-3.5 text-start font-extrabold">Statut</th>
-              <th className="px-3 py-3.5 text-end font-extrabold">Prix</th>
-              <th className="px-3 py-3.5 text-start font-extrabold">Publiée</th>
-              <th className="px-3 py-3.5 text-start font-extrabold">Expire</th>
-              <th className="px-5 py-3.5 text-end font-extrabold">Action</th>
+              <th className="px-5 py-3.5 text-start font-extrabold">{t("listings.columns.listing")}</th>
+              <th className="px-3 py-3.5 text-start font-extrabold">{t("listings.columns.status")}</th>
+              <th className="px-3 py-3.5 text-end font-extrabold">{t("listings.columns.price")}</th>
+              <th className="px-3 py-3.5 text-start font-extrabold">{t("listings.columns.published")}</th>
+              <th className="px-3 py-3.5 text-start font-extrabold">{t("listings.columns.expires")}</th>
+              <th className="px-5 py-3.5 text-end font-extrabold">{t("listings.columns.action")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {rows.map((l) => {
-              const st = STATUS[l.status] ?? { label: l.status, tone: "bg-surface-2 text-muted" };
+              const st = statusOf(l.status);
               const cat = Array.isArray(l.category) ? l.category[0] : l.category;
               const cover = coverPhoto(l.photos);
               const left = daysLeft(l);
@@ -403,7 +417,7 @@ export default async function MyListingsPage({
                         >
                           {l.title}
                         </Link>
-                        <div className="truncate text-[11.5px] text-muted">{cat?.label_fr ?? "—"}</div>
+                        <div className="truncate text-[11.5px] text-muted">{cat ? categoryLabel(cat, locale) : "—"}</div>
                       </div>
                     </div>
                   </td>
@@ -430,7 +444,7 @@ export default async function MyListingsPage({
                       <span className={left <= 3 ? "font-bold text-amber-400" : "text-muted"}>
                         {date(l.expires_at)}
                         <span className="block text-[11px]">
-                          {left <= 0 ? "aujourd'hui" : `dans ${left} j`}
+                          {left <= 0 ? t("listings.today") : t("listings.inDays", { count: left })}
                         </span>
                       </span>
                     )}
@@ -453,25 +467,25 @@ export default async function MyListingsPage({
           </span>
           {all.length === 0 ? (
             <>
-              <p className="mt-4 text-[15px] font-bold text-foreground">Aucune annonce pour le moment</p>
+              <p className="mt-4 text-[15px] font-bold text-foreground">{t("listings.emptyTitle")}</p>
               <p className="mx-auto mt-1 max-w-sm text-[13px] leading-relaxed text-muted">
-                Publiez votre première annonce — voiture ou pièce de rechange.
+                {t("listings.emptyBody")}
               </p>
               <Link href={"/annonces/nouvelle" as never} className="batta-btn-luxe tap-target mt-5 inline-flex px-5 py-2.5 text-[13px]">
-                <Plus className="size-4" /> Publier une annonce
+                <Plus className="size-4" /> {t("listings.emptyCta")}
               </Link>
             </>
           ) : (
             <>
-              <p className="mt-4 text-[15px] font-bold text-foreground">Rien dans « {active.label} »</p>
+              <p className="mt-4 text-[15px] font-bold text-foreground">{t("listings.emptyTabTitle", { tab: t(`listings.tabs.${active.label}`) })}</p>
               <p className="mx-auto mt-1 max-w-sm text-[13px] leading-relaxed text-muted">
-                Vos autres annonces sont dans les onglets voisins.
+                {t("listings.emptyTabBody")}
               </p>
               <Link
                 href={"/account/listings" as never}
                 className="mt-5 inline-flex items-center gap-1 text-[13px] font-bold text-gold hover:underline"
               >
-                Voir toutes les annonces <ArrowRight className="size-3.5" />
+                {t("listings.seeAll")} <ArrowRight className="size-3.5 rtl:-scale-x-100" />
               </Link>
             </>
           )}

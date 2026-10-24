@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { formatPhone, realEmail } from "@/lib/identity";
@@ -8,11 +8,15 @@ import { SmsNotificationsToggle } from "@/components/account/SmsNotificationsTog
 import { PasswordSection } from "./PasswordSection";
 import { ChevronLeft, ChevronRight, Mail, LifeBuoy } from "lucide-react";
 
-export const metadata: Metadata = {
-  title: "Paramètres du compte — Mazed Auto",
-  description:
-    "Gérez votre mot de passe, votre adresse e-mail et la sécurité de votre compte Mazed Auto.",
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "myAccount.settings" });
+  return { title: t("metaTitle"), description: t("metaDescription") };
+}
 
 // Per-user, auth-gated — never static (env-less prerender would throw).
 export const dynamic = "force-dynamic";
@@ -26,6 +30,7 @@ export const dynamic = "force-dynamic";
  */
 export default async function SettingsPage() {
   const locale = await getLocale();
+  const t = await getTranslations("myAccount.settings");
   const isRTL = locale === "ar";
   const ChevronStart = isRTL ? ChevronRight : ChevronLeft;
   const ChevronEnd = isRTL ? ChevronLeft : ChevronRight;
@@ -69,23 +74,23 @@ export default async function SettingsPage() {
           <div aria-hidden className="batta-gradient-gold h-[2px] w-full" />
           <div className="p-7 text-center sm:p-8">
             <h1 className="text-[22px] font-extrabold leading-tight tracking-tight">
-              <span className="gradient-gold-text">Paramètres</span>
+              <span className="gradient-gold-text">{t("title")}</span>
             </h1>
             <p className="mt-2 text-[12.5px] text-muted">
-              Connectez-vous pour gérer la sécurité de votre compte.
+              {t("guestBody")}
             </p>
             <div className="mt-6 flex flex-col gap-2.5">
               <Link
                 href="/login"
                 className="batta-btn-luxe tap-target w-full px-6 py-3 text-[14px]"
               >
-                Se connecter
+                {t("login")}
               </Link>
               <Link
                 href="/signup"
                 className="batta-btn-ghost-gold tap-target w-full px-6 py-3 text-[14px]"
               >
-                Créer un compte
+                {t("signup")}
               </Link>
             </div>
           </div>
@@ -102,20 +107,20 @@ export default async function SettingsPage() {
         href="/account"
         className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-muted transition hover:text-gold-bright"
       >
-        <ChevronStart className="size-4" /> Mon compte
+        <ChevronStart className="size-4" /> {t("back")}
       </Link>
 
-      <span className="batta-eyebrow mt-5 block">Compte</span>
+      <span className="batta-eyebrow mt-5 block">{t("eyebrow")}</span>
       <h1 className="mt-1.5 text-[26px] font-extrabold leading-tight tracking-tight lg:text-[30px]">
-        Paramètres
+        {t("title")}
       </h1>
       <p className="mt-1.5 text-[13px] text-muted">
-        Mot de passe, e-mail et sécurité — tout au même endroit.
+        {t("subtitle")}
       </p>
 
       <div className="mt-7 space-y-7">
         {/* ── Mot de passe ─────────────────────────────────────────── */}
-        <Section label="Mot de passe">
+        <Section label={t("sections.password")}>
           <PasswordSection email={userEmail} />
         </Section>
 
@@ -126,36 +131,34 @@ export default async function SettingsPage() {
             e-mail … identifiant de connexion" was telling the user to sign in
             with an address that does not exist. Show the number instead, and
             keep the e-mail card only for accounts that really have one. */}
-        <Section label={hasRealEmail ? "E-mail" : "Téléphone"}>
+        <Section label={hasRealEmail ? t("sections.email") : t("sections.phone")}>
           <div className="flex items-center gap-3 p-4 lg:p-5">
             <IconBadge>
               <Mail className="size-5" strokeWidth={2} />
             </IconBadge>
             <div className="min-w-0 flex-1">
               <div className="text-[14px] font-bold text-foreground">
-                {hasRealEmail ? "Adresse e-mail" : "Numéro de téléphone"}
+                {hasRealEmail ? t("emailLabel") : t("phoneLabel")}
               </div>
               <div className="mt-0.5 truncate text-[12px] text-muted">
-                {hasRealEmail ? userEmail : (phoneLabel ?? "—")}
+                <span className="ltr-island">{hasRealEmail ? userEmail : (phoneLabel ?? "—")}</span>
               </div>
             </div>
             <span className="shrink-0 rounded-full border border-border bg-surface-2 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-muted">
-              Vérifiée
+              {t("verified")}
             </span>
           </div>
           <Divider />
           <div className="p-4 lg:p-5">
             <p className="text-[12px] leading-relaxed text-muted">
-              {hasRealEmail
-                ? "Votre adresse e-mail sert d'identifiant de connexion. Pour la modifier, contactez notre support — chaque changement est vérifié manuellement pour protéger votre compte."
-                : "Votre numéro de téléphone est votre identifiant de connexion, et c'est lui que les acheteurs voient sur vos annonces. Pour le modifier, contactez notre support — chaque changement est vérifié manuellement pour protéger votre compte."}
+              {hasRealEmail ? t("emailHelp") : t("phoneHelp")}
             </p>
             <Link
               href="/contact"
               className="mt-3 inline-flex items-center gap-1.5 text-[12.5px] font-bold text-gold transition hover:text-gold-bright"
             >
               <LifeBuoy className="size-4" strokeWidth={2} />
-              Contacter le support
+              {t("support")}
               <ChevronEnd className="size-3.5" />
             </Link>
           </div>
@@ -163,13 +166,13 @@ export default async function SettingsPage() {
 
         {/* ── Notifications ────────────────────────────────────────── */}
         {/* Identity first: the face is what a buyer sees next to the annonce. */}
-        <Section label="Profil">
+        <Section label={t("sections.profile")}>
           <div className="p-4 lg:p-5">
             <AvatarUploader initialPath={avatarPath} name={fullName} />
           </div>
         </Section>
 
-        <Section label="Notifications">
+        <Section label={t("sections.notifications")}>
           <SmsNotificationsToggle initial={smsEnabled} />
         </Section>
 

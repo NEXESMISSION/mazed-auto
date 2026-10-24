@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useTranslations } from "next-intl";
 import Image from "next/image";
 import { X } from "lucide-react";
 import type { Popup } from "@/lib/popups/schema";
@@ -32,6 +33,7 @@ export function ModalPopup({
   onDismiss: () => void;
   onClick: (href: string) => void;
 }) {
+  const t = useTranslations("notifications.popup");
   const title = pickLocalised(popup.title, locale);
   const body = pickLocalised(popup.body, locale);
   const primary = popup.cta_primary
@@ -69,7 +71,7 @@ export function ModalPopup({
           <button
             type="button"
             onClick={onDismiss}
-            aria-label="Fermer"
+            aria-label={t("close")}
             className="absolute end-3 top-3 z-10 inline-flex size-8 items-center justify-center rounded-full bg-black/40 text-white hover:bg-black/60"
           >
             <X className="size-4" strokeWidth={2.5} />

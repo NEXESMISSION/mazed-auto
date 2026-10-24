@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { useScrollLock } from "@/lib/scrollLock";
 import { createPortal } from "react-dom";
 import { describeKind } from "@/lib/notifications/catalog";
@@ -29,6 +30,8 @@ import { Link } from "@/i18n/navigation";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/Toast";
 import { resolveNotificationLink } from "@/lib/notifications/target";
+import { compactTimeAgo, localizeNotification } from "@/lib/notifications/localize";
+import { formatDate } from "@/lib/dates";
 import { useHydrated } from "@/lib/useHydrated";
 
 type NotificationRow = {
@@ -103,6 +106,7 @@ const URGENT_KINDS = new Set<string>([
 ]);
 
 export function NotificationBell() {
+  const t = useTranslations("notifications");
   const [unread, setUnread] = useState(0);
   const [items, setItems] = useState<NotificationRow[]>([]);
   const [open, setOpen] = useState(false);
@@ -471,7 +475,7 @@ export function NotificationBell() {
     genRef.current += 1;
     setItems(snapshot.items);
     setUnread(snapshot.unread);
-    toast("Impossible de marquer les notifications comme lues. Vérifiez la connexion.", "error");
+    toast(t("bell.markFailed"), "error");
   }
 
   async function markOneRead(id: string) {
@@ -519,12 +523,12 @@ export function NotificationBell() {
       if (typeof deletedCount === "number" && deletedCount === 0) {
         setItems(snapshot.items);
         setUnread(snapshot.unread);
-        toast("Suppression refusée par le serveur.", "error");
+        toast(t("bell.deleteRefused"), "error");
       }
     } catch {
       setItems(snapshot.items);
       setUnread(snapshot.unread);
-      toast("Échec de la suppression. Vérifiez la connexion.", "error");
+      toast(t("bell.deleteFailed"), "error");
     }
   }
 
@@ -537,7 +541,7 @@ export function NotificationBell() {
     <>
       <button
         type="button"
-        aria-label="Notifications"
+        aria-label={t("bell.label")}
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
@@ -552,7 +556,7 @@ export function NotificationBell() {
         {unread > 0 && (
           <span
             className="absolute -top-0.5 -end-0.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[var(--accent)] px-[5px] text-[10px] font-bold leading-none text-white ring-2 ring-[var(--surface)] batta-tabular"
-            aria-label={`${unread} non lues`}
+            aria-label={t("bell.unreadCount", { count: unread })}
           >
             {unread > 99 ? "99+" : unread}
           </span>
@@ -565,7 +569,7 @@ export function NotificationBell() {
             className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 lg:items-start lg:justify-end lg:p-0"
             role="dialog"
             aria-modal="true"
-            aria-label="Notifications"
+            aria-label={t("bell.label")}
           >
             {/* Backdrop — dark sheet on mobile; on desktop it's invisible
                 (just a click-catcher) so the panel reads as a header dropdown,
@@ -581,7 +585,7 @@ export function NotificationBell() {
               {/* Header — title, inline unread count, close. */}
               <div className="flex items-center gap-3 px-5 pt-4 pb-3">
                 <h3 className="flex items-center gap-2 text-[16px] font-extrabold tracking-tight text-foreground leading-none">
-                  Notifications
+                  {t("bell.label")}
                   {unread > 0 && (
                     <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--accent)] px-1.5 text-[11px] font-extrabold leading-none text-white batta-tabular">
                       {unread > 99 ? "99+" : unread}
@@ -592,7 +596,7 @@ export function NotificationBell() {
                 <div className="ms-auto flex items-center gap-1">
                   <button
                     type="button"
-                    aria-label="Fermer"
+                    aria-label={t("bell.close")}
                     onClick={() => setOpen(false)}
                     className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--foreground-muted)] hover:bg-[var(--surface-2)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
                   >
@@ -604,7 +608,7 @@ export function NotificationBell() {
               {/* Filter tabs — Toutes / Non lues */}
               {items.length > 0 && (
                 <div className="flex items-center gap-1.5 border-b border-[var(--border)] px-5 pb-2.5">
-                  {([["all", "Toutes"], ["unread", "Non lues"]] as const).map(([key, label]) => {
+                  {([["all", t("bell.all")], ["unread", t("bell.unread")]] as const).map(([key, label]) => {
                     const active = filter === key;
                     const showCount = key === "unread" && unread > 0;
                     return (
@@ -637,17 +641,17 @@ export function NotificationBell() {
                     <Bell className="h-6 w-6 text-[var(--gold)]" strokeWidth={1.8} />
                   </div>
                   <p className="text-[14px] font-bold text-foreground">
-                    Aucune notification
+                    {t("bell.emptyTitle")}
                   </p>
                   <p className="mt-1 text-[12px] text-[var(--foreground-muted)]">
-                    Tout est calme. Allez jeter un œil aux enchères.
+                    {t("bell.emptyBody")}
                   </p>
                   <Link
                     href="/properties"
                     onClick={() => setOpen(false)}
                     className="mt-5 inline-flex items-center gap-1.5 rounded-full batta-gold-fill px-4 py-2 text-[12px] font-extrabold uppercase tracking-wider shadow-[var(--shadow-gold)]"
                   >
-                    Explorer les enchères
+                    {t("bell.emptyCta")}
                   </Link>
                 </div>
               ) : visibleItems.length === 0 ? (
@@ -655,9 +659,9 @@ export function NotificationBell() {
                   <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50">
                     <CheckCheck className="h-5 w-5 text-emerald-600" strokeWidth={2} />
                   </div>
-                  <p className="text-[13.5px] font-bold text-foreground">Aucune non lue</p>
+                  <p className="text-[13.5px] font-bold text-foreground">{t("bell.noUnreadTitle")}</p>
                   <p className="mt-1 text-[12px] text-[var(--foreground-muted)]">
-                    Vous êtes à jour.
+                    {t("bell.upToDate")}
                   </p>
                 </div>
               ) : (
@@ -693,7 +697,7 @@ export function NotificationBell() {
                           onClick={() => void loadMore()}
                           className="text-[12px] font-bold text-[var(--gold)] hover:underline"
                         >
-                          Afficher plus
+                          {t("bell.more")}
                         </button>
                       )}
                     </li>
@@ -727,10 +731,13 @@ function NotificationRow({
   onDelete: () => void;
   onClose: () => void;
 }) {
+  const t = useTranslations("notifications");
+  const locale = useLocale();
   const unread = !item.read_at;
   const { Icon, tone } = iconForKind(item.kind);
   const isUrgent = unread && URGENT_KINDS.has(item.kind);
   const href = resolveNotificationLink(item.kind, item.link, item.payload);
+  const text = localizeNotification(item, locale, t);
 
   const body = (
     <>
@@ -751,25 +758,25 @@ function NotificationRow({
               unread ? "font-extrabold text-foreground" : "font-semibold text-[var(--foreground-muted)]"
             }`}
           >
-            {item.title}
+            {text.title}
           </span>
           {isUrgent && (
             <span className="mt-0.5 shrink-0 rounded-full bg-red-600 px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wider text-white leading-none">
-              Urgent
+              {t("bell.urgent")}
             </span>
           )}
         </span>
-        {item.body && (
+        {text.body && (
           <span
             className={`mt-1 block text-[12px] leading-snug line-clamp-2 ${
               unread ? "text-foreground/80" : "text-[var(--foreground-muted)]"
             }`}
           >
-            {item.body}
+            {text.body}
           </span>
         )}
         <span className="mt-1.5 block text-[10px] font-medium text-[var(--foreground-muted)]">
-          {timeAgo(item.created_at)}
+          {compactTimeAgo(item.created_at, t, (d) => formatDate(d, locale, { day: "2-digit", month: "short" }))}
         </span>
       </span>
     </>
@@ -800,7 +807,7 @@ function NotificationRow({
       {/* Small always-visible delete button — no swipe, no big red box. */}
       <button
         type="button"
-        aria-label="Supprimer la notification"
+        aria-label={t("bell.delete")}
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -842,23 +849,3 @@ function iconForKind(kind: string): {
   return { Icon: ICONS[def.icon] ?? Bell, tone: TONES[def.tone] ?? TONES.info };
 }
 
-function timeAgo(iso: string): string {
-  const then = new Date(iso).getTime();
-  const diffMs = Date.now() - then;
-  const s = Math.floor(diffMs / 1000);
-  if (s < 60) return "à l'instant";
-  const m = Math.floor(s / 60);
-  if (m < 60) return `il y a ${m} min`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `il y a ${h} h`;
-  const d = Math.floor(h / 24);
-  if (d < 7) return `il y a ${d} j`;
-  try {
-    return new Date(iso).toLocaleDateString("fr-FR", {
-      day: "2-digit",
-      month: "short",
-    });
-  } catch {
-    return iso;
-  }
-}

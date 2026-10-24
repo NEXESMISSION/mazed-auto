@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
+import { apiTranslations } from "@/i18n/api";
 
 /**
  * User-initiated cancellation of a pending payment.
@@ -46,13 +47,11 @@ export async function POST(
     return NextResponse.json({ error: "not_owner" }, { status: 403 });
   }
   if (pay.status !== "pending") {
+    const t = await apiTranslations(req, "payment.api");
     return NextResponse.json(
       {
         error: "not_cancellable",
-        detail:
-          pay.status === "pending_review"
-            ? "Le reçu est déjà en revue. Contactez l'administration pour annuler."
-            : "Le paiement n'est plus annulable.",
+        detail: pay.status === "pending_review" ? t("underReview") : t("notCancellable"),
       },
       { status: 409 },
     );
@@ -73,6 +72,8 @@ export async function POST(
     .from("payments")
     .update({
       status: "failed",
+      // A marker the payments page and the admin queue match on — data, not
+      // copy, so it stays French whatever the reader's language.
       admin_notes: "Annulé par l'utilisateur",
       reviewed_at: new Date().toISOString(),
     })
@@ -83,8 +84,9 @@ export async function POST(
     return NextResponse.json({ error: "cancel_failed" }, { status: 500 });
   }
   if (!updated || updated.length === 0) {
+    const t = await apiTranslations(req, "payment.api");
     return NextResponse.json(
-      { error: "not_cancellable", detail: "Le paiement a changé d'état entre-temps." },
+      { error: "not_cancellable", detail: t("changed") },
       { status: 409 },
     );
   }

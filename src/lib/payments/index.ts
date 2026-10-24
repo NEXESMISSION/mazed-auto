@@ -75,20 +75,37 @@ function fmt(amountTND: number): string {
   return amountTND.toFixed(2);
 }
 
+/** The field labels in French — the default when no translator is passed. */
+const FIELD_LABELS: Record<string, string> = {
+  beneficiary: "Bénéficiaire",
+  bank: "Banque",
+  rib: "RIB",
+  iban: "IBAN",
+  amount: "Montant",
+  referenceBank: "Référence (à indiquer dans le motif)",
+  d17Number: "Numéro D17",
+  referenceD17: "Référence (libellé du transfert)",
+};
+
 /**
  * Returns both payment options (bank transfer + D17) with the data the
  * UI needs to render them. If `payee` is omitted, falls back to the
  * defaults (test data); production callers should always pass the
  * admin-controlled values fetched from `app_settings`.
+ *
+ * `label` names a field in the reader's language: the checkout passes the
+ * `payment.instructions` translator (keys as in FIELD_LABELS).
  */
 export function paymentInstructions(opts: {
   paymentId: string;
   amountTND: number;
   payee?: PayeeDetails;
+  label?: (key: string) => string;
 }): ProviderInstructions[] {
   const ref = paymentReference(opts.paymentId);
   const amt = fmt(opts.amountTND);
   const p = opts.payee ?? DEFAULT_PAYEE;
+  const l = opts.label ?? ((key: string) => FIELD_LABELS[key]);
 
   return [
     {
@@ -98,12 +115,12 @@ export function paymentInstructions(opts: {
       description:
         "Effectuez un virement depuis votre application bancaire ou en agence vers le compte ci-dessous, puis revenez ici pour téléverser le reçu.",
       fields: [
-        { label: "Bénéficiaire", value: p.name },
-        { label: "Banque", value: p.bank },
-        { label: "RIB", value: p.rib, copyable: true, mono: true },
-        { label: "IBAN", value: p.iban, copyable: true, mono: true },
-        { label: "Montant", value: `${amt} TND`, copyable: true, mono: true },
-        { label: "Référence (à indiquer dans le motif)", value: ref, copyable: true, mono: true },
+        { label: l("beneficiary"), value: p.name },
+        { label: l("bank"), value: p.bank },
+        { label: l("rib"), value: p.rib, copyable: true, mono: true },
+        { label: l("iban"), value: p.iban, copyable: true, mono: true },
+        { label: l("amount"), value: `${amt} TND`, copyable: true, mono: true },
+        { label: l("referenceBank"), value: ref, copyable: true, mono: true },
       ],
       nextStep:
         "Téléversez une photo lisible de votre ordre de virement (reçu, capture e-banking, ou avis d'agence).",
@@ -115,10 +132,10 @@ export function paymentInstructions(opts: {
       description:
         "Envoyez le montant depuis votre application D17 vers le numéro ci-dessous, puis téléversez la confirmation reçue par SMS ou dans l'app.",
       fields: [
-        { label: "Numéro D17", value: p.d17, copyable: true, mono: true },
-        { label: "Bénéficiaire", value: p.name },
-        { label: "Montant", value: `${amt} TND`, copyable: true, mono: true },
-        { label: "Référence (libellé du transfert)", value: ref, copyable: true, mono: true },
+        { label: l("d17Number"), value: p.d17, copyable: true, mono: true },
+        { label: l("beneficiary"), value: p.name },
+        { label: l("amount"), value: `${amt} TND`, copyable: true, mono: true },
+        { label: l("referenceD17"), value: ref, copyable: true, mono: true },
       ],
       nextStep:
         "Téléversez la capture d'écran de la confirmation D17 (référence + montant lisibles).",

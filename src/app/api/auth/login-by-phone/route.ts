@@ -1,9 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { clientIp } from "@/lib/clientIp";
 import { assertSupabaseRef } from "@/lib/supabase/guard";
+import { localeFromRequest } from "@/i18n/api";
+import { rememberLanguage } from "@/lib/notifications/language";
 
 /**
  * Phone sign-in — fully server-side.
@@ -84,10 +86,12 @@ export async function POST(req: NextRequest) {
 
   // Resolve phone → email server-side. The email is NEVER returned.
   let email: string | null = null;
+  let knownLanguage: unknown = null;
   const { data: profile } = await admin.from("profiles").select("id").eq("phone", phone).maybeSingle();
   if (profile?.id) {
     const { data: userRes } = await admin.auth.admin.getUserById(profile.id);
     email = userRes?.user?.email ?? null;
+    knownLanguage = userRes?.user?.user_metadata?.language ?? null;
   }
   if (!email) {
     // Unknown phone — same generic failure as a wrong password (no oracle).
@@ -99,6 +103,16 @@ export async function POST(req: NextRequest) {
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
     return NextResponse.json({ ok: false, error: "invalid_credentials" }, { status: 401 });
+  }
+  // Remember the language this person signs in with, for the SMS and e-mails
+  // sent to them later (src/lib/notifications/language.ts). After the
+  // response, and only when it changed: signing in must not wait on it.
+  const language = localeFromRequest(req);
+  if (profile?.id && knownLanguage !== language) {
+    const userId = profile.id as string;
+    after(async () => {
+      await rememberLanguage(admin, userId, language);
+    });
   }
   return NextResponse.json({ ok: true });
 }

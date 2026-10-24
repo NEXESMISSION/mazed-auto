@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/Toast";
@@ -18,6 +19,7 @@ const MIN_LENGTH = 8;
  * still require a live session.
  */
 export function PasswordSection({ email }: { email: string | null }) {
+  const t = useTranslations("myAccount.password");
   const { toast } = useToast();
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
@@ -33,15 +35,15 @@ export function PasswordSection({ email }: { email: string | null }) {
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (next.length < MIN_LENGTH) {
-      toast(`Le nouveau mot de passe doit contenir au moins ${MIN_LENGTH} caractères.`, "warning");
+      toast(t("tooShort", { min: MIN_LENGTH }), "warning");
       return;
     }
     if (next !== confirm) {
-      toast("Les deux mots de passe ne correspondent pas.", "warning");
+      toast(t("mismatch"), "warning");
       return;
     }
     if (email && current === next) {
-      toast("Le nouveau mot de passe doit être différent de l'actuel.", "warning");
+      toast(t("same"), "warning");
       return;
     }
     startTransition(async () => {
@@ -53,7 +55,7 @@ export function PasswordSection({ email }: { email: string | null }) {
         error: userErr,
       } = await supabase.auth.getUser();
       if (userErr || !user) {
-        toast("Session expirée. Reconnectez-vous puis réessayez.", "error");
+        toast(t("expired"), "error");
         return;
       }
 
@@ -64,17 +66,17 @@ export function PasswordSection({ email }: { email: string | null }) {
           password: current,
         });
         if (authErr) {
-          toast("Mot de passe actuel incorrect.", "error");
+          toast(t("wrongCurrent"), "error");
           return;
         }
       }
 
       const { error } = await supabase.auth.updateUser({ password: next });
       if (error) {
-        toast(frenchAuthError(error.message), "error");
+        toast(t(`errors.${authErrorKey(error.message)}`), "error");
         return;
       }
-      toast("Mot de passe mis à jour.", "success");
+      toast(t("updated"), "success");
       setCurrent("");
       setNext("");
       setConfirm("");
@@ -85,7 +87,7 @@ export function PasswordSection({ email }: { email: string | null }) {
     <form onSubmit={onSubmit} className="space-y-3.5 p-4 lg:p-5">
       {email && (
         <Field
-          label="Mot de passe actuel"
+          label={t("current")}
           autoComplete="current-password"
           value={current}
           onChange={setCurrent}
@@ -94,7 +96,7 @@ export function PasswordSection({ email }: { email: string | null }) {
       )}
 
       <Field
-        label="Nouveau mot de passe"
+        label={t("new")}
         autoComplete="new-password"
         value={next}
         onChange={setNext}
@@ -103,7 +105,7 @@ export function PasswordSection({ email }: { email: string | null }) {
           <button
             type="button"
             onClick={() => setShow((s) => !s)}
-            aria-label={show ? "Masquer les mots de passe" : "Afficher les mots de passe"}
+            aria-label={show ? t("hide") : t("show")}
             className="tap-target absolute inset-y-0 end-3 my-auto flex items-center text-subtle transition hover:text-gold"
           >
             {show ? (
@@ -116,7 +118,7 @@ export function PasswordSection({ email }: { email: string | null }) {
       />
 
       <Field
-        label="Confirmer le nouveau mot de passe"
+        label={t("confirm")}
         autoComplete="new-password"
         value={confirm}
         onChange={setConfirm}
@@ -124,7 +126,7 @@ export function PasswordSection({ email }: { email: string | null }) {
       />
 
       <div className="flex items-center justify-between gap-3 pt-1">
-        <p className="text-[11px] text-subtle">Au moins {MIN_LENGTH} caractères.</p>
+        <p className="text-[11px] text-subtle">{t("minHint", { min: MIN_LENGTH })}</p>
         <button
           type="submit"
           disabled={pending || !ready}
@@ -132,10 +134,10 @@ export function PasswordSection({ email }: { email: string | null }) {
         >
           {pending ? (
             <>
-              <Loader2 className="inline size-4 animate-spin" /> Mise à jour…
+              <Loader2 className="inline size-4 animate-spin" /> {t("updating")}
             </>
           ) : (
-            "Mettre à jour"
+            t("submit")
           )}
         </button>
       </div>
@@ -143,19 +145,13 @@ export function PasswordSection({ email }: { email: string | null }) {
   );
 }
 
-/** Translate the common Supabase auth error messages; generic FR fallback. */
-function frenchAuthError(message: string): string {
+/** The common Supabase auth error messages, as a key under `errors`. */
+function authErrorKey(message: string): "same" | "short" | "weak" | "generic" {
   const m = message.toLowerCase();
-  if (m.includes("different from the old")) {
-    return "Le nouveau mot de passe doit être différent de l'actuel.";
-  }
-  if (m.includes("at least")) {
-    return "Le mot de passe choisi est trop court.";
-  }
-  if (m.includes("weak") || m.includes("easy to guess")) {
-    return "Mot de passe trop faible. Choisissez-en un plus complexe.";
-  }
-  return "La mise à jour a échoué. Réessayez dans un instant.";
+  if (m.includes("different from the old")) return "same";
+  if (m.includes("at least")) return "short";
+  if (m.includes("weak") || m.includes("easy to guess")) return "weak";
+  return "generic";
 }
 
 function Field({

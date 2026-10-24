@@ -5,6 +5,9 @@ import { sendSms, isSmsConfigured, toSmsText } from "@/lib/winsms";
 import { log } from "@/lib/log";
 import { fail } from "@/lib/http/errors";
 import { SMS_KINDS, CAPPED_KINDS } from "@/lib/sms-kinds";
+import { getTranslations } from "next-intl/server";
+import { languagesOf } from "@/lib/notifications/language";
+import { localizeNotification } from "@/lib/notifications/localize";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -149,6 +152,10 @@ async function run(req: NextRequest) {
     const { data: profs } = await db.from("profiles").select("id, phone").in("id", userIds);
     for (const p of profs ?? []) if (p.phone) phoneByUser.set(p.id as string, p.phone as string);
   }
+  // The language each recipient reads the site in (French unless they chose
+  // Arabic) — one auth lookup per user, not per row.
+  const languageByUser = await languagesOf(db, userIds);
+  const tAr = await getTranslations({ locale: "ar", namespace: "notifications" });
 
   const base = siteUrl();
   let sent = 0;
@@ -211,8 +218,12 @@ async function run(req: NextRequest) {
       }
     }
 
-    const url = row.link ? `${base}/fr${row.link.startsWith("/") ? "" : "/"}${row.link}` : null;
-    const { text, unicode } = toSmsText({ brand: BRAND, title: row.title ?? BRAND, body: row.body, url });
+    const locale = languageByUser.get(row.user_id) ?? "fr";
+    const url = row.link ? `${base}/${locale}${row.link.startsWith("/") ? "" : "/"}${row.link}` : null;
+    // Stored French for a French reader; the known kinds re-worded for an
+    // Arabic one (src/lib/notifications/localize.ts).
+    const words = localizeNotification({ kind: row.kind, title: row.title ?? BRAND, body: row.body }, locale, tAr);
+    const { text, unicode } = toSmsText({ brand: BRAND, title: words.title, body: words.body, url });
     const result = await sendSms({ to: phone, sms: text, unicode });
 
     if (result.ok) {

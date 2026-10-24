@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { redirect, Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { Bell } from "lucide-react";
@@ -8,11 +9,15 @@ import {
   PAGE_SIZE,
 } from "./NotificationsClient";
 
-export const metadata: Metadata = {
-  title: "Notifications — Mazed Auto",
-  description:
-    "Centre de notifications : suivez vos annonces, vos paiements et vos alertes en temps réel.",
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "myAccount.notifications" });
+  return { title: t("metaTitle"), description: t("metaDescription") };
+}
 
 // Per-user, auth-gated — never static.
 export const dynamic = "force-dynamic";
@@ -33,6 +38,7 @@ export default async function NotificationsPage({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+  const t = await getTranslations("myAccount");
   const supabase = await getServerSupabase();
   const {
     data: { user },
@@ -63,13 +69,13 @@ export default async function NotificationsPage({
     <>
       <span className="batta-eyebrow inline-flex items-center gap-2">
         <Bell className="size-3.5" strokeWidth={2.4} />
-        Centre de notifications
+        {t("notifications.eyebrow")}
       </span>
       <h1 className="mt-1.5 text-[24px] font-extrabold leading-tight tracking-tight">
-        Notifications
+        {t("notifications.title")}
       </h1>
       <p className="mt-1.5 text-[12px] text-muted">
-        Annonces, paiements et alertes — tout au même endroit.
+        {t("notifications.subtitle")}
       </p>
     </>
   );
@@ -85,17 +91,17 @@ export default async function NotificationsPage({
             <Bell className="size-6 text-gold" strokeWidth={1.8} />
           </span>
           <p className="mt-4 text-[14px] font-bold text-foreground">
-            Aucune notification
+            {t("notifications.emptyTitle")}
           </p>
           <p className="mt-1 text-[12.5px] text-muted">
-            Tout est calme. Allez jeter un œil aux annonces.
+            {t("notifications.emptyBody")}
           </p>
           <div className="mt-5">
             <Link
               href="/annonces"
               className="batta-btn-luxe tap-target inline-flex px-5 py-2.5 text-[12.5px]"
             >
-              Parcourir les annonces
+              {t("common.browse")}
             </Link>
           </div>
         </div>

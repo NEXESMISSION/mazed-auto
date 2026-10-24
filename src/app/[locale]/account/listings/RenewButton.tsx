@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useToast } from "@/components/ui/Toast";
 import { RotateCw, Loader2 } from "lucide-react";
@@ -22,6 +23,7 @@ export function RenewButton({
   usesCredit: boolean;
   feeLabel: string | null;
 }) {
+  const t = useTranslations("myAccount");
   const router = useRouter();
   const { toast } = useToast();
   const [busy, setBusy] = useState(false);
@@ -32,20 +34,17 @@ export function RenewButton({
       const res = await fetch(`/api/annonces/${listingId}/renew`, { method: "POST" });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) {
-        toast(j.detail ?? j.error ?? "Renouvellement impossible.", "error");
+        toast(j.detail ?? j.error ?? t("listings.renew.failed"), "error");
         return;
       }
       if (j.status === "pending_payment" && j.paymentId) {
         router.push(`/payment/checkout?payment=${j.paymentId}` as never);
         return;
       }
-      toast(
-        `Annonce renvoyée à la vérification. ${j.remaining} publication(s) restante(s).`,
-        "success",
-      );
+      toast(t("listings.renew.done", { count: j.remaining ?? 0 }), "success");
       router.refresh();
     } catch {
-      toast("Erreur réseau.", "error");
+      toast(t("common.networkError"), "error");
     } finally {
       setBusy(false);
     }
@@ -59,9 +58,9 @@ export function RenewButton({
       className="tap-target mt-2 inline-flex items-center gap-1.5 rounded-full bg-gold-faint px-3 py-1.5 text-[12px] font-bold text-gold ring-1 ring-gold-soft transition hover:bg-gold-faint/70 disabled:opacity-60"
     >
       {busy ? <Loader2 className="size-3.5 animate-spin" /> : <RotateCw className="size-3.5" />}
-      Renouveler
+      {t("listings.renew.button")}
       <span className="font-semibold opacity-80">
-        · {usesCredit ? "1 publication du forfait" : feeLabel ?? "payante"}
+        · {usesCredit ? t("listings.renew.usesCredit") : feeLabel ?? t("listings.renew.paid")}
       </span>
     </button>
   );

@@ -1,52 +1,31 @@
 import { redirect } from "next/navigation";
 import { Link } from "@/i18n/navigation";
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
-import { formatTND } from "@/lib/utils";
+import { currencyLabel, formatTND } from "@/lib/utils";
+import { formatDate } from "@/lib/dates";
 import { CheckCircle2, ArrowRight, Loader2, XCircle, RotateCcw } from "lucide-react";
 import { SuccessAutoRedirect } from "./SuccessAutoRedirect";
 
 export const dynamic = "force-dynamic";
 
 /**
- * What the payment was for. The v3 kinds (listing_fee, listing_pack, renewal,
- * promo, badge) were missing entirely, so every publication fee — the only
- * payment this product actually takes — fell through to the generic
- * "Paiement reçu".
- */
-const KIND_LABEL: Record<string, string> = {
-  listing_fee: "Annonce payée",
-  listing_pack: "Pack d'annonces",
-  renewal: "Renouvellement payé",
-  promo: "Mise en avant payée",
-  badge: "Badge vérifié",
-  subscription: "Abonnement activé",
-};
-
-const KIND_SUBLABEL: Record<string, string> = {
-  listing_fee: "Votre annonce part en vérification — moins de 24 h.",
-  listing_pack: "Vos publications sont créditées sur votre compte.",
-  renewal: "Votre annonce est de nouveau en ligne.",
-  promo: "Votre annonce est mise en avant.",
-  badge: "Votre badge vérifié est actif.",
-  subscription: "Votre abonnement est actif.",
-};
-
-/**
- * What the payment is FOR, as a plain noun.
+ * What the payment was for: `payment.success.kinds.<kind>`. The v3 kinds
+ * (listing_fee, listing_pack, renewal, promo, badge) were missing entirely, so
+ * every publication fee — the only payment this product actually takes — fell
+ * through to the generic "Paiement reçu".
  *
- * KIND_LABEL above is phrased as a completed action ("Annonce payée"), which
- * is right for the headline of a confirmed payment and wrong everywhere else:
- * the summary row on a REFUSED payment was reading "Objet · Annonce payée".
+ *   done — the headline of a confirmed payment, phrased as a completed action
+ *          ("Annonce payée");
+ *   next — what happens now;
+ *   noun — what the payment is FOR, as a plain noun. The headline was wrong
+ *          everywhere else: the summary row on a REFUSED payment was reading
+ *          "Objet · Annonce payée".
  */
-const KIND_NOUN: Record<string, string> = {
-  listing_fee: "Publication d'annonce",
-  listing_pack: "Pack d'annonces",
-  renewal: "Renouvellement",
-  promo: "Mise en avant",
-  badge: "Badge vérifié",
-  subscription: "Abonnement",
-};
+const KINDS = new Set(["listing_fee", "listing_pack", "renewal", "promo", "badge", "subscription"]);
+
+/** The `payment.success` translator, as viewFor uses it. */
+type T = (key: string) => string;
 
 type Tone = "ok" | "wait" | "bad" | "neutral";
 
@@ -72,83 +51,43 @@ type View = {
   autoRedirect: boolean;
 };
 
-function viewFor(status: string, kind: string): View {
-  const kindLabel = KIND_LABEL[kind] ?? "Paiement reçu";
-  const kindSub = KIND_SUBLABEL[kind] ?? "Nous avons enregistré votre paiement.";
+function viewFor(t: T, status: string, kind: string): View {
+  const known = KINDS.has(kind);
+  const kindLabel = known ? t(`kinds.${kind}.done`) : t("received");
+  const kindSub = known ? t(`kinds.${kind}.next`) : t("recorded");
+  const view = (tone: Tone, key: string, autoRedirect = false): View => ({
+    tone,
+    eyebrow: t(`views.${key}.eyebrow`),
+    title: t(`views.${key}.title`),
+    body: t(`views.${key}.body`),
+    autoRedirect,
+  });
 
   switch (status) {
     case "captured":
       return {
         tone: "ok",
-        eyebrow: "Paiement confirmé",
+        eyebrow: t("views.captured.eyebrow"),
         title: kindLabel,
         body: kindSub,
         autoRedirect: true,
       };
-
     case "failed":
-      return {
-        tone: "bad",
-        eyebrow: "Paiement refusé",
-        title: "Ce paiement n'a pas abouti",
-        body:
-          "Rien n'a été confirmé et votre annonce n'a pas été publiée. " +
-          "Reprenez le paiement depuis « Mes annonces », ou contactez-nous si vous pensez qu'il s'agit d'une erreur.",
-        autoRedirect: false,
-      };
-
+      return view("bad", "failed");
     case "refunded":
-      return {
-        tone: "neutral",
-        eyebrow: "Paiement remboursé",
-        title: "Ce paiement a été remboursé",
-        body: "La somme vous a été rendue. Rien n'est dû pour cette opération.",
-        autoRedirect: false,
-      };
-
+      return view("neutral", "refunded");
     case "pending_review":
-      return {
-        tone: "wait",
-        eyebrow: "Reçu en cours de vérification",
-        title: "Nous vérifions votre reçu",
-        body:
-          "Votre virement est entre nos mains. Nous confirmons sous 24 h en général, " +
-          "et vous recevez un message dès que c'est validé — vous n'avez rien d'autre à faire.",
-        autoRedirect: false,
-      };
-
+      return view("wait", "pending_review");
     case "authorized":
-      return {
-        tone: "wait",
-        eyebrow: "En attente de confirmation",
-        title: "Paiement autorisé",
-        body: "Le montant est réservé. La confirmation définitive arrive sous peu.",
-        autoRedirect: false,
-      };
-
+      return view("wait", "authorized");
     // `pending` and anything the enum gains later.
     default:
-      return {
-        tone: "wait",
-        eyebrow: "En attente de paiement",
-        title: "Ce paiement n'est pas encore réglé",
-        body:
-          "Nous n'avons pas encore reçu votre règlement. Reprenez-le depuis « Mes annonces » " +
-          "pour téléverser votre reçu.",
-        autoRedirect: false,
-      };
+      return view("wait", "pending");
   }
 }
 
-/** The status word itself, in French — it was printing the raw enum. */
-const STATUS_LABEL: Record<string, string> = {
-  captured: "Validé",
-  pending: "En attente",
-  pending_review: "En vérification",
-  authorized: "Autorisé",
-  refunded: "Remboursé",
-  failed: "Refusé",
-};
+/** The status word itself — it was printing the raw enum. */
+const STATUSES = new Set(["captured", "pending", "pending_review", "authorized", "refunded", "failed"]);
 
 const TONE_PILL: Record<Tone, string> = {
   ok: "bg-emerald-500/15 text-emerald-300",
@@ -169,14 +108,17 @@ export default async function PaymentSuccess({
 }) {
   const { id, return: returnUrl } = await searchParams;
   const locale = await getLocale();
+  const t = await getTranslations("payment.success");
+  const tp = await getTranslations("payment");
   const safeReturn = returnUrl && returnUrl.startsWith("/") ? returnUrl : "/";
 
   if (!id) {
     return (
       <SuccessShell
-        title="Paiement reçu"
-        body="Nous avons enregistré votre paiement. Vous serez notifié dès que tout est confirmé."
+        title={t("received")}
+        body={t("noIdBody")}
         returnUrl={safeReturn}
+        back={tp("common.back")}
       />
     );
   }
@@ -196,17 +138,19 @@ export default async function PaymentSuccess({
   if (!payment) {
     return (
       <SuccessShell
-        title="Reçu introuvable"
-        body="Nous n'avons pas trouvé ce paiement. Si la somme a été débitée, contactez le support avec le numéro de référence ci-dessous."
+        title={t("notFoundTitle")}
+        body={t("notFoundBody")}
         returnUrl={safeReturn}
         id={id}
+        refLabel={t("ref", { id })}
+        back={tp("common.back")}
       />
     );
   }
 
   const status = String(payment.status);
   const kind = String(payment.kind);
-  const view = viewFor(status, kind);
+  const view = viewFor(t, status, kind);
 
   // Where "continue" goes. A payment that failed or is still owed belongs in
   // Mes annonces, which is where the seller can act on it — not on a lot page
@@ -225,12 +169,12 @@ export default async function PaymentSuccess({
   ) as `/${string}`;
 
   const ctaLabel = payment.shop_id
-    ? "Mon abonnement"
+    ? t("cta.subscription")
     : needsSellerAction
-    ? "Reprendre depuis mes annonces"
+    ? t("cta.resume")
     : view.tone === "ok"
-      ? "Continuer"
-      : "Retour";
+      ? t("cta.continue")
+      : tp("common.back");
 
   return (
     <div className="mx-auto flex min-h-[calc(100dvh-var(--desktop-nav-h))] w-full max-w-md flex-col items-center justify-center px-4 py-10">
@@ -276,34 +220,35 @@ export default async function PaymentSuccess({
         <p className="mt-2 text-sm leading-relaxed text-[var(--foreground-muted)]">{view.body}</p>
 
         <dl className="mt-6 space-y-2 rounded-[var(--radius)] bg-[var(--surface-2)] p-4 text-start">
-          <Row label="Montant">
+          <Row label={t("rows.amount")}>
             <span className="batta-tabular gradient-gold-text font-bold">
-              {formatTND(Number(payment.amount), locale)} {payment.currency}
+              {formatTND(Number(payment.amount), locale)}{" "}
+              {payment.currency === "TND" ? currencyLabel(locale) : payment.currency}
             </span>
           </Row>
-          <Row label="Objet">
+          <Row label={t("rows.object")}>
             <span className="text-[12px] text-foreground">
-              {KIND_NOUN[kind] ?? "Paiement"}
+              {KINDS.has(kind) ? t(`kinds.${kind}.noun`) : t("payment")}
             </span>
           </Row>
-          <Row label="Référence">
-            <span className="font-mono text-[11px] text-foreground">
+          <Row label={tp("common.reference")}>
+            <span className="ltr-island font-mono text-[11px] text-foreground">
               {payment.id.slice(0, 8)}…{payment.id.slice(-4)}
             </span>
           </Row>
-          <Row label="Date">
+          <Row label={t("rows.date")}>
             <span className="font-mono text-[11px] text-foreground">
-              {new Date(payment.created_at).toLocaleString("fr-FR", {
+              {formatDate(payment.created_at, locale, {
                 dateStyle: "medium",
                 timeStyle: "short",
               })}
             </span>
           </Row>
-          <Row label="Statut">
+          <Row label={t("rows.status")}>
             <span
               className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${TONE_PILL[view.tone]}`}
             >
-              {STATUS_LABEL[status] ?? status}
+              {STATUSES.has(status) ? t(`status.${status}`) : status}
             </span>
           </Row>
         </dl>
@@ -311,7 +256,7 @@ export default async function PaymentSuccess({
         {view.autoRedirect && (
           <p className="mt-5 inline-flex items-center justify-center gap-1.5 text-[11px] text-[var(--foreground-subtle)]">
             <Loader2 className="h-3 w-3 animate-spin" />
-            Redirection automatique…
+            {t("redirecting")}
           </p>
         )}
 
@@ -324,13 +269,13 @@ export default async function PaymentSuccess({
           }
         >
           {ctaLabel}
-          {(view.tone === "ok" || needsSellerAction) && <ArrowRight className="h-4 w-4" />}
+          {(view.tone === "ok" || needsSellerAction) && <ArrowRight className="h-4 w-4 rtl:-scale-x-100" />}
         </Link>
 
         <p className="mt-4 text-[11.5px] text-[var(--foreground-subtle)]">
-          Vous rencontrez un problème ?{" "}
+          {tp("common.problem")}{" "}
           <Link href="/contact" className="font-semibold text-[var(--gold)] hover:underline">
-            Contacter le support
+            {tp("common.support")}
           </Link>
         </p>
       </div>
@@ -343,11 +288,15 @@ function SuccessShell({
   body,
   returnUrl,
   id,
+  refLabel,
+  back,
 }: {
   title: string;
   body: string;
   returnUrl: string;
   id?: string;
+  refLabel?: string;
+  back: string;
 }) {
   return (
     <div className="mx-auto flex min-h-[calc(100dvh-var(--desktop-nav-h))] w-full max-w-md flex-col items-center justify-center px-4 py-10">
@@ -358,13 +307,13 @@ function SuccessShell({
         <h1 className="mt-4 text-xl font-extrabold">{title}</h1>
         <p className="mt-2 text-sm text-[var(--foreground-muted)]">{body}</p>
         {id && (
-          <p className="mt-3 font-mono text-[10px] text-[var(--foreground-subtle)]">Réf · {id}</p>
+          <p className="mt-3 font-mono text-[10px] text-[var(--foreground-subtle)]">{refLabel}</p>
         )}
         <Link
           href={returnUrl as `/${string}`}
           className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--surface-2)] text-[13px] font-semibold text-foreground transition-colors hover:border-[var(--gold-soft)]"
         >
-          Retour
+          {back}
         </Link>
       </div>
     </div>

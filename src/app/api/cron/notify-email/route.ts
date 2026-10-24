@@ -4,6 +4,10 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { sendEmail, isEmailConfigured } from "@/lib/email";
 import { log } from "@/lib/log";
 import { fail } from "@/lib/http/errors";
+import { getTranslations } from "next-intl/server";
+import { userLanguage } from "@/lib/notifications/language";
+import { localizeNotification } from "@/lib/notifications/localize";
+import type { Locale } from "@/i18n/routing";
 
 export const dynamic = "force-dynamic";
 // Give the worker real headroom: a Resend latency spike must not kill the
@@ -88,17 +92,24 @@ function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
-function renderHtml(title: string, body: string, href: string | null): string {
+function renderHtml(
+  title: string,
+  body: string,
+  href: string | null,
+  locale: Locale,
+  chrome: { cta: string; footer: string },
+): string {
   const cta = href
-    ? `<a href="${href}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#d4af37;color:#111;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px">Voir sur Mazed Auto</a>`
+    ? `<a href="${href}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#d4af37;color:#111;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px">${escapeHtml(chrome.cta)}</a>`
     : "";
-  return `<!doctype html><html lang="fr"><body style="margin:0;background:#0e0e10;padding:24px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
+  const dir = locale === "ar" ? "rtl" : "ltr";
+  return `<!doctype html><html lang="${locale}" dir="${dir}"><body style="margin:0;background:#0e0e10;padding:24px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
     <div style="max-width:520px;margin:0 auto;background:#17171b;border:1px solid #2a2a30;border-radius:16px;padding:28px">
       <div style="font-size:18px;font-weight:800;color:#d4af37;letter-spacing:.5px">Mazed Auto</div>
       <h1 style="font-size:18px;color:#f5f5f5;margin:18px 0 8px">${escapeHtml(title)}</h1>
       <p style="font-size:14px;line-height:1.6;color:#c8c8cc;margin:0">${escapeHtml(body)}</p>
       ${cta}
-      <p style="font-size:11px;color:#75757c;margin:24px 0 0">Vous recevez cet e-mail car vous avez un compte sur Mazed Auto.</p>
+      <p style="font-size:11px;color:#75757c;margin:24px 0 0">${escapeHtml(chrome.footer)}</p>
     </div></body></html>`;
 }
 
@@ -184,14 +195,23 @@ async function run(req: NextRequest) {
       return "skipped";
     }
 
-    const title = row.title ?? "Notification Mazed Auto";
-    const body = row.body ?? "";
-    const href = row.link ? `${base}/fr${row.link.startsWith("/") ? "" : "/"}${row.link}` : null;
+    // In the language the recipient reads the site in: the stored French for
+    // a French reader, the known kinds re-worded for an Arabic one.
+    const locale = userLanguage(userRes?.user);
+    const t = await getTranslations({ locale, namespace: "notifications" });
+    const words = localizeNotification(
+      { kind: row.kind, title: row.title ?? t("email.fallbackSubject"), body: row.body },
+      locale,
+      t,
+    );
+    const title = words.title;
+    const body = words.body ?? "";
+    const href = row.link ? `${base}/${locale}${row.link.startsWith("/") ? "" : "/"}${row.link}` : null;
 
     const result = await sendEmail({
       to,
       subject: title,
-      html: renderHtml(title, body, href),
+      html: renderHtml(title, body, href, locale, { cta: t("email.cta"), footer: t("email.footer") }),
       text: href ? `${body}\n\n${href}` : body,
     });
 

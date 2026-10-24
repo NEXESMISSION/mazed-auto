@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { paymentInstructions, fetchPayeeDetails } from "@/lib/payments";
@@ -39,6 +39,7 @@ export default async function CheckoutEntry({
 }) {
   const { payment: paymentParam } = await searchParams;
   const locale = await getLocale();
+  const tl = await getTranslations("payment.instructions");
 
   const supabase = await getServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
@@ -89,6 +90,7 @@ export default async function CheckoutEntry({
         paymentId: pay.id as string,
         amountTND: Number(pay.amount),
         payee,
+        label: (key) => tl(key),
       })}
       locale={locale}
       reupload={pay.status === "pending_review"}

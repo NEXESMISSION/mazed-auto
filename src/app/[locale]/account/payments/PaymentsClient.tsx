@@ -1,9 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useToast } from "@/components/ui/Toast";
-import { formatTND } from "@/lib/utils";
+import { currencyLabel, formatTND } from "@/lib/utils";
+import { formatDate } from "@/lib/dates";
+import { governorateLabel } from "@/lib/labels";
 import {
   Wallet,
   FileText,
@@ -23,7 +26,8 @@ import {
 
 /** A user-cancelled pending payment is stored as `failed` with this exact
  *  marker (see /api/payments/[id]/cancel) — we display it as a neutral
- *  "Annulé", not as a failed payment to redo. */
+ *  "Annulé", not as a failed payment to redo. It is data, not copy: never
+ *  translate it. */
 const CANCELLED_NOTE = "Annulé par l'utilisateur";
 function isCancelled(p: { status: string; adminNotes: string | null }): boolean {
   return p.status === "failed" && p.adminNotes === CANCELLED_NOTE;
@@ -57,41 +61,36 @@ export type PaymentsSummary = {
   refundedTotal: number;
 };
 
-const KIND_LABELS: Record<string, string> = {
-  deposit_lock: "Caution de participation",
-  buy_now: "Achat direct",
-  final_payment: "Paiement final",
-  commission: "Commission",
-  inspection_fee: "Frais d'inspection",
-  subscription: "Abonnement",
-  deposit_release: "Remboursement de caution",
-  // v3. Everything above this line belongs to the auction era and stays only
-  // so an old row still reads properly; these are the kinds the product
-  // actually charges today, and they were missing — a renewal or a pack
-  // rendered its raw enum value in the history.
-  listing_fee: "Frais d'annonce",
-  listing_pack: "Pack d'annonces",
-  renewal: "Renouvellement d'annonce",
-  promo: "Mise en avant",
-  badge: "Badge vérifié",
-};
+/** Kinds with a label under `myAccount.payments.kinds`. The auction-era ones
+ *  stay only so an old row still reads properly; listing_fee, listing_pack,
+ *  renewal, promo and badge are what the product charges today. */
+const KNOWN_KINDS = new Set([
+  "deposit_lock", "buy_now", "final_payment", "commission", "inspection_fee", "subscription",
+  "deposit_release", "listing_fee", "listing_pack", "renewal", "promo", "badge",
+]);
 
-const STATUS: Record<string, { label: string; tone: string }> = {
-  pending: { label: "Reçu à téléverser", tone: "batta-tone-warn" },
-  pending_review: { label: "Reçu en vérification", tone: "batta-tone-warn" },
-  captured: { label: "Payé", tone: "batta-tone-ok" },
-  refunded: { label: "Remboursé", tone: "bg-surface-2 text-muted ring-1 ring-border" },
-  failed: { label: "Refusé", tone: "batta-tone-bad" },
+/** Tone per status; the label is `myAccount.payments.status.<status>`. */
+const STATUS_TONE: Record<string, string> = {
+  pending: "batta-tone-warn",
+  pending_review: "batta-tone-warn",
+  captured: "batta-tone-ok",
+  refunded: "bg-surface-2 text-muted ring-1 ring-border",
+  failed: "batta-tone-bad",
 };
 
 /** For a `deposit_lock`, the right-hand badge reflects where the money
- *  actually is, not the flat payment status. */
-const DEPOSIT_BADGE: Record<DepositLifecycle, { label: string; tone: string }> = {
-  locked: { label: "Caution bloquée", tone: "bg-gold-faint text-gold-bright ring-1 ring-gold/30" },
-  to_refund: { label: "Remb. en cours", tone: "batta-tone-warn" },
-  refunded: { label: "Remboursée", tone: "batta-tone-ok" },
-  forfeited: { label: "Caution saisie", tone: "batta-tone-bad" },
+ *  actually is, not the flat payment status. Label: `payments.deposit.<status>`. */
+const DEPOSIT_TONE: Record<DepositLifecycle, string> = {
+  locked: "bg-gold-faint text-gold-bright ring-1 ring-gold/30",
+  to_refund: "batta-tone-warn",
+  refunded: "batta-tone-ok",
+  forfeited: "batta-tone-bad",
 };
+
+/** The `myAccount.payments` translator, as the helpers below use it. */
+type T = (key: string, values?: Record<string, string>) => string;
+
+const kindLabel = (t: T, kind: string) => (KNOWN_KINDS.has(kind) ? t(`kinds.${kind}`) : kind);
 
 /** db kind → checkout `type` param, so a rejected payment can be redone
  *  through the same entry that created it (inspection_fee has no type). */
@@ -102,14 +101,13 @@ const KIND_TO_CHECKOUT: Record<string, string> = {
   listing_fee: "listing_fee",
 };
 
-function providerLabel(provider: string): string {
+function providerLabel(t: T, provider: string): string {
   switch (provider) {
     case "d17":
       return "D17";
     case "bank_transfer":
-      return "Virement";
     case "manual":
-      return "Enregistré par l'admin";
+      return t(`providers.${provider}`);
     default:
       return provider;
   }
@@ -131,10 +129,10 @@ function actionHref(p: PaymentVM): string | null {
   return null;
 }
 
-function actionLabel(p: PaymentVM): string {
-  if (p.status === "pending") return "Téléverser le reçu";
-  if (p.status === "pending_review") return "Voir / corriger le reçu";
-  return "Reprendre le paiement";
+function actionLabel(t: T, p: PaymentVM): string {
+  if (p.status === "pending") return t("actions.upload");
+  if (p.status === "pending_review") return t("actions.fix");
+  return t("actions.retry");
 }
 
 type FilterKey = "all" | "action" | "deposits" | "purchases" | "refunds";
@@ -176,6 +174,8 @@ export function PaymentsClient({
   summary: PaymentsSummary;
   locale: string;
 }) {
+  const t = useTranslations("myAccount.payments");
+  const cur = currencyLabel(locale);
   const [filter, setFilter] = useState<FilterKey>("all");
   const router = useRouter();
   const { toast } = useToast();
@@ -184,10 +184,10 @@ export function PaymentsClient({
     const res = await fetch(`/api/payments/${id}/cancel`, { method: "POST" });
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
-      toast(j.detail ?? j.error ?? "Annulation impossible.", "error");
+      toast(j.detail ?? j.error ?? t("cancelFailed"), "error");
       return false;
     }
-    toast("Paiement annulé.", "success");
+    toast(t("cancelled"), "success");
     router.refresh();
     return true;
   }
@@ -214,41 +214,37 @@ export function PaymentsClient({
 
   const visible = useMemo(() => payments.filter((p) => matchesFilter(p, filter)), [payments, filter]);
 
-  const TABS: { key: FilterKey; label: string }[] = [
-    { key: "all", label: "Tout" },
-    { key: "action", label: "À traiter" },
-    { key: "deposits", label: "Cautions" },
-    { key: "purchases", label: "Achats & frais" },
-    { key: "refunds", label: "Remboursements" },
-  ];
+  const TABS: { key: FilterKey; label: string }[] = (
+    ["all", "action", "deposits", "purchases", "refunds"] as const
+  ).map((key) => ({ key, label: t(`tabs.${key}`) }));
 
   return (
     <div className="mt-6">
       {/* ── Summary cards — the four signals that matter, at a glance. ── */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard
-          label="À traiter"
+          label={t("stats.action")}
           value={String(summary.actionCount)}
           Icon={AlertTriangle}
           tone={summary.actionCount > 0 ? "text-amber-600" : "text-foreground/50"}
           highlight={summary.actionCount > 0}
         />
         <StatCard
-          label="Caution bloquée"
+          label={t("stats.locked")}
           value={formatTND(summary.lockedTotal, locale)}
-          suffix="TND"
+          suffix={cur}
           Icon={Wallet}
           tone="text-gold"
         />
         <StatCard
-          label="Total dépensé"
+          label={t("stats.spent")}
           value={formatTND(summary.spentTotal, locale)}
-          suffix="TND"
+          suffix={cur}
           Icon={TrendingUp}
           tone="text-foreground/70"
         />
         <StatCard
-          label="En vérification"
+          label={t("stats.review")}
           value={String(summary.reviewCount)}
           Icon={Clock}
           tone="text-foreground/70"
@@ -261,9 +257,9 @@ export function PaymentsClient({
           <div className="flex items-center gap-1.5 px-3.5 pt-3 pb-2">
             <AlertTriangle className="size-3.5 text-amber-600" strokeWidth={2.6} />
             <span className="text-[11.5px] font-extrabold uppercase tracking-[0.12em] text-amber-700">
-              À traiter
+              {t("todo")}
             </span>
-            <span className="batta-tabular ml-0.5 rounded-full bg-amber-500/20 px-1.5 text-[10px] font-extrabold text-amber-700">
+            <span className="batta-tabular ms-0.5 rounded-full bg-amber-500/20 px-1.5 text-[10px] font-extrabold text-amber-700">
               {todo.length}
             </span>
           </div>
@@ -284,19 +280,19 @@ export function PaymentsClient({
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-[13px] font-bold text-foreground">
-                      {KIND_LABELS[p.kind] ?? p.kind}
+                      {kindLabel(t, p.kind)}
                       {" · "}
-                      <span className="batta-tabular">{formatTND(p.amount, locale)} TND</span>
+                      <span className="batta-tabular">{formatTND(p.amount, locale)} {cur}</span>
                     </div>
                     <div className="truncate text-[11px] font-semibold text-amber-700">
                       {p.status === "pending"
-                        ? "Reçu à téléverser"
+                        ? t("toUpload")
                         : p.adminNotes
-                          ? `Refusé : ${p.adminNotes}`
-                          : "Refusé — à reprendre"}
+                          ? t("refusedWith", { notes: p.adminNotes })
+                          : t("refused")}
                     </div>
                   </div>
-                  <ChevronRight className="size-4 shrink-0 text-amber-600" strokeWidth={2.4} />
+                  <ChevronRight className="size-4 shrink-0 text-amber-600 rtl:-scale-x-100" strokeWidth={2.4} />
                 </div>
               );
               return (
@@ -333,7 +329,7 @@ export function PaymentsClient({
               {label}
               {count > 0 && (
                 <span
-                  className={`batta-tabular ml-0.5 rounded-full px-1.5 text-[10px] font-extrabold ${
+                  className={`batta-tabular ms-0.5 rounded-full px-1.5 text-[10px] font-extrabold ${
                     on ? "bg-surface/40" : "bg-surface text-foreground/70"
                   }`}
                 >
@@ -349,7 +345,7 @@ export function PaymentsClient({
       {visible.length === 0 ? (
         <div className="batta-frame-gold relative mt-5 px-6 py-10 text-center">
           <Wallet className="mx-auto size-8 text-gold" strokeWidth={2} />
-          <p className="mt-3 text-[13px] text-muted">Aucun paiement dans cette catégorie.</p>
+          <p className="mt-3 text-[13px] text-muted">{t("emptyFilter")}</p>
         </div>
       ) : (
         <ul className="mt-4 space-y-2.5 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
@@ -402,10 +398,10 @@ function StatCard({
 /** Caution lifecycle chip (shown in the chips row for deposit_release / refund context). */
 function lifecycleChip(status: DepositLifecycle) {
   const map = {
-    locked: { Icon: Wallet, label: "Bloquée" },
-    to_refund: { Icon: RefreshCw, label: "Remboursement en cours" },
-    refunded: { Icon: CheckCircle2, label: "Remboursée" },
-    forfeited: { Icon: ShieldAlert, label: "Saisie" },
+    locked: Wallet,
+    to_refund: RefreshCw,
+    refunded: CheckCircle2,
+    forfeited: ShieldAlert,
   } as const;
   return map[status];
 }
@@ -419,16 +415,20 @@ function PaymentRow({
   locale: string;
   onCancel: (id: string) => Promise<boolean>;
 }) {
+  const t = useTranslations("myAccount.payments");
+  const cur = currencyLabel(locale);
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const cancelled = isCancelled(p);
 
   // For a deposit, the badge tells the user where the caution is now.
   const badge = cancelled
-    ? { label: "Annulé", tone: "bg-surface-2 text-muted ring-1 ring-border" }
+    ? { label: t("status.cancelled"), tone: "bg-surface-2 text-muted ring-1 ring-border" }
     : p.kind === "deposit_lock" && p.depositStatus
-      ? DEPOSIT_BADGE[p.depositStatus]
-      : STATUS[p.status] ?? { label: p.status, tone: "bg-surface-2 text-muted ring-1 ring-border" };
+      ? { label: t(`deposit.${p.depositStatus}`), tone: DEPOSIT_TONE[p.depositStatus] }
+      : STATUS_TONE[p.status]
+        ? { label: t(`status.${p.status}`), tone: STATUS_TONE[p.status] }
+        : { label: p.status, tone: "bg-surface-2 text-muted ring-1 ring-border" };
 
   const canResume =
     (p.status === "pending" || p.status === "pending_review" || p.status === "failed") && !cancelled;
@@ -458,7 +458,7 @@ function PaymentRow({
 
         <div className="min-w-0 flex-1">
           <div className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-gold">
-            {KIND_LABELS[p.kind] ?? p.kind}
+            {kindLabel(t, p.kind)}
           </div>
           {p.title && (
             <div className="mt-0.5 flex items-center gap-1 truncate text-[11.5px] font-bold text-foreground">
@@ -467,24 +467,24 @@ function PaymentRow({
           )}
           <div className="batta-tabular mt-1 text-[18px] font-extrabold text-foreground">
             {formatTND(p.amount, locale)}{" "}
-            <span className="text-[10px] font-bold uppercase text-muted">TND</span>
+            <span className="text-[10px] font-bold uppercase text-muted">{cur}</span>
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] text-muted">
             <span>
-              {new Date(p.createdAt).toLocaleDateString(locale, {
+              {formatDate(p.createdAt, locale, {
                 day: "2-digit",
                 month: "short",
                 year: "numeric",
               })}
             </span>
             <span aria-hidden>·</span>
-            <span>{providerLabel(p.provider)}</span>
+            <span>{providerLabel(t, p.provider)}</span>
             {p.governorate && (
               <>
                 <span aria-hidden>·</span>
                 <span className="inline-flex items-center gap-0.5">
                   <MapPin className="size-3" strokeWidth={2} />
-                  {p.governorate}
+                  {governorateLabel(p.governorate, locale)}
                 </span>
               </>
             )}
@@ -495,7 +495,7 @@ function PaymentRow({
               own marker). */}
           {p.status === "failed" && !cancelled && p.adminNotes && (
             <div className="mt-2 rounded-lg bg-red-500/10 px-2.5 py-1.5 text-[11px] font-semibold text-red-600 ring-1 ring-red-500/20">
-              Motif du refus : {p.adminNotes}
+              {t("reason", { notes: p.adminNotes })}
             </div>
           )}
 
@@ -504,11 +504,11 @@ function PaymentRow({
             (p.depositStatus === "to_refund" || p.depositStatus === "refunded") && (
               <div className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-muted">
                 {(() => {
-                  const { Icon, label } = lifecycleChip(p.depositStatus);
+                  const Icon = lifecycleChip(p.depositStatus);
                   return (
                     <>
                       <Icon className="size-3 text-gold" strokeWidth={2.2} />
-                      {label} · {formatTND(p.amount, locale)} TND
+                      {t(`lifecycle.${p.depositStatus}`)} · {formatTND(p.amount, locale)} {cur}
                     </>
                   );
                 })()}
@@ -530,8 +530,8 @@ function PaymentRow({
               href={aHref as "/payment/checkout"}
               className="batta-btn-luxe tap-target rounded-full px-3 py-1.5 text-[11px] uppercase tracking-[0.12em]"
             >
-              {actionLabel(p)}
-              <ArrowRight className="size-3" strokeWidth={2.5} />
+              {actionLabel(t, p)}
+              <ArrowRight className="size-3 rtl:-scale-x-100" strokeWidth={2.5} />
             </Link>
           )}
 
@@ -553,7 +553,7 @@ function PaymentRow({
                   className="tap-target inline-flex items-center gap-1 rounded-full bg-[var(--danger)] px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.12em] text-white disabled:opacity-50"
                 >
                   {busy ? <Loader2 className="size-3 animate-spin" /> : <X className="size-3" strokeWidth={2.6} />}
-                  Confirmer
+                  {t("confirm")}
                 </button>
                 <button
                   type="button"
@@ -561,7 +561,7 @@ function PaymentRow({
                   onClick={() => setConfirming(false)}
                   className="tap-target inline-flex items-center rounded-full px-2.5 py-1.5 text-[11px] font-bold text-muted hover:text-foreground disabled:opacity-50"
                 >
-                  Non
+                  {t("no")}
                 </button>
               </span>
             ) : (
@@ -571,7 +571,7 @@ function PaymentRow({
                 className="tap-target inline-flex items-center gap-1 rounded-full border border-[var(--accent-soft)] bg-[var(--accent-faint)] px-3 py-1.5 text-[11px] font-bold text-[var(--accent-deep)] transition hover:bg-[var(--accent)]/10"
               >
                 <X className="size-3" strokeWidth={2.5} />
-                Annuler
+                {t("cancel")}
               </button>
             ))}
           {p.receiptUrl && (
@@ -582,7 +582,7 @@ function PaymentRow({
               className="tap-target inline-flex items-center gap-1 rounded-full border border-border bg-surface-2 px-3 py-1.5 text-[11px] font-semibold text-foreground hover:border-gold-soft/50"
             >
               <FileText className="size-3 text-gold" strokeWidth={2} />
-              Reçu
+              {t("receipt")}
             </a>
           )}
           {entityHref && (
@@ -590,8 +590,8 @@ function PaymentRow({
               href={entityHref}
               className="tap-target ms-auto inline-flex items-center gap-1 text-[11px] font-bold text-muted hover:text-gold-bright"
             >
-              Voir l&apos;annonce
-              <ChevronRight className="size-3.5" />
+              {t("viewListing")}
+              <ChevronRight className="size-3.5 rtl:-scale-x-100" />
             </Link>
           )}
         </div>

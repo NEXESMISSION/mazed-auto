@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useMemo, useRef, useState } from "react";
 import {
@@ -17,7 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
-import { formatTND, cn } from "@/lib/utils";
+import { formatTND, currencyLabel, cn } from "@/lib/utils";
 import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
 import { compressImage } from "@/lib/imageCompress";
 import { withTimeout, isTimeout } from "@/lib/withTimeout";
@@ -52,16 +53,11 @@ interface Props {
   shopOrder?: boolean;
 }
 
-/**
+/*
  * There is one kind of payment. `KIND_TITLES` mapped four — caution, achat,
  * paiement final, frais d'annonce — and the three listing ones are unreachable
- * now that nothing can create them.
+ * now that nothing can create them. Its words: `payment.checkout.label` / `body`.
  */
-const META = {
-  label: "Frais d'annonce",
-  body:
-    "Frais de publication + options choisies. Votre annonce part en vérification dès validation du reçu.",
-};
 
 const PROVIDER_ICONS: Record<PaymentProvider, typeof Building2> = {
   bank_transfer: Building2,
@@ -224,6 +220,9 @@ export function CheckoutClient({
   editHref,
   shopOrder = false,
 }: Props) {
+  const t = useTranslations("payment");
+  const tc = useTranslations("payment.checkout");
+  const cur = currencyLabel(locale);
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [provider, setProvider] = useState<PaymentProvider>(
@@ -258,7 +257,6 @@ export function CheckoutClient({
     () => instructions.find((p) => p.value === provider) ?? instructions[0],
     [provider, instructions],
   );
-  const meta = META;
 
   // ── Where "Retour" goes ──
   // A fixed destination, NOT history.back(): this screen is reached from a
@@ -281,7 +279,7 @@ export function CheckoutClient({
       setCopiedField(label);
       setTimeout(() => setCopiedField(null), 1400);
     } catch {
-      toast("Impossible de copier.", "warning");
+      toast(tc("copyFailed"), "warning");
     }
   }
 
@@ -290,13 +288,13 @@ export function CheckoutClient({
     if (picked.length === 0) return;
     const remaining = MAX_RECEIPTS - files.length;
     if (remaining <= 0) {
-      toast(`Maximum ${MAX_RECEIPTS} images.`, "warning");
+      toast(tc("maxFiles", { max: MAX_RECEIPTS }), "warning");
       return;
     }
     const accepted: File[] = [];
     for (const f of picked) {
       if (accepted.length >= remaining) {
-        toast(`Maximum ${MAX_RECEIPTS} images — fichiers en trop ignorés.`, "warning");
+        toast(tc("maxFilesIgnored", { max: MAX_RECEIPTS }), "warning");
         break;
       }
       // Some mobile pickers report empty `type` for HEIC files — fall back to
@@ -307,11 +305,11 @@ export function CheckoutClient({
         ["jpg", "jpeg", "png", "webp", "avif", "heic", "heif"].includes(ext);
       const looksPdf = f.type === "application/pdf" || ext === "pdf";
       if (!looksImage && !looksPdf && !ACCEPTED_TYPES.includes(f.type)) {
-        toast(`${f.name} : format non accepté (JPG, PNG, WebP, HEIC, PDF).`, "error");
+        toast(tc("badFormat", { name: f.name }), "error");
         continue;
       }
       if (f.size > MAX_FILE_MB * 1024 * 1024) {
-        toast(`${f.name} : trop volumineux (max ${MAX_FILE_MB} Mo).`, "error");
+        toast(tc("tooBig", { name: f.name, mb: MAX_FILE_MB }), "error");
         continue;
       }
       accepted.push(f);
@@ -325,11 +323,11 @@ export function CheckoutClient({
     if (files.length === 0 || submitting) return;
     cancelRef.current = false;
     setSubmitting(true);
-    setPhase("Préparation…");
+    setPhase(tc("phase.preparing"));
     // Human name of the step in flight, so a timeout can say which hop was
     // slow instead of a blanket "connexion trop lente" that tells nobody —
     // us included — anything about where it actually stalled.
-    let step = "préparation";
+    let step = tc("step.preparing");
     // Track every object we put in the bucket this attempt so we can clean them
     // ALL up if a later upload or the attach call fails (no orphans).
     const uploadedPaths: string[] = [];
@@ -344,7 +342,7 @@ export function CheckoutClient({
     abortRef.current = ctrl;
     try {
       if (!userId) {
-        toast("Session expirée — reconnectez-vous.", "error");
+        toast(tc("sessionExpired"), "error");
         return;
       }
 
@@ -360,7 +358,7 @@ export function CheckoutClient({
         const ext0 = original.name.split(".").pop()?.toLowerCase() ?? "";
         const isPdf = original.type === "application/pdf" || ext0 === "pdf";
         if (!isPdf) {
-          setPhase(total > 1 ? `Compression ${i + 1}/${total}…` : "Compression de l'image…");
+          setPhase(total > 1 ? tc("phase.compressingN", { i: i + 1, n: total }) : tc("phase.compressing"));
           // The canvas decode + encode (and libheif for iPhone HEIC) run on
           // the main thread and freeze the tab for a second or two on a
           // mid-range phone. Hand the browser a frame first so the label is
@@ -390,8 +388,8 @@ export function CheckoutClient({
       // receipt never leaves the browser — no request, no error, just a
       // spinner until our own timeout fires. A signed URL is plain fetch.
       throwIfCancelled();
-      step = "préparation de l'envoi";
-      setPhase("Préparation de l'envoi…");
+      step = tc("step.preparingUpload");
+      setPhase(tc("phase.preparingUpload"));
       const urlRes = await fetch(`/api/payments/${paymentId}/receipt-url`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -404,8 +402,8 @@ export function CheckoutClient({
         const data = (await urlRes.json().catch(() => ({}))) as { error?: string };
         toast(
           data.error === "payment_already_resolved"
-            ? "Ce paiement a déjà été traité."
-            : "Impossible de préparer l'envoi. Réessayez.",
+            ? tc("alreadyResolved")
+            : tc("prepareFailed"),
           "error",
         );
         return;
@@ -419,11 +417,11 @@ export function CheckoutClient({
         const file = prepared[i];
         const target = uploads[i];
         if (!target) {
-          toast("Réponse inattendue du serveur. Réessayez.", "error");
+          toast(tc("unexpected"), "error");
           return;
         }
-        step = total > 1 ? `envoi du reçu ${i + 1}/${total}` : "envoi du reçu";
-        setPhase(total > 1 ? `Envoi ${i + 1}/${total}…` : "Envoi du reçu…");
+        step = total > 1 ? tc("step.uploadN", { i: i + 1, n: total }) : tc("step.upload");
+        setPhase(total > 1 ? tc("phase.sendingN", { i: i + 1, n: total }) : tc("phase.sending"));
         // One retry per file — mobile networks drop a request often enough
         // that a single blip used to throw the whole attempt away.
         let upErr: string | null = null;
@@ -451,25 +449,25 @@ export function CheckoutClient({
             if (cancelRef.current) throw new CancelledSend();
             upErr =
               e instanceof DOMException && e.name === "TimeoutError"
-                ? "connexion trop lente"
+                ? tc("slowConnection")
                 : e instanceof Error
                   ? e.message
-                  : "erreur réseau";
+                  : tc("networkError");
           }
           if (attempt === 0) {
-            setPhase(`Nouvelle tentative${total > 1 ? ` ${i + 1}/${total}` : ""}…`);
+            setPhase(total > 1 ? tc("phase.retryN", { i: i + 1, n: total }) : tc("phase.retry"));
           }
         }
         if (upErr) {
           void cleanupOrphans(paymentId, uploadedPaths);
-          toast(`Échec du téléversement : ${upErr}`, "error");
+          toast(tc("uploadFailed", { error: upErr }), "error");
           return;
         }
       }
 
       throwIfCancelled();
-      step = "validation";
-      setPhase("Finalisation…");
+      step = tc("step.validation");
+      setPhase(tc("phase.finishing"));
       const res = await fetch(`/api/payments/${paymentId}/receipt`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -480,7 +478,7 @@ export function CheckoutClient({
         const data = await res.json().catch(() => ({}));
         // Couldn't attach — clean up every uploaded object so we don't orphan.
         void cleanupOrphans(paymentId, uploadedPaths);
-        toast(data.error ?? "Échec de la soumission.", "error");
+        toast(data.error ?? tc("submitFailed"), "error");
         return;
       }
       setSubmitted(true);
@@ -489,14 +487,14 @@ export function CheckoutClient({
       // stall is orphaned unless we clear it, same as the explicit branches.
       void cleanupOrphans(paymentId, uploadedPaths);
       if (e instanceof CancelledSend) {
-        toast("Envoi annulé — vos fichiers sont toujours là.", "warning");
+        toast(tc("sendCancelled"), "warning");
       } else {
         toast(
           isTimeout(e)
-            ? `Connexion trop lente (${step}) — le reçu n'a pas été envoyé. Réessayez.`
+            ? tc("tooSlow", { step })
             : e instanceof Error
               ? e.message
-              : "Erreur réseau.",
+              : t("common.networkError"),
           "error",
         );
       }
@@ -517,12 +515,9 @@ export function CheckoutClient({
     // "passe en ligne automatiquement" was wrong even before the pivot: a
     // captured fee moves the annonce to `pending_review`, not to `published`.
     // Paying buys a publication, not a way past moderation.
-    const finalStep = "Votre annonce part en vérification, puis passe en ligne.";
-    const steps = [
-      "Notre équipe vérifie votre reçu (moins de 24 h).",
-      "Vous recevez une notification : validé ou correction demandée.",
-      finalStep,
-    ];
+    const steps = [tc("done.step1"), tc("done.step2"), tc("done.step3")];
+    const bold = (chunks: React.ReactNode) => <span className="font-bold text-foreground">{chunks}</span>;
+    const amountText = `${formatTND(amount, locale)} ${cur}`;
     return (
       // Centred: this screen is one card and nothing else, and left at the top
       // of a tall phone it sat above a half-screen of empty black.
@@ -540,20 +535,12 @@ export function CheckoutClient({
                 <Check className="h-8 w-8" strokeWidth={2.8} />
               </div>
               <h1 className="mt-4 text-[22px] font-extrabold leading-tight">
-                Reçu transmis
+                {tc("done.title")}
               </h1>
               <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--foreground-muted)]">
-                Justificatif de{" "}
-                <span className="font-bold text-foreground">
-                  {formatTND(amount, locale)} TND
-                </span>
-                {listing ? (
-                  <>
-                    {" "}pour{" "}
-                    <span className="font-bold text-foreground">{listing.title}</span>
-                  </>
-                ) : null}{" "}
-                bien reçu.
+                {listing
+                  ? tc.rich("done.receivedFor", { amount: amountText, title: listing.title, b: bold })
+                  : tc.rich("done.received", { amount: amountText, b: bold })}
               </p>
             </div>
 
@@ -577,14 +564,14 @@ export function CheckoutClient({
                 href={`/${locale}/${shopOrder ? "pro/dashboard/abonnement" : "account/listings"}`}
                 className="batta-btn-luxe h-11 px-5 text-[13px]"
               >
-                {shopOrder ? "Mon abonnement" : "Mes annonces"} <ArrowRight className="ml-1.5 h-4 w-4" />
+                {shopOrder ? tc("done.subscription") : tc("done.listings")} <ArrowRight className="ms-1.5 h-4 w-4 rtl:-scale-x-100" />
               </a>
               {listing && (
                 <a
                   href={`/${locale}/annonces/${listing.id}`}
                   className="inline-flex h-11 items-center justify-center rounded-[var(--radius)] border border-[var(--border)] bg-[var(--surface-2)] px-5 text-[13px] font-semibold hover:border-[var(--gold-soft)]"
                 >
-                  Voir l&apos;annonce
+                  {tc("done.viewListing")}
                 </a>
               )}
             </div>
@@ -616,7 +603,7 @@ export function CheckoutClient({
               className={cn("size-4", locale === "ar" && "rotate-180")}
               strokeWidth={2.5}
             />
-            Retour
+            {t("common.back")}
           </Link>
         </div>
         <div className="lg:grid lg:grid-cols-[360px_minmax(0,1fr)] lg:items-start lg:gap-8">
@@ -637,7 +624,7 @@ export function CheckoutClient({
             </div>
           )}
           <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--gold)]">
-            {meta.label}
+            {tc("label")}
           </div>
           {listing && (
             <div className="mt-0.5 text-[14px] font-bold leading-tight line-clamp-1">
@@ -647,11 +634,11 @@ export function CheckoutClient({
           <div className="batta-tabular gradient-gold-text mt-3 text-[40px] font-extrabold leading-none">
             {formatTND(amount, locale)}
             <span className="ms-1 text-[12px] font-bold uppercase text-[var(--foreground-muted)]">
-              TND
+              {cur}
             </span>
           </div>
           <p className="mx-auto mt-2 max-w-xs text-[11.5px] leading-snug text-[var(--foreground-muted)]">
-            {meta.body}
+            {tc("body")}
           </p>
           {editHref && (
             // Made a mistake? Go back and fix the listing before paying — saving
@@ -660,7 +647,7 @@ export function CheckoutClient({
               href={editHref}
               className="tap-target mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-bold text-[var(--gold)] ring-1 ring-[var(--gold-soft)] transition hover:bg-[var(--gold-faint)]"
             >
-              ← Modifier l&apos;annonce
+              {tc("editListing")}
             </a>
           )}
         </section>
@@ -668,7 +655,7 @@ export function CheckoutClient({
         {reupload && (
           <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-[12px] text-red-900">
             <AlertCircle className="mt-0.5 size-4 shrink-0" />
-            <span>Reçu précédent refusé — vérifiez les coordonnées et renvoyez un nouveau justificatif.</span>
+            <span>{tc("previousRejected")}</span>
           </div>
         )}
         </div>
@@ -676,7 +663,7 @@ export function CheckoutClient({
         {/* RIGHT (desktop) / BELOW (mobile) — payment steps */}
         <div className="mt-4 space-y-4 lg:mt-0">
         {/* ── STEP 1: choose method (big toggles) ── */}
-        <Step n={1} title="Choisissez le mode de paiement" />
+        <Step n={1} title={tc("stepMethod")} />
         <div className="grid grid-cols-2 gap-2.5">
           {instructions.map((p) => {
             const Icon = PROVIDER_ICONS[p.value];
@@ -695,7 +682,7 @@ export function CheckoutClient({
                 )}
               >
                 {isActive && (
-                  <span className="absolute right-2 top-2 inline-flex size-5 items-center justify-center rounded-full bg-[var(--gold)] text-white">
+                  <span className="absolute end-2 top-2 inline-flex size-5 items-center justify-center rounded-full bg-[var(--gold)] text-white">
                     <Check className="size-3" strokeWidth={3} />
                   </span>
                 )}
@@ -708,7 +695,7 @@ export function CheckoutClient({
                   <Icon className="size-5" strokeWidth={2} />
                 </span>
                 <span className="text-[13px] font-bold text-foreground">
-                  {p.value === "bank_transfer" ? "Virement (RIB)" : "D17 mobile"}
+                  {p.value === "bank_transfer" ? tc("bankTransfer") : tc("d17")}
                 </span>
               </button>
             );
@@ -718,7 +705,7 @@ export function CheckoutClient({
         {/* ── STEP 2: pay — copyable bank details ── */}
         {active && (
           <>
-            <Step n={2} title="Payez avec ces coordonnées" />
+            <Step n={2} title={tc("stepPay")} />
             <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]">
               {active.fields.map((field, i) => (
                 <div
@@ -733,7 +720,8 @@ export function CheckoutClient({
                       {field.label}
                     </div>
                     <div className={cn("mt-0.5 text-[14px] font-bold text-foreground break-words", field.mono && "batta-tabular")}>
-                      {field.value}
+                      {/* RIB, IBAN, D17 number, amount, reference: read left to right in any language. */}
+                      <span className="ltr-island">{field.value}</span>
                     </div>
                   </div>
                   {field.copyable && (
@@ -748,9 +736,9 @@ export function CheckoutClient({
                       )}
                     >
                       {copiedField === field.label ? (
-                        <><Check className="size-3.5" strokeWidth={2.5} /> Copié</>
+                        <><Check className="size-3.5" strokeWidth={2.5} /> {tc("copied")}</>
                       ) : (
-                        <><Copy className="size-3.5" strokeWidth={2} /> Copier</>
+                        <><Copy className="size-3.5" strokeWidth={2} /> {tc("copy")}</>
                       )}
                     </button>
                   )}
@@ -761,7 +749,7 @@ export function CheckoutClient({
         )}
 
         {/* ── STEP 3: upload receipt ── */}
-        <Step n={3} title="Téléversez le reçu du virement" />
+        <Step n={3} title={tc("stepUpload")} />
         <div className="space-y-2.5">
           {files.map((f, i) => (
             <div key={`${f.name}-${i}`} className="flex items-center gap-3 rounded-2xl border border-[var(--gold-soft)] bg-[var(--gold-faint)]/40 p-3.5">
@@ -769,14 +757,14 @@ export function CheckoutClient({
               <div className="min-w-0 flex-1">
                 <div className="truncate text-[13px] font-semibold">{f.name}</div>
                 <div className="text-[11px] text-[var(--foreground-muted)]">
-                  {(f.size / 1024).toFixed(0)} Ko
+                  {tc("kb", { kb: (f.size / 1024).toFixed(0) })}
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setFiles((prev) => prev.filter((_, j) => j !== i))}
                 className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-[var(--border)] text-[var(--foreground-muted)] hover:border-red-300 hover:text-red-600"
-                aria-label={`Retirer ${f.name}`}
+                aria-label={tc("removeFile", { name: f.name })}
               >
                 <X className="size-4" strokeWidth={2} />
               </button>
@@ -786,10 +774,10 @@ export function CheckoutClient({
             <label className="flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-[var(--gold-soft)] bg-[var(--gold-faint)]/30 p-7 text-center transition hover:border-[var(--gold)] hover:bg-[var(--gold-faint)]/60">
               <Upload className="size-7 text-[var(--gold)]" strokeWidth={1.8} />
               <span className="text-[14px] font-bold text-foreground">
-                {files.length === 0 ? "Choisir une photo ou un PDF" : "Ajouter une autre image"}
+                {files.length === 0 ? tc("pickFirst") : tc("pickAnother")}
               </span>
               <span className="text-[11px] text-[var(--foreground-muted)]">
-                JPG · PNG · HEIC · PDF · max {MAX_FILE_MB} Mo · jusqu&apos;à {MAX_RECEIPTS} images ({files.length}/{MAX_RECEIPTS})
+                {tc("fileHint", { mb: MAX_FILE_MB, max: MAX_RECEIPTS, count: files.length })}
               </span>
               <input
                 ref={fileInputRef}
@@ -819,9 +807,9 @@ export function CheckoutClient({
             // Live step, not a generic "Envoi…": compressing, which receipt is
             // in flight, whether we're retrying. A label that never changes for
             // a minute is what makes a slow send look like a dead page.
-            <><Loader2 className="size-5 animate-spin" /> {phase ?? "Envoi…"}</>
+            <><Loader2 className="size-5 animate-spin" /> {phase ?? tc("phase.sendingShort")}</>
           ) : (
-            <><Upload className="size-5" strokeWidth={2.5} /> Envoyer {files.length > 1 ? `les ${files.length} reçus` : "le reçu"}</>
+            <><Upload className="size-5" strokeWidth={2.5} /> {tc("submit", { count: files.length })}</>
           )}
         </button>
         {submitting ? (
@@ -833,23 +821,23 @@ export function CheckoutClient({
             onClick={() => {
               cancelRef.current = true;
               abortRef.current?.abort();
-              setPhase("Annulation…");
+              setPhase(tc("phase.cancelling"));
             }}
             className="mx-auto block text-[12px] font-semibold text-[var(--foreground-muted)] underline underline-offset-2 hover:text-foreground"
           >
-            Annuler l&apos;envoi
+            {tc("cancelSend")}
           </button>
         ) : (
           <p className="text-center text-[11px] text-[var(--foreground-muted)]">
-            {files.length > 0 ? "Validation sous 24 h — vous serez notifié(e)." : "Téléversez d'abord le reçu pour activer le bouton."}
+            {files.length > 0 ? tc("validationHint") : tc("uploadFirst")}
           </p>
         )}
 
         {/* Support escape hatch — v1's checkout pattern. */}
         <p className="text-center text-[11.5px] text-[var(--foreground-subtle)]">
-          Vous rencontrez un problème ?{" "}
+          {t("common.problem")}{" "}
           <Link href="/contact" className="font-semibold text-[var(--gold)] hover:underline">
-            Contacter le support
+            {t("common.support")}
           </Link>
         </p>
         </div>
