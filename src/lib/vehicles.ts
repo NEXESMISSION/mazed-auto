@@ -98,6 +98,35 @@ export const CONDITIONS = [
   { value: "refurbished", label: "Reconditionné" },
 ] as const;
 
+/** The Arabic of every value in FUELS, TRANSMISSIONS and CONDITIONS (the values are unique across them). */
+const OPTION_AR: Record<string, string> = {
+  gasoline: "بنزين",
+  diesel: "ديزل",
+  hybrid: "هجين",
+  electric: "كهربائي",
+  lpg: "غاز (GPL)",
+  manual: "يدوية",
+  automatic: "أوتوماتيكية",
+  used: "مستعمل",
+  new: "جديد",
+  refurbished: "مُجدَّد",
+};
+
+/**
+ * The label of `value` in one of the lists above, in `locale` — undefined when
+ * the value is not in the list. The lists keep their French `label` for the
+ * places that still read it directly (the admin console, social posts).
+ */
+export function optionLabel(
+  options: readonly { value: string; label: string }[],
+  value: unknown,
+  locale: string,
+): string | undefined {
+  const hit = options.find((o) => o.value === value);
+  if (!hit) return undefined;
+  return locale === "ar" ? (OPTION_AR[hit.value] ?? hit.label) : hit.label;
+}
+
 /** Model list for a make, across cars and motorbikes. Empty when unknown. */
 export function modelsFor(make: string, kind: "car" | "moto" = "car"): string[] {
   const list = kind === "moto" ? MOTO_MAKES : CAR_MAKES;

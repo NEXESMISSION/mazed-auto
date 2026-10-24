@@ -5,14 +5,15 @@
  * server, and reading the clock is the correct way to answer "what is overdue"
  * or "which badge has lapsed". There is no render to replay. */
 import { unstable_cache } from "next/cache";
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
 import { localeAlternates } from "@/i18n/alternates";
 import { Link } from "@/i18n/navigation";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { ListingImage } from "@/components/media/ListingImage";
-import { formatTND } from "@/lib/utils";
+import { currencyLabel, formatTND } from "@/lib/utils";
 import { GOVERNORATES } from "@/lib/governorates";
+import { categoryLabel, governorateLabel } from "@/lib/labels";
 import { listingIdsMatching } from "@/lib/fitment";
 import { CatalogSidebar, CatalogToolbar } from "./CatalogFilters";
 import { ReelsFeed } from "@/components/annonces/ReelsFeed";
@@ -25,6 +26,7 @@ import {
   sortFor,
   toReelItem,
   isSponsored,
+  listingSpecs,
   FEED_PAGE_SIZE,
   type CatalogSearchParams,
   type ListingRow,
@@ -32,10 +34,9 @@ import {
 import { FavoriteButton } from "@/components/property/FavoriteButton";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { BadgeCheck, ImageOff, Images, MapPin, SearchX, Wrench, Car } from "lucide-react";
-import { CONDITIONS, FUELS, TRANSMISSIONS } from "@/lib/vehicles";
 import { LinkBusy } from "@/components/ui/LinkBusy";
 
-type Cat = { id: string; parent_id: string | null; label_fr: string; kind: string };
+type Cat = { id: string; parent_id: string | null; slug: string; label_fr: string; label_ar: string | null; kind: string };
 
 /**
  * The category tree is reference data — it is seeded by migration and changes
@@ -49,12 +50,14 @@ const fetchCategories = unstable_cache(
     if (!admin) return [];
     const { data } = await admin
       .from("categories")
-      .select("id, parent_id, label_fr, kind, sort_order")
+      .select("id, parent_id, slug, label_fr, label_ar, kind, sort_order")
       .eq("is_active", true)
       .order("sort_order");
     return (data ?? []) as Cat[];
   },
-  ["catalog-categories"],
+  // v2: the rows carry slug and label_ar now — a new key, so an entry cached
+  // with the old shape is never read back.
+  ["catalog-categories-v2"],
   { revalidate: 3600, tags: ["categories"] },
 );
 
@@ -117,10 +120,12 @@ export default async function AnnoncesPage({
 }) {
   const sp = await searchParams;
   const locale = await getLocale();
+  const t = await getTranslations("catalog");
+  const ts = await getTranslations("shared");
   const admin = getServiceSupabase();
 
   if (!admin) {
-    return <main className="px-4 py-16 text-center text-[13px] text-muted">Service indisponible.</main>;
+    return <main className="px-4 py-16 text-center text-[13px] text-muted">{t("unavailable")}</main>;
   }
 
   // Kicked off before anything is awaited so the listings query and the
@@ -274,8 +279,9 @@ export default async function AnnoncesPage({
     view: sp.view === "reels" ? "reels" : "",
   };
   const filterProps = {
-    categories: visibleCats.map((c) => ({ id: c.id, label: c.label_fr, kind: c.kind })),
-    governorates: [...GOVERNORATES],
+    categories: visibleCats.map((c) => ({ id: c.id, label: categoryLabel(c, locale), kind: c.kind })),
+    // The value stays the French name the listings store; the label is the reader's.
+    governorates: GOVERNORATES.map((g) => ({ value: g, label: governorateLabel(g, locale) })),
     current: filterState,
   };
 
@@ -297,7 +303,7 @@ export default async function AnnoncesPage({
           h-[calc(100dvh-var(--batta-topbar-h)-var(--batta-safe-top)-var(--batta-bottombar-total)-var(--batta-safe-bottom))]
           lg:h-[calc(100dvh-var(--desktop-nav-h))]"
       >
-        <h1 className="sr-only">Annonces — vue reels</h1>
+        <h1 className="sr-only">{t("srReels")}</h1>
 
         <div className="shrink-0 border-b border-border lg:mx-auto lg:w-full lg:max-w-[440px] lg:px-4">
           <CatalogToolbar {...filterProps} total={total} compact />
@@ -309,9 +315,9 @@ export default async function AnnoncesPage({
               <span className="grid size-12 place-items-center rounded-full bg-surface-2 text-muted">
                 <SearchX className="size-6" />
               </span>
-              <p className="text-[15px] font-bold text-foreground">Aucune annonce ne correspond</p>
+              <p className="text-[15px] font-bold text-foreground">{t("empty.title")}</p>
               <Link href={"/annonces?view=reels" as never} className="batta-btn-luxe mt-2 inline-flex px-5 py-2.5 text-[13px]">
-                Voir toutes les annonces
+                {t("empty.seeAll")}
               </Link>
             </div>
           ) : (
@@ -321,7 +327,7 @@ export default async function AnnoncesPage({
             // mostly letterbox.
             <div className="mx-auto h-full w-full overflow-hidden lg:max-w-[440px] lg:rounded-2xl lg:border lg:border-border lg:my-3 lg:h-[calc(100%-1.5rem)]">
               <ReelsFeed
-                initialItems={rows.map((r) => toReelItem(r, badged))}
+                initialItems={rows.map((r) => toReelItem(r, badged, locale))}
                 initialSaved={[...savedIds]}
                 loggedIn={user !== null}
                 locale={locale}
@@ -344,7 +350,7 @@ export default async function AnnoncesPage({
           looking at costs a third of the first screen on a phone and tells
           nobody anything. The results are the heading. The h1 stays for
           assistive tech and for search engines, which do still need it. */}
-      <h1 className="sr-only">Annonces — voitures et pi&egrave;ces de rechange</h1>
+      <h1 className="sr-only">{t("srTitle")}</h1>
 
       {/* Rail beside the results on desktop. On a phone the rail becomes a
           sheet and this collapses to one column. */}
@@ -382,16 +388,16 @@ export default async function AnnoncesPage({
                 <SearchX className="size-6" />
               </span>
               <p className="mt-4 text-[15px] font-bold text-foreground">
-                Aucune annonce ne correspond
+                {t("empty.title")}
               </p>
               <p className="mx-auto mt-1 max-w-sm text-[13px] leading-relaxed text-muted">
-                &Eacute;largissez le budget ou le gouvernorat, ou retirez un filtre ci-dessus.
+                {t("empty.body")}
               </p>
               <Link
                 href={"/annonces" as never}
                 className="batta-btn-luxe tap-target mt-5 inline-flex px-5 py-2.5 text-[13px]"
               >
-                Voir toutes les annonces
+                {t("empty.seeAll")}
               </Link>
             </div>
           ) : (
@@ -402,30 +408,12 @@ export default async function AnnoncesPage({
                 // Honour the cover an admin picked in /admin/home; falls back
                 // to the seller's first photo when nobody has chosen one.
                 const cover = photos.find((p) => p.is_cover) ?? photos[0];
-                const at = (l.attributes ?? {}) as Record<string, unknown>;
                 const isPart = cat?.kind === "part";
 
                 // The line every classifieds card has and this one did not:
                 // what the thing actually is, in the three or four facts a
                 // buyer scans before deciding to open it.
-                const specs: string[] = [];
-                if (!isPart) {
-                  const year = String(at.year ?? "").trim();
-                  const km = Number(at.mileage);
-                  const fuel = FUELS.find((x) => x.value === at.fuel)?.label;
-                  const box = TRANSMISSIONS.find((x) => x.value === at.transmission)?.label;
-                  if (year) specs.push(year);
-                  if (Number.isFinite(km) && km > 0) {
-                    specs.push(`${Intl.NumberFormat("fr-FR").format(km)} km`);
-                  }
-                  if (fuel) specs.push(fuel);
-                  if (box) specs.push(box);
-                } else {
-                  const brand = String(at.brand ?? "").trim();
-                  const cond = CONDITIONS.find((c) => c.value === l.condition)?.label;
-                  if (brand) specs.push(brand);
-                  if (cond) specs.push(cond);
-                }
+                const specs = listingSpecs(l, locale);
 
                 return (
                   <Link
@@ -458,13 +446,13 @@ export default async function AnnoncesPage({
 
                       {isSponsored(l) && (
                         <span className="absolute bottom-2 end-2 rounded-md bg-gold px-1.5 py-0.5 text-[9.5px] font-extrabold uppercase tracking-[0.1em] text-black">
-                          Sponsoris&eacute;
+                          {t("sponsored")}
                         </span>
                       )}
 
                       {badged.has(l.seller_id) && (
                         <span className="absolute start-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/70 px-2 py-0.5 text-[9.5px] font-extrabold uppercase tracking-[0.1em] text-white backdrop-blur-sm">
-                          <BadgeCheck className="size-3 text-gold" /> v&eacute;rifi&eacute;
+                          <BadgeCheck className="size-3 text-gold" /> {ts("verified")}
                         </span>
                       )}
 
@@ -489,7 +477,7 @@ export default async function AnnoncesPage({
                     <div className="flex flex-1 flex-col p-3 lg:p-4">
                       <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.1em] text-muted">
                         {isPart ? <Wrench className="size-3" /> : <Car className="size-3" />}
-                        {cat?.label_fr ?? ""}
+                        {categoryLabel(cat, locale)}
                       </span>
 
                       <h2 className="mt-1 line-clamp-2 text-[13.5px] font-bold leading-snug text-foreground lg:mt-1.5 lg:text-[15.5px]">
@@ -512,12 +500,15 @@ export default async function AnnoncesPage({
 
                       <p className="batta-tabular mt-auto pt-2 text-[15px] font-extrabold text-gold lg:pt-3 lg:text-[18px]">
                         {l.price_on_request || l.price == null
-                          ? "Sur demande"
-                          : `${formatTND(Number(l.price), locale)} TND${l.price_unit === "day" ? " / jour" : ""}`}
+                          ? ts("price.onRequest")
+                          : ts(l.price_unit === "day" ? "price.perDay" : "price.amount", {
+                              amount: formatTND(Number(l.price), locale),
+                              currency: currencyLabel(locale),
+                            })}
                       </p>
 
                       <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-muted lg:text-[12px]">
-                        <MapPin className="size-3" /> {l.governorate}
+                        <MapPin className="size-3" /> {governorateLabel(l.governorate, locale)}
                       </p>
                     </div>
                   </Link>
@@ -528,16 +519,16 @@ export default async function AnnoncesPage({
           </div>
 
       {lastPage > 1 && (
-        <nav className="mt-6 flex items-center justify-center gap-2" aria-label="Pagination">
+        <nav className="mt-6 flex items-center justify-center gap-2" aria-label={ts("pagination.label")}>
           {shownPage > 1 && (
             <Link
               href={{ pathname: "/annonces", query: { ...pageQuery, page: String(shownPage - 1) } }}
               className="rounded-full bg-surface px-4 py-2 text-[12.5px] font-bold text-foreground ring-1 ring-border hover:text-gold"
             >
-              Précédent
+              {t("previous")}
             </Link>
           )}
-          <span className="batta-tabular text-[12.5px] text-muted">
+          <span className="batta-tabular ltr-island text-[12.5px] text-muted">
             {shownPage} / {lastPage}
           </span>
           {shownPage < lastPage && (
@@ -545,7 +536,7 @@ export default async function AnnoncesPage({
               href={{ pathname: "/annonces", query: { ...pageQuery, page: String(shownPage + 1) } }}
               className="rounded-full bg-surface px-4 py-2 text-[12.5px] font-bold text-foreground ring-1 ring-border hover:text-gold"
             >
-              Suivant
+              {t("next")}
             </Link>
           )}
         </nav>

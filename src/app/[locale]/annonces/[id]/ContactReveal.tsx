@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useToast } from "@/components/ui/Toast";
 import { Phone, MessageCircle, Loader2 } from "lucide-react";
 
@@ -13,6 +14,8 @@ import { Phone, MessageCircle, Loader2 } from "lucide-react";
  * fetches a thousand listing pages gets a thousand pages with no phone numbers
  * in them; to collect numbers it has to make a thousand deliberate requests
  * from one address, which is exactly the pattern the log catches.
+ *
+ * Its words are in `shared` (global): the shop storefronts use it too.
  */
 export function ContactReveal({
   listingId,
@@ -27,6 +30,7 @@ export function ContactReveal({
   trackWhatsApp?: string;
 }) {
   const { toast } = useToast();
+  const t = useTranslations("shared.contact");
   const [busy, setBusy] = useState(false);
   const [contact, setContact] = useState<{ phone: string | null; whatsapp: string | null } | null>(null);
 
@@ -36,12 +40,12 @@ export function ContactReveal({
       const res = await fetch(endpoint ?? `/api/annonces/${listingId}/contact`, { method: "POST" });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) {
-        toast(j.detail ?? "Numéro indisponible.", res.status === 429 ? "warning" : "error");
+        toast(j.detail ?? t("unavailable"), res.status === 429 ? "warning" : "error");
         return;
       }
       setContact({ phone: j.phone ?? null, whatsapp: j.whatsapp ?? null });
     } catch {
-      toast("Erreur réseau.", "error");
+      toast(t("network"), "error");
     } finally {
       setBusy(false);
     }
@@ -57,7 +61,7 @@ export function ContactReveal({
             className="batta-btn-luxe tap-target flex w-full items-center justify-center gap-2 px-5 py-3.5 text-[15px]"
           >
             <Phone className="size-4" strokeWidth={2.5} />
-            <span className="batta-tabular">{contact.phone}</span>
+            <span className="batta-tabular ltr-island">{contact.phone}</span>
           </a>
         )}
         <a
@@ -78,8 +82,7 @@ export function ContactReveal({
           WhatsApp
         </a>
         <p className="text-center text-[11px] text-muted">
-          Mazed met en relation, sans intervenir dans la vente. Vérifiez le véhicule et les
-          papiers avant tout paiement.
+          {t("disclaimer")}
         </p>
       </div>
     );
@@ -94,7 +97,7 @@ export function ContactReveal({
         className="batta-btn-luxe tap-target flex w-full items-center justify-center gap-2 px-5 py-3.5 text-[15px] disabled:opacity-60"
       >
         {busy ? <Loader2 className="size-4 animate-spin" /> : <Phone className="size-4" strokeWidth={2.5} />}
-        Afficher le numéro
+        {t("show")}
       </button>
     </div>
   );

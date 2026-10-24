@@ -1,11 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { ListingImage } from "@/components/media/ListingImage";
 import { FavoriteButton } from "@/components/property/FavoriteButton";
 import { useToast } from "@/components/ui/Toast";
-import { formatTND } from "@/lib/utils";
+import { currencyLabel, formatTND } from "@/lib/utils";
 import type { ReelItem } from "@/lib/catalog/query";
 import {
   ArrowUpRight, BadgeCheck, Car, ChevronUp, ImageOff, Loader2,
@@ -62,6 +63,8 @@ export function ReelsFeed({
   nextPage: initialNextPage,
   total,
 }: Props) {
+  const t = useTranslations("catalog.reels");
+  const tShared = useTranslations("shared");
   const [items, setItems] = useState<ReelItem[]>(initialItems);
   const [saved, setSaved] = useState<Set<string>>(() => new Set(initialSaved));
   const [nextPage, setNextPage] = useState<number | null>(initialNextPage);
@@ -201,7 +204,7 @@ export function ReelsFeed({
         {loading || nextPage != null ? (
           <>
             <Loader2 className="size-6 animate-spin text-gold" />
-            <p className="text-[13px] text-muted">Chargement…</p>
+            <p className="text-[13px] text-muted">{tShared("loading")}</p>
           </>
         ) : (
           <>
@@ -209,11 +212,10 @@ export function ReelsFeed({
               <ChevronUp className="size-6" />
             </span>
             <p className="text-[15px] font-bold text-foreground">
-              Vous avez tout vu
+              {t("end")}
             </p>
             <p className="max-w-xs text-[13px] leading-relaxed text-muted">
-              {total} annonce{total > 1 ? "s" : ""} au total. Remontez pour les revoir,
-              ou changez les filtres.
+              {t("endBody", { count: total })}
             </p>
           </>
         )}
@@ -238,6 +240,9 @@ const Reel = function Reel({
   ref: (el: HTMLElement | null) => void;
 }) {
   const { toast } = useToast();
+  const t = useTranslations("catalog.reels");
+  const tShared = useTranslations("shared");
+  const tRoot = useTranslations();
   const [photo, setPhoto] = useState(0);
   const [phone, setPhone] = useState<string | null>(null);
   const [revealing, setRevealing] = useState(false);
@@ -272,12 +277,12 @@ const Reel = function Reel({
       const res = await fetch(`/api/annonces/${item.id}/contact`, { method: "POST" });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) {
-        toast(j.detail ?? "Numéro indisponible.", res.status === 429 ? "warning" : "error");
+        toast(j.detail ?? tShared("contact.unavailable"), res.status === 429 ? "warning" : "error");
         return;
       }
       setPhone(j.phone as string);
     } catch {
-      toast("Erreur réseau.", "error");
+      toast(tShared("contact.network"), "error");
     } finally {
       setRevealing(false);
     }
@@ -291,7 +296,7 @@ const Reel = function Reel({
         return;
       }
       await navigator.clipboard.writeText(url);
-      toast("Lien copié.", "success");
+      toast(tShared("share.copiedToast"), "success");
     } catch {
       // A cancelled share sheet rejects; that is not an error worth a toast.
     }
@@ -299,8 +304,11 @@ const Reel = function Reel({
 
   const price =
     item.priceOnRequest || item.price == null
-      ? "Sur demande"
-      : `${formatTND(item.price, locale)} TND${item.perDay ? " / jour" : ""}`;
+      ? tShared("price.onRequest")
+      : tShared(item.perDay ? "price.perDay" : "price.amount", {
+          amount: formatTND(item.price, locale),
+          currency: currencyLabel(locale),
+        });
 
   return (
     <article
@@ -360,18 +368,23 @@ const Reel = function Reel({
             touchX.current = null;
             if (start == null) return;
             const dx = e.changedTouches[0].clientX - start;
-            if (Math.abs(dx) > 48) step(dx < 0 ? 1 : -1);
+            // Right to left, the next photo comes from the left: a swipe to
+            // the right moves forward.
+            const rtl = document.documentElement.dir === "rtl";
+            if (Math.abs(dx) > 48) step((dx < 0) !== rtl ? 1 : -1);
           }}
         >
-          <button type="button" aria-label="Photo précédente" className="h-full w-1/3" onClick={() => step(-1)} />
+          {/* In Arabic the row mirrors, so "previous" is the right third —
+              where an Arabic reader expects to go back. */}
+          <button type="button" aria-label={tRoot("gallery.prev")} className="h-full w-1/3" onClick={() => step(-1)} />
           <span className="h-full w-1/3" />
-          <button type="button" aria-label="Photo suivante" className="h-full w-1/3" onClick={() => step(1)} />
+          <button type="button" aria-label={tRoot("gallery.next")} className="h-full w-1/3" onClick={() => step(1)} />
         </div>
       )}
 
       {/* Right rail — save, share, call. */}
       <div className="absolute end-3 bottom-32 z-10 flex flex-col items-center gap-4">
-        <RailAction label="Enregistrer">
+        <RailAction label={t("save")}>
           <FavoriteButton
             listingId={item.id}
             initialSaved={initialSaved}
@@ -381,22 +394,22 @@ const Reel = function Reel({
           />
         </RailAction>
 
-        <RailAction label="Partager">
+        <RailAction label={t("share")}>
           <button
             type="button"
             onClick={share}
-            aria-label="Partager cette annonce"
+            aria-label={tShared("share.label")}
             className="inline-flex size-12 items-center justify-center rounded-full border border-white/25 bg-black/45 text-white backdrop-blur-md transition active:scale-95"
           >
             <Share2 className="size-5" strokeWidth={2} />
           </button>
         </RailAction>
 
-        <RailAction label={phone ? "Appeler" : "Numéro"}>
+        <RailAction label={phone ? t("call") : t("number")}>
           {phone ? (
             <a
               href={`tel:${phone}`}
-              aria-label={`Appeler ${phone}`}
+              aria-label={t("callNumber", { phone })}
               className="batta-gold-fill gold-rim inline-flex size-12 items-center justify-center rounded-full transition active:scale-95"
             >
               <Phone className="size-5" strokeWidth={2.4} />
@@ -406,7 +419,7 @@ const Reel = function Reel({
               type="button"
               onClick={reveal}
               disabled={revealing}
-              aria-label="Afficher le numéro du vendeur"
+              aria-label={t("showNumber")}
               className="inline-flex size-12 items-center justify-center rounded-full border border-white/25 bg-black/45 text-white backdrop-blur-md transition active:scale-95 disabled:opacity-60"
             >
               {revealing
@@ -424,7 +437,7 @@ const Reel = function Reel({
           {item.categoryLabel}
           {item.sellerVerified && (
             <span className="ms-1 inline-flex items-center gap-1 rounded-full bg-white/15 px-1.5 py-0.5 backdrop-blur-sm">
-              <BadgeCheck className="size-3 text-gold" /> vérifié
+              <BadgeCheck className="size-3 text-gold" /> {tShared("verified")}
             </span>
           )}
         </span>
@@ -445,7 +458,7 @@ const Reel = function Reel({
           </span>
           {item.negotiable && !item.priceOnRequest && (
             <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white/80 backdrop-blur-sm">
-              négociable
+              {t("negotiable")}
             </span>
           )}
         </div>
@@ -459,15 +472,15 @@ const Reel = function Reel({
         </p>
 
         {phone && (
-          <p className="batta-tabular mt-2 text-[13px] font-bold text-white">{phone}</p>
+          <p className="batta-tabular ltr-island mt-2 text-[13px] font-bold text-white">{phone}</p>
         )}
 
         <Link
           href={`/annonces/${item.id}` as never}
           className="batta-btn-luxe mt-3.5 flex h-11 w-fit px-5 text-[13.5px]"
         >
-          Voir l&apos;annonce
-          <ArrowUpRight className="size-4" strokeWidth={2.5} />
+          {t("open")}
+          <ArrowUpRight className="size-4 rtl:-scale-x-100" strokeWidth={2.5} />
         </Link>
       </div>
     </article>

@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl";
+
 /**
  * Desktop-only loading indicator: one simple centered circular spinner.
  *
@@ -10,13 +12,14 @@
  * Pure CSS (conic-gradient ring + rotate), no JS, so it costs nothing.
  */
 export function DesktopLoadingSpinner() {
+  const t = useTranslations("shared");
   return (
     <div
       aria-hidden
       className="fixed inset-0 z-[60] hidden items-center justify-center bg-[var(--background)] lg:flex"
     >
       <span
-        aria-label="Chargement"
+        aria-label={t("loadingLabel")}
         className="size-9 animate-spin rounded-full border-[3px] border-[var(--border)] border-t-[var(--gold)]"
       />
     </div>

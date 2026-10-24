@@ -1,7 +1,9 @@
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { coverPhoto } from "@/lib/listingCover";
 import { ListingImage } from "@/components/media/ListingImage";
-import { formatTND } from "@/lib/utils";
+import { currencyLabel, formatTND } from "@/lib/utils";
+import { categoryLabel, governorateLabel } from "@/lib/labels";
 import { BadgeCheck, ImageOff, MapPin } from "lucide-react";
 import { LinkBusy } from "@/components/ui/LinkBusy";
 
@@ -23,13 +25,15 @@ export type CardListing = {
   seller_id: string;
   published_at: string | null;
   attributes: Record<string, unknown> | null;
-  category: { label_fr: string } | { label_fr: string }[] | null;
+  category: CardCategory | CardCategory[] | null;
   photos: { storage_path: string; sort_order: number; is_cover?: boolean | null }[] | null;
 };
 
+type CardCategory = { slug?: string | null; label_fr: string; label_ar?: string | null };
+
 export const LISTING_CARD_SELECT = `
   id, title, price, price_on_request, price_unit, governorate, seller_id, published_at, attributes,
-  category:categories (label_fr),
+  category:categories (slug, label_fr, label_ar),
   photos:listing_photos (storage_path, sort_order, is_cover)
 `;
 
@@ -44,6 +48,7 @@ export function ListingCard({
   locale: string;
   sizes?: string;
 }) {
+  const t = useTranslations("shared");
   const cat = Array.isArray(listing.category) ? listing.category[0] : listing.category;
   const cover = coverPhoto(listing.photos);
 
@@ -67,25 +72,28 @@ export function ListingCard({
           </span>
         )}
         {badged && (
-          <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/70 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-[0.1em] text-white backdrop-blur-sm">
-            <BadgeCheck className="size-3 text-gold" /> vérifié
+          <span className="absolute start-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/70 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-[0.1em] text-white backdrop-blur-sm">
+            <BadgeCheck className="size-3 text-gold" /> {t("verified")}
           </span>
         )}
       </div>
       <div className="p-3">
         <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted">
-          {cat?.label_fr ?? ""}
+          {categoryLabel(cat, locale)}
         </span>
         <h3 className="mt-0.5 line-clamp-2 break-words text-[13px] font-bold leading-snug text-foreground">
           {listing.title}
         </h3>
         <p className="batta-tabular mt-1 text-[14px] font-extrabold text-foreground">
           {listing.price_on_request || listing.price == null
-            ? "Sur demande"
-            : `${formatTND(Number(listing.price), locale)} TND${listing.price_unit === "day" ? " / jour" : ""}`}
+            ? t("price.onRequest")
+            : t(listing.price_unit === "day" ? "price.perDay" : "price.amount", {
+                amount: formatTND(Number(listing.price), locale),
+                currency: currencyLabel(locale),
+              })}
         </p>
         <p className="mt-0.5 inline-flex items-center gap-1 text-[10.5px] text-muted">
-          <MapPin className="size-3" /> {listing.governorate}
+          <MapPin className="size-3" /> {governorateLabel(listing.governorate, locale)}
         </p>
       </div>
     </Link>

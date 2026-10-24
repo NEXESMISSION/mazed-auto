@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
-import { overRevealLimit, revealIpHash, REVEAL_LIMITED_DETAIL } from "@/lib/http/revealLimit";
+import { overRevealLimit, revealIpHash } from "@/lib/http/revealLimit";
+import { apiTranslations } from "@/i18n/api";
 import { fail } from "@/lib/http/errors";
 import { log } from "@/lib/log";
 
@@ -37,13 +38,14 @@ export async function POST(
   if (!admin) return fail("server_misconfigured", 500);
 
   const ipHash = revealIpHash(req);
+  const t = await apiTranslations(req, "listing.api");
 
   // Per-IP throttle. A buyer looks at a handful of listings in an evening; a
   // harvester looks at hundreds. check_rate_limit records the hit and returns
   // true once over the cap.
   if (await overRevealLimit(admin, ipHash)) {
     return NextResponse.json(
-      { error: "rate_limited", detail: REVEAL_LIMITED_DETAIL },
+      { error: "rate_limited", detail: t("rateLimited") },
       { status: 429 },
     );
   }
@@ -59,7 +61,7 @@ export async function POST(
   }
   if (!listing.show_phone || !listing.contact_phone) {
     return NextResponse.json(
-      { error: "hidden", detail: "Ce vendeur ne partage pas son numéro." },
+      { error: "hidden", detail: t("noPhone") },
       { status: 403 },
     );
   }

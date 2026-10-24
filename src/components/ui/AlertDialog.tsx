@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import * as React from "react";
 import { createPortal } from "react-dom";
@@ -112,6 +113,7 @@ export function AlertDialog({
   payload: AlertPayload;
   onClose: () => void;
 }) {
+  const t = useTranslations("shared");
   const mounted = useHydrated();
   const panelRef = React.useRef<HTMLDivElement>(null);
 
@@ -155,7 +157,7 @@ export function AlertDialog({
         <button
           type="button"
           onClick={onClose}
-          aria-label="Fermer"
+          aria-label={t("close")}
           className="absolute end-3 top-3 inline-flex size-8 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-foreground"
         >
           <X className="size-4" strokeWidth={2.2} />
@@ -192,7 +194,7 @@ export function AlertDialog({
                     className="tap-target group flex w-full items-center gap-2 rounded-xl bg-surface-2 px-3 py-2.5 text-start text-[13px] font-semibold text-foreground transition hover:bg-[var(--gold-faint)]"
                   >
                     <span className="flex-1">{item.label}</span>
-                    <ArrowRight className="size-4 shrink-0 text-muted transition group-hover:translate-x-0.5 group-hover:text-[var(--gold)]" />
+                    <ArrowRight className="size-4 shrink-0 text-muted transition group-hover:translate-x-0.5 group-hover:text-[var(--gold)] rtl:-scale-x-100 rtl:group-hover:-translate-x-0.5" />
                   </button>
                 </li>
               ) : (
@@ -212,7 +214,7 @@ export function AlertDialog({
           onClick={onClose}
           className="batta-btn-luxe tap-target mt-5 inline-flex h-11 w-full items-center justify-center text-[14px]"
         >
-          {payload.confirmLabel ?? "J'ai compris"}
+          {payload.confirmLabel ?? t("alert.understood")}
         </button>
       </div>
     </div>,

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useSyncExternalStore } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useToast } from "@/components/ui/Toast";
 import { Heart, Loader2 } from "lucide-react";
@@ -47,6 +48,7 @@ export function FavoriteButton({
 }) {
   const router = useRouter();
   const { toast } = useToast();
+  const t = useTranslations("shared.favorite");
   // Optimistic local override, set the instant the heart is tapped so the icon
   // never waits on the round trip.
   const [override, setOverride] = useState<boolean | null>(null);
@@ -106,15 +108,13 @@ export function FavoriteButton({
         // their favourite could not be saved when the real answer is "your
         // session ended" sends them looking in the wrong place.
         toast(
-          res.status === 401
-            ? "Votre session a expiré. Reconnectez-vous pour enregistrer vos favoris."
-            : "Impossible d'enregistrer ce favori. Réessayez.",
+          res.status === 401 ? t("sessionExpired") : t("failed"),
           res.status === 401 ? "warning" : "error",
         );
       }
     } catch {
       setSaved(!next);
-      toast("Pas de connexion. Réessayez.", "error");
+      toast(t("offline"), "error");
     } finally {
       setBusy(false);
     }
@@ -129,7 +129,7 @@ export function FavoriteButton({
       onClick={toggle}
       disabled={busy}
       aria-pressed={saved}
-      aria-label={saved ? "Retirer des favoris" : "Ajouter aux favoris"}
+      aria-label={saved ? t("remove") : t("add")}
       className={cn(
         "inline-flex items-center justify-center rounded-full border backdrop-blur-md transition",
         px,

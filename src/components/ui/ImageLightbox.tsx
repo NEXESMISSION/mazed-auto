@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -60,6 +61,8 @@ export function ImageLightbox({
 }
 
 function Viewer({ src, alt, onClose }: { src: string; alt: string; onClose: () => void }) {
+  const t = useTranslations("shared.lightbox");
+  const tShared = useTranslations("shared");
   const [scale, setScale] = useState(1);
   const [tx, setTx] = useState(0);
   const [ty, setTy] = useState(0);
@@ -151,24 +154,24 @@ function Viewer({ src, alt, onClose }: { src: string; alt: string; onClose: () =
       className="fixed inset-0 z-[120] flex items-center justify-center bg-black/90 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
-      aria-label="Image en plein écran"
+      aria-label={t("label")}
       onClick={(e) => {
         // Close only on a genuine backdrop click (not after a pan/pinch).
         if (e.target === e.currentTarget && !moved.current) onClose();
       }}
     >
       {/* Controls */}
-      <div className="absolute right-3 top-3 z-10 flex items-center gap-1.5">
-        <ControlButton label="Dézoomer" onClick={() => zoomBy(1 / 1.4)}>
+      <div className="absolute end-3 top-3 z-10 flex items-center gap-1.5">
+        <ControlButton label={t("zoomOut")} onClick={() => zoomBy(1 / 1.4)}>
           <ZoomOut className="size-5" />
         </ControlButton>
-        <ControlButton label="Zoomer" onClick={() => zoomBy(1.4)}>
+        <ControlButton label={t("zoomIn")} onClick={() => zoomBy(1.4)}>
           <ZoomIn className="size-5" />
         </ControlButton>
-        <ControlButton label="Réinitialiser" onClick={reset}>
+        <ControlButton label={t("reset")} onClick={reset}>
           <Maximize2 className="size-5" />
         </ControlButton>
-        <ControlButton label="Fermer" onClick={onClose}>
+        <ControlButton label={tShared("close")} onClick={onClose}>
           <X className="size-5" />
         </ControlButton>
       </div>
@@ -194,8 +197,8 @@ function Viewer({ src, alt, onClose }: { src: string; alt: string; onClose: () =
         className="max-h-[92vh] max-w-[94vw] select-none object-contain"
       />
 
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-surface/40 px-3 py-1 text-[11px] font-medium text-white/70">
-        Molette / pincer pour zoomer · glisser pour déplacer
+      <div className="absolute inset-x-0 bottom-3 mx-auto w-fit rounded-full bg-surface/40 px-3 py-1 text-[11px] font-medium text-white/70">
+        {t("hint")}
       </div>
     </div>
   );

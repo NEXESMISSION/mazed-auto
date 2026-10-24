@@ -1,4 +1,6 @@
-import { CONDITIONS, FUELS, TRANSMISSIONS } from "@/lib/vehicles";
+import { CONDITIONS, FUELS, TRANSMISSIONS, optionLabel } from "@/lib/vehicles";
+import { categoryLabel, governorateLabel, unitLabel } from "@/lib/labels";
+import { formatTND } from "@/lib/utils";
 
 /**
  * The catalog query, in one place.
@@ -54,7 +56,7 @@ export const FEED_PAGE_SIZE = 12;
 
 export const LISTING_SELECT = `id, title, price, price_on_request, price_unit, negotiable, governorate,
      condition, published_at, seller_id, attributes, sponsored_until,
-     category:categories (label_fr, kind),
+     category:categories (slug, label_fr, label_ar, kind),
      photos:listing_photos (storage_path, sort_order, is_cover)`;
 
 export type ListingRow = {
@@ -66,9 +68,11 @@ export type ListingRow = {
   attributes: Record<string, unknown> | null;
   /** A paid 7-day boost (0191): ranked first and labelled « Sponsorisé ». */
   sponsored_until?: string | null;
-  category: { label_fr: string; kind: string } | { label_fr: string; kind: string }[] | null;
+  category: CategoryRef | CategoryRef[] | null;
   photos: { storage_path: string; sort_order: number; is_cover?: boolean | null }[] | null;
 };
+
+type CategoryRef = { slug?: string | null; label_fr: string; label_ar?: string | null; kind: string };
 
 /** PostgREST returns an embedded to-one as an object or a one-element array. */
 export const one = <T,>(v: T | T[] | null): T | null => (Array.isArray(v) ? v[0] ?? null : v);
@@ -187,27 +191,40 @@ export type ReelItem = {
   sellerVerified: boolean;
 };
 
-export function toReelItem(l: ListingRow, verifiedSellers: Set<string>): ReelItem {
-  const cat = one(l.category);
-  const isPart = cat?.kind === "part";
+/**
+ * The line every classifieds card has: what the thing is, in the three or four
+ * facts a buyer scans before deciding to open it — year, km, fuel, gearbox for
+ * a vehicle; brand and condition for a part. In the reader's language.
+ */
+export function listingSpecs(
+  l: Pick<ListingRow, "attributes" | "condition" | "category">,
+  locale: string,
+): string[] {
+  const isPart = one(l.category)?.kind === "part";
   const at = (l.attributes ?? {}) as Record<string, unknown>;
-
   const specs: string[] = [];
   if (!isPart) {
     const year = String(at.year ?? "").trim();
     const km = Number(at.mileage);
-    const fuel = FUELS.find((x) => x.value === at.fuel)?.label;
-    const box = TRANSMISSIONS.find((x) => x.value === at.transmission)?.label;
+    const fuel = optionLabel(FUELS, at.fuel, locale);
+    const box = optionLabel(TRANSMISSIONS, at.transmission, locale);
     if (year) specs.push(year);
-    if (Number.isFinite(km) && km > 0) specs.push(`${Intl.NumberFormat("fr-FR").format(km)} km`);
+    if (Number.isFinite(km) && km > 0) specs.push(`${formatTND(km, locale)} ${unitLabel("km", locale)}`);
     if (fuel) specs.push(fuel);
     if (box) specs.push(box);
   } else {
     const brand = String(at.brand ?? "").trim();
-    const cond = CONDITIONS.find((c) => c.value === l.condition)?.label;
+    const cond = optionLabel(CONDITIONS, l.condition, locale);
     if (brand) specs.push(brand);
     if (cond) specs.push(cond);
   }
+  return specs;
+}
+
+export function toReelItem(l: ListingRow, verifiedSellers: Set<string>, locale: string): ReelItem {
+  const cat = one(l.category);
+  const isPart = cat?.kind === "part";
+  const specs = listingSpecs(l, locale);
 
   // Cover first, then the seller's order. The admin-picked cover is what the
   // grid shows, so the reel opens on the same picture the card promised.
@@ -224,8 +241,8 @@ export function toReelItem(l: ListingRow, verifiedSellers: Set<string>): ReelIte
     priceOnRequest: l.price_on_request,
     perDay: l.price_unit === "day",
     negotiable: l.negotiable,
-    governorate: l.governorate,
-    categoryLabel: cat?.label_fr ?? "",
+    governorate: governorateLabel(l.governorate, locale),
+    categoryLabel: categoryLabel(cat, locale),
     isPart,
     specs,
     photos,

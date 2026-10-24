@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -33,23 +34,24 @@ export function Pagination({
    * a dark background should one ever return. */
   tone?: "light" | "dark";
 }) {
+  const t = useTranslations("shared.pagination");
   if (totalPages <= 1) return null;
   const pages = windowedPages(page, totalPages);
 
   return (
     <nav
-      aria-label="Pagination"
+      aria-label={t("label")}
       className={
         "flex w-full items-center justify-center gap-1.5 " + (className ?? "")
       }
     >
       <ArrowButton
-        label="Page précédente"
+        label={t("previous")}
         onClick={() => onPageChange(page - 1)}
         disabled={disabled || page <= 1}
         tone={tone}
       >
-        <ChevronLeft className="size-4" strokeWidth={2.4} />
+        <ChevronLeft className="size-4 rtl:-scale-x-100" strokeWidth={2.4} />
       </ArrowButton>
 
       <ul className="flex items-center gap-1">
@@ -82,12 +84,12 @@ export function Pagination({
       </ul>
 
       <ArrowButton
-        label="Page suivante"
+        label={t("next")}
         onClick={() => onPageChange(page + 1)}
         disabled={disabled || page >= totalPages}
         tone={tone}
       >
-        <ChevronRight className="size-4" strokeWidth={2.4} />
+        <ChevronRight className="size-4 rtl:-scale-x-100" strokeWidth={2.4} />
       </ArrowButton>
     </nav>
   );
@@ -106,12 +108,13 @@ function PageButton({
   disabled?: boolean;
   tone: "light" | "dark";
 }) {
+  const t = useTranslations("shared.pagination");
   if (active) {
     return (
       <button
         type="button"
         aria-current="page"
-        aria-label={`Page ${page}`}
+        aria-label={t("page", { page })}
         disabled
         className="batta-gradient-gold tap-target inline-flex h-9 min-w-9 items-center justify-center rounded-full px-3 text-[13px] font-extrabold text-white shadow-[var(--shadow-gold)]"
       >
@@ -123,7 +126,7 @@ function PageButton({
     return (
       <button
         type="button"
-        aria-label={`Aller à la page ${page}`}
+        aria-label={t("goTo", { page })}
         onClick={onClick}
         disabled={disabled}
         className="tap-target inline-flex h-9 min-w-9 items-center justify-center rounded-full px-3 text-[13px] font-bold text-white/80 transition-colors hover:bg-surface/40 disabled:opacity-50"
@@ -135,7 +138,7 @@ function PageButton({
   return (
     <button
       type="button"
-      aria-label={`Aller à la page ${page}`}
+      aria-label={t("goTo", { page })}
       onClick={onClick}
       disabled={disabled}
       className="tap-target inline-flex h-9 min-w-9 items-center justify-center rounded-full border border-[var(--border)] bg-surface px-3 text-[13px] font-bold text-[var(--foreground-muted)] transition-colors hover:border-[var(--gold-soft)] hover:text-[var(--gold)] disabled:opacity-50"

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { usePathname, useSearchParams } from "next/navigation";
 
 /**
@@ -34,7 +35,7 @@ const GIVE_UP_MS = 8000;
 
 export function LinkBusy({
   variant = "overlay",
-  label = "Chargement",
+  label: labelProp,
 }: {
   /**
    * "overlay" dims the whole card and floats a ring on it — for image cards,
@@ -44,6 +45,8 @@ export function LinkBusy({
   variant?: "overlay" | "inline";
   label?: string;
 }) {
+  const t = useTranslations("shared");
+  const label = labelProp ?? t("loadingLabel");
   const [busy, setBusy] = useState(false);
   const anchorRef = useRef<HTMLSpanElement>(null);
   const pathname = usePathname();

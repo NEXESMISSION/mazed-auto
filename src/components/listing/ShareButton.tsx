@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { createPortal } from "react-dom";
 import { useHydrated } from "@/lib/useHydrated";
 import { Check, Link2, Share2 } from "lucide-react";
@@ -34,6 +35,7 @@ import { Check, Link2, Share2 } from "lucide-react";
  * the button out of that subtree entirely, so no future wrapper can catch it.
  */
 export function ShareButton({ title }: { title: string }) {
+  const t = useTranslations("shared.share");
   const [copied, setCopied] = useState(false);
   // `useSyncExternalStore`, not `setState` in an effect: the server snapshot is
   // false and the client's is true, so React swaps it during hydration without
@@ -71,9 +73,9 @@ export function ShareButton({ title }: { title: string }) {
     } catch {
       // Clipboard denied (an insecure origin, or a permissions policy). Better
       // to select the URL for the user than to fail silently at them.
-      window.prompt("Copiez le lien de cette annonce :", url);
+      window.prompt(t("copyPrompt"), url);
     }
-  }, [title]);
+  }, [title, t]);
 
   if (!mounted) return null;
 
@@ -81,7 +83,7 @@ export function ShareButton({ title }: { title: string }) {
     <button
       type="button"
       onClick={share}
-      aria-label="Partager cette annonce"
+      aria-label={t("label")}
       className={
         // Above the mobile publish/bottom bars, and out of the way of the
         // desktop sidebar. `bottom` clears the tab bar plus the notch.
@@ -93,12 +95,12 @@ export function ShareButton({ title }: { title: string }) {
       {copied ? (
         <>
           <Check className="size-4" strokeWidth={2.6} />
-          Lien copié
+          {t("copied")}
         </>
       ) : (
         <>
           <Share2 className="size-4" strokeWidth={2.3} />
-          Partager
+          {t("button")}
         </>
       )}
       {/* A hint of what the fallback will do, for the desktop case where there

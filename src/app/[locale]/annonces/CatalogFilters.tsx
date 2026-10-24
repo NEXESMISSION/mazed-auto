@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { RouteProgress, useFilteringFlag } from "@/components/ui/RouteProgress";
 import { useRouter } from "@/i18n/navigation";
 import { useScrollLock } from "@/lib/scrollLock";
-import { cn } from "@/lib/utils";
+import { cn, formatTND } from "@/lib/utils";
 import { Overlay, LAYER } from "@/components/ui/Overlay";
-import { CAR_MAKES, CONDITIONS, FUELS, TRANSMISSIONS, modelsFor } from "@/lib/vehicles";
+import { CAR_MAKES, CONDITIONS, FUELS, TRANSMISSIONS, modelsFor, optionLabel } from "@/lib/vehicles";
 import {
   ArrowDownWideNarrow, Car, Check, LayoutGrid, PlaySquare, Search,
   SlidersHorizontal, Wrench, X,
@@ -56,15 +57,17 @@ export const EMPTY: FilterState = {
   year_min: "", year_max: "", km_max: "", view: "",
 };
 
+/** Sort orders, with the key of their label under `catalog.filters.sort`. */
 export const SORTS = [
-  { v: "", label: "Les plus récentes" },
-  { v: "price_asc", label: "Prix croissant" },
-  { v: "price_desc", label: "Prix décroissant" },
+  { v: "", key: "recent" },
+  { v: "price_asc", key: "priceAsc" },
+  { v: "price_desc", key: "priceDesc" },
 ] as const;
 
 type Props = {
   categories: { id: string; label: string; kind: string }[];
-  governorates: string[];
+  /** `value` is the French name the listings store; `label` is in the reader's language. */
+  governorates: { value: string; label: string }[];
   current: FilterState;
   total: number;
   /**
@@ -82,41 +85,45 @@ function toQuery(f: FilterState) {
   return qs.toString();
 }
 
-/** Human labels for the active-filter chips. */
-function chipsFor(f: FilterState, categories: Props["categories"]): {
-  key: keyof FilterState; label: string;
-}[] {
-  const out: { key: keyof FilterState; label: string }[] = [];
-  if (f.q) out.push({ key: "q", label: `« ${f.q} »` });
-  if (f.cat) {
-    const c = categories.find((x) => x.id === f.cat);
-    if (c) out.push({ key: "cat", label: c.label });
-  }
-  if (f.gov) out.push({ key: "gov", label: f.gov });
-  if (f.min) out.push({ key: "min", label: `à partir de ${f.min} TND` });
-  if (f.max) out.push({ key: "max", label: `jusqu'à ${f.max} TND` });
-  if (f.fuel) out.push({ key: "fuel", label: FUELS.find((x) => x.value === f.fuel)?.label ?? f.fuel });
-  if (f.etat) out.push({ key: "etat", label: CONDITIONS.find((x) => x.value === f.etat)?.label ?? f.etat });
-  if (f.year_min || f.year_max) {
-    out.push({
-      key: "year_min",
-      label:
-        f.year_min && f.year_max
-          ? `${f.year_min}–${f.year_max}`
-          : f.year_min
-            ? `Depuis ${f.year_min}`
-            : `Jusqu'à ${f.year_max}`,
-    });
-  }
-  if (f.km_max) out.push({ key: "km_max", label: `≤ ${Number(f.km_max).toLocaleString("fr-FR")} km` });
-  if (f.boite) {
-    out.push({ key: "boite", label: TRANSMISSIONS.find((x) => x.value === f.boite)?.label ?? f.boite });
-  }
-  if (f.make) {
-    const bits = [f.make, f.model, f.year].filter(Boolean).join(" ");
-    out.push({ key: "make", label: `compatible ${bits}` });
-  }
-  return out;
+type Chip = { key: keyof FilterState; label: string };
+
+/** Human labels for the active-filter chips, in the reader's language. */
+function useChips() {
+  const t = useTranslations("catalog.filters.chips");
+  const locale = useLocale();
+  return (f: FilterState, categories: Props["categories"], governorates: Props["governorates"]): Chip[] => {
+    const out: Chip[] = [];
+    if (f.q) out.push({ key: "q", label: `« ${f.q} »` });
+    if (f.cat) {
+      const c = categories.find((x) => x.id === f.cat);
+      if (c) out.push({ key: "cat", label: c.label });
+    }
+    if (f.gov) out.push({ key: "gov", label: governorates.find((g) => g.value === f.gov)?.label ?? f.gov });
+    if (f.min) out.push({ key: "min", label: t("from", { amount: f.min }) });
+    if (f.max) out.push({ key: "max", label: t("upTo", { amount: f.max }) });
+    if (f.fuel) out.push({ key: "fuel", label: optionLabel(FUELS, f.fuel, locale) ?? f.fuel });
+    if (f.etat) out.push({ key: "etat", label: optionLabel(CONDITIONS, f.etat, locale) ?? f.etat });
+    if (f.year_min || f.year_max) {
+      out.push({
+        key: "year_min",
+        label:
+          f.year_min && f.year_max
+            ? `${f.year_min}–${f.year_max}`
+            : f.year_min
+              ? t("since", { year: f.year_min })
+              : t("until", { year: f.year_max }),
+      });
+    }
+    if (f.km_max) out.push({ key: "km_max", label: t("kmMax", { km: formatTND(Number(f.km_max), locale) }) });
+    if (f.boite) {
+      out.push({ key: "boite", label: optionLabel(TRANSMISSIONS, f.boite, locale) ?? f.boite });
+    }
+    if (f.make) {
+      const bits = [f.make, f.model, f.year].filter(Boolean).join(" ");
+      out.push({ key: "make", label: t("compatible", { car: bits }) });
+    }
+    return out;
+  };
 }
 
 /**
@@ -193,9 +200,12 @@ function useFilters(current: FilterState) {
 function FilterBody({
   categories, governorates, current,
 }: Omit<Props, "total">) {
+  const t = useTranslations("catalog.filters");
+  const locale = useLocale();
+  const chipsFor = useChips();
   const { f, setF, push, pushDebounced, pending, router } = useFilters(current);
   const isPart = f.kind === "part";
-  const activeCount = chipsFor(f, categories).length;
+  const activeCount = chipsFor(f, categories, governorates).length;
   const visibleCats = categories.filter((c) => !f.kind || c.kind === f.kind);
 
   // Everything is on screen. Folding marque/année/kilométrage/carburant behind
@@ -207,12 +217,12 @@ function FilterBody({
   return (
     <div className="space-y-3.5">
       <RouteProgress active={pending} />
-      <Group label="Je cherche">
+      <Group label={t("lookingFor")}>
         <div className="grid grid-cols-3 gap-1">
           {[
-            { v: "", label: "Tout", Icon: LayoutGrid },
-            { v: "vehicle", label: "Véhicules", Icon: Car },
-            { v: "part", label: "Pièces", Icon: Wrench },
+            { v: "", label: t("all"), Icon: LayoutGrid },
+            { v: "vehicle", label: t("vehicles"), Icon: Car },
+            { v: "part", label: t("parts"), Icon: Wrench },
           ].map(({ v, label, Icon }) => (
             <button
               key={v || "all"}
@@ -232,24 +242,24 @@ function FilterBody({
         </div>
       </Group>
 
-      <Group label="Catégorie">
+      <Group label={t("category")}>
         <select value={f.cat} onChange={(e) => push({ cat: e.target.value })} className={INPUT}>
-          <option value="">Toutes les catégories</option>
+          <option value="">{t("allCategories")}</option>
           {visibleCats.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
         </select>
       </Group>
 
-      <Group label="Gouvernorat">
+      <Group label={t("governorate")}>
         <select value={f.gov} onChange={(e) => push({ gov: e.target.value })} className={INPUT}>
-          <option value="">Toute la Tunisie</option>
-          {governorates.map((g) => <option key={g} value={g}>{g}</option>)}
+          <option value="">{t("allTunisia")}</option>
+          {governorates.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
         </select>
       </Group>
 
-      <Group label="Budget (TND)">
+      <Group label={t("budget")}>
         <div className="grid grid-cols-2 gap-2">
           <input
-            type="number" inputMode="numeric" placeholder="Min"
+            type="number" inputMode="numeric" placeholder={t("min")}
             value={f.min}
             onChange={(e) => pushDebounced({ min: e.target.value })}
             onBlur={() => push({})}
@@ -257,7 +267,7 @@ function FilterBody({
             className={INPUT}
           />
           <input
-            type="number" inputMode="numeric" placeholder="Max"
+            type="number" inputMode="numeric" placeholder={t("max")}
             value={f.max}
             onChange={(e) => pushDebounced({ max: e.target.value })}
             onBlur={() => push({})}
@@ -275,13 +285,13 @@ function FilterBody({
               were also <datalist> inputs writing to local state, which is why
               picking one appeared to do nothing: the value changed and the
               results never moved. Selects, and they commit. */}
-          <Group label="Marque">
+          <Group label={t("make")}>
             <select
               value={f.make}
               onChange={(e) => push({ make: e.target.value, model: "" })}
               className={INPUT}
             >
-              <option value="">Toutes les marques</option>
+              <option value="">{t("allMakes")}</option>
               {CAR_MAKES.map((m) => (
                 <option key={m.name} value={m.name}>{m.name}</option>
               ))}
@@ -289,13 +299,13 @@ function FilterBody({
           </Group>
 
           {f.make && modelsFor(f.make).length > 0 && (
-            <Group label="Modèle">
+            <Group label={t("model")}>
               <select
                 value={f.model}
                 onChange={(e) => push({ model: e.target.value })}
                 className={INPUT}
               >
-                <option value="">Tous les modèles</option>
+                <option value="">{t("allModels")}</option>
                 {modelsFor(f.make).map((m) => (
                   <option key={m} value={m}>{m}</option>
                 ))}
@@ -307,23 +317,23 @@ function FilterBody({
               used is it — and "2015 or newer, under 150 000 km" is one thought,
               not two. One row of three, which also buys back a whole group's
               height now that nothing folds away. */}
-          <Group label="Année & kilométrage">
+          <Group label={t("yearKm")}>
             <div className="grid grid-cols-3 gap-1.5">
               <input
-                inputMode="numeric" placeholder="De" value={f.year_min}
-                aria-label="Année minimum"
+                inputMode="numeric" placeholder={t("from")} value={f.year_min}
+                aria-label={t("yearMin")}
                 onChange={(e) => pushDebounced({ year_min: e.target.value.replace(/\D/g, "").slice(0, 4) })}
                 className={INPUT}
               />
               <input
-                inputMode="numeric" placeholder="À" value={f.year_max}
-                aria-label="Année maximum"
+                inputMode="numeric" placeholder={t("to")} value={f.year_max}
+                aria-label={t("yearMax")}
                 onChange={(e) => pushDebounced({ year_max: e.target.value.replace(/\D/g, "").slice(0, 4) })}
                 className={INPUT}
               />
               <input
-                inputMode="numeric" placeholder="km" value={f.km_max}
-                aria-label="Kilométrage maximum"
+                inputMode="numeric" placeholder={t("km")} value={f.km_max}
+                aria-label={t("kmMax")}
                 onChange={(e) => pushDebounced({ km_max: e.target.value.replace(/\D/g, "").slice(0, 7) })}
                 className={INPUT}
               />
@@ -333,24 +343,24 @@ function FilterBody({
           {/* First of the vehicle groups: « neuf ou occasion » is the
               question a car buyer answers before fuel or gearbox, because it
               decides their whole budget. */}
-          <Group label="État">
+          <Group label={t("condition")}>
             <Pills
               value={f.etat}
-              options={CONDITIONS.map((x) => ({ v: x.value, label: x.label }))}
+              options={CONDITIONS.map((x) => ({ v: x.value, label: optionLabel(CONDITIONS, x.value, locale) ?? x.label }))}
               onPick={(v) => push({ etat: v })}
             />
           </Group>
-          <Group label="Carburant">
+          <Group label={t("fuel")}>
             <Pills
               value={f.fuel}
-              options={FUELS.map((x) => ({ v: x.value, label: x.label }))}
+              options={FUELS.map((x) => ({ v: x.value, label: optionLabel(FUELS, x.value, locale) ?? x.label }))}
               onPick={(v) => push({ fuel: v })}
             />
           </Group>
-          <Group label="Boîte">
+          <Group label={t("gearbox")}>
             <Pills
               value={f.boite}
-              options={TRANSMISSIONS.map((x) => ({ v: x.value, label: x.label }))}
+              options={TRANSMISSIONS.map((x) => ({ v: x.value, label: optionLabel(TRANSMISSIONS, x.value, locale) ?? x.label }))}
               onPick={(v) => push({ boite: v })}
             />
           </Group>
@@ -360,15 +370,14 @@ function FilterBody({
       {isPart && (
         <div className="rounded-2xl bg-gold-faint/40 p-3.5 ring-1 ring-gold-soft">
           <span className="text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-gold">
-            Compatible avec ma voiture
+            {t("fitTitle")}
           </span>
           <p className="mt-1 text-[11.5px] leading-snug text-muted">
-            La seule question qui compte sur une pièce : est-ce qu&apos;elle se monte
-            sur la vôtre.
+            {t("fitBody")}
           </p>
           <div className="mt-2.5 space-y-2">
             <input
-              list="cf-makes" placeholder="Marque" value={f.make}
+              list="cf-makes" placeholder={t("make")} value={f.make}
               onChange={(e) => pushDebounced({ make: e.target.value, model: "" })}
               className={INPUT}
             />
@@ -377,7 +386,7 @@ function FilterBody({
             </datalist>
             <div className="grid grid-cols-2 gap-2">
               <input
-                list="cf-models" placeholder="Modèle" value={f.model}
+                list="cf-models" placeholder={t("model")} value={f.model}
                 onChange={(e) => pushDebounced({ model: e.target.value })}
                 className={INPUT}
               />
@@ -385,7 +394,7 @@ function FilterBody({
                 {modelsFor(f.make).map((m) => <option key={m} value={m} />)}
               </datalist>
               <input
-                placeholder="Année" inputMode="numeric" value={f.year}
+                placeholder={t("year")} inputMode="numeric" value={f.year}
                 onChange={(e) => setF({ ...f, year: e.target.value })}
                 className={INPUT}
               />
@@ -395,7 +404,7 @@ function FilterBody({
               onClick={() => push({})}
               className="batta-btn-luxe tap-target w-full px-4 py-2.5 text-[13px]"
             >
-              Voir les pièces compatibles
+              {t("fitCta")}
             </button>
           </div>
         </div>
@@ -407,7 +416,7 @@ function FilterBody({
           onClick={() => router.push("/annonces" as never)}
           className="inline-flex items-center gap-1.5 text-[12.5px] font-bold text-muted hover:text-foreground"
         >
-          <X className="size-3.5" /> Effacer tous les filtres
+          <X className="size-3.5" /> {t("clearAll")}
         </button>
       )}
     </div>
@@ -439,10 +448,13 @@ export function CatalogSidebar(props: Omit<Props, "total">) {
 export function CatalogToolbar({
   categories, governorates, current, total, compact = false,
 }: Props) {
+  const t = useTranslations("catalog.filters");
+  const tShared = useTranslations("shared");
+  const chipsFor = useChips();
   const { f, push, pushDebounced, pending } = useFilters(current);
   const [sheet, setSheet] = useState(false);
   const isPart = f.kind === "part";
-  const chips = chipsFor(f, categories);
+  const chips = chipsFor(f, categories, governorates);
   const activeCount = chips.length;
 
   // A sheet open behind a scrolling page is how you lose your place.
@@ -454,12 +466,12 @@ export function CatalogToolbar({
   const viewToggle = (
     <div
       role="group"
-      aria-label="Affichage"
+      aria-label={t("view")}
       className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-border bg-surface p-0.5"
     >
       {([
-        { v: "", label: "Grille", Icon: LayoutGrid },
-        { v: "reels", label: "Reels", Icon: PlaySquare },
+        { v: "", label: t("grid"), Icon: LayoutGrid },
+        { v: "reels", label: t("reels"), Icon: PlaySquare },
       ] as const).map((o) => {
         const on = (f.view || "") === o.v;
         return (
@@ -490,10 +502,10 @@ export function CatalogToolbar({
     <Overlay open onClose={() => setSheet(false)} z={LAYER.modal} className="max-w-lg p-0 lg:hidden">
       <div className="flex max-h-[calc(100dvh-4rem)] flex-col">
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
-          <span className="text-[15px] font-extrabold">Filtres</span>
+          <span className="text-[15px] font-extrabold">{t("title")}</span>
           <button
             onClick={() => setSheet(false)}
-            aria-label="Fermer"
+            aria-label={tShared("close")}
             className="rounded-lg p-1.5 text-muted hover:bg-surface-2 hover:text-foreground"
           >
             <X className="size-5" />
@@ -515,7 +527,7 @@ export function CatalogToolbar({
             className="batta-btn-luxe tap-target flex h-12 w-full items-center justify-center gap-2 text-[14px]"
           >
             <Check className="size-4" />
-            Voir {total} annonce{total > 1 ? "s" : ""}
+            {t("showResults", { count: total })}
           </button>
         </div>
       </div>
@@ -535,7 +547,7 @@ export function CatalogToolbar({
       )}
     >
       <SlidersHorizontal className={compact ? "size-3.5" : "size-4"} />
-      Filtres
+      {t("title")}
       {activeCount > 0 && (
         <span
           className={cn(
@@ -550,10 +562,10 @@ export function CatalogToolbar({
   );
 
   const countLabel = pending
-    ? "Mise à jour…"
+    ? t("updating")
     : total === 0
-      ? "Aucun résultat"
-      : `${total} annonce${total > 1 ? "s" : ""}`;
+      ? t("noResults")
+      : t("count", { count: total });
 
   // ── The feed's slim row. Everything the grid's toolbar offers is still
   //    reachable (the sheet on a phone, the rail on desktop); what it gives up
@@ -588,7 +600,7 @@ export function CatalogToolbar({
             onChange={(e) => pushDebounced({ q: e.target.value })}
             // Enter still commits immediately for anyone who expects it to.
             onKeyDown={(e) => e.key === "Enter" && push({})}
-            placeholder={isPart ? "Plaquettes, alternateur, phare…" : "Clio, Golf, Hilux…"}
+            placeholder={isPart ? t("searchParts") : t("searchCars")}
             className="h-12 w-full rounded-xl border border-border bg-surface ps-9 pe-3 text-[14px] text-foreground placeholder:text-muted focus:border-gold focus:outline-none"
           />
         </label>
@@ -620,7 +632,7 @@ export function CatalogToolbar({
               onChange={(e) => push({ sort: e.target.value })}
               className="cursor-pointer rounded-lg border border-border bg-surface px-2 py-1.5 text-[12.5px] font-semibold text-foreground focus:border-gold focus:outline-none"
             >
-              {SORTS.map((s) => <option key={s.v || "recent"} value={s.v}>{s.label}</option>)}
+              {SORTS.map((s) => <option key={s.v || "recent"} value={s.v}>{t(`sort.${s.key}`)}</option>)}
             </select>
           </label>
         </div>

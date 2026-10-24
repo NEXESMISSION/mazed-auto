@@ -1,10 +1,13 @@
 import { notFound } from "next/navigation";
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { avatarUrl } from "@/lib/avatar";
-import { formatTND } from "@/lib/utils";
+import { currencyLabel, formatTND } from "@/lib/utils";
+import { attributeLabel, attributeOptionLabel, categoryLabel, governorateLabel, unitLabel } from "@/lib/labels";
+import { formatDate } from "@/lib/dates";
+import { CONDITIONS, FUELS, TRANSMISSIONS, optionLabel } from "@/lib/vehicles";
 import { jsonLdSafe } from "@/lib/jsonld";
 import { PhotoCarousel } from "@/components/listing/PhotoCarousel";
 import { ContactReveal } from "./ContactReveal";
@@ -16,7 +19,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { shopsGate } from "@/lib/shops/public";
 import { shopSchemaType } from "@/lib/shops/format";
 import { siteUrl } from "@/lib/siteUrl";
-import { rentalConditionRows } from "@/lib/rental";
+import { rentalConditionFacts, type RentalFact } from "@/lib/rental";
 import {
   DiagnosticSheet,
   DiagnosticBadge,
@@ -49,29 +52,31 @@ type Row = {
   shop_id: string | null;
   price_unit: string;
   shop: ShopRef | ShopRef[] | null;
-  category: { id: string; label_fr: string; kind: string } | { id: string; label_fr: string; kind: string }[] | null;
+  category: CategoryRef | CategoryRef[] | null;
   photos: { storage_path: string; sort_order: number }[] | null;
   fitments: { make: string; model: string | null; year_from: number | null; year_to: number | null }[] | null;
 };
 
 type ShopRef = { slug: string; name: string; status: string; verification_status: string; activity_type: string };
+type CategoryRef = { id: string; slug: string; label_fr: string; label_ar: string | null; kind: string };
 
 const SELECT = `
   id, title, description, price, price_on_request, negotiable, condition,
   governorate, delegation, attributes, contact_name, show_phone, status,
   published_at, expires_at, seller_id, reference, shop_id, price_unit,
   shop:shops (slug, name, status, verification_status, activity_type),
-  category:categories (id, label_fr, kind),
+  category:categories (id, slug, label_fr, label_ar, kind),
   photos:listing_photos (storage_path, sort_order),
   fitments:listing_fitments (make, model, year_from, year_to)
 `;
 
 const one = <T,>(v: T | T[] | null): T | null => (Array.isArray(v) ? v[0] ?? null : v);
 
-const CONDITION_LABEL: Record<string, string> = {
-  new: "Neuf",
-  used: "Occasion",
-  refurbished: "Reconditionné",
+/** The publish form's own lists, for attribute values a category's options miss. */
+const KNOWN_OPTIONS: Record<string, readonly { value: string; label: string }[]> = {
+  fuel: FUELS,
+  transmission: TRANSMISSIONS,
+  condition: CONDITIONS,
 };
 
 async function fetchListing(id: string): Promise<Row | null> {
@@ -87,12 +92,16 @@ export async function generateMetadata({
   params: Promise<{ locale: string; id: string }>;
 }): Promise<Metadata> {
   const { locale, id } = await params;
+  const t = await getTranslations({ locale, namespace: "listing" });
   const l = await fetchListing(id);
-  if (!l || l.status !== "published") return { title: "Annonce" };
-  const price = l.price != null ? `${Number(l.price).toLocaleString("fr-FR")} TND` : "Prix sur demande";
+  if (!l || l.status !== "published") return { title: t("metaTitle") };
+  const price = l.price != null
+    ? `${formatTND(Number(l.price), locale)} ${currencyLabel(locale)}`
+    : t("priceOnRequest");
   return {
     title: `${l.title} · ${price} · Mazed`,
-    description: l.description?.slice(0, 160) ?? `${l.title} à ${l.governorate}.`,
+    description: l.description?.slice(0, 160)
+      ?? t("metaDescription", { title: l.title, place: governorateLabel(l.governorate, locale) }),
     alternates: localeAlternates(locale, `/annonces/${l.id}`),
   };
 }
@@ -104,6 +113,7 @@ export default async function AnnoncePage({
 }) {
   const { id } = await params;
   const locale = await getLocale();
+  const t = await getTranslations("listing");
   const l = await fetchListing(id);
 
   if (!l || l.status !== "published") notFound();
@@ -164,12 +174,18 @@ export default async function AnnoncePage({
     .map((d) => {
       const raw = attrs[d.field_key];
       if (raw == null || raw === "" || raw === false) return null;
+      const option = d.options?.find((o) => o.value === String(raw));
+      // A value the category's option list does not know (GPL is in the
+      // publish form's fuels but not in every category's options) is still
+      // a known value: name it rather than print the code « lpg ».
+      const named = KNOWN_OPTIONS[d.field_key] ? optionLabel(KNOWN_OPTIONS[d.field_key], raw, locale) : undefined;
       const value =
         raw === true
-          ? "Oui"
-          : d.options?.find((o) => o.value === String(raw))?.label ??
-            (d.unit ? `${raw} ${d.unit}` : String(raw));
-      return { label: d.label, value };
+          ? t("yes")
+          : option
+            ? attributeOptionLabel(d.field_key, option.value, option.label, locale)
+            : named ?? (d.unit ? `${raw} ${unitLabel(d.unit, locale)}` : String(raw));
+      return { label: attributeLabel(d.field_key, d.label, locale), value };
     })
     .filter(Boolean) as { label: string; value: string }[];
 
@@ -184,7 +200,7 @@ export default async function AnnoncePage({
     name: l.title,
     description: l.description ?? undefined,
     image: photos.slice(0, 6).map((p) => propertyPhotoUrl(p.storage_path)),
-    category: category?.label_fr,
+    category: categoryLabel(category, locale) || undefined,
     itemCondition:
       l.condition === "new"
         ? "https://schema.org/NewCondition"
@@ -197,7 +213,7 @@ export default async function AnnoncePage({
       priceCurrency: "TND",
       ...(l.price != null && !l.price_on_request ? { price: Number(l.price) } : {}),
       availability: "https://schema.org/InStock",
-      areaServed: l.governorate,
+      areaServed: governorateLabel(l.governorate, locale),
       ...(l.expires_at ? { priceValidUntil: l.expires_at.slice(0, 10) } : {}),
     },
   };
@@ -213,22 +229,26 @@ export default async function AnnoncePage({
   // Written once here and placed twice rather than duplicated by hand. Only one
   // copy is ever visible (the other is display:none at that width), so the
   // second never reaches the screen.
-  const rentalRows = l.price_unit === "day" ? rentalConditionRows(l.attributes) : [];
+  const rentalRows = l.price_unit === "day"
+    ? rentalConditionFacts(l.attributes).map((f) => rentalRow(f, t, locale))
+    : [];
 
   const priceBlock = (
     <div>
       <div className="batta-tabular gradient-gold-text text-[34px] font-extrabold leading-none">
         {l.price_on_request || l.price == null
-          ? "Prix sur demande"
+          ? t("priceOnRequest")
           : `${formatTND(Number(l.price), locale)} `}
         {!l.price_on_request && l.price != null && (
           <span className="text-[13px] font-bold uppercase tracking-[0.16em] text-gold/80">
-            TND{l.price_unit === "day" ? " / jour" : ""}
+            {l.price_unit === "day"
+              ? t("currencyPerDay", { currency: currencyLabel(locale) })
+              : currencyLabel(locale)}
           </span>
         )}
       </div>
       {l.negotiable && !l.price_on_request && (
-        <p className="mt-1 text-[12px] text-muted">Prix négociable</p>
+        <p className="mt-1 text-[12px] text-muted">{t("negotiable")}</p>
       )}
     </div>
   );
@@ -247,9 +267,9 @@ export default async function AnnoncePage({
           ...jsonLd.offers,
           seller: {
             "@type": shopSchemaType(shopRef.activity_type),
-            "@id": `${site}/fr/boutiques/${shopRef.slug}#shop`,
+            "@id": `${site}/${locale}/boutiques/${shopRef.slug}#shop`,
             name: shopRef.name,
-            url: `${site}/fr/boutiques/${shopRef.slug}`,
+            url: `${site}/${locale}/boutiques/${shopRef.slug}`,
           },
         },
       }
@@ -275,11 +295,11 @@ export default async function AnnoncePage({
 
         <div className="min-w-0 flex-1">
           <div className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-muted">
-            Vendeur
+            {t("seller")}
           </div>
           <div className="flex items-center gap-1.5">
             <span className="truncate text-[14.5px] font-bold text-foreground">
-              {l.contact_name ?? "Particulier"}
+              {l.contact_name ?? t("private")}
             </span>
             {/* A tick, not a second "Vendeur vérifié" chip — that claim is
                 already made at the top of the page. Here it answers the
@@ -288,7 +308,7 @@ export default async function AnnoncePage({
               <BadgeCheck
                 className="size-4 shrink-0 text-muted"
                 strokeWidth={2.4}
-                aria-label="Vendeur vérifié"
+                aria-label={t("verifiedSeller")}
               />
             )}
           </div>
@@ -304,16 +324,16 @@ export default async function AnnoncePage({
         >
           <span className="min-w-0">
             <span className="block text-[10px] font-extrabold uppercase tracking-[0.14em] text-muted">
-              Publiée par la boutique
+              {t("byShop")}
             </span>
             <span className="flex items-center gap-1.5">
               <span className="truncate text-[13.5px] font-bold text-foreground">{shopLink.name}</span>
               {shopLink.verification_status === "verified" && (
-                <BadgeCheck className="size-4 shrink-0 text-gold" aria-label="Boutique vérifiée" />
+                <BadgeCheck className="size-4 shrink-0 text-gold" aria-label={t("verifiedShop")} />
               )}
             </span>
           </span>
-          <span className="shrink-0 text-[12px] font-bold text-gold">Voir la boutique</span>
+          <span className="shrink-0 text-[12px] font-bold text-gold">{t("seeShop")}</span>
         </Link>
       )}
 
@@ -327,10 +347,7 @@ export default async function AnnoncePage({
     <section className="flex items-start gap-2.5 rounded-2xl bg-surface-2 p-4 ring-1 ring-border">
       <ShieldAlert className="mt-0.5 size-4 shrink-0 text-muted" />
       <p className="text-[11.5px] leading-relaxed text-muted">
-        Mazed publie et vérifie les annonces, mais n&apos;intervient pas dans la
-        transaction : le paiement et la remise se font directement entre vous et le
-        vendeur. Ne versez jamais d&apos;acompte avant d&apos;avoir vu le véhicule ou la
-        pièce et ses papiers.
+        {t("safety")}
       </p>
     </section>
   );
@@ -361,16 +378,16 @@ export default async function AnnoncePage({
             <div className="mt-4 flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-2.5 py-1 text-[11px] font-bold text-muted ring-1 ring-border">
                 {isPart ? <Wrench className="size-3" /> : <Car className="size-3" />}
-                {category?.label_fr ?? "Annonce"}
+                {categoryLabel(category, locale) || t("annonce")}
               </span>
               {l.condition && (
                 <span className="rounded-full bg-surface-2 px-2.5 py-1 text-[11px] font-bold text-muted ring-1 ring-border">
-                  {CONDITION_LABEL[l.condition] ?? l.condition}
+                  {optionLabel(CONDITIONS, l.condition, locale) ?? l.condition}
                 </span>
               )}
               {badge === true && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-extrabold text-foreground ring-1 ring-white/20">
-                  <BadgeCheck className="size-3.5" strokeWidth={2.4} /> Vendeur vérifié
+                  <BadgeCheck className="size-3.5" strokeWidth={2.4} /> {t("verifiedSeller")}
                 </span>
               )}
               {/* Two different claims, deliberately distinct: the badge above is
@@ -385,13 +402,15 @@ export default async function AnnoncePage({
 
             <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px] text-muted">
               <span className="inline-flex items-center gap-1">
-                <MapPin className="size-3.5" /> {l.governorate}
+                <MapPin className="size-3.5" /> {governorateLabel(l.governorate, locale)}
                 {l.delegation ? ` · ${l.delegation}` : ""}
               </span>
               {l.published_at && (
                 <span className="inline-flex items-center gap-1">
                   <Clock className="size-3.5" />
-                  publiée le {new Date(l.published_at).toLocaleDateString("fr-FR")}
+                  {t("publishedOn", {
+                    date: formatDate(l.published_at, locale, { day: "2-digit", month: "2-digit", year: "numeric" }),
+                  })}
                 </span>
               )}
               {/* The reference, printed where a buyer will find it when they
@@ -401,7 +420,7 @@ export default async function AnnoncePage({
               {l.reference && (
                 <span
                   className="batta-tabular inline-flex items-center gap-1 rounded-full bg-surface-2 px-2 py-0.5 font-semibold tracking-wide text-foreground ring-1 ring-border"
-                  title="Référence de l'annonce"
+                  title={t("reference")}
                 >
                   <Hash className="size-3" />
                   {l.reference}
@@ -417,7 +436,7 @@ export default async function AnnoncePage({
             {/* ── Specs ── */}
             {specs.length > 0 && (
               <section className="mt-6">
-                <h2 className="batta-eyebrow">Caractéristiques</h2>
+                <h2 className="batta-eyebrow">{t("specs")}</h2>
                 <dl className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {specs.map((s) => (
                     <div
@@ -439,7 +458,7 @@ export default async function AnnoncePage({
             {/* ── Rental conditions: declared by the agency, no calendar ── */}
             {l.price_unit === "day" && rentalRows.length > 0 && (
               <section className="mt-6">
-                <h2 className="batta-eyebrow">Conditions de location</h2>
+                <h2 className="batta-eyebrow">{t("rental.title")}</h2>
                 <dl className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {rentalRows.map((r) => (
                     <div key={r.label} className="min-w-0 rounded-xl bg-surface-2 p-3 ring-1 ring-border">
@@ -454,7 +473,7 @@ export default async function AnnoncePage({
                   </p>
                 )}
                 <p className="mt-2 text-[11.5px] text-muted">
-                  La réservation se fait directement avec l&apos;agence : appelez-la pour vérifier les dates.
+                  {t("rental.note")}
                 </p>
               </section>
             )}
@@ -462,7 +481,7 @@ export default async function AnnoncePage({
             {/* ── Fitments: the reason a part is findable ── */}
             {isPart && (l.fitments ?? []).length > 0 && (
               <section className="mt-6">
-                <h2 className="batta-eyebrow">Compatible avec</h2>
+                <h2 className="batta-eyebrow">{t("fitments")}</h2>
                 <ul className="mt-2 flex flex-wrap gap-2">
                   {(l.fitments ?? []).map((f, i) => (
                     <li
@@ -482,7 +501,7 @@ export default async function AnnoncePage({
 
             {l.description && (
               <section className="mt-6">
-                <h2 className="batta-eyebrow">Description</h2>
+                <h2 className="batta-eyebrow">{t("description")}</h2>
                 {/* Sellers paste links, and a URL is one unbreakable word. With
                     nothing to break it, the paragraph set its own minimum width
                     and pushed the whole page sideways. `anywhere` breaks it and,
@@ -506,7 +525,7 @@ export default async function AnnoncePage({
                 href={"/annonces" as never}
                 className="text-[13px] font-bold text-foreground hover:underline"
               >
-                ← Toutes les annonces
+                {t("back")}
               </Link>
             </div>
           </div>
@@ -540,4 +559,33 @@ export default async function AnnoncePage({
       <ShareButton title={l.title} />
     </main>
   );
+}
+
+/** One rental condition as a label/value line, in the page's language. */
+function rentalRow(
+  f: RentalFact,
+  t: Awaited<ReturnType<typeof getTranslations<"listing">>>,
+  locale: string,
+): { label: string; value: string } {
+  switch (f.key) {
+    case "availability":
+      return { label: t("rental.availability"), value: t(f.value === "available" ? "rental.available" : "rental.onRequest") };
+    case "deposit":
+      return {
+        label: t("rental.deposit"),
+        value: f.value === 0 ? t("rental.noDeposit") : t("rental.depositAmount", { amount: formatTND(f.value, locale) }),
+      };
+    case "minAge":
+      return { label: t("rental.minAge"), value: t("rental.ageValue", { age: f.value }) };
+    case "licenseYears":
+      return {
+        label: t("rental.license"),
+        value: f.value === 0 ? t("rental.noSeniority") : t("rental.licenseYears", { years: f.value }),
+      };
+    case "kmPerDay":
+      return {
+        label: t("rental.km"),
+        value: f.value === 0 ? t("rental.unlimited") : t("rental.kmPerDay", { km: formatTND(f.value, locale) }),
+      };
+  }
 }

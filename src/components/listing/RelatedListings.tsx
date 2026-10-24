@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { TrendingRail } from "@/components/landing/TrendingRail";
@@ -144,21 +145,22 @@ export async function RelatedListings({
     .map((x) => x.row);
 
   const badged = await badgedSellers(admin, [...new Set(scored.map((r) => r.seller_id))]);
+  const t = await getTranslations("listing.related");
 
   return (
     <section className="mt-10 border-t border-border pt-7">
       <div className="flex items-end justify-between gap-3 px-4 lg:px-6">
         <div>
-          <span className="batta-eyebrow">Ça pourrait vous intéresser</span>
+          <span className="batta-eyebrow">{t("eyebrow")}</span>
           <h2 className="mt-1 text-[19px] font-extrabold tracking-tight text-foreground lg:text-[22px]">
-            Annonces similaires
+            {t("title")}
           </h2>
         </div>
         <Link
           href={`/annonces?cat=${categoryId}` as never}
           className="inline-flex shrink-0 items-center gap-1 text-[12.5px] font-bold text-gold hover:underline"
         >
-          Tout voir <ArrowRight className="size-3.5" />
+          {t("seeAll")} <ArrowRight className="size-3.5 rtl:-scale-x-100" />
         </Link>
       </div>
 

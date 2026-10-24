@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { SafeImage } from "@/components/media/SafeImage";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { localeDirection } from "@/i18n/routing";
 import { ChevronLeft, ChevronRight, Car } from "lucide-react";
 import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
 import { IMAGE_BLUR_MAP } from "@/lib/imageBlurMap";
@@ -46,6 +47,9 @@ export function PhotoCarousel({
   children?: React.ReactNode;
 }) {
   const t = useTranslations();
+  // Right to left, the strip of slides runs leftwards from the first one, so
+  // it moves the other way and a swipe to the right goes forward.
+  const rtl = localeDirection(useLocale()) === "rtl";
   const count = photos.length;
   const loop = count > 1;
   // Clone the first photo at the tail for a seamless wrap.
@@ -118,14 +122,14 @@ export function PhotoCarousel({
             if (touchX.current == null) return;
             const dx = e.changedTouches[0].clientX - touchX.current;
             touchX.current = null;
-            if (Math.abs(dx) > SWIPE_THRESHOLD) go(dx < 0 ? 1 : -1);
+            if (Math.abs(dx) > SWIPE_THRESHOLD) go((dx < 0) !== rtl ? 1 : -1);
           }}
         >
           {count > 0 ? (
             <div
               className="flex h-full w-full"
               style={{
-                transform: `translateX(-${index * 100}%)`,
+                transform: `translateX(${rtl ? "" : "-"}${index * 100}%)`,
                 transition: anim ? "transform 500ms ease-out" : "none",
               }}
               onTransitionEnd={onTransitionEnd}
@@ -186,7 +190,7 @@ export function PhotoCarousel({
               <ChevronLeft className="h-5 w-5 ltr:hidden rtl:block" strokeWidth={2.5} />
             </button>
 
-            <div className="absolute bottom-2 left-1/2 z-20 -translate-x-1/2 inline-flex items-center gap-1.5 rounded-full bg-black/45 px-2.5 py-1.5 backdrop-blur-md ring-1 ring-gold/20">
+            <div className="absolute inset-x-0 bottom-2 z-20 mx-auto flex w-fit items-center gap-1.5 rounded-full bg-black/45 px-2.5 py-1.5 backdrop-blur-md ring-1 ring-gold/20">
               {photos.map((p, i) => (
                 <button
                   key={p.id}

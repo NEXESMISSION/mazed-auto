@@ -51,7 +51,7 @@ export function PullToRefresh({
     function setOffset(px: number) {
       const clamped = Math.max(0, Math.min(MAX_PULL_PX, px));
       const progress = Math.min(1, clamped / TRIGGER_THRESHOLD_PX);
-      indicator!.style.transform = `translate3d(-50%, ${clamped - 60}px, 0)`;
+      indicator!.style.transform = `translate3d(0, ${clamped - 60}px, 0)`;
       indicator!.style.opacity = String(Math.min(1, progress * 1.4));
       // Rotate the spinner during pull so it feels alive even before commit.
       const rotation = progress * 360;
@@ -67,7 +67,7 @@ export function PullToRefresh({
         indicator.style.transition = "transform 200ms ease-out, opacity 200ms ease-out";
         wrap.style.transition = "transform 200ms ease-out";
       }
-      indicator.style.transform = "translate3d(-50%, -60px, 0)";
+      indicator.style.transform = "translate3d(0, -60px, 0)";
       indicator.style.opacity = "0";
       wrap.style.transform = "";
       // Clear transitions after they settle so the next drag is direct again.
@@ -154,9 +154,9 @@ export function PullToRefresh({
       <div
         ref={indicatorRef}
         aria-hidden
-        className="pointer-events-none fixed left-1/2 top-[calc(var(--batta-topbar-h)+var(--batta-safe-top))] z-[60] flex size-12 items-center justify-center rounded-full bg-batta-surface shadow-lg shadow-black/50 ring-1 ring-batta-gold/30"
+        className="pointer-events-none fixed inset-x-0 top-[calc(var(--batta-topbar-h)+var(--batta-safe-top))] z-[60] mx-auto flex size-12 items-center justify-center rounded-full bg-batta-surface shadow-lg shadow-black/50 ring-1 ring-batta-gold/30"
         style={{
-          transform: "translate3d(-50%, -60px, 0)",
+          transform: "translate3d(0, -60px, 0)",
           opacity: 0,
           willChange: "transform, opacity",
         }}

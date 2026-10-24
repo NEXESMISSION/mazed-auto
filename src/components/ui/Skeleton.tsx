@@ -8,6 +8,7 @@
  * desktop the user sees one clean centered circle instead of the skeleton
  * shimmer; mobile keeps the detailed skeletons.
  */
+import { useTranslations } from "next-intl";
 import { DesktopLoadingSpinner } from "./DesktopLoadingSpinner";
 
 export function SkeletonBar({
@@ -304,7 +305,7 @@ export function ListRowsSkeleton({
         ))}
       </section>
       <DesktopLoadingSpinner />
-      <span className="sr-only">Chargement…</span>
+      <LoadingLabel />
     </div>
   );
 }
@@ -416,7 +417,7 @@ export function AdminTableSkeleton({
         ))}
       </div>
       <DesktopLoadingSpinner />
-      <span className="sr-only">Chargement…</span>
+      <LoadingLabel />
     </div>
   );
 }
@@ -521,7 +522,7 @@ export function KycStepSkeleton({
         </>
       )}
       <DesktopLoadingSpinner />
-      <span className="sr-only">Chargement…</span>
+      <LoadingLabel />
     </div>
   );
 }
@@ -570,7 +571,7 @@ export function FormPageSkeleton({
         <div className="batta-skeleton-luxe h-11 w-32 rounded-2xl" />
       </div>
       <DesktopLoadingSpinner />
-      <span className="sr-only">Chargement…</span>
+      <LoadingLabel />
     </div>
   );
 }
@@ -639,7 +640,7 @@ export function HeroWithGridSkeleton({
         </div>
       </section>
       <DesktopLoadingSpinner />
-      <span className="sr-only">Chargement…</span>
+      <LoadingLabel />
     </div>
   );
 }
@@ -676,7 +677,7 @@ export function CenteredStatusSkeleton() {
         <div className="batta-skeleton h-11 w-full rounded-2xl" />
       </div>
       <DesktopLoadingSpinner />
-      <span className="sr-only">Chargement…</span>
+      <LoadingLabel />
     </div>
   );
 }
@@ -735,7 +736,7 @@ export function BidPageSkeleton() {
         </section>
       </div>
       <DesktopLoadingSpinner />
-      <span className="sr-only">Chargement…</span>
+      <LoadingLabel />
     </div>
   );
 }
@@ -798,7 +799,7 @@ export function PaymentCheckoutSkeleton() {
         </div>
       </section>
       <DesktopLoadingSpinner />
-      <span className="sr-only">Chargement…</span>
+      <LoadingLabel />
     </div>
   );
 }
@@ -860,7 +861,13 @@ export function AccountSkeleton() {
         </div>
       </div>
       <DesktopLoadingSpinner />
-      <span className="sr-only">Chargement…</span>
+      <LoadingLabel />
     </div>
   );
+}
+
+/** The words a screen reader hears while a skeleton stands in for a page. */
+function LoadingLabel() {
+  const t = useTranslations("shared");
+  return <span className="sr-only">{t("loading")}</span>;
 }

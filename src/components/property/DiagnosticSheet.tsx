@@ -1,11 +1,11 @@
+import { useTranslations } from "next-intl";
+import { getLocale, getTranslations } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { formatDate } from "@/lib/dates";
 import { ImageLightbox } from "@/components/ui/ImageLightbox";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import {
   DIAGNOSTIC_SELECT,
-  STATE_LABEL,
-  VERDICT_BLURB,
-  VERDICT_LABEL,
   toDiagnostic,
   type Diagnostic,
   type DiagnosticState,
@@ -46,6 +46,9 @@ const STATE_STYLE: Record<DiagnosticState, { tone: string; dot: string }> = {
 
 /** Compact badge — for headers and cards. Renders null without a diagnostic. */
 export function DiagnosticBadge({ diagnostic }: { diagnostic: Diagnostic | null }) {
+  // The wording lives in the messages (`listing.diagnostic`), not in
+  // VERDICT_LABEL: those stay French for the admin console's editor.
+  const t = useTranslations("listing.diagnostic");
   if (!diagnostic) return null;
   const Icon =
     diagnostic.verdict === "approved"
@@ -59,7 +62,7 @@ export function DiagnosticBadge({ diagnostic }: { diagnostic: Diagnostic | null 
       className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-extrabold text-foreground ring-1 ring-white/20 transition hover:bg-white/[0.16]"
     >
       <Icon className="size-3.5" strokeWidth={2.4} />
-      {VERDICT_LABEL[diagnostic.verdict]}
+      {t(`verdict.${diagnostic.verdict}`)}
     </a>
   );
 }
@@ -85,6 +88,8 @@ export async function DiagnosticSheet({
           ? await fetchPublishedDiagnostic(propertyId, "property")
           : null;
   if (!diagnostic) return null;
+  const t = await getTranslations("listing.diagnostic");
+  const locale = await getLocale();
 
   const checked = diagnostic.sections.reduce((n, s) => n + s.items.length, 0);
   const findings = diagnostic.sections.reduce(
@@ -96,7 +101,7 @@ export async function DiagnosticSheet({
     <section id="diagnostic-mazed" className="batta-frame mx-4 mt-4 p-5 lg:mx-0">
       <h2 className="batta-eyebrow flex items-center gap-2">
         <span aria-hidden className="batta-gold-rule-short" />
-        Diagnostic Mazed
+        {t("title")}
       </h2>
 
       {/* What the badge means — stated in full, because "vérifié" is exactly
@@ -105,23 +110,24 @@ export async function DiagnosticSheet({
         <BadgeCheck className="mt-0.5 size-6 shrink-0 text-foreground" strokeWidth={2.2} />
         <div className="min-w-0">
           <div className="text-[15px] font-extrabold leading-tight text-foreground">
-            {VERDICT_LABEL[diagnostic.verdict]}
+            {t(`verdict.${diagnostic.verdict}`)}
           </div>
           <p className="mt-1 text-[12px] leading-relaxed text-muted">
-            {VERDICT_BLURB[diagnostic.verdict]} Ce véhicule a été contrôlé par
-            nous — ce n&apos;est pas une déclaration du vendeur.
+            {t(`blurb.${diagnostic.verdict}`)} {t("notDeclaration")}
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted">
-            {diagnostic.inspectorName && <span>Par {diagnostic.inspectorName}</span>}
+            {diagnostic.inspectorName && <span>{t("by", { name: diagnostic.inspectorName })}</span>}
             {diagnostic.inspectedAt && (
               <span>
-                Le {new Date(diagnostic.inspectedAt).toLocaleDateString("fr-FR")}
+                {t("on", {
+                  date: formatDate(diagnostic.inspectedAt, locale, { day: "2-digit", month: "2-digit", year: "numeric" }),
+                })}
               </span>
             )}
             {checked > 0 && (
               <span>
-                {checked} point{checked > 1 ? "s" : ""} contrôlé{checked > 1 ? "s" : ""}
-                {findings > 0 ? ` · ${findings} à signaler` : ""}
+                {t("checked", { count: checked })}
+                {findings > 0 ? t("findings", { count: findings }) : ""}
               </span>
             )}
           </div>
@@ -146,7 +152,7 @@ export async function DiagnosticSheet({
             <div key={i} className="rounded-2xl bg-surface-2 p-3.5 ring-1 ring-border">
               <div className="text-[12.5px] font-extrabold text-foreground">{sec.title}</div>
               {sec.items.length === 0 ? (
-                <p className="mt-1 text-[11.5px] text-muted">Aucun point relevé.</p>
+                <p className="mt-1 text-[11.5px] text-muted">{t("noFindings")}</p>
               ) : (
                 <ul className="mt-2 divide-y divide-border">
                   {sec.items.map((it, k) => (
@@ -163,7 +169,7 @@ export async function DiagnosticSheet({
                           <span
                             className={`text-[10px] font-extrabold uppercase tracking-[0.1em] ${STATE_STYLE[it.state].tone}`}
                           >
-                            {STATE_LABEL[it.state]}
+                            {t(`state.${it.state}`)}
                           </span>
                         </div>
                         {it.note && (
@@ -183,20 +189,20 @@ export async function DiagnosticSheet({
       {diagnostic.photos.length > 0 && (
         <div className="mt-4">
           <div className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-muted">
-            <Camera className="size-3.5" /> Photos prises lors du contrôle
+            <Camera className="size-3.5" /> {t("photos")}
           </div>
           <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
             {diagnostic.photos.map((ph, i) => (
               <figure key={ph.path} className="space-y-1">
                 <ImageLightbox
                   src={propertyPhotoUrl(ph.path)}
-                  alt={ph.caption ?? `Photo du diagnostic ${i + 1}`}
+                  alt={ph.caption ?? t("photoAlt", { n: i + 1 })}
                   triggerClassName="relative aspect-square w-full overflow-hidden rounded-xl bg-surface-2 ring-1 ring-border"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={propertyPhotoUrl(ph.path)}
-                    alt={ph.caption ?? `Photo du diagnostic ${i + 1}`}
+                    alt={ph.caption ?? t("photoAlt", { n: i + 1 })}
                     className="size-full object-cover"
                     loading="lazy"
                   />

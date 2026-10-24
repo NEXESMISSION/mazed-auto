@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { listingIdsMatching } from "@/lib/fitment";
+import { localeFromRequest } from "@/i18n/api";
 import {
   applyCatalogFilters,
   LISTING_SELECT,
@@ -149,7 +150,9 @@ export async function GET(req: NextRequest) {
   const hasMore = page < MAX_PAGE && offset + rows.length < total;
 
   return NextResponse.json({
-    items: rows.map((r) => toReelItem(r, verified)),
+    // Labels (category, governorate, fuel…) in the language of the page that
+    // is scrolling, so page 3 reads like page 1.
+    items: rows.map((r) => toReelItem(r, verified, localeFromRequest(req))),
     saved,
     total,
     page,

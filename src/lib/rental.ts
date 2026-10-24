@@ -64,22 +64,50 @@ export function sanitizeRentalAttributes(attrs: Record<string, unknown>): Record
   return out;
 }
 
-/** The conditions as label/value lines for the annonce page, in a fixed order. */
-export function rentalConditionRows(attrs: Record<string, unknown> | null | undefined): { label: string; value: string }[] {
-  const a = attrs ?? {};
-  const rows: { label: string; value: string }[] = [];
-  const n = (v: unknown) => (typeof v === "number" ? v : Number.isFinite(Number(v)) && v !== "" && v != null ? Number(v) : null);
-  const fmt = (v: number) => v.toLocaleString("fr-FR");
+/**
+ * The conditions an agency declared, in a fixed order, as data: which
+ * condition and its number. The annonce page words them in the reader's
+ * language from its messages; rentalConditionRows below words them in French
+ * for the places that need plain text (social posts).
+ */
+export type RentalFact =
+  | { key: "availability"; value: RentalAvailability }
+  | { key: "deposit" | "minAge" | "licenseYears" | "kmPerDay"; value: number };
 
-  if (a.rental_availability === "available") rows.push({ label: "Disponibilité", value: "Disponible" });
-  else if (a.rental_availability === "on_request") rows.push({ label: "Disponibilité", value: "Sur demande" });
+export function rentalConditionFacts(attrs: Record<string, unknown> | null | undefined): RentalFact[] {
+  const a = attrs ?? {};
+  const facts: RentalFact[] = [];
+  const n = (v: unknown) => (typeof v === "number" ? v : Number.isFinite(Number(v)) && v !== "" && v != null ? Number(v) : null);
+
+  if (a.rental_availability === "available" || a.rental_availability === "on_request") {
+    facts.push({ key: "availability", value: a.rental_availability });
+  }
   const deposit = n(a.rental_deposit);
-  if (deposit != null) rows.push({ label: "Caution", value: deposit === 0 ? "Sans caution" : `${fmt(deposit)} TND` });
+  if (deposit != null) facts.push({ key: "deposit", value: deposit });
   const age = n(a.rental_min_age);
-  if (age != null) rows.push({ label: "Âge minimum", value: `${age} ans` });
+  if (age != null) facts.push({ key: "minAge", value: age });
   const years = n(a.rental_license_years);
-  if (years != null) rows.push({ label: "Permis depuis", value: years === 0 ? "Aucune ancienneté exigée" : `${years} an${years > 1 ? "s" : ""}` });
+  if (years != null) facts.push({ key: "licenseYears", value: years });
   const km = n(a.rental_km_per_day);
-  if (km != null) rows.push({ label: "Kilométrage inclus", value: km === 0 ? "Illimité" : `${fmt(km)} km / jour` });
-  return rows;
+  if (km != null) facts.push({ key: "kmPerDay", value: km });
+  return facts;
+}
+
+/** The conditions as French label/value lines, in a fixed order. */
+export function rentalConditionRows(attrs: Record<string, unknown> | null | undefined): { label: string; value: string }[] {
+  const fmt = (v: number) => v.toLocaleString("fr-FR");
+  return rentalConditionFacts(attrs).map((f) => {
+    switch (f.key) {
+      case "availability":
+        return { label: "Disponibilité", value: f.value === "available" ? "Disponible" : "Sur demande" };
+      case "deposit":
+        return { label: "Caution", value: f.value === 0 ? "Sans caution" : `${fmt(f.value)} TND` };
+      case "minAge":
+        return { label: "Âge minimum", value: `${f.value} ans` };
+      case "licenseYears":
+        return { label: "Permis depuis", value: f.value === 0 ? "Aucune ancienneté exigée" : `${f.value} an${f.value > 1 ? "s" : ""}` };
+      case "kmPerDay":
+        return { label: "Kilométrage inclus", value: f.value === 0 ? "Illimité" : `${fmt(f.value)} km / jour` };
+    }
+  });
 }
