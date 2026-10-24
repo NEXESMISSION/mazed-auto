@@ -1,19 +1,18 @@
-import Image from "next/image";
-import { getTranslations, getLocale } from "next-intl/server";
+import { getLocale } from "next-intl/server";
 import { ForgotPasswordForm } from "@/components/auth/ForgotPasswordForm";
 import { AuthHeroPanel } from "@/components/auth/AuthHeroPanel";
+import { AuthBrand } from "@/components/auth/AuthBrand";
 import { Link } from "@/i18n/navigation";
 
 /**
  * "Forgot password" page — collects the user's email and asks Supabase to send
  * a recovery magic link (→ /reset-password?type=recovery).
- *   - Mobile (< lg): centered card.
+ *   - Mobile (< lg): the logo small at top left, over a centered card.
  *   - Desktop (lg+): the same split-screen hero + card as login/signup, so the
  *     whole auth quartet is visually coherent (previously this collapsed to a
  *     lonely 384px card on a vast empty desktop field).
  */
 export default async function ForgotPasswordPage() {
-  const t = await getTranslations();
   const locale = await getLocale();
   const isRTL = locale === "ar";
 
@@ -22,28 +21,8 @@ export default async function ForgotPasswordPage() {
       <div aria-hidden className="batta-gradient-gold h-[2px] w-full" />
       <div className="p-7 sm:p-8">
         <div className="flex flex-col items-center text-center">
-          {/* The full logo on phones, where this card is the only brand on
-              screen; the emblem alone on desktop, where AuthHeroPanel beside
-              it already shows the full logo. */}
-          <Image
-            src="/brand/lockup.png"
-            alt={t("brand.name")}
-            width={1115}
-            height={655}
-            priority
-            sizes="170px"
-            className="h-24 w-auto lg:hidden"
-          />
-          <Image
-            src="/brand/mark.png"
-            alt={t("brand.name")}
-            width={953}
-            height={406}
-            sizes="160px"
-            className="hidden h-16 w-auto lg:block"
-          />
           <h1
-            className={`mt-5 text-[24px] font-extrabold leading-[1.1] tracking-tight ${
+            className={`text-[24px] font-extrabold leading-[1.1] tracking-tight ${
               isRTL ? "font-arabic" : ""
             }`}
           >
@@ -75,14 +54,19 @@ export default async function ForgotPasswordPage() {
 
   return (
     <>
-      {/* ── MOBILE / tablet (< lg) — centered card ── */}
-      <div className="lg:hidden mx-auto flex min-h-dvh max-w-[var(--max-w)] flex-col items-center justify-center px-6">
-        <div className="relative w-full max-w-sm">
-          <div
-            aria-hidden
-            className="batta-gradient-blob batta-gradient-blob-lg absolute -left-1/3 -top-1/4 -z-10 opacity-20"
-          />
-          {Card}
+      {/* ── MOBILE / tablet (< lg) — logo top left, centered card ── */}
+      <div className="lg:hidden mx-auto flex min-h-dvh max-w-[var(--max-w)] flex-col px-6 pt-safe">
+        <div className="-mx-2 flex h-14 items-center">
+          <AuthBrand />
+        </div>
+        <div className="flex flex-1 flex-col items-center justify-center pb-14">
+          <div className="relative w-full max-w-sm">
+            <div
+              aria-hidden
+              className="batta-gradient-blob batta-gradient-blob-lg absolute -left-1/3 -top-1/4 -z-10 opacity-20"
+            />
+            {Card}
+          </div>
         </div>
       </div>
 

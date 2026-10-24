@@ -1,11 +1,10 @@
-import Image from "next/image";
-import { Link } from "@/i18n/navigation";
 import { ShieldCheck, Eye, Zap, Sparkles } from "lucide-react";
+import { AuthBrand } from "./AuthBrand";
 
 /**
  * Desktop-only split-screen brand panel for the auth pages.
  *
- * A pure black→gold gradient panel (no photo) with the gold "MA" mark,
+ * A pure black→gold gradient panel (no photo) with the logo top left,
  * the brand promise, three trust points and a slim social-proof line —
  * matching v1's auth marketing pane. The previous version used a
  * real-estate stock photo (a white seaside house), which was a leftover
@@ -32,19 +31,8 @@ export function AuthHeroPanel() {
       />
 
       <div className="relative flex h-full flex-col justify-between p-12">
-        {/* Brand — the full logo, emblem over « MAZED AUTO » */}
-        <Link href="/" className="inline-flex w-fit items-center gap-3" aria-label="Mazed Auto">
-          <Image
-            src="/brand/lockup.png"
-            alt=""
-            width={1115}
-            height={655}
-            priority
-            sizes="160px"
-            className="h-20 w-auto shrink-0"
-          />
-          <span className="sr-only">Mazed Auto</span>
-        </Link>
+        {/* Brand — small, top left, the same size as the desktop nav. */}
+        <AuthBrand size="md" />
 
         {/* Headline + trust points + social proof */}
         <div className="max-w-md">
