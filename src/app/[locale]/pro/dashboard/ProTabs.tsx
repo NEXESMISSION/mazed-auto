@@ -6,17 +6,20 @@ const TABS = [
   { href: "/pro/dashboard", label: "Résumé" },
   { href: "/pro/dashboard/annonces", label: "Annonces" },
   { href: "/pro/dashboard/statistiques", label: "Statistiques" },
+  { href: "/pro/dashboard/marketing", label: "Marketing" },
   { href: "/pro/dashboard/abonnement", label: "Abonnement" },
   { href: "/pro/dashboard/boutique", label: "Ma boutique" },
 ] as const;
 
 /** The dashboard's sections. The exact match keeps « Résumé » from lighting up everywhere. */
-export function ProTabs() {
+export function ProTabs({ marketing = false }: { marketing?: boolean }) {
   const pathname = usePathname();
+  // Marketing appears once the Social Publisher is open (or to an admin previewing it).
+  const tabs = TABS.filter((t) => marketing || t.href !== "/pro/dashboard/marketing");
   return (
     <nav className="-mx-4 mt-4 overflow-x-auto px-4 [scrollbar-width:none] lg:mx-0 lg:px-0" aria-label="Espace pro">
       <div className="flex min-w-max gap-2">
-        {TABS.map((t) => {
+        {tabs.map((t) => {
           const on = t.href === "/pro/dashboard" ? pathname === t.href : pathname.startsWith(t.href);
           return (
             <Link

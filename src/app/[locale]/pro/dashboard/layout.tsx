@@ -7,6 +7,7 @@ import { activityLabel, isShopVerified, shopInitials } from "@/lib/shops/format"
 import { shopMediaUrl, shopsGate } from "@/lib/shops/public";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { ProTabs } from "./ProTabs";
+import { socialGate } from "@/lib/social/gate";
 import { ArrowUpRight, BadgeCheck, Store } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -64,6 +65,7 @@ export default async function ProDashboardLayout({ children }: { children: React
   }
 
   const { shop } = ctx;
+  const marketing = (await socialGate(ctx.admin)).visible;
   const logo = shopMediaUrl(shop.logo_path);
 
   return (
@@ -94,7 +96,7 @@ export default async function ProDashboardLayout({ children }: { children: React
           </Link>
         )}
       </header>
-      <ProTabs />
+      <ProTabs marketing={marketing} />
       <div className="mt-5">{children}</div>
     </main>
   );

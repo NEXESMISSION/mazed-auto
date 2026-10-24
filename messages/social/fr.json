@@ -1,0 +1,83 @@
+{
+  "title": "Social Publisher",
+  "intro": "Diffusez vos annonces sur votre Page Facebook et votre compte Instagram professionnel. Rien n'est publié sans votre validation.",
+  "soon": "Le Social Publisher arrive bientôt.",
+  "preview": "Aperçu administrateur : les boutiques ne voient pas encore ce module.",
+  "notConfigured": "La connexion à Meta n'est pas encore configurée sur ce site.",
+  "connectedBanner": "{count, plural, one {# compte connecté.} other {# comptes connectés.}}",
+  "errors": {
+    "denied": "Connexion annulée.",
+    "state": "La connexion a expiré ou a été commencée dans un autre navigateur. Recommencez.",
+    "forbidden": "Seuls le propriétaire et les gérants peuvent connecter des comptes.",
+    "meta": "Meta n'a pas répondu correctement. Réessayez dans un moment.",
+    "no_pages": "Aucune Page Facebook trouvée sur ce compte.",
+    "not_configured": "La connexion à Meta n'est pas encore configurée."
+  },
+  "accounts": {
+    "title": "Comptes connectés",
+    "none": "Aucun compte connecté pour l'instant.",
+    "connect": "Connecter Facebook / Instagram",
+    "disconnect": "Déconnecter",
+    "confirmDisconnect": "Déconnecter ce compte ? Les publications déjà faites restent en ligne.",
+    "disconnected": "Compte déconnecté.",
+    "status": { "active": "Actif", "expired": "À reconnecter", "revoked": "Déconnecté" },
+    "network": { "facebook": "Page Facebook", "instagram": "Instagram" }
+  },
+  "composer": {
+    "title": "Nouvelle publication",
+    "listing": "Annonce",
+    "pickListing": "Choisissez une annonce en ligne",
+    "noListings": "Aucune annonce en ligne à diffuser.",
+    "networks": "Réseaux",
+    "language": "Langue du texte",
+    "lang": { "fr": "Français", "tn": "Tunisien" },
+    "prepare": "Préparer les textes",
+    "ai": "Textes rédigés automatiquement à partir de l'annonce, puis vérifiés : un chiffre absent de l'annonce n'est jamais accepté.",
+    "noAi": "Textes standards rédigés à partir de l'annonce (la rédaction automatique est incluse dès la formule Starter).",
+    "body": "Texte",
+    "hashtags": "Hashtags (séparés par des espaces)",
+    "validate": "Valider ce texte",
+    "validated": "Texte validé",
+    "editedAgain": "Modifié : validez-le à nouveau.",
+    "photos": "{count, plural, =0 {Aucune photo} one {# photo de l'annonce} other {# photos de l'annonce}}",
+    "account": "Publier sur",
+    "noAccount": "Connectez d'abord un compte {network}.",
+    "consent": "J'autorise Mazed Auto à publier ce texte et ces photos de mon annonce sur les comptes choisis, en mon nom, maintenant. J'ai relu le contenu : il correspond à mon annonce.",
+    "publish": "Publier maintenant",
+    "restart": "Nouvelle publication",
+    "needs": "Validez chaque texte, choisissez les comptes et cochez l'autorisation.",
+    "source": { "ai": "Rédigé automatiquement", "template": "Texte standard", "edited": "Modifié par vous" },
+    "networkName": { "facebook": "Facebook", "instagram": "Instagram" },
+    "error": "Action impossible pour le moment."
+  },
+  "results": {
+    "published": "Publié",
+    "scheduled": "Reprogrammé : {error}",
+    "failed": "Échec : {error}",
+    "manual_action_required": "Action requise : {error}",
+    "needs_remote_check": "Réponse incertaine de Meta : rien ne sera republié avant vérification.",
+    "not_claimed": "Déjà en cours.",
+    "refused": "Refusé : {error}",
+    "cancelled": "Annulée.",
+    "view": "Voir la publication"
+  },
+  "journal": {
+    "title": "Journal des publications",
+    "empty": "Aucune publication pour l'instant.",
+    "check": "Vérifier chez Meta",
+    "retry": "Relancer",
+    "cancel": "Annuler",
+    "confirmCancel": "Annuler cette publication ?",
+    "attempts": "{count, plural, one {# tentative} other {# tentatives}}",
+    "status": {
+      "draft": "Brouillon",
+      "pending_approval": "En attente d'approbation",
+      "scheduled": "Programmée",
+      "publishing": "En cours",
+      "published": "Publiée",
+      "failed": "Échec",
+      "manual_action_required": "Action requise",
+      "cancelled": "Annulée"
+    }
+  }
+}
