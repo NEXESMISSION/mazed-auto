@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { ListingImage } from "@/components/media/ListingImage";
 import { DiagnosticEditor } from "@/components/admin/DiagnosticEditor";
@@ -9,9 +10,10 @@ import {
   StatusPill, Confirm, TextField, TextareaField, NumberField,
   ToggleField, FieldGrid, useAdminAction, paymentKindLabel, EYEBROW,
 } from "@/components/admin/kit";
-import { formatTND } from "@/lib/utils";
-import { CONDITIONS } from "@/lib/vehicles";
+import { currencyLabel, formatTND } from "@/lib/utils";
+import { formatDate } from "@/lib/dates";
 import type { Diagnostic } from "@/lib/diagnostics";
+import { parseRejection } from "@/lib/rejection";
 import {
   Check, X, Archive, Trash2, Star, StarOff, CalendarPlus, BadgeCheck,
   Pencil, RotateCcw, ExternalLink, ImageOff, ChevronLeft,
@@ -72,17 +74,12 @@ export type PanelListing = {
   diagnostic: Diagnostic | null;
 };
 
-const PAID_WITH_LABEL: Record<PanelListing["paidWith"], string> = {
-  credit: "Forfait du vendeur",
-  payment: "Paiement à l'unité",
-  waived: "Offerte par un admin",
-  subscription: "Abonnement de la boutique",
-  free: "Gratuite (particulier)",
-  none: "Rien de rattaché",
-};
-
-const dt = (iso: string | null) =>
-  iso ? new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+/** « 24 oct. 2026 » in the console's language, "—" when there is no date. */
+function useShortDate() {
+  const locale = useLocale();
+  return (iso: string | null) =>
+    iso ? formatDate(iso, locale, { day: "2-digit", month: "short", year: "numeric" }) : "—";
+}
 
 /** label / value line. No borders — the label column carries the structure. */
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
@@ -112,6 +109,9 @@ export function ListingDetail({
   backHref: string;
 }) {
   const { run, pending } = useAdminAction();
+  const t = useTranslations("adminOps");
+  const locale = useLocale();
+  const dt = useShortDate();
   const [confirm, setConfirm] = useState<null | "reject" | "delete" | "archive" | "sold">(null);
   const [editing, setEditing] = useState(false);
 
@@ -131,8 +131,8 @@ export function ListingDetail({
           href={backHref as "/admin/annonces"}
           className="mb-2 inline-flex items-center gap-1 text-[12px] font-medium text-subtle transition hover:text-foreground lg:hidden"
         >
-          <ChevronLeft className="size-3.5" strokeWidth={2.4} />
-          File
+          <ChevronLeft className="size-3.5 rtl:-scale-x-100" strokeWidth={2.4} />
+          {t("common.queue")}
         </Link>
         <h1 className="truncate text-[16px] font-semibold tracking-tight text-foreground">
           {l.title}
@@ -141,11 +141,11 @@ export function ListingDetail({
           <StatusPill status={l.status} />
           {/* The code the seller on the phone will have quoted. */}
           {l.reference && (
-            <span className="batta-tabular font-semibold text-foreground/70">{l.reference}</span>
+            <span className="batta-tabular ltr-island font-semibold text-foreground/70">{l.reference}</span>
           )}
           {featured && (
             <span className="inline-flex items-center gap-1 text-[var(--gold)]">
-              <Star className="size-3" strokeWidth={2.6} /> Accueil
+              <Star className="size-3" strokeWidth={2.6} /> {t("listing.home")}
             </span>
           )}
           <span>{l.categoryLabel}</span>
@@ -165,10 +165,10 @@ export function ListingDetail({
                 key={`${p.path}-${i}`}
                 className="relative aspect-[4/3] w-[150px] shrink-0 overflow-hidden bg-surface-2"
               >
-                <ListingImage path={p.path} alt={`Photo ${i + 1}`} sizes="150px" />
+                <ListingImage path={p.path} alt={t("listing.photoAlt", { n: i + 1 })} sizes="150px" />
                 {p.isCover && (
                   <span className="absolute start-1 top-1 bg-black/70 px-1 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-[var(--gold)]">
-                    Couv.
+                    {t("listing.cover")}
                   </span>
                 )}
               </div>
@@ -177,25 +177,31 @@ export function ListingDetail({
         ) : (
           <div className="flex items-center gap-2 border border-dashed border-border px-4 py-5 text-[12px] text-subtle">
             <ImageOff className="size-4" strokeWidth={2} />
-            Aucune photo — à vérifier avant publication.
+            {t("listing.noPhoto")}
           </div>
         )}
 
         {l.rejectionReason && (
           <p className="mt-4 border-s-2 border-[var(--tone-bad)] ps-3 text-[12.5px] text-[var(--tone-bad)]">
-            <span className="font-semibold">Motif du refus :</span> {l.rejectionReason}
+            <span className="font-semibold">{t("listing.rejectionReason")}</span>{" "}
+            {(() => {
+              // A tagged motif ("[PHOTOS] …") reads as its category, in the
+              // console's language, then the text the admin typed.
+              const r = parseRejection(l.rejectionReason, locale);
+              return r.tagged ? `${r.label} — ${r.message}` : r.message;
+            })()}
           </p>
         )}
 
         {editing && <EditForm listing={l} onDone={() => setEditing(false)} />}
 
         <div className="mt-5 space-y-4">
-          <Group title="L'annonce">
-            <Row label="Prix">
+          <Group title={t("listing.groups.listing")}>
+            <Row label={t("listing.rows.price")}>
               {l.priceOnRequest
-                ? "Sur demande"
+                ? t("annonces.onRequest")
                 : l.price != null
-                  ? `${formatTND(l.price, "fr")} TND${l.negotiable ? " · négociable" : ""}`
+                  ? `${formatTND(l.price, locale)} ${currencyLabel(locale)}${l.negotiable ? t("listing.negotiable") : ""}`
                   : "—"}
             </Row>
             {/* The raw enum was going straight to screen: the panel read
@@ -204,19 +210,21 @@ export function ListingDetail({
                 means. Falls back to the raw value rather than hiding it — an
                 unlabelled status is a bug report. */}
             {l.condition && (
-              <Row label="État">
-                {CONDITIONS.find((c) => c.value === l.condition)?.label ?? l.condition}
+              <Row label={t("listing.rows.condition")}>
+                {["used", "new", "refurbished"].includes(l.condition)
+                  ? t(`conditions.${l.condition}`)
+                  : l.condition}
               </Row>
             )}
             {l.description && (
-              <Row label="Description">
+              <Row label={t("listing.rows.description")}>
                 <span className="whitespace-pre-wrap break-words">{l.description}</span>
               </Row>
             )}
           </Group>
 
           {l.attributes.length > 0 && (
-            <Group title="Caractéristiques">
+            <Group title={t("listing.groups.attributes")}>
               {l.attributes.map((a) => (
                 <Row key={a.label} label={a.label}>
                   {a.value}
@@ -225,61 +233,65 @@ export function ListingDetail({
             </Group>
           )}
 
-          <Group title="Vendeur et contact">
-            <Row label="Compte">{l.sellerName}</Row>
-            {l.shopName && <Row label="Boutique">{l.shopName}</Row>}
-            {l.sellerPhone && <Row label="Tél. du compte">{l.sellerPhone}</Row>}
-            <Row label="Sur l'annonce">
+          <Group title={t("listing.groups.seller")}>
+            <Row label={t("listing.rows.account")}>{l.sellerName}</Row>
+            {l.shopName && <Row label={t("listing.rows.shop")}>{l.shopName}</Row>}
+            {l.sellerPhone && (
+              <Row label={t("listing.rows.accountPhone")}>
+                <span className="ltr-island">{l.sellerPhone}</span>
+              </Row>
+            )}
+            <Row label={t("listing.rows.onListing")}>
               {l.contactPhone ? (
                 <>
-                  {l.contactPhone}
+                  <span className="ltr-island">{l.contactPhone}</span>
                   {l.contactName ? ` · ${l.contactName}` : ""}
-                  {!l.showPhone && <span className="text-subtle"> (masqué)</span>}
+                  {!l.showPhone && <span className="text-subtle">{t("listing.hidden")}</span>}
                 </>
               ) : (
-                <span className="text-[var(--tone-bad)]">Aucun numéro — publication impossible</span>
+                <span className="text-[var(--tone-bad)]">{t("listing.noNumber")}</span>
               )}
             </Row>
             {l.attestation && (
-              <Row label="Attestation">
+              <Row label={t("listing.rows.attestation")}>
                 {l.attestation.version === "v1-admin"
-                  ? "Saisie par un admin (v1-admin)"
-                  : "Signée par le vendeur (v1)"}
+                  ? t("listing.attestationAdmin")
+                  : t("listing.attestationSeller")}
                 {l.attestation.at ? ` · ${dt(l.attestation.at)}` : ""}
               </Row>
             )}
           </Group>
 
-          <Group title="Publication">
-            <Row label="Payée par">{PAID_WITH_LABEL[l.paidWith]}</Row>
+          <Group title={t("listing.groups.publication")}>
+            <Row label={t("listing.rows.paidBy")}>{t(`listing.paidWith.${l.paidWith}`)}</Row>
             {l.payment && (
-              <Row label="Paiement">
-                {formatTND(l.payment.amount, "fr")} TND · {paymentKindLabel(l.payment.kind)} ·{" "}
+              <Row label={t("listing.rows.payment")}>
+                {formatTND(l.payment.amount, locale)} {currencyLabel(locale)} · {paymentKindLabel(l.payment.kind, locale)} ·{" "}
                 <StatusPill status={l.payment.status} />
               </Row>
             )}
-            <Row label="Créée le">{dt(l.createdAt)}</Row>
-            <Row label="Publiée le">{dt(l.publishedAt)}</Row>
-            <Row label="Expire le">{dt(l.expiresAt)}</Row>
-            {featured && <Row label="En avant jusqu'au">{dt(l.featuredUntil)}</Row>}
-            <Row label="Renouvellements">{l.renewedCount}</Row>
-            <Row label="Audience">
-              {l.viewCount} vues · {l.contactRevealCount} numéros affichés
+            <Row label={t("listing.rows.createdAt")}>{dt(l.createdAt)}</Row>
+            <Row label={t("listing.rows.publishedAt")}>{dt(l.publishedAt)}</Row>
+            <Row label={t("listing.rows.expiresAt")}>{dt(l.expiresAt)}</Row>
+            {featured && <Row label={t("listing.rows.featuredUntil")}>{dt(l.featuredUntil)}</Row>}
+            <Row label={t("listing.rows.renewals")}>{l.renewedCount}</Row>
+            <Row label={t("listing.rows.audience")}>
+              {t("listing.audienceValue", { views: l.viewCount, reveals: l.contactRevealCount })}
             </Row>
             {l.status === "published" && (
-              <Row label="Page publique">
+              <Row label={t("listing.rows.publicPage")}>
                 <Link
                   href={`/annonces/${l.id}` as "/annonces"}
                   target="_blank"
                   className="inline-flex items-center gap-1.5 font-medium text-[var(--gold)] hover:underline"
                 >
-                  Ouvrir <ExternalLink className="size-3" strokeWidth={2.2} />
+                  {t("common.open")} <ExternalLink className="size-3 rtl:-scale-x-100" strokeWidth={2.2} />
                 </Link>
               </Row>
             )}
           </Group>
 
-          <Group title="Diagnostic Mazed">
+          <Group title={t("listing.groups.diagnostic")}>
             <div className="mt-1">
               <DiagnosticEditor propertyId={l.id} initial={l.diagnostic} />
             </div>
@@ -295,16 +307,16 @@ export function ListingDetail({
               variant="primary"
               pending={pending}
               icon={<Check className="size-3.5" strokeWidth={2.8} />}
-              onClick={() => act({ action: "approve" }, "Annonce publiée.")}
+              onClick={() => act({ action: "approve" }, t("listing.toasts.published"))}
             >
-              Publier
+              {t("listing.actions.publish")}
             </AdminButton>
             <AdminButton
               variant="danger"
               icon={<X className="size-3.5" strokeWidth={2.6} />}
               onClick={() => setConfirm("reject")}
             >
-              Refuser
+              {t("listing.actions.reject")}
             </AdminButton>
           </>
         )}
@@ -314,16 +326,16 @@ export function ListingDetail({
             {l.payment && (
               <AdminButton
                 pending={pending}
-                onClick={() => act({ action: "mark_paid" }, "Paiement enregistré.")}
+                onClick={() => act({ action: "mark_paid" }, t("listing.toasts.paid"))}
               >
-                Marquer payée
+                {t("listing.actions.markPaid")}
               </AdminButton>
             )}
             <AdminButton
               pending={pending}
-              onClick={() => act({ action: "waive_fee" }, "Publication offerte.")}
+              onClick={() => act({ action: "waive_fee" }, t("listing.toasts.waived"))}
             >
-              Offrir
+              {t("listing.actions.waive")}
             </AdminButton>
           </>
         )}
@@ -333,9 +345,9 @@ export function ListingDetail({
             <AdminButton
               pending={pending}
               icon={<CalendarPlus className="size-3.5" strokeWidth={2.4} />}
-              onClick={() => act({ action: "extend", days: 30 }, "Prolongée de 30 jours.")}
+              onClick={() => act({ action: "extend", days: 30 }, t("listing.toasts.extended"))}
             >
-              +30 j
+              {t("listing.actions.extend")}
             </AdminButton>
             <AdminButton
               pending={pending}
@@ -348,17 +360,17 @@ export function ListingDetail({
               }
               onClick={() =>
                 featured
-                  ? act({ action: "unfeature" }, "Retirée de l'accueil.")
-                  : act({ action: "feature", days: 30 }, "Mise en avant sur l'accueil.")
+                  ? act({ action: "unfeature" }, t("listing.toasts.unfeatured"))
+                  : act({ action: "feature", days: 30 }, t("listing.toasts.featured"))
               }
             >
-              {featured ? "Retirer" : "Accueil"}
+              {featured ? t("listing.actions.unfeature") : t("listing.actions.feature")}
             </AdminButton>
             <AdminButton
               icon={<BadgeCheck className="size-3.5" strokeWidth={2.4} />}
               onClick={() => setConfirm("sold")}
             >
-              Vendue
+              {t("listing.actions.sold")}
             </AdminButton>
           </>
         )}
@@ -368,9 +380,9 @@ export function ListingDetail({
             variant="primary"
             pending={pending}
             icon={<RotateCcw className="size-3.5" strokeWidth={2.4} />}
-            onClick={() => act({ action: "republish" }, "Remise en ligne.")}
+            onClick={() => act({ action: "republish" }, t("listing.toasts.republished"))}
           >
-            Remettre en ligne
+            {t("listing.actions.republish")}
           </AdminButton>
         )}
 
@@ -379,7 +391,7 @@ export function ListingDetail({
           icon={<Pencil className="size-3.5" strokeWidth={2.4} />}
           onClick={() => setEditing((v) => !v)}
         >
-          {editing ? "Fermer" : "Modifier"}
+          {editing ? t("common.close") : t("listing.actions.edit")}
         </AdminButton>
 
         {l.status !== "archived" && (
@@ -388,7 +400,7 @@ export function ListingDetail({
             icon={<Archive className="size-3.5" strokeWidth={2.4} />}
             onClick={() => setConfirm("archive")}
           >
-            Archiver
+            {t("listing.actions.archive")}
           </AdminButton>
         )}
 
@@ -398,59 +410,59 @@ export function ListingDetail({
           icon={<Trash2 className="size-3.5" strokeWidth={2.4} />}
           onClick={() => setConfirm("delete")}
         >
-          Supprimer
+          {t("listing.actions.delete")}
         </AdminButton>
       </footer>
 
       <Confirm
         open={confirm === "reject"}
-        title="Refuser cette annonce ?"
-        body="Le vendeur reçoit le motif, et sa publication lui est rendue s'il en avait payé une."
-        confirmLabel="Refuser"
+        title={t("listing.confirm.rejectTitle")}
+        body={t("listing.confirm.rejectBody")}
+        confirmLabel={t("listing.actions.reject")}
         pending={pending}
         reason={{
-          label: "Motif (envoyé au vendeur)",
-          placeholder: "Photos floues, prix incohérent, doublon…",
+          label: t("common.reasonForSeller"),
+          placeholder: t("listing.confirm.rejectPlaceholder"),
           required: true,
         }}
         onCancel={() => setConfirm(null)}
         onConfirm={async (reason) => {
-          if (await act({ action: "reject", reason }, "Annonce refusée.")) setConfirm(null);
+          if (await act({ action: "reject", reason }, t("listing.toasts.rejected"))) setConfirm(null);
         }}
       />
       <Confirm
         open={confirm === "archive"}
-        title="Archiver cette annonce ?"
-        body="Elle disparaît du site. Rien n'est remboursé, et vous pourrez la remettre en ligne."
-        confirmLabel="Archiver"
+        title={t("listing.confirm.archiveTitle")}
+        body={t("listing.confirm.archiveBody")}
+        confirmLabel={t("listing.actions.archive")}
         variant="default"
         pending={pending}
         onCancel={() => setConfirm(null)}
         onConfirm={async () => {
-          if (await act({ action: "archive" }, "Annonce archivée.")) setConfirm(null);
+          if (await act({ action: "archive" }, t("listing.toasts.archived"))) setConfirm(null);
         }}
       />
       <Confirm
         open={confirm === "sold"}
-        title="Marquer vendue ?"
-        body="L'annonce quitte le catalogue et l'accueil, mais reste dans l'historique du vendeur."
-        confirmLabel="Marquer vendue"
+        title={t("listing.confirm.soldTitle")}
+        body={t("listing.confirm.soldBody")}
+        confirmLabel={t("listing.confirm.soldConfirm")}
         variant="primary"
         pending={pending}
         onCancel={() => setConfirm(null)}
         onConfirm={async () => {
-          if (await act({ action: "mark_sold" }, "Marquée vendue.")) setConfirm(null);
+          if (await act({ action: "mark_sold" }, t("listing.toasts.sold"))) setConfirm(null);
         }}
       />
       <Confirm
         open={confirm === "delete"}
-        title="Supprimer définitivement ?"
-        body="Irréversible. Une annonce en ligne ou déjà payée ne peut pas être supprimée — archivez-la."
-        confirmLabel="Supprimer"
+        title={t("listing.confirm.deleteTitle")}
+        body={t("listing.confirm.deleteBody")}
+        confirmLabel={t("listing.actions.delete")}
         pending={pending}
         onCancel={() => setConfirm(null)}
         onConfirm={async () => {
-          if (await act({ action: "delete" }, "Annonce supprimée.")) setConfirm(null);
+          if (await act({ action: "delete" }, t("listing.toasts.deleted"))) setConfirm(null);
         }}
       />
     </div>
@@ -465,6 +477,8 @@ export function ListingDetail({
  */
 function EditForm({ listing, onDone }: { listing: PanelListing; onDone: () => void }) {
   const { run, pending } = useAdminAction();
+  const t = useTranslations("adminOps");
+  const locale = useLocale();
   const [title, setTitle] = useState(listing.title);
   const [price, setPrice] = useState<number | null>(listing.price);
   const [negotiable, setNegotiable] = useState(listing.negotiable);
@@ -489,42 +503,42 @@ function EditForm({ listing, onDone }: { listing: PanelListing; onDone: () => vo
           description,
         },
       },
-      success: "Annonce modifiée.",
+      success: t("listing.toasts.edited"),
     });
     if (ok) onDone();
   }
 
   return (
     <div className="mt-4 border-s-2 border-[var(--gold)] ps-4">
-      <h3 className={`${EYEBROW} text-[var(--gold)]`}>Modifier</h3>
+      <h3 className={`${EYEBROW} text-[var(--gold)]`}>{t("listing.edit.title")}</h3>
       <div className="mt-3 space-y-3.5">
-        <TextField label="Titre" value={title} onChange={setTitle} required />
+        <TextField label={t("listing.edit.fieldTitle")} value={title} onChange={setTitle} required />
         <FieldGrid>
           <NumberField
-            label="Prix"
+            label={t("listing.edit.price")}
             value={price}
             onChange={setPrice}
             min={0}
-            suffix="TND"
+            suffix={currencyLabel(locale)}
             disabled={onRequest}
-            hint={onRequest ? "Désactivé : prix sur demande" : undefined}
+            hint={onRequest ? t("listing.edit.onRequestDisabled") : undefined}
           />
           <div className="flex flex-col justify-center gap-2.5 pt-2">
-            <ToggleField label="Négociable" checked={negotiable} onChange={setNegotiable} />
-            <ToggleField label="Prix sur demande" checked={onRequest} onChange={setOnRequest} />
+            <ToggleField label={t("listing.edit.negotiable")} checked={negotiable} onChange={setNegotiable} />
+            <ToggleField label={t("listing.edit.priceOnRequest")} checked={onRequest} onChange={setOnRequest} />
           </div>
         </FieldGrid>
         <FieldGrid>
-          <TextField label="Téléphone affiché" value={phone} onChange={setPhone} type="tel" />
-          <TextField label="Nom affiché" value={name} onChange={setName} />
+          <TextField label={t("listing.edit.phone")} value={phone} onChange={setPhone} type="tel" />
+          <TextField label={t("listing.edit.name")} value={name} onChange={setName} />
         </FieldGrid>
-        <TextareaField label="Description" value={description} onChange={setDescription} rows={4} />
+        <TextareaField label={t("listing.edit.description")} value={description} onChange={setDescription} rows={4} />
         <div className="flex justify-end gap-2">
           <AdminButton variant="quiet" onClick={onDone}>
-            Annuler
+            {t("common.cancel")}
           </AdminButton>
           <AdminButton variant="primary" pending={pending} onClick={save}>
-            Enregistrer
+            {t("common.save")}
           </AdminButton>
         </div>
       </div>

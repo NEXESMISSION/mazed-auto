@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import type { Popup } from "@/lib/popups/schema";
 import { PopupForm } from "../../PopupForm";
@@ -17,6 +18,7 @@ export default async function EditPopupPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const t = await getTranslations("admin.popups");
   const supabase = await getServerSupabase();
   const { data, error } = await supabase
     .from("popups")
@@ -28,12 +30,12 @@ export default async function EditPopupPage({
 
   return (
     <div>
-      <span className="batta-eyebrow">Diffusion</span>
+      <span className="batta-eyebrow">{t("eyebrow")}</span>
       <h2 className="mt-1.5 text-[24px] font-extrabold leading-tight tracking-tight">
-        Modifier le popup
+        {t("edit")}
       </h2>
       <p className="mt-1.5 text-[12px] text-muted">
-        Slug : <span className="batta-tabular font-mono">{popup.slug}</span>
+        {t("slug")} <span className="batta-tabular font-mono" dir="ltr">{popup.slug}</span>
       </p>
       <div className="mt-5">
         <PopupForm initial={popup} />

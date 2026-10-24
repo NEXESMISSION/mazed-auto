@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { X, Loader2 } from "lucide-react";
 import { SearchIcon, SearchSweep, SearchStatus } from "@/components/ui/SearchBusy";
 
@@ -24,7 +25,7 @@ export function Toolbar({
   tabParam = "status",
   defaultTab,
   search = true,
-  searchPlaceholder = "Rechercher…",
+  searchPlaceholder: searchPlaceholderProp,
   /** Params to drop on any change — e.g. the open detail, which may not exist
    *  in the new result set. */
   resetParams = ["page"],
@@ -36,6 +37,8 @@ export function Toolbar({
   searchPlaceholder?: string;
   resetParams?: string[];
 }) {
+  const t = useTranslations("admin.kit");
+  const searchPlaceholder = searchPlaceholderProp ?? t("search");
   const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
@@ -120,7 +123,7 @@ export function Toolbar({
               <button
                 type="button"
                 onClick={() => setQ("")}
-                aria-label="Effacer la recherche"
+                aria-label={t("clearSearch")}
                 className="absolute end-0 top-1/2 grid size-4 -translate-y-1/2 place-items-center text-subtle hover:text-foreground"
               >
                 <X className="size-3" strokeWidth={2.6} />

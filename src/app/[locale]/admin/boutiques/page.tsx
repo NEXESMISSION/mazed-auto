@@ -1,9 +1,13 @@
+import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServiceSupabase } from "@/lib/supabase/admin";
+import { formatDate } from "@/lib/dates";
+import { governorateLabel } from "@/lib/labels";
+import { currencyLabel } from "@/lib/utils";
+import { productName } from "@/lib/products";
 import { AdminPager } from "@/components/admin/AdminPager";
 import { FullBleed, Toolbar, EmptyState, QueueKeys, StatusPill, EYEBROW, type Tab } from "@/components/admin/kit";
 import { ROW_BASE, ROW_IDLE, ROW_SELECTED, ROW_FOCUS } from "@/components/admin/kit/surface";
-import { ACTIVITY_LABEL } from "@/lib/shops/format";
 import { ShopDetail, type ShopDetailData } from "./ShopDetail";
 import { AlertTriangle, BadgeCheck, Store } from "lucide-react";
 
@@ -22,11 +26,14 @@ export const revalidate = 0;
 
 const PAGE_SIZE = 30;
 type TabKey = "todo" | "active" | "stopped" | "all";
-const TAB_LABEL: Record<TabKey, string> = { todo: "À traiter", active: "Actives", stopped: "Suspendues", all: "Toutes" };
 const TAB_ORDER: TabKey[] = ["todo", "active", "stopped", "all"];
 const TODO_FILTER = "verification_status.eq.pending,status.eq.pending_review";
 
 type Admin = NonNullable<ReturnType<typeof getServiceSupabase>>;
+type T = Awaited<ReturnType<typeof getTranslations>>;
+
+const ACTIVITIES = ["vente_auto", "location_auto", "pieces_auto"];
+const activity = (t: T, a: string) => (ACTIVITIES.includes(a) ? t(`shops.activity.${a}`) : a);
 
 export default async function AdminBoutiquesPage({
   searchParams,
@@ -35,7 +42,9 @@ export default async function AdminBoutiquesPage({
 }) {
   const sp = await searchParams;
   const admin = getServiceSupabase();
-  if (!admin) return <p className="text-[13px] text-muted">Service non configuré.</p>;
+  const t = await getTranslations("adminOps");
+  const locale = await getLocale();
+  if (!admin) return <p className="text-[13px] text-muted">{t("common.noService")}</p>;
 
   const tab: TabKey = TAB_ORDER.includes(sp.status as TabKey) ? (sp.status as TabKey) : "todo";
   const q = (sp.q ?? "").trim().slice(0, 60).replace(/[,()*%]/g, " ").trim();
@@ -56,7 +65,7 @@ export default async function AdminBoutiquesPage({
   if (q) list = list.or(`name.ilike.%${q}%,slug.ilike.%${q}%`);
 
   const [listRes, ...countRes] = await Promise.all([list, ...TAB_ORDER.map((t) => scoped(t, true))]);
-  const tabs: Tab[] = TAB_ORDER.map((t, i) => ({ value: t, label: TAB_LABEL[t], count: countRes[i].count ?? 0 }));
+  const tabs: Tab[] = TAB_ORDER.map((k, i) => ({ value: k, label: t(`shops.tabs.${k}`), count: countRes[i].count ?? 0 }));
 
   type ShopRow = {
     id: string; name: string; slug: string; activity_type: string; governorate: string;
@@ -74,15 +83,15 @@ export default async function AdminBoutiquesPage({
 
   const openId = sp.a && /^[0-9a-f-]{36}$/i.test(sp.a) ? sp.a : null;
   const [detail, toReconcile] = await Promise.all([
-    openId ? loadShop(admin, openId) : Promise.resolve(null),
-    openId ? Promise.resolve(null) : loadToReconcile(admin),
+    openId ? loadShop(admin, openId, t, locale) : Promise.resolve(null),
+    openId ? Promise.resolve(null) : loadToReconcile(admin, t),
   ]);
 
   return (
     <FullBleed>
       <header className="flex h-12 shrink-0 items-center gap-4 border-b border-border px-4">
-        <h1 className="shrink-0 text-[13px] font-semibold tracking-tight text-foreground">Boutiques</h1>
-        <Toolbar tabs={tabs} defaultTab="todo" searchPlaceholder="Nom ou adresse de la page…" resetParams={["page", "a"]} />
+        <h1 className="shrink-0 text-[13px] font-semibold tracking-tight text-foreground">{t("shops.title")}</h1>
+        <Toolbar tabs={tabs} defaultTab="todo" searchPlaceholder={t("shops.search")} resetParams={["page", "a"]} />
       </header>
 
       <QueueKeys />
@@ -94,8 +103,8 @@ export default async function AdminBoutiquesPage({
               <EmptyState
                 Icon={Store}
                 tone={q ? "filtered" : "idle"}
-                title={q ? "Aucune boutique ne correspond" : `Rien dans « ${TAB_LABEL[tab]} »`}
-                hint={q ? "Essayez un autre nom." : undefined}
+                title={q ? t("shops.noMatch") : t("common.emptyTab", { tab: t(`shops.tabs.${tab}`) })}
+                hint={q ? t("shops.noMatchHint") : undefined}
               />
             </div>
           ) : (
@@ -122,14 +131,14 @@ export default async function AdminBoutiquesPage({
                           )}
                         </span>
                         <span className="mt-0.5 block truncate text-[11.5px] text-subtle">
-                          {ACTIVITY_LABEL[r.activity_type as keyof typeof ACTIVITY_LABEL] ?? r.activity_type} · {r.governorate}
+                          {activity(t, r.activity_type)} · {governorateLabel(r.governorate, locale)}
                         </span>
                       </span>
                       <span className="shrink-0 text-end text-[11.5px]">
                         {r.verification_status === "pending" ? (
-                          <span className="text-[var(--tone-warn)]">à vérifier</span>
+                          <span className="text-[var(--tone-warn)]">{t("shops.toVerify")}</span>
                         ) : (
-                          <span className="text-subtle">{statusShort(r.status)}</span>
+                          <span className="text-subtle">{statusShort(t, r.status)}</span>
                         )}
                       </span>
                     </Link>
@@ -152,7 +161,7 @@ export default async function AdminBoutiquesPage({
             </div>
           ) : (
             <div className="w-full overflow-y-auto px-6 py-6">
-              <ReconcilePanel items={toReconcile ?? []} />
+              <ReconcilePanel items={toReconcile ?? []} t={t} locale={locale} />
             </div>
           )}
         </div>
@@ -161,8 +170,9 @@ export default async function AdminBoutiquesPage({
   );
 }
 
-function statusShort(status: string): string {
-  return ({ draft: "brouillon", pending_review: "à ouvrir", active: "active", rejected: "refusée", suspended: "suspendue", closed: "fermée" } as Record<string, string>)[status] ?? status;
+const SHOP_STATUSES = ["draft", "pending_review", "active", "rejected", "suspended", "closed"];
+function statusShort(t: T, status: string): string {
+  return SHOP_STATUSES.includes(status) ? t(`shops.status.${status}`) : status;
 }
 
 // ── Payments that need a human ──────────────────────────────────────────────
@@ -177,7 +187,14 @@ type Reconcile = { id: string; amount: number; kind: string; label: string; why:
  * Fixing either is a decision (refund, capture by hand, give a period), made
  * from the payment or the shop, and recorded there.
  */
-async function loadToReconcile(admin: Admin): Promise<Reconcile[]> {
+const MISMATCH_WHY: Record<string, string> = {
+  "mismatch:amount": "amount",
+  "mismatch:currency": "currency",
+  "mismatch:order_id": "orderId",
+  "mismatch:order_id_missing": "orderIdMissing",
+};
+
+async function loadToReconcile(admin: Admin, t: T): Promise<Reconcile[]> {
   const since = new Date(Date.now() - 90 * 86_400_000).toISOString();
   const [mismatchRes, capturedRes] = await Promise.all([
     admin
@@ -206,8 +223,8 @@ async function loadToReconcile(admin: Admin): Promise<Reconcile[]> {
     seen.add(p.id);
     out.push({
       id: p.id, amount: Number(p.amount), kind: p.kind, at: e.created_at,
-      label: p.kind === "subscription" ? "Abonnement" : "Boost",
-      why: { "mismatch:amount": "montant inférieur à la commande", "mismatch:currency": "devise inattendue", "mismatch:order_id": "référence de commande différente", "mismatch:order_id_missing": "référence de commande absente" }[e.outcome] ?? e.outcome,
+      label: p.kind === "subscription" ? t("shops.reconcile.subscription") : t("shops.reconcile.boost"),
+      why: MISMATCH_WHY[e.outcome] ? t(`shops.reconcile.why.${MISMATCH_WHY[e.outcome]}`) : e.outcome,
     });
   }
 
@@ -225,23 +242,22 @@ async function loadToReconcile(admin: Admin): Promise<Reconcile[]> {
       if (granted.has(p.id)) continue;
       out.push({
         id: p.id, amount: Number(p.amount), kind: p.kind, at: p.updated_at,
-        label: p.kind === "subscription" ? "Abonnement" : "Boost",
-        why: p.kind === "subscription" ? "payé, sans période ouverte" : "payé, sans boost",
+        label: p.kind === "subscription" ? t("shops.reconcile.subscription") : t("shops.reconcile.boost"),
+        why: p.kind === "subscription" ? t("shops.reconcile.why.noPeriod") : t("shops.reconcile.why.noBoost"),
       });
     }
   }
   return out;
 }
 
-function ReconcilePanel({ items }: { items: Reconcile[] }) {
-  const dt = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
+function ReconcilePanel({ items, t, locale }: { items: Reconcile[]; t: T; locale: string }) {
+  const dt = (iso: string) => formatDate(iso, locale, { day: "2-digit", month: "short" });
   return (
     <section className="mx-auto max-w-xl">
-      <h2 className={EYEBROW}>Paiements à réconcilier · 90 jours</h2>
+      <h2 className={EYEBROW}>{t("shops.reconcile.title")}</h2>
       {items.length === 0 ? (
         <p className="mt-3 text-[12.5px] text-subtle">
-          Rien à signaler : chaque paiement confirmé a ouvert sa période ou son boost, et aucun
-          retour de Konnect n&apos;a contredit une commande. Choisissez une boutique à gauche.
+          {t("shops.reconcile.empty")}
         </p>
       ) : (
         <ul className="mt-3 divide-y divide-border/70 rounded-xl border border-border">
@@ -250,7 +266,7 @@ function ReconcilePanel({ items }: { items: Reconcile[] }) {
               <Link href={`/admin/paiements?a=${r.id}` as "/admin/paiements"} className="flex items-start gap-3 px-3.5 py-2.5 hover:bg-surface-2">
                 <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-[var(--tone-warn)]" />
                 <span className="min-w-0 flex-1 text-[12.5px]">
-                  <span className="font-medium text-foreground">{r.label} · <span className="batta-tabular">{r.amount.toFixed(3)} TND</span></span>
+                  <span className="font-medium text-foreground">{r.label} · <span className="batta-tabular">{r.amount.toFixed(3)} {currencyLabel(locale)}</span></span>
                   <span className="block text-[11.5px] text-subtle">{r.why}</span>
                 </span>
                 <span className="shrink-0 text-[11.5px] text-subtle">{dt(r.at)}</span>
@@ -265,7 +281,7 @@ function ReconcilePanel({ items }: { items: Reconcile[] }) {
 
 // ── One shop ────────────────────────────────────────────────────────────────
 
-async function loadShop(admin: Admin, id: string): Promise<ShopDetailData | null> {
+async function loadShop(admin: Admin, id: string, t: T, locale: string): Promise<ShopDetailData | null> {
   const { data: s } = await admin
     .from("shops")
     .select("id, name, slug, activity_type, description, governorate, city, address, phone, whatsapp, status, verification_status, verified_at, rejection_reason, created_at, owner_id")
@@ -277,10 +293,10 @@ async function loadShop(admin: Admin, id: string): Promise<ShopDetailData | null
     admin.from("profiles").select("full_name, phone").eq("id", s.owner_id).maybeSingle(),
     admin.from("shop_private").select("legal_name, tax_id, rne_number, legal_address, contact_email").eq("shop_id", id).maybeSingle(),
     admin.from("shop_documents").select("id, kind, status, note, created_at, reviewed_at").eq("shop_id", id).order("created_at", { ascending: false }),
-    admin.from("subscriptions").select("id, starts_at, ends_at, grace_ends_at, status, reason, payment_id, product:products (name_fr)").eq("shop_id", id).order("starts_at", { ascending: false }).limit(12),
+    admin.from("subscriptions").select("id, starts_at, ends_at, grace_ends_at, status, reason, payment_id, product:products (name_fr, name_ar)").eq("shop_id", id).order("starts_at", { ascending: false }).limit(12),
     admin.from("payments").select("id, kind, amount, status, provider, created_at, receipt_number").eq("shop_id", id).order("created_at", { ascending: false }).limit(12),
     admin.from("listings").select("status").eq("shop_id", id),
-    admin.from("products").select("plan_code, name_fr, is_active").eq("kind", "subscription").not("plan_code", "is", null).order("sort_order"),
+    admin.from("products").select("plan_code, name_fr, name_ar, is_active").eq("kind", "subscription").not("plan_code", "is", null).order("sort_order"),
     admin.from("audit_logs").select("id, actor_id, entity, action, before, after, reason, created_at").eq("entity", "shop").eq("entity_id", id).order("created_at", { ascending: false }).limit(30),
     admin.from("audit_logs").select("id, actor_id, entity, action, before, after, reason, created_at").eq("entity", "shop_document").eq("after->>shop_id", id).order("created_at", { ascending: false }).limit(30),
     admin.from("audit_logs").select("id, actor_id, entity, action, before, after, reason, created_at").eq("entity", "listing").eq("after->>shop_id", id).order("created_at", { ascending: false }).limit(30),
@@ -298,7 +314,10 @@ async function loadShop(admin: Admin, id: string): Promise<ShopDetailData | null
   const { data: actors } = actorIds.length
     ? await admin.from("profiles").select("id, full_name, role").in("id", actorIds)
     : { data: [] };
-  const actorName = new Map((actors ?? []).map((a) => [a.id as string, `${(a.full_name as string | null) ?? "Sans nom"}${a.role === "admin" ? " (admin)" : ""}`]));
+  const actorName = new Map((actors ?? []).map((a) => {
+    const name = (a.full_name as string | null) ?? t("common.noName");
+    return [a.id as string, a.role === "admin" ? t("shops.adminSuffix", { name }) : name] as [string, string];
+  }));
 
   const counts: Record<string, number> = {};
   for (const l of listingsRes.data ?? []) counts[l.status as string] = (counts[l.status as string] ?? 0) + 1;
@@ -308,9 +327,9 @@ async function loadShop(admin: Admin, id: string): Promise<ShopDetailData | null
     id: s.id as string,
     name: s.name as string,
     slug: s.slug as string,
-    activity: ACTIVITY_LABEL[s.activity_type as keyof typeof ACTIVITY_LABEL] ?? (s.activity_type as string),
+    activity: activity(t, s.activity_type as string),
     description: (s.description as string | null) ?? null,
-    place: [s.address, s.city, s.governorate].filter(Boolean).join(", "),
+    place: [s.address, s.city, governorateLabel(s.governorate as string | null, locale)].filter(Boolean).join(locale === "ar" ? "، " : ", "),
     phone: (s.phone as string | null) ?? null,
     whatsapp: (s.whatsapp as string | null) ?? null,
     status: s.status as string,
@@ -318,7 +337,7 @@ async function loadShop(admin: Admin, id: string): Promise<ShopDetailData | null
     verifiedAt: (s.verified_at as string | null) ?? null,
     rejectionReason: (s.rejection_reason as string | null) ?? null,
     createdAt: s.created_at as string,
-    owner: { id: s.owner_id as string, name: (ownerRes.data?.full_name as string | null) ?? "Sans nom", phone: (ownerRes.data?.phone as string | null) ?? null },
+    owner: { id: s.owner_id as string, name: (ownerRes.data?.full_name as string | null) ?? t("common.noName"), phone: (ownerRes.data?.phone as string | null) ?? null },
     legal: privRes.data
       ? {
           name: (privRes.data.legal_name as string | null) ?? null,
@@ -334,20 +353,26 @@ async function loadShop(admin: Admin, id: string): Promise<ShopDetailData | null
     })),
     periods: (subsRes.data ?? []).map((p) => ({
       id: p.id as string,
-      plan: one(p.product as { name_fr: string } | { name_fr: string }[] | null)?.name_fr ?? "—",
+      plan: (() => {
+        const prod = one(p.product as { name_fr: string; name_ar: string | null } | { name_fr: string; name_ar: string | null }[] | null);
+        return prod ? productName({ nameFr: prod.name_fr, nameAr: prod.name_ar }, locale) : "—";
+      })(),
       startsAt: p.starts_at as string, endsAt: p.ends_at as string, graceEndsAt: p.grace_ends_at as string,
       status: p.status as string,
-      origin: p.payment_id ? "payée" : (p.reason as string | null) ?? "offerte",
+      origin: p.payment_id ? t("shops.origin.paid") : (p.reason as string | null) ?? t("shops.origin.offered"),
     })),
     payments: (paysRes.data ?? []).map((p) => ({
       id: p.id as string, kind: p.kind as string, amount: Number(p.amount), status: p.status as string,
       provider: p.provider as string, createdAt: p.created_at as string, receipt: (p.receipt_number as string | null) ?? null,
     })),
     listings: counts,
-    plans: (plansRes.data ?? []).map((p) => ({ code: p.plan_code as string, label: `${p.name_fr as string}${p.is_active ? "" : " (non vendue)"}` })),
+    plans: (plansRes.data ?? []).map((p) => {
+      const name = productName({ nameFr: p.name_fr as string, nameAr: (p.name_ar as string | null) ?? null }, locale);
+      return { code: p.plan_code as string, label: p.is_active ? name : t("shops.notSold", { name }) };
+    }),
     audit: trail.map((a) => ({
       id: a.id, at: a.created_at, entity: a.entity, action: a.action,
-      actor: a.actor_id ? actorName.get(a.actor_id) ?? "Compte supprimé" : "Système",
+      actor: a.actor_id ? actorName.get(a.actor_id) ?? t("shops.deletedAccount") : t("shops.system"),
       before: a.before, after: a.after, reason: a.reason,
     })),
   };

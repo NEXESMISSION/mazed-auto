@@ -3,6 +3,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
+import { apiTranslations } from "@/i18n/api";
 import {
   normalizePhotos,
   normalizeSections,
@@ -104,7 +105,7 @@ export async function PUT(
     return NextResponse.json(
       {
         error: "diagnostic_empty",
-        detail: "Ajoutez au moins un contrôle, une photo ou un résumé avant de publier.",
+        detail: (await apiTranslations(req, "adminOps.api"))("diagnosticEmpty"),
       },
       { status: 400 },
     );

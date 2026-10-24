@@ -1,4 +1,6 @@
+import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
+import { categoryLabel } from "@/lib/labels";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { FullBleed, EmptyState, EYEBROW } from "@/components/admin/kit";
 import { ROW_BASE, ROW_IDLE, ROW_SELECTED, ROW_FOCUS } from "@/components/admin/kit/surface";
@@ -29,13 +31,15 @@ export default async function AdminCataloguePage({
   searchParams: Promise<{ a?: string }>;
 }) {
   const sp = await searchParams;
+  const t = await getTranslations("admin.catalogue");
+  const locale = await getLocale();
   const admin = getServiceSupabase();
-  if (!admin) return <p className="text-[13px] text-muted">Service non configuré.</p>;
+  if (!admin) return <p className="text-[13px] text-muted">{t("unconfigured")}</p>;
 
   const [catRes, attrRes, listingRes] = await Promise.all([
     admin
       .from("categories")
-      .select("id, parent_id, slug, label_fr, kind, sort_order, is_active")
+      .select("id, parent_id, slug, label_fr, label_ar, kind, sort_order, is_active")
       .order("sort_order"),
     admin
       .from("category_attributes")
@@ -47,7 +51,7 @@ export default async function AdminCataloguePage({
   ]);
 
   type Cat = {
-    id: string; parent_id: string | null; slug: string; label_fr: string;
+    id: string; parent_id: string | null; slug: string; label_fr: string; label_ar: string | null;
     kind: string; sort_order: number; is_active: boolean;
   };
   type Attr = {
@@ -98,11 +102,10 @@ export default async function AdminCataloguePage({
     <FullBleed>
       <header className="flex h-12 shrink-0 items-center gap-4 border-b border-border px-4">
         <h1 className="shrink-0 text-[13px] font-semibold tracking-tight text-foreground">
-          Catalogue
+          {t("title")}
         </h1>
         <span className="text-[11.5px] text-subtle">
-          {cats.filter((c) => c.parent_id !== null).length} catégories · {attrs.length}{" "}
-          caractéristiques
+          {t("summary", { categories: cats.filter((c) => c.parent_id !== null).length, attributes: attrs.length })}
         </span>
       </header>
 
@@ -114,7 +117,7 @@ export default async function AdminCataloguePage({
         >
           {cats.length === 0 ? (
             <div className="p-5">
-              <EmptyState Icon={FolderTree} title="Aucune catégorie" />
+              <EmptyState Icon={FolderTree} title={t("noCategories")} />
             </div>
           ) : (
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
@@ -123,7 +126,7 @@ export default async function AdminCataloguePage({
                 return (
                   <section key={parent.id}>
                     <h2 className={`${EYEBROW} border-b border-border px-4 py-1.5`}>
-                      {parent.label_fr}
+                      {categoryLabel(parent, locale)}
                     </h2>
                     <ul className="divide-y divide-border/70">
                       {children.map((c) => {
@@ -151,11 +154,11 @@ export default async function AdminCataloguePage({
                                       : "font-medium text-foreground/90"
                                   }`}
                                 >
-                                  {c.label_fr}
+                                  {categoryLabel(c, locale)}
                                 </span>
                                 <span className="mt-0.5 block truncate text-[11.5px] text-subtle">
-                                  {nAttrs} caractéristique{nAttrs === 1 ? "" : "s"}
-                                  {nListings > 0 ? ` · ${nListings} annonce${nListings === 1 ? "" : "s"}` : ""}
+                                  {t("attributesCount", { count: nAttrs })}
+                                  {nListings > 0 ? ` · ${t("listingsCount", { count: nListings })}` : ""}
                                 </span>
                               </span>
                             </Link>
@@ -175,18 +178,17 @@ export default async function AdminCataloguePage({
             <div className="w-full">
               <AttributeEditor
                 categoryId={selected.id}
-                categoryLabel={selected.label_fr}
+                categoryLabel={categoryLabel(selected, locale)}
                 attributes={selectedAttrs}
               />
             </div>
           ) : (
             <div className="grid w-full place-items-center px-6">
               <p className="max-w-xs text-center text-[12.5px] text-subtle">
-                Choisissez une catégorie à gauche.
+                {t("pick")}
                 <br />
                 <span className="text-[11.5px]">
-                  Ce que vous définissez ici est ce que le vendeur remplit, et ce sur quoi
-                  l'acheteur filtre.
+                  {t("pickHint")}
                 </span>
               </p>
             </div>

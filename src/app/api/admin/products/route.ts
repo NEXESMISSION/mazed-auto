@@ -3,6 +3,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
+import { apiTranslations } from "@/i18n/api";
 import { PRODUCT_KINDS, PRODUCT_SELECT, type ProductKind } from "@/lib/products";
 
 /**
@@ -106,13 +107,13 @@ export async function POST(req: NextRequest) {
   // into a sentence the admin can act on.
   if ((kind === "listing_pack" || kind === "subscription") && !quota) {
     return NextResponse.json(
-      { error: "quota_required", detail: "Un pack doit accorder au moins une publication." },
+      { error: "quota_required", detail: (await apiTranslations(req, "admin.api.products"))("quotaRequired") },
       { status: 400 },
     );
   }
   if (kind === "badge_verified" && !duration) {
     return NextResponse.json(
-      { error: "duration_required", detail: "Le badge doit avoir une durée de validité." },
+      { error: "duration_required", detail: (await apiTranslations(req, "admin.api.products"))("durationRequired") },
       { status: 400 },
     );
   }
@@ -142,7 +143,7 @@ export async function POST(req: NextRequest) {
   if (error) {
     if (error.code === "23505") {
       return NextResponse.json(
-        { error: "slug_taken", detail: "Un produit porte déjà ce nom." },
+        { error: "slug_taken", detail: (await apiTranslations(req, "admin.api.products"))("slugTaken") },
         { status: 409 },
       );
     }
@@ -190,9 +191,7 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json(
         {
           error: "invalid_product",
-          detail:
-            "Vérifiez la cohérence : un pack a besoin d'un quota, un badge d'une durée, " +
-            "et une seule annonce à l'unité peut être active par catégorie.",
+          detail: (await apiTranslations(req, "admin.api.products"))("invalidProduct"),
         },
         { status: 400 },
       );

@@ -52,46 +52,51 @@ export const TONE_TEXT: Record<Tone, string> = {
  * `payment_status` and `user_role`. Keys are the raw DB values; nothing else
  * in the admin should translate them.
  *
+ * Each carries its French and its Arabic. They are database values, read by
+ * server and client screens alike, so — like src/lib/labels.ts — the words
+ * live beside the values rather than in the messages: a caller passes its
+ * locale (`statusLabel(s, locale)`) and gets the console's language.
+ *
  * The auction-era statuses (`ready`, `ended_sold`, `sixth_offer_window`…) are
  * deliberately absent: their tables hold zero rows, and a label here would be
  * an invitation to build another screen on top of them.
  */
-type Entry = { label: string; tone: Tone };
+type Entry = { label: string; ar: string; tone: Tone };
 
 const STATUS: Record<string, Entry> = {
   // listing_status
-  draft: { label: "Brouillon", tone: "neutral" },
-  pending_payment: { label: "Paiement attendu", tone: "warn" },
-  pending_review: { label: "À valider", tone: "warn" },
-  published: { label: "Publiée", tone: "ok" },
-  rejected: { label: "Refusée", tone: "bad" },
-  expired: { label: "Expirée", tone: "neutral" },
-  archived: { label: "Archivée", tone: "neutral" },
-  sold: { label: "Vendue", tone: "info" },
-  paused: { label: "En pause", tone: "warn" },
+  draft: { label: "Brouillon", ar: "مسودّة", tone: "neutral" },
+  pending_payment: { label: "Paiement attendu", ar: "في انتظار الدفع", tone: "warn" },
+  pending_review: { label: "À valider", ar: "للمراجعة", tone: "warn" },
+  published: { label: "Publiée", ar: "منشور", tone: "ok" },
+  rejected: { label: "Refusée", ar: "مرفوض", tone: "bad" },
+  expired: { label: "Expirée", ar: "منتهي", tone: "neutral" },
+  archived: { label: "Archivée", ar: "مؤرشف", tone: "neutral" },
+  sold: { label: "Vendue", ar: "مُباع", tone: "info" },
+  paused: { label: "En pause", ar: "متوقّف مؤقتًا", tone: "warn" },
 
   // shops (0185) — draft, pending_review and rejected read as above
-  active: { label: "Active", tone: "ok" },
-  suspended: { label: "Suspendue", tone: "bad" },
-  closed: { label: "Fermée", tone: "neutral" },
+  active: { label: "Active", ar: "نشط", tone: "ok" },
+  suspended: { label: "Suspendue", ar: "معلّق", tone: "bad" },
+  closed: { label: "Fermée", ar: "مغلق", tone: "neutral" },
   // shops.verification_status and shop_documents.status
-  unverified: { label: "Non vérifiée", tone: "neutral" },
-  verified: { label: "Vérifiée", tone: "info" },
-  submitted: { label: "À examiner", tone: "warn" },
-  accepted: { label: "Accepté", tone: "ok" },
+  unverified: { label: "Non vérifiée", ar: "غير موثّق", tone: "neutral" },
+  verified: { label: "Vérifiée", ar: "موثّق", tone: "info" },
+  submitted: { label: "À examiner", ar: "للفحص", tone: "warn" },
+  accepted: { label: "Accepté", ar: "مقبول", tone: "ok" },
 
   // payment_status — `pending_review` is shared with listings above and means
   // the same thing to an admin: a human has to look at it.
-  pending: { label: "En attente", tone: "warn" },
-  authorized: { label: "Autorisé", tone: "info" },
-  captured: { label: "Validé", tone: "ok" },
-  refunded: { label: "Remboursé", tone: "neutral" },
-  failed: { label: "Refusé", tone: "bad" },
+  pending: { label: "En attente", ar: "في الانتظار", tone: "warn" },
+  authorized: { label: "Autorisé", ar: "مُرخَّص", tone: "info" },
+  captured: { label: "Validé", ar: "مؤكَّد", tone: "ok" },
+  refunded: { label: "Remboursé", ar: "مُسترجَع", tone: "neutral" },
+  failed: { label: "Refusé", ar: "مرفوض", tone: "bad" },
 
   // user_role — bank / bailiff / inspector are dropped in v3 (PIVOT-PLAN D6).
-  individual: { label: "Particulier", tone: "neutral" },
-  agency: { label: "Agence", tone: "info" },
-  admin: { label: "Admin", tone: "info" },
+  individual: { label: "Particulier", ar: "خاص", tone: "neutral" },
+  agency: { label: "Agence", ar: "وكالة", tone: "info" },
+  admin: { label: "Admin", ar: "مشرف", tone: "info" },
 };
 
 export function statusTone(status: string | null | undefined): Tone {
@@ -100,9 +105,11 @@ export function statusTone(status: string | null | undefined): Tone {
 
 /** Falls back to the raw value rather than to "—": an unlabelled status on
  *  screen is a bug report, and hiding it makes it unreportable. */
-export function statusLabel(status: string | null | undefined): string {
+export function statusLabel(status: string | null | undefined, locale: string = "fr"): string {
   if (!status) return "—";
-  return STATUS[status]?.label ?? status;
+  const entry = STATUS[status];
+  if (!entry) return status;
+  return locale === "ar" ? entry.ar : entry.label;
 }
 
 /** What each payment kind is, in the words the console shows. Mirrors the
@@ -117,7 +124,16 @@ export const PAYMENT_KIND_LABEL: Record<string, string> = {
   renewal: "Renouvellement",
 };
 
-export function paymentKindLabel(kind: string | null | undefined): string {
+const PAYMENT_KIND_AR: Record<string, string> = {
+  listing_fee: "نشر",
+  listing_pack: "باقة إعلانات",
+  subscription: "اشتراك",
+  promo: "إبراز",
+  badge: "شارة موثّق",
+  renewal: "تجديد",
+};
+
+export function paymentKindLabel(kind: string | null | undefined, locale: string = "fr"): string {
   if (!kind) return "—";
-  return PAYMENT_KIND_LABEL[kind] ?? kind;
+  return (locale === "ar" ? PAYMENT_KIND_AR[kind] : PAYMENT_KIND_LABEL[kind]) ?? kind;
 }

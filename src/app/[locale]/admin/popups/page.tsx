@@ -4,7 +4,9 @@
  * This module is an async Server Component — it runs once, per request, on the
  * server, and reading the clock is the correct way to answer "what is overdue"
  * or "which badge has lapsed". There is no render to replay. */
+import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
+import { formatDate } from "@/lib/dates";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import type { Popup, PopupStatus, PopupVariant } from "@/lib/popups/schema";
@@ -26,7 +28,11 @@ export const revalidate = 0;
  *
  * Auth is enforced by the admin layout one level up (role=admin redirect).
  */
+type T = Awaited<ReturnType<typeof getTranslations>>;
+
 export default async function AdminPopupsPage() {
+  const t = await getTranslations("admin.popups");
+  const locale = await getLocale();
   const supabase = await getServerSupabase();
   const { data: rows } = await supabase
     .from("popups")
@@ -68,31 +74,31 @@ export default async function AdminPopupsPage() {
     <div>
       <SiteTabs />
       <AdminPageHeader
-        eyebrow="Diffusion"
-        title="Popups"
-        description="Bannières, modales et bottom-sheets affichées sur le site. Chaque popup cible un public, des pages et une fenêtre temporelle."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t("description")}
         actions={
           <Link
             href={"/admin/popups/new" as never}
             className="batta-btn-luxe tap-target inline-flex shrink-0 items-center gap-1.5 px-4 py-2 text-[12px]"
           >
             <PlusCircle className="size-4" strokeWidth={2.2} />
-            Nouveau popup
+            {t("new")}
           </Link>
         }
       />
 
       {/* Stat tiles */}
       <div className="mt-5 grid grid-cols-3 gap-3">
-        <StatTile value={live} label="En ligne" tone="ok" />
-        <StatTile value={scheduled} label="Programmés" tone="info" />
-        <StatTile value={draft} label="Brouillons" tone="muted" />
+        <StatTile value={live} label={t("stats.live")} tone="ok" />
+        <StatTile value={scheduled} label={t("stats.scheduled")} tone="info" />
+        <StatTile value={draft} label={t("stats.drafts")} tone="muted" />
       </div>
 
       {/* List */}
       <section className="mt-6">
         {popups.length === 0 ? (
-          <EmptyState />
+          <EmptyState t={t} />
         ) : (
           <ul className="space-y-2">
             {popups.map((p) => (
@@ -100,6 +106,8 @@ export default async function AdminPopupsPage() {
                 key={p.id}
                 popup={p}
                 stats={stats.get(p.id) ?? { impressions: 0, clicks: 0 }}
+                t={t}
+                locale={locale}
               />
             ))}
           </ul>
@@ -126,7 +134,7 @@ function StatTile({
         : "bg-foreground/30";
   return (
     <div className="relative overflow-hidden rounded-2xl bg-surface p-4 ring-1 ring-border">
-      <span aria-hidden className={`absolute left-3 top-3 size-1.5 rounded-full ${accent}`} />
+      <span aria-hidden className={`absolute start-3 top-3 size-1.5 rounded-full ${accent}`} />
       <div className="batta-tabular mt-3 text-[28px] font-extrabold leading-none">
         {value.toLocaleString("fr-FR")}
       </div>
@@ -140,11 +148,18 @@ function StatTile({
 function PopupRow({
   popup,
   stats,
+  t,
+  locale,
 }: {
   popup: Popup;
   stats: { impressions: number; clicks: number };
+  t: T;
+  locale: string;
 }) {
-  const title = popup.title.fr ?? popup.title.ar ?? popup.title.en ?? popup.slug;
+  // The popup's own title in the console's language when it has one.
+  const title =
+    (locale === "ar" ? popup.title.ar ?? popup.title.fr : popup.title.fr ?? popup.title.ar)
+    ?? popup.title.en ?? popup.slug;
   const ctr =
     stats.impressions > 0
       ? `${Math.round((stats.clicks / stats.impressions) * 100)}%`
@@ -167,22 +182,22 @@ function PopupRow({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="truncate text-[14px] font-bold text-foreground">{title}</span>
-            <StatusPill status={popup.status} />
-            <VariantPill variant={popup.variant} />
+            <StatusPill status={popup.status} t={t} />
+            <VariantPill variant={popup.variant} t={t} />
             {popup.force_action && (
               <span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9.5px] font-extrabold uppercase tracking-wider ring-1 ${TONE_CLASS.bad}`}>
                 <ShieldAlert className="size-2.5" strokeWidth={2.5} />
-                Bloquant
+                {t("blocking")}
               </span>
             )}
           </div>
           <div className="mt-0.5 truncate text-[11px] text-muted">
-            {popup.slug} · {popup.mode === "rule" ? "Règle permanente" : "Diffusion"}
+            {popup.slug} · {popup.mode === "rule" ? t("modeRule") : t("modeBroadcast")}
             {popup.starts_at && (
               <>
                 {" · "}
                 <Calendar className="inline size-3" strokeWidth={2} />{" "}
-                {new Date(popup.starts_at).toLocaleDateString("fr-FR")}
+                {formatDate(popup.starts_at, locale, { day: "2-digit", month: "2-digit", year: "numeric" })}
               </>
             )}
           </div>
@@ -198,58 +213,51 @@ function PopupRow({
             <span>CTR&nbsp;{ctr}</span>
           </div>
         </div>
-        <ChevronRight className="size-4 shrink-0 text-muted" strokeWidth={2.2} />
+        <ChevronRight className="size-4 shrink-0 text-muted rtl:-scale-x-100" strokeWidth={2.2} />
       </Link>
     </li>
   );
 }
 
-function StatusPill({ status }: { status: PopupStatus }) {
-  const map: Record<PopupStatus, { label: string; tone: string }> = {
-    draft:    { label: "Brouillon",   tone: "bg-surface-2 text-muted ring-1 ring-border" },
-    live:     { label: "En ligne",    tone: `${TONE_CLASS.ok} ring-1` },
-    paused:   { label: "En pause",    tone: `${TONE_CLASS.warn} ring-1` },
-    archived: { label: "Archivé",     tone: "bg-surface-2 text-muted ring-1 ring-border" },
+function StatusPill({ status, t }: { status: PopupStatus; t: T }) {
+  const tone: Record<PopupStatus, string> = {
+    draft:    "bg-surface-2 text-muted ring-1 ring-border",
+    live:     `${TONE_CLASS.ok} ring-1`,
+    paused:   `${TONE_CLASS.warn} ring-1`,
+    archived: "bg-surface-2 text-muted ring-1 ring-border",
   };
-  const v = map[status];
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9.5px] font-extrabold uppercase tracking-wider ${v.tone}`}>
-      {v.label}
+    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9.5px] font-extrabold uppercase tracking-wider ${tone[status]}`}>
+      {t(`status.${status}`)}
     </span>
   );
 }
 
-function VariantPill({ variant }: { variant: PopupVariant }) {
-  const labels: Record<PopupVariant, string> = {
-    banner: "Bannière",
-    modal: "Modale",
-    sheet: "Sheet",
-  };
+function VariantPill({ variant, t }: { variant: PopupVariant; t: T }) {
   return (
     <span className="inline-flex items-center gap-1 rounded-full bg-gold-faint px-2 py-0.5 text-[9.5px] font-extrabold uppercase tracking-wider text-gold-bright">
-      {labels[variant]}
+      {t(`variant.${variant}`)}
     </span>
   );
 }
 
-function EmptyState() {
+function EmptyState({ t }: { t: T }) {
   return (
     <div className="batta-frame-gold relative mt-2 px-6 py-10 text-center">
       <div className="relative">
         <span className="batta-monogram batta-monogram-filled mx-auto mb-4 size-12 text-[20px]">
           <MessageSquare className="size-5" strokeWidth={2} />
         </span>
-        <p className="text-[18px] font-bold text-foreground">Aucun popup configuré.</p>
+        <p className="text-[18px] font-bold text-foreground">{t("emptyTitle")}</p>
         <p className="mt-2 text-[12px] text-muted">
-          Créez votre première bannière, modale ou bottom-sheet pour
-          accueillir, alerter ou guider vos utilisateurs.
+          {t("emptyBody")}
         </p>
         <Link
           href={"/admin/popups/new" as never}
           className="batta-btn-luxe tap-target mt-5 inline-flex items-center gap-1.5 px-5 py-2.5 text-[12.5px]"
         >
           <PlusCircle className="size-4" strokeWidth={2.2} />
-          Nouveau popup
+          {t("new")}
         </Link>
       </div>
     </div>

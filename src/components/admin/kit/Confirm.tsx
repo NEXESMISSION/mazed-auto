@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { AlertTriangle } from "lucide-react";
 import { AdminButton, adminBtn, type AdminButtonVariant } from "../AdminButton";
 
@@ -20,7 +21,7 @@ export function Confirm({
   open,
   title,
   body,
-  confirmLabel = "Confirmer",
+  confirmLabel,
   variant = "danger",
   pending = false,
   reason,
@@ -38,6 +39,7 @@ export function Confirm({
   onConfirm: (reason: string) => void;
   onCancel: () => void;
 }) {
+  const t = useTranslations("admin.kit");
   const [text, setText] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
@@ -107,7 +109,7 @@ export function Confirm({
           {/* A plain button, not <AdminButton>, because this one needs a ref:
               it is what receives focus when the dialog opens. */}
           <button ref={cancelRef} type="button" onClick={onCancel} className={adminBtn("ghost", "md")}>
-            Annuler
+            {t("cancel")}
           </button>
           <AdminButton
             variant={variant}
@@ -115,10 +117,10 @@ export function Confirm({
             type="button"
             pending={pending}
             disabled={blocked}
-            disabledReason={blocked ? "Renseignez le motif." : undefined}
+            disabledReason={blocked ? t("reasonRequired") : undefined}
             onClick={() => onConfirm(text.trim())}
           >
-            {confirmLabel}
+            {confirmLabel ?? t("confirm")}
           </AdminButton>
         </div>
       </div>

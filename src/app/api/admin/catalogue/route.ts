@@ -3,6 +3,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
+import { apiTranslations } from "@/i18n/api";
 
 /**
  * Categories and their attributes — the shape of an annonce.
@@ -51,6 +52,8 @@ export async function POST(req: NextRequest) {
   const gate = await requireAdmin(req);
   if (gate instanceof NextResponse) return gate;
   const { user } = gate;
+  // The console's language, for the `detail` sentences an admin reads.
+  const t = await apiTranslations(req, "admin.api.catalogue");
 
   const admin = getServiceSupabase();
   if (!admin) return fail("server_misconfigured", 500);
@@ -62,7 +65,7 @@ export async function POST(req: NextRequest) {
   if (action === "category.save") {
     const label = text(body.label_fr, 80);
     if (!label) {
-      return NextResponse.json({ error: "invalid", detail: "Le nom est obligatoire." }, { status: 400 });
+      return NextResponse.json({ error: "invalid", detail: t("nameRequired") }, { status: 400 });
     }
     const kind = typeof body.kind === "string" && CATEGORY_KINDS.has(body.kind) ? body.kind : "vehicle";
     const id = text(body.id, 40);
@@ -91,7 +94,7 @@ export async function POST(req: NextRequest) {
     if (error) {
       if (error.code === "23505") {
         return NextResponse.json(
-          { error: "conflict", detail: "Une catégorie porte déjà ce nom." },
+          { error: "conflict", detail: t("categoryExists") },
           { status: 409 },
         );
       }
@@ -118,7 +121,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(
           {
             error: "in_use",
-            detail: `${count} annonce(s) publiée(s) sont dans cette catégorie. Déplacez-les d'abord.`,
+            detail: t("categoryInUse", { count: count ?? 0 }),
           },
           { status: 409 },
         );
@@ -138,7 +141,7 @@ export async function POST(req: NextRequest) {
     const label = text(body.label, 80);
     if (!categoryId || !label) {
       return NextResponse.json(
-        { error: "invalid", detail: "Catégorie et libellé sont obligatoires." },
+        { error: "invalid", detail: t("attributeRequired") },
         { status: 400 },
       );
     }
@@ -162,7 +165,7 @@ export async function POST(req: NextRequest) {
         .slice(0, 60);
       if (options.length === 0) {
         return NextResponse.json(
-          { error: "invalid", detail: "Une liste doit avoir au moins une option." },
+          { error: "invalid", detail: t("optionsRequired") },
           { status: 400 },
         );
       }
@@ -192,7 +195,7 @@ export async function POST(req: NextRequest) {
 
     const fieldKey = text(body.field_key, 40) ? slugKey(text(body.field_key, 40)!) : slugKey(label);
     if (!fieldKey) {
-      return NextResponse.json({ error: "invalid", detail: "Clé invalide." }, { status: 400 });
+      return NextResponse.json({ error: "invalid", detail: t("invalidKey") }, { status: 400 });
     }
 
     const { data, error } = await admin
@@ -203,7 +206,7 @@ export async function POST(req: NextRequest) {
     if (error) {
       if (error.code === "23505") {
         return NextResponse.json(
-          { error: "conflict", detail: "Cette caractéristique existe déjà dans la catégorie." },
+          { error: "conflict", detail: t("attributeExists") },
           { status: 409 },
         );
       }
@@ -237,7 +240,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           error: "in_use",
-          detail: `${count} annonce(s) utilisent « ${attr.label} ». Retirez-la du formulaire plutôt que de la supprimer.`,
+          detail: t("attributeInUse", { count: count ?? 0, label: attr.label }),
         },
         { status: 409 },
       );

@@ -2,6 +2,7 @@ import { redirect } from "@/i18n/navigation";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { getAdminSession } from "@/lib/admin/session";
 import { AdminRail, AdminMobileBar, type AdminCounts } from "@/components/admin/AdminShell";
+import { AreaMessages } from "@/components/i18n/AreaMessages";
 
 // Admin is auth-gated and per-request — never static. Forcing dynamic here
 // covers EVERY admin route (so a new page can't accidentally be prerendered,
@@ -11,8 +12,9 @@ import { AdminRail, AdminMobileBar, type AdminCounts } from "@/components/admin/
 export const dynamic = "force-dynamic";
 
 /**
- * Admin console — gated to role=admin. Responsive shell: a sticky left rail on
- * desktop (lg+), a top bar + slide-over drawer on mobile/tablet. The consumer
+ * Admin console — gated to role=admin. Responsive shell: a sticky rail at the
+ * start edge on desktop (lg+: left in French, right in Arabic), a top bar +
+ * slide-over drawer on mobile/tablet. The consumer
  * chrome (TopBar / DesktopNav / BottomTabBar) is suppressed for /admin in
  * MobileShell, so this is the whole shell.
  *
@@ -61,19 +63,26 @@ export default async function AdminLayout({
   // there is deliberately no padding or max-width here. Document-shaped
   // screens opt into those with <AdminPage>; the annonces console lays out
   // its own two panes.
+  //
+  // Both halves of the console's messages reach its client components here
+  // (`admin`: the shell, the kit, the site screens; `adminOps`: annonces,
+  // vendeurs, boutiques, paiements), plus `uploader` for the manual listing
+  // form's photo picker.
   return (
-    <div className="flex h-dvh overflow-hidden bg-background">
-      <AdminRail counts={counts} />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <AdminMobileBar counts={counts} />
-        {/* The one scroll region for document-shaped screens. Padding lives
-            here so the twenty screens not yet rebuilt keep their margins; a
-            pane-based screen cancels it with FULL_BLEED and sizes itself to
-            the viewport instead. */}
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-6 lg:px-8 lg:py-7">
-          {children}
+    <AreaMessages areas={["admin", "adminOps", "uploader"]}>
+      <div className="flex h-dvh overflow-hidden bg-background">
+        <AdminRail counts={counts} />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <AdminMobileBar counts={counts} />
+          {/* The one scroll region for document-shaped screens. Padding lives
+              here so the twenty screens not yet rebuilt keep their margins; a
+              pane-based screen cancels it with FULL_BLEED and sizes itself to
+              the viewport instead. */}
+          <div className="min-h-0 flex-1 overflow-y-auto px-5 py-6 lg:px-8 lg:py-7">
+            {children}
+          </div>
         </div>
       </div>
-    </div>
+    </AreaMessages>
   );
 }

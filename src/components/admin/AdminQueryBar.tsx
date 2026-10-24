@@ -2,13 +2,15 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { SearchIcon, SearchSweep, SearchStatus } from "@/components/ui/SearchBusy";
 
+/** Period filters; `label` names the key under `admin.kit.ranges`. */
 const RANGES = [
-  { key: "", label: "Tout" },
-  { key: "1", label: "Aujourd'hui" },
-  { key: "7", label: "7 j" },
-  { key: "30", label: "30 j" },
+  { key: "", label: "all" },
+  { key: "1", label: "today" },
+  { key: "7", label: "days7" },
+  { key: "30", label: "days30" },
 ];
 
 /**
@@ -20,11 +22,13 @@ const RANGES = [
  */
 export function AdminQueryBar({
   total,
-  placeholder = "Rechercher…",
+  placeholder: placeholderProp,
 }: {
   total: number;
   placeholder?: string;
 }) {
+  const t = useTranslations("admin.kit");
+  const placeholder = placeholderProp ?? t("search");
   const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
@@ -62,7 +66,7 @@ export function AdminQueryBar({
       <div className="relative overflow-hidden rounded-lg">
         <SearchIcon
           active={searching}
-          className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted"
+          className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted"
         />
         <SearchSweep active={searching} />
         <SearchStatus active={searching} />
@@ -72,7 +76,7 @@ export function AdminQueryBar({
           onChange={(e) => setQ(e.target.value)}
           placeholder={placeholder}
           aria-label={placeholder}
-          className="h-9 w-64 rounded-lg border border-border bg-surface pl-9 pr-3 text-[13px] text-foreground placeholder:text-muted focus:border-gold focus:outline-none"
+          className="h-9 w-64 rounded-lg border border-border bg-surface ps-9 pe-3 text-[13px] text-foreground placeholder:text-muted focus:border-gold focus:outline-none"
         />
       </div>
 
@@ -86,13 +90,13 @@ export function AdminQueryBar({
               range === r.key ? "bg-foreground text-background" : "text-muted hover:text-foreground"
             }`}
           >
-            {r.label}
+            {t(`ranges.${r.label}`)}
           </button>
         ))}
       </div>
 
       <span className="batta-tabular ms-auto text-[12px] text-muted">
-        {total.toLocaleString("fr-FR")} résultat{total > 1 ? "s" : ""}
+        {t("results", { count: total })}
       </span>
     </div>
   );

@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { AdminPage, EYEBROW } from "@/components/admin/kit";
 import { SiteTabs } from "@/components/admin/kit/SiteTabs";
@@ -28,6 +29,7 @@ export const revalidate = 0;
 const KEYS = ["payee_name", "payee_bank", "payee_rib", "payee_iban", "payee_d17"] as const;
 
 export default async function AdminSettingsPage() {
+  const t = await getTranslations("admin.settings");
   const admin = getServiceSupabase();
   const settings: PayeeSettings = {
     payee_name: "", payee_bank: "", payee_rib: "", payee_iban: "", payee_d17: "",
@@ -77,11 +79,10 @@ export default async function AdminSettingsPage() {
     <AdminPage>
       <SiteTabs />
       <header>
-        <span className={EYEBROW}>Site</span>
-        <h1 className="mt-1 text-[22px] font-semibold tracking-tight text-foreground">Réglages</h1>
+        <span className={EYEBROW}>{t("eyebrow")}</span>
+        <h1 className="mt-1 text-[22px] font-semibold tracking-tight text-foreground">{t("title")}</h1>
         <p className="mt-1.5 max-w-xl text-[12.5px] text-subtle">
-          Les coordonnées que le vendeur voit au moment de payer. Les prix ne sont pas ici — ils
-          vivent dans Offres &amp; prix, et nulle part ailleurs.
+          {t("description")}
         </p>
       </header>
       <SettingsForm

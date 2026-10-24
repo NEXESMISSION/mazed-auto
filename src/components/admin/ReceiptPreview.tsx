@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { FileText, ExternalLink } from "lucide-react";
 import { ImageLightbox } from "@/components/ui/ImageLightbox";
 
@@ -34,7 +35,7 @@ export function ReceiptPreview({
   path,
   triggerClassName = "relative block aspect-video w-full overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface-2)] hover:ring-2 hover:ring-[var(--gold-soft)]",
   imgClassName = "h-full w-full object-contain",
-  label = "Reçu",
+  label: labelProp,
 }: {
   /** Signed URL for the object. */
   url: string;
@@ -44,6 +45,8 @@ export function ReceiptPreview({
   imgClassName?: string;
   label?: string;
 }) {
+  const t = useTranslations("admin.kit.receipt");
+  const label = labelProp ?? t("label");
   const [failed, setFailed] = useState(false);
   const ext = extOf(path) || extOf(url);
   const renderable = INLINE_IMAGE_EXT.has(ext);
@@ -55,8 +58,8 @@ export function ReceiptPreview({
         : ext === "heic" || ext === "heif"
           ? "HEIC"
           : failed
-            ? "non affichable"
-            : ext.toUpperCase() || "fichier";
+            ? t("unreadable")
+            : ext.toUpperCase() || t("file");
     return (
       <a
         href={url}
@@ -65,8 +68,8 @@ export function ReceiptPreview({
         className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-2)]/60 px-3 py-2.5 text-[13px] font-semibold hover:border-[var(--gold-soft)]"
       >
         <FileText className="h-4 w-4 text-[var(--gold)]" />
-        Ouvrir le {label.toLowerCase()} ({what})
-        <ExternalLink className="h-3 w-3 text-[var(--foreground-muted)]" />
+        {t("open", { label: label.toLowerCase(), what })}
+        <ExternalLink className="h-3 w-3 text-[var(--foreground-muted)] rtl:-scale-x-100" />
       </a>
     );
   }

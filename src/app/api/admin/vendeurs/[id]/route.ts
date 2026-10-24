@@ -3,6 +3,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
+import { apiTranslations } from "@/i18n/api";
 
 /**
  * Everything an admin can do to one account.
@@ -43,6 +44,7 @@ export async function POST(
 
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
   const action = typeof body.action === "string" ? body.action : "";
+  const t = await apiTranslations(req, "adminOps.api");
 
   const { data: profile } = await admin
     .from("profiles")
@@ -55,7 +57,7 @@ export async function POST(
   if (action === "set_role") {
     const role = typeof body.role === "string" ? body.role : "";
     if (!ROLES.has(role)) {
-      return NextResponse.json({ error: "invalid", detail: "Rôle inconnu." }, { status: 400 });
+      return NextResponse.json({ error: "invalid", detail: t("unknownRole") }, { status: 400 });
     }
     // An admin removing their own admin rights locks themselves out of the
     // console with no way back in through the UI.
@@ -63,7 +65,7 @@ export async function POST(
       return NextResponse.json(
         {
           error: "invalid",
-          detail: "Vous ne pouvez pas retirer votre propre accès admin.",
+          detail: t("ownAdmin"),
         },
         { status: 400 },
       );
@@ -88,13 +90,13 @@ export async function POST(
     const reason = text(body.reason, 300);
     if (!reason) {
       return NextResponse.json(
-        { error: "reason_required", detail: "Indiquez pourquoi ce compte est suspendu." },
+        { error: "reason_required", detail: t("banReason") },
         { status: 400 },
       );
     }
     if (id === user.id) {
       return NextResponse.json(
-        { error: "invalid", detail: "Vous ne pouvez pas suspendre votre propre compte." },
+        { error: "invalid", detail: t("ownBan") },
         { status: 400 },
       );
     }
@@ -128,7 +130,7 @@ export async function POST(
   if (action === "grant_credits") {
     const productId = text(body.product_id, 40);
     if (!productId) {
-      return NextResponse.json({ error: "invalid", detail: "Choisissez un forfait." }, { status: 400 });
+      return NextResponse.json({ error: "invalid", detail: t("pickPack") }, { status: 400 });
     }
     const { data: product } = await admin
       .from("products")
@@ -144,7 +146,7 @@ export async function POST(
         : Number(product.listing_quota);
     if (!Number.isFinite(quota) || quota <= 0) {
       return NextResponse.json(
-        { error: "invalid", detail: "Ce forfait n'accorde aucune publication." },
+        { error: "invalid", detail: t("packNoQuota") },
         { status: 400 },
       );
     }
@@ -222,7 +224,7 @@ export async function POST(
     const reason = text(body.reason, 300);
     if (!reason) {
       return NextResponse.json(
-        { error: "reason_required", detail: "Indiquez pourquoi le badge est retiré." },
+        { error: "reason_required", detail: t("revokeReason") },
         { status: 400 },
       );
     }

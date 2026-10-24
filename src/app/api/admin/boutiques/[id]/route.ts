@@ -3,6 +3,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
+import { apiTranslations } from "@/i18n/api";
 
 /**
  * The admin's levers on one shop.
@@ -22,14 +23,8 @@ import { fail } from "@/lib/http/errors";
  * one.
  */
 
-const DB_DETAIL: Record<string, string> = {
-  reason_required: "Indiquez un motif : le propriétaire le lira.",
-  forbidden: "Réservé aux administrateurs.",
-  shop_not_found: "Boutique introuvable.",
-  document_not_found: "Justificatif introuvable.",
-  plan_not_found: "Formule inconnue.",
-  invalid_days: "Entre 1 et 366 jours.",
-};
+/** Codes the admin_* functions raise, worded under `adminOps.api.shop`. */
+const DB_CODES = ["reason_required", "forbidden", "shop_not_found", "document_not_found", "plan_not_found", "invalid_days"];
 
 export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const gate = await requireAdmin(req);
@@ -46,10 +41,11 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   const action = typeof body.action === "string" ? body.action : "";
   const reason = typeof body.reason === "string" ? body.reason.trim().slice(0, 500) : "";
 
+  const t = await apiTranslations(req, "adminOps.api");
   const refused = (error: { message: string }) => {
-    const code = Object.keys(DB_DETAIL).find((k) => error.message.includes(k));
+    const code = DB_CODES.find((k) => error.message.includes(k));
     return code
-      ? NextResponse.json({ error: code, detail: DB_DETAIL[code] }, { status: code === "forbidden" ? 403 : 400 })
+      ? NextResponse.json({ error: code, detail: t(`shop.${code}`) }, { status: code === "forbidden" ? 403 : 400 })
       : fail(`shop_${action}_failed`, 500, error);
   };
   const tell = (kind: string, title: string, text: string) =>

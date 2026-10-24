@@ -1,7 +1,10 @@
+import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { PageHeader } from "@/components/admin/kit";
-import { formatTND } from "@/lib/utils";
+import { currencyLabel, formatTND } from "@/lib/utils";
+import { formatDate } from "@/lib/dates";
+import { categoryLabel, governorateLabel, type CategoryNames } from "@/lib/labels";
 import { Eye, Heart, Phone, RotateCcw, Users } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -54,37 +57,23 @@ type Listing = {
   price_on_request: boolean;
   governorate: string;
   published_at: string | null;
-  category: { label_fr: string } | { label_fr: string }[] | null;
+  category: CategoryNames | CategoryNames[] | null;
 };
 
 type SortKey = "views" | "visitors" | "returns" | "favourites" | "reveals" | "rate" | "recent";
 
-const SORTS: { key: SortKey; label: string }[] = [
-  { key: "views", label: "Vues" },
-  { key: "visitors", label: "Visiteurs" },
-  { key: "returns", label: "Retours" },
-  { key: "favourites", label: "Favoris" },
-  { key: "reveals", label: "Numéro" },
-  { key: "rate", label: "Taux" },
-  { key: "recent", label: "Vue récemment" },
-];
+/** Sort keys, each named under `admin.analytics.sorts`. */
+const SORTS: SortKey[] = ["views", "visitors", "returns", "favourites", "reveals", "rate", "recent"];
 
-const STATUS_LABEL: Record<string, string> = {
-  published: "En ligne",
-  pending_review: "En attente",
-  draft: "Brouillon",
-  rejected: "Refusée",
-  expired: "Expirée",
-  archived: "Archivée",
-  sold: "Vendue",
-};
+/** Statuses this page names itself (`admin.analytics.status`); others show raw. */
+const STATUSES = ["published", "pending_review", "draft", "rejected", "expired", "archived", "sold"];
 
 const one = <T,>(v: T | T[] | null): T | null => (Array.isArray(v) ? v[0] ?? null : v);
 const pct = (n: number, d: number) => (d > 0 ? Math.round((n / d) * 100) : 0);
 
-function fmtDate(iso: string | null): string {
+function fmtDate(iso: string | null, locale: string): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("fr-FR", {
+  return formatDate(iso, locale, {
     day: "2-digit",
     month: "2-digit",
     hour: "2-digit",
@@ -98,15 +87,18 @@ export default async function AdminAnalyticsPage({
   searchParams: Promise<{ sort?: string; scope?: string }>;
 }) {
   const sp = await searchParams;
-  const sort = (SORTS.find((s) => s.key === sp.sort)?.key ?? "views") as SortKey;
+  const t = await getTranslations("admin.analytics");
+  const locale = await getLocale();
+  const sort = (SORTS.find((s) => s === sp.sort) ?? "views") as SortKey;
   const publishedOnly = sp.scope !== "all";
+  const statusName = (s: string) => (STATUSES.includes(s) ? t(`status.${s}`) : s);
 
   const admin = getServiceSupabase();
   if (!admin) {
     return (
       <div className="p-6">
-        <PageHeader eyebrow="Audience" title="Statistiques" />
-        <p className="mt-6 text-[13px] text-muted">Service indisponible.</p>
+        <PageHeader eyebrow={t("eyebrow")} title={t("shortTitle")} />
+        <p className="mt-6 text-[13px] text-muted">{t("unavailable")}</p>
       </div>
     );
   }
@@ -114,7 +106,7 @@ export default async function AdminAnalyticsPage({
   let lq = admin
     .from("listings")
     .select(
-      "id, title, status, price, price_on_request, governorate, published_at, category:categories (label_fr)",
+      "id, title, status, price, price_on_request, governorate, published_at, category:categories (slug, label_fr, label_ar)",
     )
     .neq("status", "draft")
     .order("published_at", { ascending: false })
@@ -192,51 +184,51 @@ export default async function AdminAnalyticsPage({
   return (
     <div className="p-4 lg:p-6">
       <PageHeader
-        eyebrow="Audience"
-        title="Statistiques des annonces"
-        description="Qui a regardé chaque annonce, combien sont revenus, et combien ont demandé le numéro."
-        stat={{ value: totals.views, label: "vues au total" }}
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t("description")}
+        stat={{ value: totals.views, label: t("totalViews") }}
       />
 
       {/* The five numbers for the whole site, so a single bad annonce is not
           mistaken for a bad week. */}
       <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        <Metric Icon={Users} label="Visiteurs" value={totals.visitors} hint="personnes différentes" />
-        <Metric Icon={Eye} label="Vues" value={totals.views} hint="visites, retours compris" />
-        <Metric Icon={RotateCcw} label="Revenus" value={totals.repeats} hint="visites répétées" />
-        <Metric Icon={Heart} label="Favoris" value={totals.favourites} hint="annonces enregistrées" />
-        <Metric Icon={Phone} label="Numéro affiché" value={totals.reveals} hint="demandes de contact" />
+        <Metric Icon={Users} label={t("metrics.visitors.label")} value={totals.visitors} hint={t("metrics.visitors.hint")} />
+        <Metric Icon={Eye} label={t("metrics.views.label")} value={totals.views} hint={t("metrics.views.hint")} />
+        <Metric Icon={RotateCcw} label={t("metrics.repeats.label")} value={totals.repeats} hint={t("metrics.repeats.hint")} />
+        <Metric Icon={Heart} label={t("metrics.favourites.label")} value={totals.favourites} hint={t("metrics.favourites.hint")} />
+        <Metric Icon={Phone} label={t("metrics.reveals.label")} value={totals.reveals} hint={t("metrics.reveals.hint")} />
       </div>
 
       <div className="mt-5 flex flex-wrap items-center gap-2">
         <span className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-muted">
-          Trier
+          {t("sortBy")}
         </span>
         {SORTS.map((s) => (
           <Link
-            key={s.key}
-            href={qs({ sort: s.key }) as never}
+            key={s}
+            href={qs({ sort: s }) as never}
             className={
               "rounded-full px-3 py-1.5 text-[12px] font-bold transition " +
-              (sort === s.key
+              (sort === s
                 ? "bg-foreground text-background"
                 : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground")
             }
           >
-            {s.label}
+            {t(`sorts.${s}`)}
           </Link>
         ))}
         <Link
           href={qs({ scope: publishedOnly ? "all" : "published" }) as never}
           className="ms-auto rounded-full bg-surface-2 px-3 py-1.5 text-[12px] font-bold text-muted ring-1 ring-border hover:text-foreground"
         >
-          {publishedOnly ? "Inclure les non publiées" : "En ligne seulement"}
+          {publishedOnly ? t("includeUnpublished") : t("onlineOnly")}
         </Link>
       </div>
 
       {rows.length === 0 ? (
         <p className="mt-8 rounded-2xl border border-dashed border-border bg-surface-2/40 p-8 text-center text-[13px] text-muted">
-          Aucune annonce à mesurer pour l&apos;instant.
+          {t("empty")}
         </p>
       ) : (
         <>
@@ -245,14 +237,14 @@ export default async function AdminAnalyticsPage({
             <table className="w-full min-w-[900px] border-collapse text-[13px]">
               <thead>
                 <tr className="border-b border-border bg-surface-2/60 text-[10.5px] uppercase tracking-[0.1em] text-muted">
-                  <Th className="text-start">Annonce</Th>
-                  <Th>Visiteurs</Th>
-                  <Th>Vues</Th>
-                  <Th>Retours</Th>
-                  <Th>Favoris</Th>
-                  <Th>Numéro</Th>
-                  <Th>Taux</Th>
-                  <Th>Dernière vue</Th>
+                  <Th className="text-start">{t("columns.listing")}</Th>
+                  <Th>{t("columns.visitors")}</Th>
+                  <Th>{t("columns.views")}</Th>
+                  <Th>{t("columns.returns")}</Th>
+                  <Th>{t("columns.favourites")}</Th>
+                  <Th>{t("columns.reveals")}</Th>
+                  <Th>{t("columns.rate")}</Th>
+                  <Th>{t("columns.lastView")}</Th>
                 </tr>
               </thead>
               <tbody>
@@ -266,16 +258,16 @@ export default async function AdminAnalyticsPage({
                         {r.listing.title}
                       </Link>
                       <div className="mt-0.5 text-[11px] text-muted">
-                        {one(r.listing.category)?.label_fr ?? "—"} · {r.listing.governorate}
+                        {one(r.listing.category) ? categoryLabel(one(r.listing.category), locale) : "—"} · {governorateLabel(r.listing.governorate, locale)}
                         {r.listing.status !== "published" && (
                           <span className="ms-1.5 font-bold text-[var(--accent-deep)]">
-                            {STATUS_LABEL[r.listing.status] ?? r.listing.status}
+                            {statusName(r.listing.status)}
                           </span>
                         )}
                         {" · "}
                         {r.listing.price_on_request || r.listing.price == null
-                          ? "Sur demande"
-                          : `${formatTND(Number(r.listing.price), "fr")} TND`}
+                          ? t("onRequest")
+                          : `${formatTND(Number(r.listing.price), locale)} ${currencyLabel(locale)}`}
                       </div>
                     </td>
                     <Num>{r.visitors}</Num>
@@ -294,17 +286,13 @@ export default async function AdminAnalyticsPage({
                           "font-bold " +
                           (r.rate != null && r.rate >= 20 ? "text-gold" : "text-foreground")
                         }
-                        title={
-                          r.rate == null
-                            ? "Demandes de numéro antérieures au comptage des vues"
-                            : undefined
-                        }
+                        title={r.rate == null ? t("rateWithheld") : undefined}
                       >
                         {r.rate != null && r.visitors > 0 ? `${r.rate} %` : "—"}
                       </span>
                     </td>
                     <td className="batta-tabular px-3 py-2.5 text-center text-[11.5px] text-muted">
-                      {fmtDate(r.lastView)}
+                      {fmtDate(r.lastView, locale)}
                     </td>
                   </tr>
                 ))}
@@ -324,22 +312,22 @@ export default async function AdminAnalyticsPage({
                   {r.listing.title}
                 </Link>
                 <p className="mt-0.5 text-[11px] text-muted">
-                  {one(r.listing.category)?.label_fr ?? "—"} · {r.listing.governorate}
+                  {one(r.listing.category) ? categoryLabel(one(r.listing.category), locale) : "—"} · {governorateLabel(r.listing.governorate, locale)}
                   {r.listing.status !== "published" && (
                     <span className="ms-1.5 font-bold text-[var(--accent-deep)]">
-                      {STATUS_LABEL[r.listing.status] ?? r.listing.status}
+                      {statusName(r.listing.status)}
                     </span>
                   )}
                 </p>
                 <dl className="mt-2.5 grid grid-cols-3 gap-2 text-center">
-                  <Cell label="Visiteurs" value={r.visitors} />
-                  <Cell label="Vues" value={r.views} />
-                  <Cell label="Retours" value={r.returners} extra={r.repeats > 0 ? `+${r.repeats}` : undefined} />
-                  <Cell label="Favoris" value={r.favourites} />
-                  <Cell label="Numéro" value={r.reveals} />
-                  <Cell label="Taux" value={r.rate != null && r.visitors > 0 ? `${r.rate} %` : "—"} />
+                  <Cell label={t("columns.visitors")} value={r.visitors} />
+                  <Cell label={t("columns.views")} value={r.views} />
+                  <Cell label={t("columns.returns")} value={r.returners} extra={r.repeats > 0 ? `+${r.repeats}` : undefined} />
+                  <Cell label={t("columns.favourites")} value={r.favourites} />
+                  <Cell label={t("columns.reveals")} value={r.reveals} />
+                  <Cell label={t("columns.rate")} value={r.rate != null && r.visitors > 0 ? `${r.rate} %` : "—"} />
                 </dl>
-                <p className="mt-2 text-[10.5px] text-muted">Dernière vue : {fmtDate(r.lastView)}</p>
+                <p className="mt-2 text-[10.5px] text-muted">{t("lastViewAt", { when: fmtDate(r.lastView, locale) })}</p>
               </li>
             ))}
           </ul>
@@ -347,12 +335,7 @@ export default async function AdminAnalyticsPage({
       )}
 
       <p className="mt-6 text-[11.5px] leading-relaxed text-muted">
-        Une personne qui recharge la page compte une seule fois. Un retour n&apos;est
-        compté qu&apos;après 30 minutes, et les visites du vendeur sur sa propre annonce
-        ne sont jamais comptées. Les visiteurs non connectés sont identifiés par une
-        empreinte de leur adresse IP — jamais l&apos;adresse elle-même. Le taux reste
-        vide tant que les demandes de numéro sont antérieures au comptage des vues :
-        il n&apos;aurait aucun sens avant que les deux couvrent la même période.
+        {t("footnote")}
       </p>
     </div>
   );

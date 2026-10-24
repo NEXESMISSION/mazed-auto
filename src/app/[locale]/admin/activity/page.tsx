@@ -1,8 +1,10 @@
+import { getLocale, getTranslations } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { formatDate } from "@/lib/dates";
 import { AdminPage, Toolbar, EmptyState, EYEBROW, type Tab } from "@/components/admin/kit";
 import { SiteTabs } from "@/components/admin/kit/SiteTabs";
 import { AdminPager } from "@/components/admin/AdminPager";
-import { ACTION_LABEL } from "@/lib/admin/actions";
+import { actionLabel } from "@/lib/admin/actions";
 import { Activity } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -24,12 +26,8 @@ export const revalidate = 0;
 
 const PAGE_SIZE = 50;
 
+/** Each tab's name is under `admin.activity.tabs`. */
 type TabKey = "actions" | "errors" | "views";
-const TAB_LABEL: Record<TabKey, string> = {
-  actions: "Décisions",
-  errors: "Erreurs",
-  views: "Pages visitées",
-};
 const TAB_ORDER: TabKey[] = ["actions", "errors", "views"];
 
 export default async function AdminActivityPage({
@@ -38,6 +36,8 @@ export default async function AdminActivityPage({
   searchParams: Promise<{ status?: string; q?: string; page?: string }>;
 }) {
   const sp = await searchParams;
+  const t = await getTranslations("admin.activity");
+  const locale = await getLocale();
   const sb = await getServerSupabase();
 
   const tab: TabKey = TAB_ORDER.includes(sp.status as TabKey) ? (sp.status as TabKey) : "actions";
@@ -60,7 +60,7 @@ export default async function AdminActivityPage({
 
   const total = count ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const tabs: Tab[] = TAB_ORDER.map((t) => ({ value: t, label: TAB_LABEL[t] }));
+  const tabs: Tab[] = TAB_ORDER.map((k) => ({ value: k, label: t(`tabs.${k}`) }));
 
   type LogRow = {
     id: string; created_at: string; action: string | null; type: string | null;
@@ -73,13 +73,13 @@ export default async function AdminActivityPage({
       <SiteTabs />
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <span className={EYEBROW}>Site</span>
-          <h1 className="mt-1 text-[22px] font-semibold tracking-tight text-foreground">Journal</h1>
+          <span className={EYEBROW}>{t("eyebrow")}</span>
+          <h1 className="mt-1 text-[22px] font-semibold tracking-tight text-foreground">{t("title")}</h1>
         </div>
       </header>
 
       <div className="mt-5 flex items-center border-b border-border pb-2">
-        <Toolbar tabs={tabs} defaultTab="actions" searchPlaceholder="Compte, action, chemin…" />
+        <Toolbar tabs={tabs} defaultTab="actions" searchPlaceholder={t("searchPlaceholder")} />
       </div>
 
       {rows.length === 0 ? (
@@ -87,7 +87,7 @@ export default async function AdminActivityPage({
           <EmptyState
             Icon={Activity}
             tone={q ? "filtered" : "idle"}
-            title={q ? "Aucune ligne ne correspond" : `Rien dans « ${TAB_LABEL[tab]} »`}
+            title={q ? t("noMatch") : t("emptyTab", { tab: t(`tabs.${tab}`) })}
           />
         </div>
       ) : (
@@ -98,13 +98,13 @@ export default async function AdminActivityPage({
               className="grid grid-cols-[110px_1fr] items-baseline gap-4 border-b border-border py-2 sm:grid-cols-[150px_1fr_180px]"
             >
               <span className="batta-tabular text-[11.5px] text-subtle">
-                {new Date(r.created_at).toLocaleString("fr-FR", {
+                {formatDate(r.created_at, locale, {
                   day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit",
                 })}
               </span>
               <span className="min-w-0 text-[12.5px] text-foreground">
                 {r.action ? (
-                  ACTION_LABEL[r.action] ?? r.action
+                  actionLabel(r.action, locale)
                 ) : (
                   <span className="text-subtle">{r.path ?? r.type ?? "—"}</span>
                 )}

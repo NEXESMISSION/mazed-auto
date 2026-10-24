@@ -1,13 +1,13 @@
+import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
+import { categoryLabel } from "@/lib/labels";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { adminBtn } from "@/components/admin/AdminButton";
 import { FullBleed, EmptyState, QueueKeys, EYEBROW } from "@/components/admin/kit";
 import { ROW_BASE, ROW_IDLE, ROW_SELECTED, ROW_FOCUS } from "@/components/admin/kit/surface";
 import { ProductEditor, type EditableProduct } from "./ProductEditor";
-import {
-  PRODUCT_SELECT, PRODUCT_KIND_LABEL, toProduct, type ProductKind,
-} from "@/lib/products";
-import { formatTND } from "@/lib/utils";
+import { PRODUCT_SELECT, toProduct, type ProductKind } from "@/lib/products";
+import { currencyLabel, formatTND } from "@/lib/utils";
 import { Tag, Plus } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -44,14 +44,16 @@ export default async function AdminOffresPage({
   searchParams: Promise<{ a?: string }>;
 }) {
   const sp = await searchParams;
+  const t = await getTranslations("admin.offres");
+  const locale = await getLocale();
   const admin = getServiceSupabase();
-  if (!admin) return <p className="text-[13px] text-muted">Service non configuré.</p>;
+  if (!admin) return <p className="text-[13px] text-muted">{t("unconfigured")}</p>;
 
   const [prodRes, catRes] = await Promise.all([
     admin.from("products").select(PRODUCT_SELECT).order("sort_order").order("created_at"),
     admin
       .from("categories")
-      .select("id, label_fr, parent_id, sort_order")
+      .select("id, slug, label_fr, label_ar, parent_id, sort_order")
       .eq("is_active", true)
       .order("sort_order"),
   ]);
@@ -60,11 +62,11 @@ export default async function AdminOffresPage({
 
   // Only leaf categories can carry a price: "Véhicules" is a heading, and
   // pricing a heading would silently shadow its children.
-  type Cat = { id: string; label_fr: string; parent_id: string | null };
+  type Cat = { id: string; slug: string; label_fr: string; label_ar: string | null; parent_id: string | null };
   const catRows = (catRes.data ?? []) as Cat[];
   const categories = catRows
     .filter((c) => c.parent_id !== null)
-    .map((c) => ({ id: c.id, label: c.label_fr }));
+    .map((c) => ({ id: c.id, label: categoryLabel(c, locale) }));
 
   const openId = sp.a ?? null;
   const creating = openId === "new";
@@ -95,14 +97,14 @@ export default async function AdminOffresPage({
     <FullBleed>
       <header className="flex h-12 shrink-0 items-center gap-4 border-b border-border px-4">
         <h1 className="shrink-0 text-[13px] font-semibold tracking-tight text-foreground">
-          Offres &amp; prix
+          {t("title")}
         </h1>
         <span className="text-[11.5px] text-subtle">
-          {products.filter((p) => p.isActive).length} en vente · {products.length} au total
+          {t("summary", { active: products.filter((p) => p.isActive).length, total: products.length })}
         </span>
         <Link href="/admin/offres?a=new" className={`${adminBtn("primary", "sm")} ms-auto shrink-0`}>
           <Plus className="size-3.5" strokeWidth={2.8} />
-          <span className="hidden sm:inline">Nouvelle offre</span>
+          <span className="hidden sm:inline">{t("new")}</span>
         </Link>
       </header>
 
@@ -118,16 +120,15 @@ export default async function AdminOffresPage({
             <div className="p-5">
               <EmptyState
                 Icon={Tag}
-                title="Aucune offre"
-                hint="Créez ce qu'un vendeur peut acheter : une publication, un pack, une mise en avant, le badge."
+                title={t("empty")}
+                hint={t("emptyHint")}
               />
             </div>
           ) : (
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
               {misconfigured.length > 0 && (
                 <p className="border-b border-border bg-[var(--tone-warn-bg)] px-4 py-2.5 text-[11.5px] text-[var(--tone-warn)]">
-                  {misconfigured.length} offre{misconfigured.length === 1 ? "" : "s"} en vente sans
-                  prix configuré — le vendeur ne peut pas payer.
+                  {t("misconfigured", { count: misconfigured.length })}
                 </p>
               )}
 
@@ -139,7 +140,7 @@ export default async function AdminOffresPage({
                     <h2
                       className={`${EYEBROW} border-b border-border bg-background px-4 py-1.5`}
                     >
-                      {PRODUCT_KIND_LABEL[kind]}
+                      {t(`kinds.${kind}.label`)}
                     </h2>
                     <ul className="divide-y divide-border/70">
                       {group.map((p) => {
@@ -173,10 +174,10 @@ export default async function AdminOffresPage({
                                     p.categoryId
                                       ? categories.find((c) => c.id === p.categoryId)?.label
                                       : kind === "listing_single"
-                                        ? "toutes catégories"
+                                        ? t("allCategories")
                                         : null,
-                                    p.listingQuota ? `${p.listingQuota} annonces` : null,
-                                    p.durationDays ? `${p.durationDays} j` : null,
+                                    p.listingQuota ? t("quota", { count: p.listingQuota }) : null,
+                                    p.durationDays ? t("days", { count: p.durationDays }) : null,
                                   ]
                                     .filter(Boolean)
                                     .join(" · ") || "—"}
@@ -193,10 +194,10 @@ export default async function AdminOffresPage({
                                   }`}
                                 >
                                   {p.price == null
-                                    ? "sans prix"
+                                    ? t("noPrice")
                                     : p.price === 0
-                                      ? "gratuit"
-                                      : `${formatTND(p.price, "fr")} TND`}
+                                      ? t("free")
+                                      : `${formatTND(p.price, locale)} ${currencyLabel(locale)}`}
                                 </span>
                               </span>
                             </Link>
@@ -217,16 +218,16 @@ export default async function AdminOffresPage({
               <ProductEditor
                 product={editable}
                 categories={categories}
-                backHref="/fr/admin/offres"
+                backHref={`/${locale}/admin/offres`}
               />
             </div>
           ) : (
             <div className="grid w-full place-items-center px-6">
               <p className="max-w-xs text-center text-[12.5px] text-subtle">
-                Choisissez une offre à gauche, ou créez-en une.
+                {t("pick")}
                 <br />
                 <span className="text-[11.5px]">
-                  Tout ce qu'un vendeur peut acheter vit ici — jamais dans le code.
+                  {t("pickHint")}
                 </span>
               </p>
             </div>

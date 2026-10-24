@@ -2,6 +2,9 @@
 import { TONE_CLASS } from "@/components/admin/kit/tones";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
+import { formatDate } from "@/lib/dates";
+import { statusLabel } from "@/components/admin/kit/tones";
 import {
   Send,
   Inbox,
@@ -18,6 +21,17 @@ import {
   CORE_FIELD_KEYS,
   type FieldDef,
 } from "@/lib/notifications/kinds";
+
+/**
+ * The broadcast kinds and their fields are defined in French in
+ * src/lib/notifications/kinds.ts. The console words them from
+ * `admin.notifications.kinds.<kind>…` when it has the words, and falls back to
+ * that file's French for a kind or a field added there later.
+ */
+function useKindText() {
+  const t = useTranslations("admin.notifications.kinds");
+  return (path: string, fallback: string | undefined) => (t.has(path) ? t(path) : fallback ?? "");
+}
 
 type ProfileRef = { full_name: string | null; role: string | null } | null;
 
@@ -46,18 +60,19 @@ type ListResponse = {
 const ROLES = ["individual", "agency", "bank", "bailiff", "inspector", "admin"] as const;
 
 export function AdminNotificationsClient() {
+  const t = useTranslations("admin.notifications");
   const [tab, setTab] = useState<"compose" | "queue">("compose");
 
   return (
     <div>
       <div className="flex gap-1.5 rounded-full bg-surface p-1 ring-1 ring-border w-fit">
         <TabButton active={tab === "compose"} onClick={() => setTab("compose")}>
-          <Send className="size-3.5" strokeWidth={2} />
-          Composer
+          <Send className="size-3.5 rtl:-scale-x-100" strokeWidth={2} />
+          {t("tabs.compose")}
         </TabButton>
         <TabButton active={tab === "queue"} onClick={() => setTab("queue")}>
           <Inbox className="size-3.5" strokeWidth={2} />
-          File
+          {t("tabs.queue")}
         </TabButton>
       </div>
 
@@ -95,6 +110,9 @@ function TabButton({
 // ─── Compose ────────────────────────────────────────────────────────────────
 
 function ComposeTab() {
+  const t = useTranslations("admin.notifications.compose");
+  const tr = useTranslations("admin.notifications.roles");
+  const kindText = useKindText();
   const [kind, setKind] = useState<string>(KIND_CONFIG[0].value);
   // Flat field bag keyed by FieldDef.key. Strings for text/url/datetime,
   // numbers for number, booleans for checkbox. Cleared (not preserved)
@@ -219,7 +237,7 @@ function ComposeTab() {
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <div className="space-y-4">
-        <Field label="Type">
+        <Field label={t("type")}>
           <div className="flex flex-wrap gap-1.5">
             {KIND_CONFIG.map((k) => (
               <button
@@ -232,18 +250,19 @@ function ComposeTab() {
                     : "bg-surface text-muted ring-border hover:text-foreground"
                 }`}
               >
-                {k.label}
+                {kindText(`${k.value}.label`, k.label)}
               </button>
             ))}
           </div>
           <p className="mt-2 text-[11px] leading-relaxed text-muted">
-            {config.description}
+            {kindText(`${config.value}.description`, config.description)}
           </p>
         </Field>
 
         {config.fields.map((f) => (
           <DynamicField
             key={f.key}
+            kind={config.value}
             field={f}
             value={values[f.key]}
             onChange={(v) => setField(f.key, v)}
@@ -252,20 +271,20 @@ function ComposeTab() {
       </div>
 
       <div className="space-y-4">
-        <Field label="Destinataires">
+        <Field label={t("recipients")}>
           <div className="flex flex-wrap gap-1.5">
-            {(["all", "role", "users"] as const).map((t) => (
+            {(["all", "role", "users"] as const).map((a) => (
               <button
-                key={t}
+                key={a}
                 type="button"
-                onClick={() => setAudienceType(t)}
+                onClick={() => setAudienceType(a)}
                 className={`rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.1em] ring-1 transition ${
-                  audienceType === t
+                  audienceType === a
                     ? "bg-[var(--gold-faint)] text-[var(--gold)] ring-[rgba(212,175,55,0.35)]"
                     : "bg-surface text-muted ring-border hover:text-foreground"
                 }`}
               >
-                {t === "all" ? "Tous" : t === "role" ? "Par rôle" : "Utilisateurs"}
+                {t(`audience.${a}`)}
               </button>
             ))}
           </div>
@@ -283,7 +302,7 @@ function ComposeTab() {
                       : "bg-surface text-muted ring-border hover:text-foreground"
                   }`}
                 >
-                  {r}
+                  {tr(r)}
                 </button>
               ))}
             </div>
@@ -294,13 +313,14 @@ function ComposeTab() {
               value={userIds}
               onChange={(e) => setUserIds(e.target.value)}
               rows={5}
+              dir="ltr"
               className="mt-3 w-full rounded-lg border border-border bg-surface px-3 py-2 font-mono text-[11px]"
-              placeholder="ID utilisateur, un par ligne (ou séparés par virgule)"
+              placeholder={t("userIdsPlaceholder")}
             />
           )}
         </Field>
 
-        <Field label="Aperçu">
+        <Field label={t("preview")}>
           <PreviewCard kind={kind} title={titleValue} body={bodyValue} link={linkValue} />
           {/* Show the non-core payload fields underneath the preview so
               the admin can see what extras the recipient row will carry.
@@ -318,7 +338,7 @@ function ComposeTab() {
             disabled={!canSend}
             className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-border bg-surface px-4 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-foreground transition hover:border-gold/40 disabled:opacity-50"
           >
-            Envoyer un test à moi
+            {t("sendTest")}
           </button>
           <button
             type="button"
@@ -326,12 +346,12 @@ function ComposeTab() {
             disabled={!canSend}
             className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-foreground px-4 py-2.5 text-[12px] font-bold uppercase tracking-[0.12em] text-background transition hover:bg-white disabled:opacity-40 disabled:hover:bg-foreground"
           >
-            <Send className="size-3.5" strokeWidth={2.4} />
-            {sending ? "Envoi..." : "Diffuser"}
+            <Send className="size-3.5 rtl:-scale-x-100" strokeWidth={2.4} />
+            {sending ? t("sending") : t("broadcast")}
           </button>
           {missingRequired && (
             <p className="text-center text-[10px] uppercase tracking-[0.12em] text-muted">
-              Champs requis manquants
+              {t("missingRequired")}
             </p>
           )}
         </div>
@@ -347,9 +367,9 @@ function ComposeTab() {
             {result.ok ? (
               <>
                 <span className="font-bold">
-                  {result.test ? "Test envoyé." : "Diffusion envoyée."}
+                  {result.test ? t("testSent") : t("broadcastSent")}
                 </span>{" "}
-                {result.count} destinataire{result.count > 1 ? "s" : ""}
+                {t("recipientsCount", { count: result.count })}
                 {!result.test && (
                   <>
                     {" "}
@@ -358,7 +378,7 @@ function ComposeTab() {
                 )}
               </>
             ) : (
-              <>Erreur : {result.error}</>
+              <>{t("error", { error: result.error })}</>
             )}
           </div>
         )}
@@ -373,18 +393,26 @@ function ComposeTab() {
  * means extending the switch here in one place.
  */
 function DynamicField({
+  kind,
   field,
   value,
   onChange,
 }: {
+  kind: string;
   field: FieldDef;
   value: string | number | boolean | undefined;
   onChange: (v: string | number | boolean) => void;
 }) {
+  const t = useTranslations("admin.notifications.compose");
+  const kindText = useKindText();
+  const f = `${kind}.fields.${field.key}`;
   const str = value === undefined || value === null ? "" : String(value);
+  const placeholder = field.placeholder ? kindText(`${f}.placeholder`, field.placeholder) : undefined;
+  // Links, numbers and dates read left to right in either language.
+  const ltr = field.type === "url" || field.type === "number" || field.type === "datetime";
 
   return (
-    <Field label={field.label} required={field.required}>
+    <Field label={kindText(`${f}.label`, field.label)} required={field.required}>
       {(() => {
         switch (field.type) {
           case "text":
@@ -396,13 +424,14 @@ function DynamicField({
                   value={str}
                   onChange={(e) => onChange(e.target.value)}
                   maxLength={field.maxLength}
-                  placeholder={field.placeholder}
+                  placeholder={placeholder}
+                  dir={ltr ? "ltr" : undefined}
                   className={`w-full rounded-lg border border-border bg-surface px-3 py-2 text-[13px] ${
                     field.type === "url" ? "font-mono text-[12px]" : ""
                   }`}
                 />
                 {field.maxLength && (
-                  <div className="mt-1 text-right text-[10px] uppercase tracking-[0.12em] text-muted">
+                  <div className="mt-1 text-end text-[10px] uppercase tracking-[0.12em] text-muted">
                     {str.length} / {field.maxLength}
                   </div>
                 )}
@@ -416,11 +445,11 @@ function DynamicField({
                   onChange={(e) => onChange(e.target.value)}
                   maxLength={field.maxLength}
                   rows={4}
-                  placeholder={field.placeholder}
+                  placeholder={placeholder}
                   className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-[13px]"
                 />
                 {field.maxLength && (
-                  <div className="mt-1 text-right text-[10px] uppercase tracking-[0.12em] text-muted">
+                  <div className="mt-1 text-end text-[10px] uppercase tracking-[0.12em] text-muted">
                     {str.length} / {field.maxLength}
                   </div>
                 )}
@@ -432,7 +461,8 @@ function DynamicField({
                 type="number"
                 value={str}
                 onChange={(e) => onChange(e.target.value === "" ? "" : e.target.value)}
-                placeholder={field.placeholder}
+                placeholder={placeholder}
+                dir="ltr"
                 className="w-full rounded-lg border border-border bg-surface px-3 py-2 font-mono text-[12px]"
               />
             );
@@ -442,6 +472,7 @@ function DynamicField({
                 type="datetime-local"
                 value={str}
                 onChange={(e) => onChange(e.target.value)}
+                dir="ltr"
                 className="w-full rounded-lg border border-border bg-surface px-3 py-2 font-mono text-[12px]"
               />
             );
@@ -455,7 +486,7 @@ function DynamicField({
                 <option value="">—</option>
                 {field.options?.map((opt) => (
                   <option key={opt.value} value={opt.value}>
-                    {opt.label}
+                    {kindText(`${f}.options.${opt.value}`, opt.label)}
                   </option>
                 ))}
               </select>
@@ -469,7 +500,7 @@ function DynamicField({
                   onChange={(e) => onChange(e.target.checked)}
                   className="size-4 accent-gold-bright"
                 />
-                <span>Oui</span>
+                <span>{t("yes")}</span>
               </label>
             );
           default:
@@ -478,7 +509,7 @@ function DynamicField({
       })()}
       {field.helper && (
         <p className="mt-1 text-[10px] uppercase tracking-[0.12em] text-muted">
-          {field.helper}
+          {kindText(`${f}.helper`, field.helper)}
         </p>
       )}
     </Field>
@@ -510,7 +541,7 @@ function PayloadSummary({
       <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
         Payload
       </div>
-      <ul className="mt-1 space-y-0.5 font-mono text-[11px] text-foreground">
+      <ul dir="ltr" className="mt-1 space-y-0.5 font-mono text-[11px] text-foreground">
         {present.map((f) => (
           <li key={f.key} className="flex gap-2">
             <span className="text-muted">{f.key}:</span>
@@ -552,15 +583,16 @@ function PreviewCard({
   body: string;
   link: string;
 }) {
+  const t = useTranslations("admin.notifications.compose");
   return (
     <div className="rounded-2xl bg-surface p-3 ring-1 ring-border">
       <div className="flex items-start gap-3">
         <span className="mt-0.5 inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-gold/15 text-gold-bright">
-          <Send className="size-4" strokeWidth={2} />
+          <Send className="size-4 rtl:-scale-x-100" strokeWidth={2} />
         </span>
         <div className="min-w-0 flex-1">
           <div className="text-[13px] font-bold text-foreground leading-tight">
-            {title || "Titre de la notification"}
+            {title || t("previewTitle")}
           </div>
           {body && (
             <div className="mt-1 text-[12px] text-muted leading-relaxed">
@@ -568,7 +600,7 @@ function PreviewCard({
             </div>
           )}
           {link && (
-            <div className="mt-1.5 truncate font-mono text-[10px] text-gold-bright">
+            <div dir="ltr" className="mt-1.5 truncate text-start font-mono text-[10px] text-gold-bright">
               → {link}
             </div>
           )}
@@ -595,6 +627,7 @@ function PreviewCard({
 const QUEUE_PAGE = 10;
 
 function QueueTab() {
+  const t = useTranslations("admin.notifications.queue");
   const [items, setItems] = useState<NotificationRow[]>([]);
   const [total, setTotal] = useState(0);
   const [stats, setStats] = useState<ListResponse["stats"] | null>(null);
@@ -652,7 +685,7 @@ function QueueTab() {
         setStats(data.stats);
       })
       .catch(() => {
-        if (!cancelled) setError("Échec du chargement");
+        if (!cancelled) setError(t("loadFailed"));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -660,7 +693,7 @@ function QueueTab() {
     return () => {
       cancelled = true;
     };
-  }, [fetchPage]);
+  }, [fetchPage, t]);
 
   const hasMore = items.length < total;
 
@@ -683,7 +716,7 @@ function QueueTab() {
             return [...prev, ...data.items.filter((x) => !seen.has(x.id))];
           });
         })
-        .catch(() => setError("Échec du chargement"))
+        .catch(() => setError(t("loadFailed")))
         .finally(() => setAppending(false));
     };
   });
@@ -719,21 +752,21 @@ function QueueTab() {
     <div>
       {/* Stats strip */}
       <div className="mb-4 grid grid-cols-3 gap-3">
-        <StatCard label="24 heures" value={stats?.last24h ?? 0} />
-        <StatCard label="7 jours" value={stats?.last7d ?? 0} />
-        <StatCard label="Non lues" value={stats?.unread ?? 0} accent />
+        <StatCard label={t("stats.day")} value={stats?.last24h ?? 0} />
+        <StatCard label={t("stats.week")} value={stats?.last7d ?? 0} />
+        <StatCard label={t("stats.unread")} value={stats?.unread ?? 0} accent />
       </div>
 
       {/* Filter bar */}
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted" />
+          <Search className="absolute start-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted" />
           <input
             type="text"
             value={filters.q}
             onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))}
-            placeholder="Recherche titre…"
-            className="rounded-full border border-border bg-surface py-1.5 pl-7 pr-3 text-[12px]"
+            placeholder={t("searchTitle")}
+            className="rounded-full border border-border bg-surface py-1.5 ps-7 pe-3 text-[12px]"
           />
         </div>
         <input
@@ -741,6 +774,7 @@ function QueueTab() {
           value={filters.kind}
           onChange={(e) => setFilters((f) => ({ ...f, kind: e.target.value }))}
           placeholder="kind"
+          dir="ltr"
           className="w-32 rounded-full border border-border bg-surface px-3 py-1.5 font-mono text-[11px]"
         />
         <input
@@ -748,6 +782,7 @@ function QueueTab() {
           value={filters.user_id}
           onChange={(e) => setFilters((f) => ({ ...f, user_id: e.target.value }))}
           placeholder="user_id"
+          dir="ltr"
           className="w-44 rounded-full border border-border bg-surface px-3 py-1.5 font-mono text-[11px]"
         />
         <input
@@ -755,6 +790,7 @@ function QueueTab() {
           value={filters.broadcast}
           onChange={(e) => setFilters((f) => ({ ...f, broadcast: e.target.value }))}
           placeholder="broadcast_id"
+          dir="ltr"
           className="w-44 rounded-full border border-border bg-surface px-3 py-1.5 font-mono text-[11px]"
         />
         <button
@@ -766,7 +802,7 @@ function QueueTab() {
               : "bg-surface text-muted ring-border hover:text-foreground"
           }`}
         >
-          Non lues
+          {t("stats.unread")}
         </button>
         {hasActiveFilters && (
           <button
@@ -777,7 +813,7 @@ function QueueTab() {
             className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-muted hover:text-foreground"
           >
             <X className="size-3" strokeWidth={2.4} />
-            Réinitialiser
+            {t("reset")}
           </button>
         )}
         <button
@@ -786,13 +822,13 @@ function QueueTab() {
           className="ms-auto inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-muted hover:border-gold/40 hover:text-foreground"
         >
           <RefreshCw className={`size-3 ${loading ? "animate-spin" : ""}`} strokeWidth={2.4} />
-          Rafraîchir
+          {t("refresh")}
         </button>
       </div>
 
       <div className="mb-2 text-[11px] uppercase tracking-[0.12em] text-muted">
-        {items.length} affichée{items.length > 1 ? "s" : ""} sur {total}
-        {hasActiveFilters && " (filtrés)"}
+        {t("shown", { count: items.length, total })}
+        {hasActiveFilters && ` ${t("filtered")}`}
       </div>
 
       {error && (
@@ -816,7 +852,7 @@ function QueueTab() {
           ))}
           {!loading && items.length === 0 && (
             <li className="p-8 text-center text-[13px] text-muted">
-              Aucune notification ne correspond aux filtres.
+              {t("noMatch")}
             </li>
           )}
         </ul>
@@ -829,7 +865,7 @@ function QueueTab() {
         {appending ? (
           <span className="inline-flex items-center gap-2 py-2 text-[11.5px] text-muted">
             <RefreshCw className="size-3 animate-spin" strokeWidth={2.4} />
-            Chargement…
+            {t("loading")}
           </span>
         ) : hasMore ? (
           <button
@@ -837,11 +873,11 @@ function QueueTab() {
             onClick={() => loadMoreRef.current()}
             className="rounded-full border border-border bg-surface px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-muted transition hover:border-gold/40 hover:text-foreground"
           >
-            Charger 10 de plus
+            {t("loadMore")}
           </button>
         ) : (
           items.length > 0 && (
-            <span className="py-2 text-[11.5px] text-muted">Fin de la liste.</span>
+            <span className="py-2 text-[11.5px] text-muted">{t("end")}</span>
           )
         )}
       </div>
@@ -858,8 +894,11 @@ function QueueRow({
   onFilterByBroadcast: () => void;
   onFilterByUser: () => void;
 }) {
+  const t = useTranslations("admin.notifications.queue");
+  const tr = useTranslations("admin.relative");
+  const locale = useLocale();
   const recipientName = n.recipient?.full_name?.trim() || `user · ${n.user_id.slice(0, 8)}`;
-  const recipientRole = n.recipient?.role || "";
+  const recipientRole = n.recipient?.role ? statusLabel(n.recipient.role, locale) : "";
   const senderName = n.sender?.full_name?.trim() || (n.created_by ? `admin · ${n.created_by.slice(0, 8)}` : null);
   const isBroadcast = !!n.broadcast_id;
 
@@ -873,12 +912,12 @@ function QueueRow({
           </span>
           {n.read_at ? (
             <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted">
-              Lue · {timeAgo(n.read_at)}
+              {t("read", { when: timeAgo(n.read_at, tr) })}
             </span>
           ) : (
             <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.1em] text-gold-bright">
               <span className="inline-block size-1.5 rounded-full bg-gold-bright" />
-              Non lue
+              {t("unread")}
             </span>
           )}
           {isBroadcast && (
@@ -886,10 +925,10 @@ function QueueRow({
               type="button"
               onClick={onFilterByBroadcast}
               className="inline-flex items-center gap-1 rounded-full bg-surface-2 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-foreground ring-1 ring-border transition hover:bg-surface-3"
-              title="Filtrer par cette diffusion"
+              title={t("filterBroadcast")}
             >
               <Radio className="size-3" strokeWidth={2.4} />
-              Diffusion · {n.broadcast_id!.slice(0, 8)}
+              {t("broadcast", { id: n.broadcast_id!.slice(0, 8) })}
             </button>
           )}
         </div>
@@ -908,7 +947,7 @@ function QueueRow({
 
         {/* Link (if any) */}
         {n.link && (
-          <div className="mt-1.5 truncate font-mono text-[10px] text-gold-bright">
+          <div dir="ltr" className="mt-1.5 truncate text-start font-mono text-[10px] text-gold-bright">
             → {n.link}
           </div>
         )}
@@ -922,7 +961,7 @@ function QueueRow({
             type="button"
             onClick={onFilterByUser}
             className="inline-flex items-center gap-1 rounded-full bg-foreground/5 px-2 py-0.5 transition hover:bg-foreground/10 hover:text-foreground"
-            title="Filtrer par destinataire"
+            title={t("filterRecipient")}
           >
             <User className="size-3" strokeWidth={2.2} />
             <span className="font-semibold">{recipientName}</span>
@@ -935,14 +974,14 @@ function QueueRow({
           {senderName && (
             <span className="inline-flex items-center gap-1">
               <ShieldCheck className="size-3 text-gold-bright" strokeWidth={2.2} />
-              <span>par</span>
+              <span>{t("by")}</span>
               <span className="font-semibold text-foreground">{senderName}</span>
             </span>
           )}
           <span title={new Date(n.created_at).toISOString()} className="font-medium">
-            {timeAgo(n.created_at)} ·{" "}
+            {timeAgo(n.created_at, tr)} ·{" "}
             <span className="text-muted/80">
-              {new Date(n.created_at).toLocaleString("fr-FR", {
+              {formatDate(n.created_at, locale, {
                 day: "2-digit",
                 month: "short",
                 hour: "2-digit",
@@ -956,23 +995,23 @@ function QueueRow({
   );
 }
 
-function timeAgo(iso: string): string {
+/** Short relative time, worded under `admin.relative`. */
+function timeAgo(iso: string, tr: (key: string, values: { n: number }) => string): string {
   const then = new Date(iso).getTime();
   const diffMs = Date.now() - then;
   const s = Math.floor(diffMs / 1000);
-  if (s < 60) return "à l'instant";
+  if (s < 60) return tr("now", { n: 0 });
   const m = Math.floor(s / 60);
-  if (m < 60) return `il y a ${m} min`;
+  if (m < 60) return tr("minutes", { n: m });
   const h = Math.floor(m / 60);
-  if (h < 24) return `il y a ${h} h`;
+  if (h < 24) return tr("hours", { n: h });
   const d = Math.floor(h / 24);
-  if (d < 7) return `il y a ${d} j`;
+  if (d < 7) return tr("days", { n: d });
   const w = Math.floor(d / 7);
-  if (w < 5) return `il y a ${w} sem`;
+  if (w < 5) return tr("weeks", { n: w });
   const mo = Math.floor(d / 30);
-  if (mo < 12) return `il y a ${mo} mois`;
-  const y = Math.floor(d / 365);
-  return `il y a ${y} an${y > 1 ? "s" : ""}`;
+  if (mo < 12) return tr("months", { n: mo });
+  return tr("years", { n: Math.floor(d / 365) });
 }
 
 function StatCard({

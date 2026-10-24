@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import type { PropertyType } from "@/lib/types";
 import { LegalDocsEditor, type LegalDocKindRow } from "./LegalDocsEditor";
@@ -13,6 +14,7 @@ const PROPERTY_TYPES: PropertyType[] = [
 ];
 
 export default async function AdminLegalDocsPage() {
+  const t = await getTranslations("admin.legalDocs");
   const supabase = await getServerSupabase();
   const { data } = await supabase
     .from("legal_doc_kinds")
@@ -35,15 +37,9 @@ export default async function AdminLegalDocsPage() {
     <div>
       <SiteTabs />
       <AdminPageHeader
-        eyebrow="Documents légaux"
-        title="Catalogue par type de bien"
-        description={
-          <>
-            Définissez la liste des documents que chaque vendeur doit téléverser
-            selon le type de bien. Les documents marqués <b>requis</b> bloquent
-            l&apos;envoi du formulaire tant qu&apos;ils ne sont pas fournis.
-          </>
-        }
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t.rich("description", { b: (chunks) => <b>{chunks}</b> })}
       />
 
       <div className="mt-5">

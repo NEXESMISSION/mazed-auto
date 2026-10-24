@@ -1,3 +1,4 @@
+import { useLocale } from "next-intl";
 import { statusLabel, statusTone, TONE_TEXT, type Tone } from "./tones";
 
 /**
@@ -32,8 +33,9 @@ export function StatusPill({
   dotOnly?: boolean;
   className?: string;
 }) {
+  const locale = useLocale();
   const resolved: Tone = tone ?? statusTone(status);
-  const label = children ?? statusLabel(status);
+  const label = children ?? statusLabel(status, locale);
 
   if (dotOnly) {
     return (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
 import { useScrollLock } from "@/lib/scrollLock";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { X } from "lucide-react";
@@ -58,6 +59,7 @@ export function SidePanel({
     };
   }, [close]);
 
+  const t = useTranslations("admin.kit");
   useScrollLock(true);
 
   // Move focus into the panel on open so keyboard and screen-reader users
@@ -67,7 +69,7 @@ export function SidePanel({
   }, []);
 
   return (
-    <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label={typeof title === "string" ? title : "Détail"}>
+    <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label={typeof title === "string" ? title : t("detail")}>
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-[2px]"
         onClick={close}
@@ -90,7 +92,7 @@ export function SidePanel({
           <button
             type="button"
             onClick={close}
-            aria-label="Fermer"
+            aria-label={t("close")}
             className="tap-target grid size-8 shrink-0 place-items-center rounded-lg text-muted transition hover:bg-surface-2 hover:text-foreground"
           >
             <X className="size-4.5" strokeWidth={2.2} />

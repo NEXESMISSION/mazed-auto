@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useToast } from "@/components/ui/Toast";
 import { AdminButton } from "@/components/admin/AdminButton";
@@ -11,8 +12,6 @@ import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { withTimeout, isTimeout } from "@/lib/withTimeout";
 import {
   DIAGNOSTIC_VERDICTS,
-  STATE_LABEL,
-  VERDICT_LABEL,
   type Diagnostic,
   type DiagnosticPhoto,
   type DiagnosticSection,
@@ -42,13 +41,9 @@ const STATE_TONE: Record<DiagnosticState, string> = {
   bad: "bg-[var(--accent-faint)] text-[var(--accent-deep)] ring-1 ring-[var(--accent-soft)]",
 };
 
-/** Starting skeleton for a car nobody has written up yet. */
-const STARTER_SECTIONS: DiagnosticSection[] = [
-  { title: "Moteur & mécanique", items: [] },
-  { title: "Carrosserie & châssis", items: [] },
-  { title: "Intérieur & électronique", items: [] },
-  { title: "Documents & historique", items: [] },
-];
+/** Starting skeleton for a car nobody has written up yet — keys under
+ *  `adminOps.diag.starter`, written in the console's language. */
+const STARTER_SECTIONS = ["engine", "body", "interior", "documents"] as const;
 
 const MAX_PHOTO_MB = 25;
 
@@ -62,18 +57,21 @@ export function DiagnosticEditor({
 }) {
   const router = useRouter();
   const { toast } = useToast();
+  const t = useTranslations("adminOps.diag");
   const [pending, start] = useTransition();
   const [uploading, setUploading] = useState(false);
 
   const [verdict, setVerdict] = useState<DiagnosticVerdict>(initial?.verdict ?? "approved");
   const [headline, setHeadline] = useState(initial?.headline ?? "");
   const [summary, setSummary] = useState(initial?.summary ?? "");
-  const [inspectorName, setInspectorName] = useState(initial?.inspectorName ?? "Équipe Mazed");
+  const [inspectorName, setInspectorName] = useState(initial?.inspectorName ?? t("defaultInspector"));
   const [inspectedAt, setInspectedAt] = useState(
     initial?.inspectedAt ? initial.inspectedAt.slice(0, 10) : "",
   );
   const [sections, setSections] = useState<DiagnosticSection[]>(
-    initial?.sections?.length ? initial.sections : STARTER_SECTIONS,
+    () => initial?.sections?.length
+      ? initial.sections
+      : STARTER_SECTIONS.map((k) => ({ title: t(`starter.${k}`), items: [] })),
   );
   const [photos, setPhotos] = useState<DiagnosticPhoto[]>(initial?.photos ?? []);
 
@@ -104,13 +102,13 @@ export function DiagnosticEditor({
     try {
       const { data: auth } = await withTimeout(supabase.auth.getUser(), 15_000);
       if (!auth.user) {
-        toast("Session expirée — reconnectez-vous.", "error");
+        toast(t("sessionExpired"), "error");
         return;
       }
       const added: DiagnosticPhoto[] = [];
       for (const file of picked) {
         if (file.size > MAX_PHOTO_MB * 1024 * 1024) {
-          toast(`${file.name} : trop volumineux (max ${MAX_PHOTO_MB} Mo).`, "error");
+          toast(t("tooBig", { name: file.name, max: MAX_PHOTO_MB }), "error");
           continue;
         }
         // Photos of DEFECTS need to stay readable when zoomed, so this uses the
@@ -135,7 +133,7 @@ export function DiagnosticEditor({
           120_000,
         );
         if (error) {
-          toast(`Échec du téléversement : ${error.message}`, "error");
+          toast(t("uploadFailed", { error: error.message }), "error");
           continue;
         }
         added.push({ path, caption: null });
@@ -143,7 +141,7 @@ export function DiagnosticEditor({
       if (added.length) setPhotos((p) => [...p, ...added]);
     } catch (err) {
       toast(
-        isTimeout(err) ? "Connexion trop lente — réessayez." : "Erreur réseau.",
+        isTimeout(err) ? t("tooSlow") : t("network"),
         "error",
       );
     } finally {
@@ -170,15 +168,10 @@ export function DiagnosticEditor({
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
-        toast(j.detail ?? j.error ?? `Échec de l'enregistrement (${res.status}).`, "error");
+        toast(j.detail ?? j.error ?? t("saveFailed", { status: res.status }), "error");
         return;
       }
-      toast(
-        nextStatus === "published"
-          ? "Diagnostic publié — le badge apparaît sur l'annonce."
-          : "Brouillon enregistré (non visible par les acheteurs).",
-        "success",
-      );
+      toast(nextStatus === "published" ? t("published") : t("draftSaved"), "success");
       router.refresh();
     });
   }
@@ -187,10 +180,10 @@ export function DiagnosticEditor({
     start(async () => {
       const res = await fetch(`/api/admin/diagnostics/${propertyId}`, { method: "DELETE" });
       if (!res.ok) {
-        toast("Échec de la suppression.", "error");
+        toast(t("deleteFailed"), "error");
         return;
       }
-      toast("Diagnostic supprimé — le badge disparaît de l'annonce.", "success");
+      toast(t("deleted"), "success");
       router.refresh();
     });
   }
@@ -203,12 +196,12 @@ export function DiagnosticEditor({
           {published ? (
             <>
               <Eye className="size-3.5 text-[var(--success)]" />
-              Publié — badge « {VERDICT_LABEL[verdict]} » visible sur l&apos;annonce
+              {t("publishedState", { verdict: t(`verdicts.${verdict}`) })}
             </>
           ) : (
             <>
               <EyeOff className="size-3.5 text-muted" />
-              {initial ? "Brouillon — invisible pour les acheteurs" : "Aucun diagnostic"}
+              {initial ? t("draftState") : t("noDiagnostic")}
             </>
           )}
         </span>
@@ -219,14 +212,14 @@ export function DiagnosticEditor({
             disabled={pending}
             className="inline-flex items-center gap-1 text-[11px] font-bold text-[var(--accent-deep)] hover:underline disabled:opacity-50"
           >
-            <Trash2 className="size-3" /> Supprimer le diagnostic
+            <Trash2 className="size-3" /> {t("delete")}
           </button>
         )}
       </div>
 
       {/* Verdict */}
       <div>
-        <Label>Verdict</Label>
+        <Label>{t("verdict")}</Label>
         <div className="mt-1.5 grid grid-cols-1 gap-2 sm:grid-cols-3">
           {DIAGNOSTIC_VERDICTS.map((v) => (
             <button
@@ -240,16 +233,16 @@ export function DiagnosticEditor({
                   : "bg-surface text-foreground ring-border hover:ring-[var(--border-strong)]")
               }
             >
-              {VERDICT_LABEL[v]}
+              {t(`verdicts.${v}`)}
             </button>
           ))}
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Field label="Contrôlé par" value={inspectorName} onChange={setInspectorName} placeholder="Équipe Mazed" />
+        <Field label={t("inspector")} value={inspectorName} onChange={setInspectorName} placeholder={t("defaultInspector")} />
         <label className="block">
-          <Label>Date du contrôle</Label>
+          <Label>{t("date")}</Label>
           <input
             type="date"
             value={inspectedAt}
@@ -260,19 +253,19 @@ export function DiagnosticEditor({
       </div>
 
       <Field
-        label="Titre (une ligne, affichée en tête de la fiche)"
+        label={t("headline")}
         value={headline}
         onChange={setHeadline}
-        placeholder="Véhicule contrôlé sur 42 points — bon état général"
+        placeholder={t("headlinePlaceholder")}
       />
 
       <label className="block">
-        <Label>Résumé du diagnostic</Label>
+        <Label>{t("summary")}</Label>
         <textarea
           value={summary}
           onChange={(e) => setSummary(e.target.value)}
           rows={4}
-          placeholder="Ce que nous avons constaté, en clair, pour un acheteur qui ne verra pas la voiture avant de se déplacer."
+          placeholder={t("summaryPlaceholder")}
           className={INPUT}
         />
       </label>
@@ -280,13 +273,13 @@ export function DiagnosticEditor({
       {/* ─── Checks ─── */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <Label>Points contrôlés</Label>
+          <Label>{t("checks")}</Label>
           <button
             type="button"
             onClick={() => setSections((s) => [...s, { title: "", items: [] }])}
             className="inline-flex items-center gap-1 text-[11px] font-bold text-[var(--gold)] hover:underline"
           >
-            <Plus className="size-3" /> Ajouter une rubrique
+            <Plus className="size-3" /> {t("addSection")}
           </button>
         </div>
 
@@ -296,13 +289,13 @@ export function DiagnosticEditor({
               <input
                 value={sec.title}
                 onChange={(e) => patchSection(i, { title: e.target.value })}
-                placeholder="Rubrique (ex. Moteur & mécanique)"
+                placeholder={t("sectionPlaceholder")}
                 className={INPUT + " font-bold"}
               />
               <button
                 type="button"
                 onClick={() => setSections((s) => s.filter((_, j) => j !== i))}
-                aria-label="Retirer la rubrique"
+                aria-label={t("removeSection")}
                 className="shrink-0 rounded-lg p-2 text-muted hover:text-[var(--accent-deep)]"
               >
                 <X className="size-4" />
@@ -316,7 +309,7 @@ export function DiagnosticEditor({
                     <input
                       value={it.label}
                       onChange={(e) => patchItem(i, k, { label: e.target.value })}
-                      placeholder="Point contrôlé (ex. Embrayage)"
+                      placeholder={t("itemPlaceholder")}
                       className={INPUT}
                     />
                     <button
@@ -324,7 +317,7 @@ export function DiagnosticEditor({
                       onClick={() =>
                         patchSection(i, { items: sec.items.filter((_, j) => j !== k) })
                       }
-                      aria-label="Retirer le point"
+                      aria-label={t("removeItem")}
                       className="shrink-0 rounded-lg p-2 text-muted hover:text-[var(--accent-deep)]"
                     >
                       <X className="size-3.5" />
@@ -341,13 +334,13 @@ export function DiagnosticEditor({
                           (it.state === st ? STATE_TONE[st] : "bg-surface text-muted ring-1 ring-border")
                         }
                       >
-                        {STATE_LABEL[st]}
+                        {t(`states.${st}`)}
                       </button>
                     ))}
                     <input
                       value={it.note ?? ""}
                       onChange={(e) => patchItem(i, k, { note: e.target.value || null })}
-                      placeholder="Note (visible par l'acheteur)"
+                      placeholder={t("notePlaceholder")}
                       className={INPUT + " flex-1 min-w-[160px]"}
                     />
                   </div>
@@ -358,7 +351,7 @@ export function DiagnosticEditor({
                 onClick={() => addItem(i)}
                 className="inline-flex items-center gap-1 text-[11px] font-bold text-[var(--gold)] hover:underline"
               >
-                <Plus className="size-3" /> Ajouter un point
+                <Plus className="size-3" /> {t("addItem")}
               </button>
             </div>
           </div>
@@ -368,10 +361,10 @@ export function DiagnosticEditor({
       {/* ─── Photos ─── */}
       <div>
         <div className="flex items-center justify-between">
-          <Label>Photos du diagnostic · {photos.length}</Label>
+          <Label>{t("photos", { count: photos.length })}</Label>
           <label className="inline-flex cursor-pointer items-center gap-1 text-[11px] font-bold text-[var(--gold)] hover:underline">
             {uploading ? <Loader2 className="size-3 animate-spin" /> : <Upload className="size-3" />}
-            {uploading ? "Téléversement…" : "Ajouter des photos"}
+            {uploading ? t("uploading") : t("addPhotos")}
             <input
               type="file"
               accept="image/*"
@@ -385,7 +378,7 @@ export function DiagnosticEditor({
         {photos.length === 0 ? (
           <p className="mt-2 inline-flex items-center gap-1.5 text-[11.5px] text-muted">
             <Camera className="size-3.5" />
-            Nos propres photos : défauts constatés, compteur, numéro de série…
+            {t("photosHint")}
           </p>
         ) : (
           <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -394,21 +387,21 @@ export function DiagnosticEditor({
                 <div className="relative">
                   <ImageLightbox
                     src={propertyPhotoUrl(ph.path)}
-                    alt={ph.caption ?? `Diagnostic ${i + 1}`}
+                    alt={ph.caption ?? t("photoAlt", { n: i + 1 })}
                     triggerClassName="relative aspect-square w-full overflow-hidden rounded-xl bg-surface-2 ring-1 ring-border"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={propertyPhotoUrl(ph.path)}
-                      alt={ph.caption ?? `Diagnostic ${i + 1}`}
+                      alt={ph.caption ?? t("photoAlt", { n: i + 1 })}
                       className="size-full object-cover"
                     />
                   </ImageLightbox>
                   <button
                     type="button"
                     onClick={() => setPhotos((p) => p.filter((_, j) => j !== i))}
-                    aria-label="Retirer la photo"
-                    className="absolute right-1 top-1 rounded-full bg-black/65 p-1 text-white hover:bg-black/85"
+                    aria-label={t("removePhoto")}
+                    className="absolute end-1 top-1 rounded-full bg-black/65 p-1 text-white hover:bg-black/85"
                   >
                     <X className="size-3" />
                   </button>
@@ -420,7 +413,7 @@ export function DiagnosticEditor({
                       p.map((q, j) => (j === i ? { ...q, caption: e.target.value || null } : q)),
                     )
                   }
-                  placeholder="Légende"
+                  placeholder={t("caption")}
                   className={INPUT + " text-[11px]"}
                 />
               </div>
@@ -432,14 +425,14 @@ export function DiagnosticEditor({
       {/* ─── Actions ─── */}
       <div className="flex flex-wrap gap-2 border-t border-border pt-3">
         <AdminButton variant="ghost" onClick={() => save("draft")} pending={pending}>
-          <Save className="size-3.5" /> Enregistrer le brouillon
+          <Save className="size-3.5" /> {t("saveDraft")}
         </AdminButton>
         <AdminButton variant="success" onClick={() => save("published")} pending={pending}>
-          <Eye className="size-3.5" /> {published ? "Mettre à jour la fiche publiée" : "Publier le diagnostic"}
+          <Eye className="size-3.5" /> {published ? t("updatePublished") : t("publish")}
         </AdminButton>
         {published && (
           <AdminButton variant="warnSoft" onClick={() => save("draft")} pending={pending}>
-            <EyeOff className="size-3.5" /> Dépublier
+            <EyeOff className="size-3.5" /> {t("unpublish")}
           </AdminButton>
         )}
       </div>

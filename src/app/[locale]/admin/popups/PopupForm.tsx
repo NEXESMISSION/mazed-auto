@@ -2,6 +2,7 @@
 import { TONE_CLASS } from "@/components/admin/kit/tones";
 
 import { useMemo, useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useToast } from "@/components/ui/Toast";
 import type {
@@ -26,6 +27,7 @@ export function PopupForm({
 }: {
   initial: Popup | null;
 }) {
+  const t = useTranslations("admin.popups.form");
   const router = useRouter();
   const { toast } = useToast();
 
@@ -125,10 +127,10 @@ export function PopupForm({
       };
       if (!res.ok) {
         setError(data.error ?? "save_failed");
-        toast(data.error ?? "Erreur inconnue", "error");
+        toast(data.error ?? t("unknownError"), "error");
         return;
       }
-      toast(initial ? "Popup mis à jour" : "Popup créé", "success");
+      toast(initial ? t("updated") : t("created"), "success");
       router.push("/admin/popups");
       router.refresh();
     });
@@ -136,17 +138,17 @@ export function PopupForm({
 
   async function onDelete() {
     if (!initial) return;
-    if (!confirm(`Supprimer définitivement « ${slug} » ?`)) return;
+    if (!confirm(t("confirmDelete", { slug }))) return;
     const res = await fetch(`/api/admin/popups/${initial.id}`, {
       method: "DELETE",
       cache: "no-store",
     });
     if (!res.ok) {
       const d = await res.json().catch(() => ({}));
-      toast((d as { error?: string }).error ?? "Suppression échouée", "error");
+      toast((d as { error?: string }).error ?? t("deleteFailed"), "error");
       return;
     }
-    toast("Popup supprimé", "success");
+    toast(t("deleted"), "success");
     router.push("/admin/popups");
     router.refresh();
   }
@@ -156,7 +158,7 @@ export function PopupForm({
       {/* Action bar — sticky so save is always one tap away from any field. */}
       <div className="sticky top-0 z-20 -mx-1 mb-5 flex items-center justify-between gap-3 rounded-2xl bg-background/95 px-2 py-2.5 backdrop-blur">
         <div className="text-[13px] font-bold text-foreground">
-          {initial ? "Modifier le popup" : "Nouveau popup"}
+          {initial ? t("editTitle") : t("newTitle")}
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -165,7 +167,7 @@ export function PopupForm({
             className="inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-3 py-2 text-[11.5px] font-bold text-foreground ring-1 ring-border transition hover:ring-gold-soft/50"
           >
             <Eye className="size-4" strokeWidth={2.2} />
-            Aperçu
+            {t("preview")}
           </button>
           {initial && (
             <button
@@ -174,7 +176,7 @@ export function PopupForm({
               className="inline-flex items-center gap-1.5 rounded-full border border-[var(--tone-bad-ring)] px-3 py-2 text-[11.5px] font-bold text-[var(--tone-bad)] transition hover:border-[var(--tone-bad)] hover:bg-[var(--tone-bad-bg)]"
             >
               <Trash2 className="size-4" strokeWidth={2.2} />
-              Supprimer
+              {t("delete")}
             </button>
           )}
           <button
@@ -184,7 +186,7 @@ export function PopupForm({
             className="batta-btn-luxe tap-target inline-flex items-center gap-1.5 px-4 py-2 text-[12px] disabled:opacity-50"
           >
             <Save className="size-4" strokeWidth={2.2} />
-            {saving ? "Enregistrement…" : "Enregistrer"}
+            {saving ? t("saving") : t("save")}
           </button>
         </div>
       </div>
@@ -192,58 +194,59 @@ export function PopupForm({
       {error && (
         <div className={`mb-5 flex items-center gap-2 rounded-xl px-4 py-3 text-[12.5px] font-semibold ring-1 ${TONE_CLASS.bad}`}>
           <AlertCircle className="size-4" strokeWidth={2.2} />
-          {humanError(error)}
+          {humanError(error, t)}
         </div>
       )}
 
       {/* ─── Identification ──────────────────────────────────────────── */}
-      <Section title="Identification" subtitle="Slug court (lettres, chiffres, tirets) — utilisé dans les logs et le localStorage anonyme.">
+      <Section title={t("identification.title")} subtitle={t("identification.subtitle")}>
         <div className="grid gap-3 lg:grid-cols-2">
-          <Field label="Slug" required>
+          <Field label={t("identification.slug")} required>
             <input
               value={slug}
               onChange={(e) => setSlug(e.target.value)}
-              placeholder="ex. welcome-2026 ou kyc-nudge"
+              placeholder={t("identification.slugPlaceholder")}
+              dir="ltr"
               className="batta-input"
             />
           </Field>
-          <Field label="Statut">
+          <Field label={t("identification.status")}>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as PopupStatus)}
               className="batta-input"
             >
-              <option value="draft">Brouillon</option>
-              <option value="live">En ligne</option>
-              <option value="paused">En pause</option>
-              <option value="archived">Archivé</option>
+              <option value="draft">{t("identification.statuses.draft")}</option>
+              <option value="live">{t("identification.statuses.live")}</option>
+              <option value="paused">{t("identification.statuses.paused")}</option>
+              <option value="archived">{t("identification.statuses.archived")}</option>
             </select>
           </Field>
         </div>
 
         <div className="mt-3 grid gap-3 lg:grid-cols-3">
-          <Field label="Mode" hint="Diffusion = fenêtre temporelle. Règle = condition permanente.">
+          <Field label={t("identification.mode")} hint={t("identification.modeHint")}>
             <select
               value={mode}
               onChange={(e) => setMode(e.target.value as PopupMode)}
               className="batta-input"
             >
-              <option value="broadcast">Diffusion (one-shot)</option>
-              <option value="rule">Règle permanente</option>
+              <option value="broadcast">{t("identification.modes.broadcast")}</option>
+              <option value="rule">{t("identification.modes.rule")}</option>
             </select>
           </Field>
-          <Field label="Variante" hint="V1 ne rend que la modale ; bannière + sheet arrivent en phase 2.">
+          <Field label={t("identification.variant")} hint={t("identification.variantHint")}>
             <select
               value={variant}
               onChange={(e) => setVariant(e.target.value as PopupVariant)}
               className="batta-input"
             >
-              <option value="modal">Modale</option>
-              <option value="banner">Bannière (à venir)</option>
-              <option value="sheet">Bottom sheet (à venir)</option>
+              <option value="modal">{t("identification.variants.modal")}</option>
+              <option value="banner">{t("identification.variants.banner")}</option>
+              <option value="sheet">{t("identification.variants.sheet")}</option>
             </select>
           </Field>
-          <Field label="Priorité" hint="Quand plusieurs popups correspondent, le plus haut gagne.">
+          <Field label={t("identification.priority")} hint={t("identification.priorityHint")}>
             <input
               type="number"
               min={-100}
@@ -257,9 +260,9 @@ export function PopupForm({
       </Section>
 
       {/* ─── Contenu ─────────────────────────────────────────────────── */}
-      <Section title="Contenu" subtitle="Titre + corps + image facultative. Le français est requis ; arabe et anglais sont optionnels.">
+      <Section title={t("content.title")} subtitle={t("content.subtitle")}>
         <LocalisedInputs
-          label="Titre"
+          label={t("content.titleField")}
           fr={titleFr} setFr={setTitleFr}
           ar={titleAr} setAr={setTitleAr}
           en={titleEn} setEn={setTitleEn}
@@ -267,7 +270,7 @@ export function PopupForm({
         />
         <div className="mt-4">
           <LocalisedInputs
-            label="Corps"
+            label={t("content.body")}
             fr={bodyFr} setFr={setBodyFr}
             ar={bodyAr} setAr={setBodyAr}
             en={bodyEn} setEn={setBodyEn}
@@ -275,19 +278,21 @@ export function PopupForm({
           />
         </div>
         <div className="mt-3 grid gap-3 lg:grid-cols-2">
-          <Field label="URL de l'image" hint="Optionnel. Affiché en haut de la modale.">
+          <Field label={t("content.image")} hint={t("content.imageHint")}>
             <input
               value={imageUrl}
               onChange={(e) => setImageUrl(e.target.value)}
               placeholder="https://…"
+              dir="ltr"
               className="batta-input"
             />
           </Field>
-          <Field label="Icône (Lucide)" hint="ex. Sparkles, ShieldCheck — laissé vide = pas d'icône.">
+          <Field label={t("content.icon")} hint={t("content.iconHint")}>
             <input
               value={icon}
               onChange={(e) => setIcon(e.target.value)}
               placeholder="Sparkles"
+              dir="ltr"
               className="batta-input"
             />
           </Field>
@@ -295,39 +300,43 @@ export function PopupForm({
       </Section>
 
       {/* ─── CTAs ────────────────────────────────────────────────────── */}
-      <Section title="Boutons d'action" subtitle="Le bouton principal est obligatoire pour que le popup soit actionnable ; le secondaire est optionnel.">
+      <Section title={t("ctas.title")} subtitle={t("ctas.subtitle")}>
         <div className="grid gap-3 lg:grid-cols-2">
-          <Field label="Libellé principal (fr)">
+          <Field label={t("ctas.primaryLabel")}>
             <input
               value={ctaPrimaryLabelFr}
               onChange={(e) => setCtaPrimaryLabelFr(e.target.value)}
               placeholder="Continuer"
+              dir="ltr"
               className="batta-input"
             />
           </Field>
-          <Field label="Lien principal">
+          <Field label={t("ctas.primaryHref")}>
             <input
               value={ctaPrimaryHref}
               onChange={(e) => setCtaPrimaryHref(e.target.value)}
               placeholder="/annonces"
+              dir="ltr"
               className="batta-input"
             />
           </Field>
         </div>
         <div className="mt-3 grid gap-3 lg:grid-cols-2">
-          <Field label="Libellé secondaire (fr) — facultatif">
+          <Field label={t("ctas.secondaryLabel")}>
             <input
               value={ctaSecondaryLabelFr}
               onChange={(e) => setCtaSecondaryLabelFr(e.target.value)}
               placeholder="Plus tard"
+              dir="ltr"
               className="batta-input"
             />
           </Field>
-          <Field label="Lien secondaire — facultatif">
+          <Field label={t("ctas.secondaryHref")}>
             <input
               value={ctaSecondaryHref}
               onChange={(e) => setCtaSecondaryHref(e.target.value)}
               placeholder="/help"
+              dir="ltr"
               className="batta-input"
             />
           </Field>
@@ -335,21 +344,21 @@ export function PopupForm({
       </Section>
 
       {/* ─── Audience ────────────────────────────────────────────────── */}
-      <Section title="Audience" subtitle="À qui le popup est-il destiné ?">
+      <Section title={t("audience.title")} subtitle={t("audience.subtitle")}>
         <div className="grid gap-3 lg:grid-cols-2">
-          <Field label="Portée">
+          <Field label={t("audience.scope")}>
             <select
               value={audienceScope}
               onChange={(e) => setAudienceScope(e.target.value as PopupAudience["scope"])}
               className="batta-input"
             >
-              <option value="all">Tout le monde</option>
-              <option value="anon">Visiteurs anonymes</option>
-              <option value="logged_in">Utilisateurs connectés</option>
+              <option value="all">{t("audience.scopes.all")}</option>
+              <option value="anon">{t("audience.scopes.anon")}</option>
+              <option value="logged_in">{t("audience.scopes.logged_in")}</option>
             </select>
           </Field>
           {audienceScope === "logged_in" && (
-            <Field label="Rôles (optionnel)" hint="Restreindre à certains rôles. Vide = tous les rôles.">
+            <Field label={t("audience.roles")} hint={t("audience.rolesHint")}>
               <RoleMultiSelect value={audienceRoles} onChange={setAudienceRoles} />
             </Field>
           )}
@@ -357,17 +366,18 @@ export function PopupForm({
       </Section>
 
       {/* ─── Ciblage pages / langues / appareils ─────────────────────── */}
-      <Section title="Ciblage" subtitle="Les pages où le popup doit s'afficher, sa langue et le type d'appareil.">
-        <Field label="Pages" hint='Une glob par ligne ou séparées par des virgules. Vide = toutes les pages. Ex. "/, /auctions/*". Préfixe "!" pour exclure : "!/admin/*".'>
+      <Section title={t("targeting.title")} subtitle={t("targeting.subtitle")}>
+        <Field label={t("targeting.pages")} hint={t("targeting.pagesHint")}>
           <input
             value={pagesRaw}
             onChange={(e) => setPagesRaw(e.target.value)}
             placeholder="/, /auctions/*"
+            dir="ltr"
             className="batta-input"
           />
         </Field>
         <div className="mt-3 grid gap-3 lg:grid-cols-2">
-          <Field label="Langues">
+          <Field label={t("targeting.languages")}>
             <div className="flex gap-2">
               {(["fr", "ar", "en"] as const).map((l) => (
                 <label key={l} className="inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-3 py-1.5 text-[11.5px] font-bold ring-1 ring-border cursor-pointer">
@@ -385,15 +395,15 @@ export function PopupForm({
               ))}
             </div>
           </Field>
-          <Field label="Appareils">
+          <Field label={t("targeting.devices")}>
             <select
               value={devices}
               onChange={(e) => setDevices(e.target.value as PopupDevices)}
               className="batta-input"
             >
-              <option value="both">Mobile + Desktop</option>
-              <option value="mobile">Mobile uniquement</option>
-              <option value="desktop">Desktop uniquement</option>
+              <option value="both">{t("targeting.deviceOptions.both")}</option>
+              <option value="mobile">{t("targeting.deviceOptions.mobile")}</option>
+              <option value="desktop">{t("targeting.deviceOptions.desktop")}</option>
             </select>
           </Field>
         </div>
@@ -401,9 +411,9 @@ export function PopupForm({
 
       {/* ─── Diffusion ────────────────────────────────────────────────── */}
       {mode === "broadcast" && (
-        <Section title="Fenêtre de diffusion" subtitle="Dates de début et de fin (UTC).">
+        <Section title={t("window.title")} subtitle={t("window.subtitle")}>
           <div className="grid gap-3 lg:grid-cols-2">
-            <Field label="Démarre le">
+            <Field label={t("window.starts")}>
               <input
                 type="datetime-local"
                 value={startsAt}
@@ -411,7 +421,7 @@ export function PopupForm({
                 className="batta-input"
               />
             </Field>
-            <Field label="Se termine le">
+            <Field label={t("window.ends")}>
               <input
                 type="datetime-local"
                 value={endsAt}
@@ -424,22 +434,22 @@ export function PopupForm({
       )}
 
       {/* ─── Fréquence + comportement ────────────────────────────────── */}
-      <Section title="Fréquence & comportement" subtitle="À quelle cadence l'utilisateur revoit-il le popup ?">
+      <Section title={t("frequency.title")} subtitle={t("frequency.subtitle")}>
         <div className="grid gap-3 lg:grid-cols-2">
-          <Field label="Fréquence">
+          <Field label={t("frequency.label")}>
             <select
               value={frequency}
               onChange={(e) => setFrequency(e.target.value as PopupFrequency)}
               className="batta-input"
             >
-              <option value="once_per_user">Une fois par utilisateur</option>
-              <option value="once_per_session">Une fois par session</option>
-              <option value="every_visit">À chaque visite</option>
-              <option value="every_n_days">Tous les N jours</option>
+              <option value="once_per_user">{t("frequency.options.once_per_user")}</option>
+              <option value="once_per_session">{t("frequency.options.once_per_session")}</option>
+              <option value="every_visit">{t("frequency.options.every_visit")}</option>
+              <option value="every_n_days">{t("frequency.options.every_n_days")}</option>
             </select>
           </Field>
           {frequency === "every_n_days" && (
-            <Field label="N (jours)">
+            <Field label={t("frequency.nDays")}>
               <input
                 type="number"
                 min={1}
@@ -458,7 +468,7 @@ export function PopupForm({
               checked={dismissible}
               onChange={(e) => setDismissible(e.target.checked)}
             />
-            Fermable par l'utilisateur
+            {t("frequency.dismissible")}
           </label>
           <label className="inline-flex items-center gap-2 text-[12.5px] font-semibold">
             <input
@@ -466,7 +476,7 @@ export function PopupForm({
               checked={forceAction}
               onChange={(e) => setForceAction(e.target.checked)}
             />
-            Bloquer la page jusqu'à action (ex. acceptation CGU)
+            {t("frequency.forceAction")}
           </label>
         </div>
       </Section>
@@ -475,7 +485,7 @@ export function PopupForm({
       {previewOpen && (
         <PreviewOverlay
           onClose={() => setPreviewOpen(false)}
-          title={titleFr || "Sans titre"}
+          title={titleFr || t("untitled")}
           body={bodyFr || ""}
           imageUrl={imageUrl}
           icon={icon}
@@ -568,18 +578,14 @@ function localToIso(local: string): string | null {
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }
 
-function humanError(code: string): string {
-  switch (code) {
-    case "slug_invalid": return "Le slug est invalide (lettres, chiffres, tirets).";
-    case "title_required": return "Le titre en français est requis.";
-    case "body_invalid": return "Le corps est invalide.";
-    case "mode_invalid": return "Mode inconnu.";
-    case "variant_invalid": return "Variante inconnue.";
-    case "audience_invalid": return "Audience invalide.";
-    case "forbidden": return "Accès refusé.";
-    case "auth": return "Veuillez vous reconnecter.";
-    default: return code;
-  }
+const KNOWN_ERRORS = [
+  "slug_invalid", "title_required", "body_invalid", "mode_invalid",
+  "variant_invalid", "audience_invalid", "forbidden", "auth",
+];
+
+/** The API's error code in the operator's words (`admin.popups.form.errors`). */
+function humanError(code: string, t: (key: string) => string): string {
+  return KNOWN_ERRORS.includes(code) ? t(`errors.${code}`) : code;
 }
 
 // ──────────────────────────────────────────────────────────────────────
@@ -632,6 +638,7 @@ function LocalisedInputs({
   required?: boolean;
   multiline?: boolean;
 }) {
+  const t = useTranslations("admin.popups.form");
   const [active, setActive] = useState<"fr" | "ar" | "en">("fr");
   const value = active === "fr" ? fr : active === "ar" ? ar : en;
   const setter = active === "fr" ? setFr : active === "ar" ? setAr : setEn;
@@ -664,8 +671,10 @@ function LocalisedInputs({
         onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
           setter(e.target.value)
         }
+        // Each language is typed in its own direction, whatever the console's.
+        dir={active === "ar" ? "rtl" : "ltr"}
         className={`batta-input ${multiline ? "min-h-[100px]" : ""}`}
-        placeholder={`Texte en ${active.toUpperCase()}…`}
+        placeholder={t("textIn", { lang: active.toUpperCase() })}
       />
     </div>
   );
@@ -678,25 +687,19 @@ function RoleMultiSelect({
   value: string[];
   onChange: (next: string[]) => void;
 }) {
-  const ROLES = [
-    { key: "individual", label: "Particuliers" },
-    { key: "agency",     label: "Agences" },
-    { key: "bank",       label: "Banques" },
-    { key: "bailiff",    label: "Huissiers" },
-    { key: "inspector",  label: "Inspecteurs" },
-    { key: "admin",      label: "Admins" },
-  ];
+  const t = useTranslations("admin.popups.form.roles");
+  const ROLES = ["individual", "agency", "bank", "bailiff", "inspector", "admin"];
   return (
     <div className="flex flex-wrap gap-1.5">
       {ROLES.map((r) => {
-        const active = value.includes(r.key);
+        const active = value.includes(r);
         return (
           <button
-            key={r.key}
+            key={r}
             type="button"
             onClick={() => {
               onChange(
-                active ? value.filter((v) => v !== r.key) : [...value, r.key],
+                active ? value.filter((v) => v !== r) : [...value, r],
               );
             }}
             className={`rounded-full border px-3 py-1.5 text-[11px] font-bold transition ${
@@ -705,7 +708,7 @@ function RoleMultiSelect({
                 : "border-[var(--border)] bg-surface text-muted hover:border-[var(--border-strong)] hover:text-foreground"
             }`}
           >
-            {r.label}
+            {t(r)}
           </button>
         );
       })}
@@ -727,6 +730,7 @@ function PreviewOverlay({
   ctaPrimary: { label: string; href: string } | null;
   ctaSecondary: { label: string; href: string } | null;
 }) {
+  const t = useTranslations("admin.popups.form");
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
       <div className="relative w-full max-w-sm overflow-hidden rounded-2xl bg-surface ring-1 ring-gold/30 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.6)]">
@@ -735,7 +739,7 @@ function PreviewOverlay({
           onClick={onClose}
           className="absolute end-3 top-3 z-10 rounded-full bg-black/40 px-2 py-1 text-[10px] font-bold text-white"
         >
-          Fermer
+          {t("close")}
         </button>
         {imageUrl && (
           // eslint-disable-next-line @next/next/no-img-element

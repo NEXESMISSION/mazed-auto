@@ -3,6 +3,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
+import { apiTranslations } from "@/i18n/api";
 
 /**
  * Everything an admin can do to one annonce.
@@ -84,6 +85,7 @@ export async function POST(
     fields?: unknown;
   };
   const action = typeof body.action === "string" ? body.action : "";
+  const t = await apiTranslations(req, "adminOps.api");
 
   const { data: listing } = await admin
     .from("listings")
@@ -110,7 +112,7 @@ export async function POST(
   if (action === "mark_paid" || action === "waive_fee") {
     if (listing.status !== "pending_payment" && listing.status !== "pending_review") {
       return NextResponse.json(
-        { error: "not_awaiting_payment", detail: `Cette annonce est « ${listing.status} ».` },
+        { error: "not_awaiting_payment", detail: t("notAwaitingPayment", { status: listing.status }) },
         { status: 409 },
       );
     }
@@ -118,7 +120,7 @@ export async function POST(
     if (action === "mark_paid") {
       if (!listing.fee_payment_id) {
         return NextResponse.json(
-          { error: "no_payment", detail: "Aucun paiement n'est rattaché à cette annonce." },
+          { error: "no_payment", detail: t("noPayment") },
           { status: 400 },
         );
       }
@@ -166,13 +168,13 @@ export async function POST(
   if (action === "approve" || action === "republish") {
     if (!listing.contact_phone) {
       return NextResponse.json(
-        { error: "contact_required", detail: "Cette annonce n'a pas de numéro : elle ne peut pas être publiée." },
+        { error: "contact_required", detail: t("noNumber") },
         { status: 400 },
       );
     }
     if (action === "republish" && listing.status === "published") {
       return NextResponse.json(
-        { error: "already_published", detail: "Cette annonce est déjà en ligne." },
+        { error: "already_published", detail: t("alreadyPublished") },
         { status: 409 },
       );
     }
@@ -213,7 +215,7 @@ export async function POST(
     const reason = typeof body.reason === "string" ? body.reason.trim().slice(0, 500) : "";
     if (!reason) {
       return NextResponse.json(
-        { error: "reason_required", detail: "Dites au vendeur ce qui ne va pas — sinon il renverra la même annonce." },
+        { error: "reason_required", detail: t("rejectReasonRequired") },
         { status: 400 },
       );
     }
@@ -275,7 +277,7 @@ export async function POST(
   if (action === "extend") {
     if (listing.status !== "published") {
       return NextResponse.json(
-        { error: "not_published", detail: "Seule une annonce en ligne peut être prolongée." },
+        { error: "not_published", detail: t("extendNotPublished") },
         { status: 409 },
       );
     }
@@ -300,7 +302,7 @@ export async function POST(
   if (action === "feature") {
     if (listing.status !== "published") {
       return NextResponse.json(
-        { error: "not_published", detail: "Seule une annonce en ligne peut être mise en avant." },
+        { error: "not_published", detail: t("featureNotPublished") },
         { status: 409 },
       );
     }
@@ -342,7 +344,7 @@ export async function POST(
   if (action === "mark_sold") {
     if (listing.status !== "published" && listing.status !== "expired") {
       return NextResponse.json(
-        { error: "not_sellable", detail: `Une annonce « ${listing.status} » ne peut pas être marquée vendue.` },
+        { error: "not_sellable", detail: t("notSellable", { status: listing.status }) },
         { status: 409 },
       );
     }
@@ -395,7 +397,7 @@ export async function POST(
       !patch.contact_phone
     ) {
       return NextResponse.json(
-        { error: "contact_required", detail: "Une annonce en ligne doit garder un numéro." },
+        { error: "contact_required", detail: t("keepNumber") },
         { status: 400 },
       );
     }
@@ -418,7 +420,7 @@ export async function POST(
       return NextResponse.json(
         {
           error: "published_not_deletable",
-          detail: "Archivez d'abord : supprimer une annonce en ligne casse les liens partagés.",
+          detail: t("publishedNotDeletable"),
         },
         { status: 409 },
       );
@@ -433,7 +435,7 @@ export async function POST(
         return NextResponse.json(
           {
             error: "paid_not_deletable",
-            detail: "Cette annonce a été payée. Archivez-la — la trace du paiement doit rester.",
+            detail: t("paidNotDeletable"),
           },
           { status: 409 },
         );

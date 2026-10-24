@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { HomeCurator, type CuratorRow } from "./HomeCurator";
@@ -16,12 +17,13 @@ export const revalidate = 0;
  * this is where they are made.
  */
 export default async function AdminHomePage() {
+  const t = await getTranslations("admin.home");
   const admin = getServiceSupabase();
   if (!admin) {
     return (
       <div>
         <SiteTabs />
-        <AdminPageHeader eyebrow="Accueil" title="Mise en avant" description="Service indisponible." />
+        <AdminPageHeader eyebrow={t("eyebrow")} title={t("title")} description={t("unavailable")} />
       </div>
     );
   }
@@ -55,9 +57,9 @@ export default async function AdminHomePage() {
   return (
     <div>
       <AdminPageHeader
-        eyebrow="Accueil"
-        title="Mise en avant"
-        description="Choisissez les annonces à la une, l'image de chaque annonce, et la composition de la page d'accueil."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t("description")}
       />
       <div className="mt-6">
         <HomeCurator rows={rows} layout={layout} />

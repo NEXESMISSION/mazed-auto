@@ -67,12 +67,16 @@ export function TextField({
   onChange,
   placeholder,
   type = "text",
+  dir,
   ...rest
 }: Common & {
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
   type?: "text" | "tel" | "email" | "url";
+  /** Text direction of the value. Phone numbers, e-mails and URLs are
+   *  left-to-right in an Arabic console too; pass "ltr" for an IBAN or a RIB. */
+  dir?: "ltr" | "rtl" | "auto";
 }) {
   const id = useId();
   return (
@@ -80,6 +84,7 @@ export function TextField({
       <input
         id={id}
         type={type}
+        dir={dir ?? (type === "text" ? undefined : "ltr")}
         value={value}
         disabled={rest.disabled}
         required={rest.required}

@@ -1,10 +1,13 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useToast } from "@/components/ui/Toast";
 import { AdminButton } from "@/components/admin/AdminButton";
 import { GOVERNORATES } from "@/lib/governorates";
+import { governorateLabel } from "@/lib/labels";
+import { currencyLabel } from "@/lib/utils";
 import { PhotoUploader, type UploadedPhoto } from "@/components/listing/PhotoUploader";
 import {
   AttributeField,
@@ -58,6 +61,8 @@ export function ManualListingForm({
 }) {
   const router = useRouter();
   const { toast } = useToast();
+  const t = useTranslations("adminOps");
+  const locale = useLocale();
 
   const [open, setOpen] = useState(standalone);
   const [busy, setBusy] = useState(false);
@@ -149,17 +154,17 @@ export function ManualListingForm({
   }
 
   function validate(): string | null {
-    if (!sellerId) return "Choisissez le vendeur à qui appartient l'annonce.";
-    if (!categoryId) return "Choisissez une catégorie.";
-    if (title.trim().length < 3) return "Donnez un titre à l'annonce.";
+    if (!sellerId) return t("create.errors.noSeller");
+    if (!categoryId) return t("create.errors.noCategory");
+    if (title.trim().length < 3) return t("create.errors.noTitle");
     if (!onRequest && !(Number(price) > 0)) {
-      return "Indiquez un prix, ou cochez « prix sur demande ».";
+      return t("create.errors.noPrice");
     }
     for (const a of category?.attributes ?? []) {
-      if (a.required && !attrs[a.fieldKey]) return `« ${a.label} » est obligatoire.`;
+      if (a.required && !attrs[a.fieldKey]) return t("create.errors.required", { label: a.label });
     }
     if (publishNow && contactPhone.replace(/\D/g, "").length < 8) {
-      return "Un numéro de contact est obligatoire pour publier.";
+      return t("create.errors.noPhone");
     }
     return null;
   }
@@ -212,20 +217,15 @@ export function ManualListingForm({
       });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) {
-        toast(j.detail ?? j.error ?? "Échec de la création.", "error");
+        toast(j.detail ?? j.error ?? t("create.errors.failed"), "error");
         return;
       }
-      toast(
-        publishNow
-          ? "Annonce créée et publiée — le vendeur est prévenu."
-          : "Annonce créée, en attente de vérification.",
-        "success",
-      );
+      toast(publishNow ? t("create.done.published") : t("create.done.draft"), "success");
       reset();
       setOpen(false);
       router.refresh();
     } catch {
-      toast("Erreur réseau.", "error");
+      toast(t("create.errors.network"), "error");
     } finally {
       setBusy(false);
     }
@@ -236,11 +236,10 @@ export function ManualListingForm({
       <div className="rounded-2xl border border-dashed border-border bg-surface-2/40 p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-[12.5px] text-muted">
-            Un vendeur vous a envoyé sa voiture par téléphone ou sur WhatsApp ?
-            Publiez-la pour lui — <strong className="text-foreground">sans frais ni forfait</strong>.
+            {t.rich("create.teaser", { b: (chunks) => <strong className="text-foreground">{chunks}</strong> })}
           </p>
           <AdminButton variant="primary" onClick={() => setOpen(true)}>
-            <Plus className="size-3.5" /> Créer une annonce
+            <Plus className="size-3.5" /> {t("create.title")}
           </AdminButton>
         </div>
       </div>
@@ -251,16 +250,16 @@ export function ManualListingForm({
     <section className="rounded-2xl border border-border bg-surface p-4">
       <header className="flex items-center justify-between gap-3 border-b border-border pb-3">
         <div>
-          <h2 className="text-[15px] font-extrabold text-foreground">Créer une annonce</h2>
+          <h2 className="text-[15px] font-extrabold text-foreground">{t("create.title")}</h2>
           <p className="mt-0.5 text-[11.5px] text-muted">
-            Publiée au nom du vendeur, sans frais. La gratuité est enregistrée à votre nom.
+            {t("create.subtitle")}
           </p>
         </div>
         {!standalone && (
           <button
             onClick={() => setOpen(false)}
             className="rounded-lg p-1.5 text-muted hover:bg-surface-2 hover:text-foreground"
-            aria-label="Fermer"
+            aria-label={t("common.close")}
           >
             <X className="size-4" />
           </button>
@@ -270,18 +269,18 @@ export function ManualListingForm({
       <div className="mt-4 space-y-4">
         {/* ── Vendeur ── */}
         <div>
-          <Label>Vendeur *</Label>
+          <Label>{t("create.seller")}</Label>
           {seller ? (
             <div className="mt-1 flex items-center justify-between gap-3 rounded-xl border border-border bg-surface-2/50 px-3 py-2.5">
               <span className="text-[13.5px] font-bold text-foreground">
                 {seller.name}
-                {seller.phone && <span className="ms-2 font-normal text-muted">{seller.phone}</span>}
+                {seller.phone && <span className="ltr-island ltr:ml-2 rtl:mr-2 font-normal text-muted">{seller.phone}</span>}
               </span>
               <button
                 onClick={() => setSellerId("")}
                 className="text-[11.5px] font-bold text-muted hover:text-foreground"
               >
-                Changer
+                {t("create.change")}
               </button>
             </div>
           ) : (
@@ -291,7 +290,7 @@ export function ManualListingForm({
                 <input
                   value={sellerQuery}
                   onChange={(e) => setSellerQuery(e.target.value)}
-                  placeholder="Nom ou téléphone…"
+                  placeholder={t("create.sellerSearch")}
                   className={INPUT + " !mt-0 ps-9"}
                 />
               </div>
@@ -303,7 +302,7 @@ export function ManualListingForm({
                       className="w-full rounded-lg px-3 py-2 text-start text-[13px] text-foreground hover:bg-surface-2"
                     >
                       {s.name}
-                      {s.phone && <span className="ms-2 text-[11.5px] text-muted">{s.phone}</span>}
+                      {s.phone && <span className="ltr-island ltr:ml-2 rtl:mr-2 text-[11.5px] text-muted">{s.phone}</span>}
                     </button>
                   </li>
                 ))}
@@ -312,13 +311,13 @@ export function ManualListingForm({
                     things and only one of them is a problem. */}
                 {sellerQuery.trim().length < MIN_SELLER_CHARS ? (
                   <li className="px-3 py-2 text-[12px] text-muted">
-                    Tapez au moins {MIN_SELLER_CHARS} caractères — nom ou numéro.
+                    {t("create.typeMore", { min: MIN_SELLER_CHARS })}
                   </li>
                 ) : searching ? (
-                  <li className="px-3 py-2 text-[12px] text-muted">Recherche…</li>
+                  <li className="px-3 py-2 text-[12px] text-muted">{t("create.searching")}</li>
                 ) : matches.length === 0 ? (
                   <li className="px-3 py-2 text-[12px] text-muted">
-                    Aucun compte ne correspond — le vendeur doit d&apos;abord s&apos;inscrire.
+                    {t("create.noSeller")}
                   </li>
                 ) : null}
               </ul>
@@ -328,7 +327,7 @@ export function ManualListingForm({
 
         {/* ── Catégorie ── */}
         <label className="block">
-          <Label>Catégorie *</Label>
+          <Label>{t("create.category")}</Label>
           <select
             value={categoryId}
             onChange={(e) => { setCategoryId(e.target.value); setAttrs({}); }}
@@ -344,33 +343,33 @@ export function ManualListingForm({
         </label>
 
         <Field
-          label="Titre *"
+          label={t("create.titleLabel")}
           value={title}
           onChange={setTitle}
-          placeholder={isPart ? "Plaquettes de frein avant Bosch" : "Renault Clio 5 · 2020"}
+          placeholder={isPart ? t("create.titlePart") : t("create.titleCar")}
         />
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Prix (TND)" type="number" value={price} onChange={setPrice} disabled={onRequest} />
+          <Field label={t("create.price", { currency: currencyLabel(locale) })} type="number" value={price} onChange={setPrice} disabled={onRequest} />
           <div className="flex items-end gap-4 pb-2">
-            <CheckField label="Négociable" checked={negotiable} onChange={setNegotiable} />
-            <CheckField label="Prix sur demande" checked={onRequest} onChange={setOnRequest} />
+            <CheckField label={t("create.negotiable")} checked={negotiable} onChange={setNegotiable} />
+            <CheckField label={t("create.priceOnRequest")} checked={onRequest} onChange={setOnRequest} />
           </div>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block">
-            <Label>État</Label>
+            <Label>{t("create.condition")}</Label>
             <select value={condition} onChange={(e) => setCondition(e.target.value)} className={INPUT}>
-              <option value="used">Occasion</option>
-              <option value="new">Neuf</option>
-              <option value="refurbished">Reconditionné</option>
+              <option value="used">{t("conditions.used")}</option>
+              <option value="new">{t("conditions.new")}</option>
+              <option value="refurbished">{t("conditions.refurbished")}</option>
             </select>
           </label>
           <label className="block">
-            <Label>Gouvernorat *</Label>
+            <Label>{t("create.governorate")}</Label>
             <select value={governorate} onChange={(e) => setGovernorate(e.target.value)} className={INPUT}>
-              {GOVERNORATES.map((g) => <option key={g} value={g}>{g}</option>)}
+              {GOVERNORATES.map((g) => <option key={g} value={g}>{governorateLabel(g, locale)}</option>)}
             </select>
           </label>
         </div>
@@ -389,12 +388,12 @@ export function ManualListingForm({
         )}
 
         <label className="block">
-          <Label>Description</Label>
+          <Label>{t("create.description")}</Label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
-            placeholder="Ce que le vendeur vous a décrit."
+            placeholder={t("create.descriptionPlaceholder")}
             className={INPUT}
           />
         </label>
@@ -404,7 +403,7 @@ export function ManualListingForm({
             lived here went through supabase-js, which serialises on the
             per-origin auth Web Lock and left uploads hanging forever. */}
         <div>
-          <Label>Photos</Label>
+          <Label>{t("create.photos")}</Label>
           <div className="mt-1">
             <PhotoUploader photos={photos} onChange={setPhotos} disabled={busy} />
           </div>
@@ -413,31 +412,31 @@ export function ManualListingForm({
         {/* ── Compatibilité (pièces) ── */}
         {isPart && (
           <div>
-            <Label>Compatible avec</Label>
+            <Label>{t("create.fitment")}</Label>
             <div className="mt-1 space-y-2">
               {fitments.map((f, i) => (
                 <div key={i} className="grid grid-cols-2 gap-2 sm:grid-cols-5">
                   <input
-                    value={f.make} placeholder="Marque"
+                    value={f.make} placeholder={t("create.make")}
                     onChange={(e) => setFitments((s) => s.map((x, j) => (j === i ? { ...x, make: e.target.value } : x)))}
                     className={INPUT + " !mt-0"} />
                   <input
-                    value={f.model} placeholder="Modèle"
+                    value={f.model} placeholder={t("create.model")}
                     onChange={(e) => setFitments((s) => s.map((x, j) => (j === i ? { ...x, model: e.target.value } : x)))}
                     className={INPUT + " !mt-0"} />
                   <input
-                    value={f.yearFrom} placeholder="De" inputMode="numeric"
+                    value={f.yearFrom} placeholder={t("create.yearFrom")} inputMode="numeric"
                     onChange={(e) => setFitments((s) => s.map((x, j) => (j === i ? { ...x, yearFrom: e.target.value } : x)))}
                     className={INPUT + " !mt-0"} />
                   <input
-                    value={f.yearTo} placeholder="À" inputMode="numeric"
+                    value={f.yearTo} placeholder={t("create.yearTo")} inputMode="numeric"
                     onChange={(e) => setFitments((s) => s.map((x, j) => (j === i ? { ...x, yearTo: e.target.value } : x)))}
                     className={INPUT + " !mt-0"} />
                   <button
                     onClick={() => setFitments((s) => s.filter((_, j) => j !== i))}
                     className="rounded-xl border border-border px-3 text-[12px] font-bold text-muted hover:text-foreground"
                   >
-                    Retirer
+                    {t("create.remove")}
                   </button>
                 </div>
               ))}
@@ -445,7 +444,7 @@ export function ManualListingForm({
                 variant="ghost"
                 onClick={() => setFitments((s) => [...s, { make: "", model: "", yearFrom: "", yearTo: "" }])}
               >
-                <Plus className="size-3.5" /> Ajouter un véhicule compatible
+                <Plus className="size-3.5" /> {t("create.addFitment")}
               </AdminButton>
             </div>
           </div>
@@ -453,18 +452,18 @@ export function ManualListingForm({
 
         {/* ── Contact ── */}
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Nom affiché" value={contactName} onChange={setContactName} placeholder="Karim B." />
-          <Field label="Téléphone affiché *" value={contactPhone} onChange={setContactPhone} placeholder="+216 …" />
+          <Field label={t("create.contactName")} value={contactName} onChange={setContactName} placeholder={t("create.contactNamePlaceholder")} />
+          <Field label={t("create.contactPhone")} value={contactPhone} onChange={setContactPhone} placeholder="+216 …" />
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3">
-          <CheckField label="Publier immédiatement" checked={publishNow} onChange={setPublishNow} />
+          <CheckField label={t("create.publishNow")} checked={publishNow} onChange={setPublishNow} />
           <div className="flex items-center gap-2">
             <AdminButton variant="ghost" onClick={() => { reset(); setOpen(false); }}>
-              Annuler
+              {t("common.cancel")}
             </AdminButton>
             <AdminButton variant="primary" pending={busy} onClick={submit}>
-              {publishNow ? "Créer et publier" : "Créer en brouillon"}
+              {publishNow ? t("create.createPublish") : t("create.createDraft")}
             </AdminButton>
           </div>
         </div>

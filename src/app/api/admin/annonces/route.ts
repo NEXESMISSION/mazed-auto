@@ -3,6 +3,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
+import { apiTranslations } from "@/i18n/api";
 
 /**
  * POST /api/admin/annonces — publish an annonce ON BEHALF OF a seller.
@@ -66,6 +67,7 @@ export async function POST(req: NextRequest) {
   if (!admin) return fail("server_misconfigured", 500);
 
   const body = (await req.json().catch(() => ({}))) as Body;
+  const t = await apiTranslations(req, "adminOps.api");
 
   const sellerId = text(body.seller_id, 40);
   const categoryId = text(body.category_id, 40);
@@ -73,7 +75,7 @@ export async function POST(req: NextRequest) {
   const governorate = text(body.governorate, 60);
   if (!sellerId || !categoryId || !title || !governorate) {
     return NextResponse.json(
-      { error: "incomplete", detail: "Vendeur, catégorie, titre et gouvernorat sont requis." },
+      { error: "incomplete", detail: t("incomplete") },
       { status: 400 },
     );
   }
@@ -92,7 +94,7 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
   if (!cat || !cat.is_active || cat.parent_id == null) {
     return NextResponse.json(
-      { error: "bad_category", detail: "Choisissez une sous-catégorie active." },
+      { error: "bad_category", detail: t("badCategory") },
       { status: 400 },
     );
   }
@@ -105,7 +107,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error: "contact_required",
-        detail: "Ce vendeur n'a pas de numéro — ajoutez-en un pour publier.",
+        detail: t("sellerNoPhone"),
       },
       { status: 400 },
     );
@@ -116,7 +118,7 @@ export async function POST(req: NextRequest) {
   const price = Number.isFinite(priceNum) && priceNum >= 0 ? Math.round(priceNum * 100) / 100 : null;
   if (!priceOnRequest && price == null) {
     return NextResponse.json(
-      { error: "price_required", detail: "Indiquez un prix, ou cochez « prix sur demande »." },
+      { error: "price_required", detail: t("priceRequired") },
       { status: 400 },
     );
   }

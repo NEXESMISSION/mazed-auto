@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { AdminButton } from "@/components/admin/AdminButton";
 import { TextField, FieldGrid, useAdminAction, EYEBROW } from "@/components/admin/kit";
@@ -42,6 +43,7 @@ export function SettingsForm({
   initialPersonal: PersonalLimits;
   initialProShops: boolean;
 }) {
+  const t = useTranslations("admin.settings.form");
   const { run, pending, done } = useAdminAction();
   const [form, setForm] = useState<PayeeSettings>(initial);
   const [free, setFree] = useState<FreeListings>(initialFree);
@@ -69,37 +71,36 @@ export function SettingsForm({
   return (
     <div className="mt-7">
       <section className="border-t border-border pt-5">
-        <h2 className={EYEBROW}>Bénéficiaire du virement</h2>
+        <h2 className={EYEBROW}>{t("payee.title")}</h2>
         <p className="mt-1.5 text-[11.5px] text-subtle">
-          Affiché au vendeur sur la page de paiement.
+          {t("payee.body")}
         </p>
 
         {looksForeign && (
           <p className="mt-3 border-s-2 border-[var(--tone-warn)] ps-3 text-[12px] text-[var(--tone-warn)]">
-            Ce nom appartient au projet immobilier jumeau, pas à Mazed Auto. C'est celui que le
-            vendeur recopie dans son application bancaire.
+            {t("payee.foreign")}
           </p>
         )}
 
         <div className="mt-4 space-y-4">
           <TextField
-            label="Raison sociale"
+            label={t("payee.name")}
             value={form.payee_name}
             onChange={set("payee_name")}
             placeholder="Mazed Auto SARL"
           />
           <FieldGrid>
-            <TextField label="Banque" value={form.payee_bank} onChange={set("payee_bank")} />
+            <TextField label={t("payee.bank")} value={form.payee_bank} onChange={set("payee_bank")} />
             <TextField
-              label="D17 / téléphone"
+              label={t("payee.d17")}
               value={form.payee_d17}
               onChange={set("payee_d17")}
               type="tel"
             />
           </FieldGrid>
           <FieldGrid>
-            <TextField label="RIB" value={form.payee_rib} onChange={set("payee_rib")} />
-            <TextField label="IBAN" value={form.payee_iban} onChange={set("payee_iban")} />
+            <TextField label="RIB" value={form.payee_rib} onChange={set("payee_rib")} dir="ltr" />
+            <TextField label="IBAN" value={form.payee_iban} onChange={set("payee_iban")} dir="ltr" />
           </FieldGrid>
         </div>
 
@@ -109,33 +110,31 @@ export function SettingsForm({
             size="md"
             pending={pending}
             done={done}
-            doneLabel="Enregistré"
+            doneLabel={t("saved")}
             disabled={!dirty}
-            disabledReason="Rien n'a changé."
+            disabledReason={t("unchanged")}
             icon={<Save className="size-3.5" strokeWidth={2.4} />}
             onClick={() =>
               run({
                 url: "/api/admin/settings",
                 method: "POST",
                 body: form,
-                success: "Coordonnées enregistrées.",
+                success: t("payee.success"),
               })
             }
           >
-            Enregistrer
+            {t("save")}
           </AdminButton>
           {dirty && (
-            <span className="text-[11.5px] text-subtle">Modifications non enregistrées.</span>
+            <span className="text-[11.5px] text-subtle">{t("unsaved")}</span>
           )}
         </div>
       </section>
 
       <section className="mt-8 border-t border-border pt-5">
-        <h2 className={EYEBROW}>Allocation de bienvenue</h2>
+        <h2 className={EYEBROW}>{t("welcome.title")}</h2>
         <p className="mt-1.5 max-w-xl text-[12.5px] text-subtle">
-          Les premières publications payantes d&apos;un vendeur lui sont offertes. Les catégories
-          déjà gratuites — les pièces — ne consomment rien : l&apos;allocation ne sert que là où il
-          y aurait eu un prix.
+          {t("welcome.body")}
         </p>
 
         <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-4">
@@ -146,11 +145,11 @@ export function SettingsForm({
               onChange={(e) => setFree((f) => ({ ...f, enabled: e.target.checked }))}
               className="size-4 accent-[var(--gold)]"
             />
-            <span className="text-[13px] font-medium text-foreground">Activer</span>
+            <span className="text-[13px] font-medium text-foreground">{t("welcome.enable")}</span>
           </label>
 
           <label className="inline-flex items-center gap-2.5">
-            <span className="text-[12.5px] text-subtle">Publications offertes</span>
+            <span className="text-[12.5px] text-subtle">{t("welcome.count")}</span>
             <input
               type="number"
               min={0}
@@ -167,8 +166,8 @@ export function SettingsForm({
         <p className="mt-3 inline-flex items-center gap-1.5 text-[12px] text-subtle">
           <Gift className="size-3.5 shrink-0" />
           {free.enabled && free.count > 0
-            ? `Un nouveau vendeur publie ${free.count} annonce${free.count > 1 ? "s" : ""} sans payer, puis au tarif normal.`
-            : "Désactivée : chaque publication est facturée dès la première."}
+            ? t("welcome.on", { count: free.count })
+            : t("welcome.off")}
         </p>
 
         {/* Lowering the number never bills anyone retroactively: each waiver is
@@ -180,35 +179,33 @@ export function SettingsForm({
             size="md"
             pending={freeAction.pending}
             done={freeAction.done}
-            doneLabel="Enregistré"
+            doneLabel={t("saved")}
             disabled={free.enabled === initialFree.enabled && free.count === initialFree.count}
-            disabledReason="Rien n'a changé."
+            disabledReason={t("unchanged")}
             icon={<Save className="size-3.5" strokeWidth={2.4} />}
             onClick={() =>
               freeAction.run({
                 url: "/api/admin/settings",
                 method: "POST",
                 body: { free_listings: free },
-                success: "Allocation enregistrée.",
+                success: t("welcome.success"),
               })
             }
           >
-            Enregistrer
+            {t("save")}
           </AdminButton>
         </div>
       </section>
 
       <section className="mt-8 border-t border-border pt-5">
-        <h2 className={EYEBROW}>Annonces des particuliers</h2>
+        <h2 className={EYEBROW}>{t("personal.title")}</h2>
         <p className="mt-1.5 max-w-xl text-[12.5px] text-subtle">
-          Combien d&apos;annonces un particulier peut avoir en ligne à la fois (en vérification ou
-          publiées). La base de données applique ces nombres à chaque publication ; ce qui est
-          déjà en ligne n&apos;est jamais retiré.
+          {t("personal.body")}
         </p>
 
         <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-4">
           <label className="inline-flex items-center gap-2.5">
-            <span className="text-[12.5px] text-subtle">Véhicules</span>
+            <span className="text-[12.5px] text-subtle">{t("personal.vehicles")}</span>
             <input
               type="number"
               min={0}
@@ -219,7 +216,7 @@ export function SettingsForm({
             />
           </label>
           <label className="inline-flex items-center gap-2.5">
-            <span className="text-[12.5px] text-subtle">Pièces</span>
+            <span className="text-[12.5px] text-subtle">{t("personal.parts")}</span>
             <input
               type="number"
               min={0}
@@ -236,14 +233,14 @@ export function SettingsForm({
               onChange={(e) => setPersonal((p) => ({ ...p, free: e.target.checked }))}
               className="size-4 accent-[var(--gold)]"
             />
-            <span className="text-[13px] font-medium text-foreground">Gratuites</span>
+            <span className="text-[13px] font-medium text-foreground">{t("personal.free")}</span>
           </label>
         </div>
 
         <p className="mt-3 text-[12px] text-subtle">
           {personal.free
-            ? `Un particulier publie gratuitement jusqu'à ${personal.vehicles} véhicule${personal.vehicles > 1 ? "s" : ""} et ${personal.parts} pièce${personal.parts > 1 ? "s" : ""} à la fois.`
-            : "Payantes : chaque annonce au prix fixé dans Offres & prix — réactivez-y « annonce-standard » et « renouvellement », désactivés tant que la publication est gratuite. Les limites s'appliquent toujours."}
+            ? t("personal.on", { vehicles: personal.vehicles, parts: personal.parts })
+            : t("personal.off")}
         </p>
 
         <div className="mt-4 flex items-center gap-3">
@@ -252,30 +249,28 @@ export function SettingsForm({
             size="md"
             pending={personalAction.pending}
             done={personalAction.done}
-            doneLabel="Enregistré"
+            doneLabel={t("saved")}
             disabled={!personalDirty}
-            disabledReason="Rien n'a changé."
+            disabledReason={t("unchanged")}
             icon={<Save className="size-3.5" strokeWidth={2.4} />}
             onClick={() =>
               personalAction.run({
                 url: "/api/admin/settings",
                 method: "POST",
                 body: { personal_limits: personal },
-                success: "Limites enregistrées.",
+                success: t("personal.success"),
               })
             }
           >
-            Enregistrer
+            {t("save")}
           </AdminButton>
         </div>
       </section>
 
       <section className="mt-8 border-t border-border pt-5">
-        <h2 className={EYEBROW}>Boutiques professionnelles</h2>
+        <h2 className={EYEBROW}>{t("shops.title")}</h2>
         <p className="mt-1.5 max-w-xl text-[12.5px] text-subtle">
-          L&apos;annuaire, les pages de chaque boutique et le lien « Publiée par la boutique » sur
-          les annonces. Désactivées, seuls les administrateurs les voient — un visiteur obtient une
-          page introuvable.
+          {t("shops.body")}
         </p>
 
         <label className="mt-4 inline-flex cursor-pointer items-center gap-2.5">
@@ -285,14 +280,14 @@ export function SettingsForm({
             onChange={(e) => setProShops(e.target.checked)}
             className="size-4 accent-[var(--gold)]"
           />
-          <span className="text-[13px] font-medium text-foreground">Ouvrir les pages boutiques au public</span>
+          <span className="text-[13px] font-medium text-foreground">{t("shops.open")}</span>
         </label>
 
         <p className="mt-3 inline-flex items-center gap-1.5 text-[12px] text-subtle">
           <Store className="size-3.5 shrink-0" />
-          {proShops ? "Publiques : tout le monde voit /boutiques." : "Aperçu : visibles par les administrateurs seulement."}
+          {proShops ? t("shops.public") : t("shops.preview")}
           <Link href={"/boutiques" as never} className="font-medium text-[var(--gold)] hover:underline">
-            Voir /boutiques
+            {t("shops.see")}
           </Link>
         </p>
 
@@ -302,36 +297,35 @@ export function SettingsForm({
             size="md"
             pending={shopsAction.pending}
             done={shopsAction.done}
-            doneLabel="Enregistré"
+            doneLabel={t("saved")}
             disabled={proShops === initialProShops}
-            disabledReason="Rien n'a changé."
+            disabledReason={t("unchanged")}
             icon={<Save className="size-3.5" strokeWidth={2.4} />}
             onClick={() =>
               shopsAction.run({
                 url: "/api/admin/settings",
                 method: "POST",
                 body: { pro_shops: { enabled: proShops } },
-                success: proShops ? "Boutiques ouvertes au public." : "Boutiques en aperçu.",
+                success: proShops ? t("shops.successPublic") : t("shops.successPreview"),
               })
             }
           >
-            Enregistrer
+            {t("save")}
           </AdminButton>
         </div>
       </section>
 
       <section className="mt-8 border-t border-border pt-5">
-        <h2 className={EYEBROW}>Prix et forfaits</h2>
+        <h2 className={EYEBROW}>{t("prices.title")}</h2>
         <p className="mt-1.5 max-w-xl text-[12.5px] text-subtle">
-          Le prix d'une publication, les packs, les mises en avant et le badge ne se règlent plus
-          ici. Une seule table décide, et c'est celle que le vendeur paie.
+          {t("prices.body")}
         </p>
         <Link
           href="/admin/offres"
           className="mt-3 inline-flex items-center gap-1.5 text-[12.5px] font-medium text-[var(--gold)] transition hover:gap-2"
         >
-          Ouvrir Offres &amp; prix
-          <ArrowRight className="size-3.5" strokeWidth={2.2} />
+          {t("prices.open")}
+          <ArrowRight className="size-3.5 rtl:-scale-x-100" strokeWidth={2.2} />
         </Link>
       </section>
     </div>

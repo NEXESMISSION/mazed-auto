@@ -28,6 +28,8 @@ export type Column = {
   label: React.ReactNode;
   /** Grid track. Defaults to `minmax(0,1fr)`; use `120px` for fixed columns. */
   width?: string;
+  /** "right" means the END edge — the right in French, the left in Arabic
+   *  (amounts and counts line up on the side a column of numbers ends on). */
   align?: "left" | "right";
   /** Hide this column below a breakpoint — the phone gets the essentials. */
   hideBelow?: "sm" | "md" | "lg";
@@ -38,7 +40,7 @@ export type Row = {
   /** Makes the whole row a link. Omit for a static row. */
   href?: string;
   cells: Record<string, React.ReactNode>;
-  /** Left edge marker — for rows that are late, blocked or otherwise urgent. */
+  /** Start-edge marker — for rows that are late, blocked or otherwise urgent. */
   flag?: "warn" | "bad";
 };
 
@@ -78,7 +80,7 @@ export function DataTable({
           <div
             key={c.key}
             role="columnheader"
-            className={`truncate ${c.align === "right" ? "text-right" : ""} ${
+            className={`truncate ${c.align === "right" ? "text-end" : ""} ${
               c.hideBelow ? HIDE[c.hideBelow] : ""
             }`}
           >
@@ -97,7 +99,7 @@ export function DataTable({
                   key={c.key}
                   role="cell"
                   className={`min-w-0 self-center text-[13px] text-foreground ${
-                    c.align === "right" ? "text-right" : ""
+                    c.align === "right" ? "text-end" : ""
                   } ${c.hideBelow ? HIDE[c.hideBelow] : ""}`}
                 >
                   {row.cells[c.key] ?? <span className="text-subtle">—</span>}

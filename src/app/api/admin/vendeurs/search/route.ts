@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { fail } from "@/lib/http/errors";
+import { apiTranslations } from "@/i18n/api";
 
 /**
  * Seller lookup for the admin's "créer une annonce" form.
@@ -48,11 +49,12 @@ export async function GET(req: NextRequest) {
     .limit(LIMIT);
 
   if (error) return fail("seller_search_failed", 500, error);
+  const noName = (await apiTranslations(req, "adminOps.api"))("noName");
 
   return NextResponse.json({
     sellers: (data ?? []).map((p) => ({
       id: p.id as string,
-      name: (p.full_name as string | null) ?? "Sans nom",
+      name: (p.full_name as string | null) ?? noName,
       phone: (p.phone as string | null) ?? null,
     })),
   });

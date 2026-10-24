@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
+import { attributeLabel, unitLabel } from "@/lib/labels";
 import { AdminButton } from "@/components/admin/AdminButton";
 import {
   TextField, SelectField, NumberField, ToggleField, FieldGrid,
@@ -31,12 +33,8 @@ export type Attribute = {
   usedBy: number;
 };
 
-const TYPE_LABEL: Record<string, string> = {
-  text: "Texte",
-  number: "Nombre",
-  boolean: "Oui / non",
-  select: "Liste de choix",
-};
+/** The data types, named under `admin.catalogue.editor.types`. */
+const TYPES = ["text", "number", "boolean", "select"];
 
 export function AttributeEditor({
   categoryId,
@@ -47,6 +45,8 @@ export function AttributeEditor({
   categoryLabel: string;
   attributes: Attribute[];
 }) {
+  const t = useTranslations("admin.catalogue.editor");
+  const locale = useLocale();
   const [editing, setEditing] = useState<Attribute | "new" | null>(null);
 
   return (
@@ -62,7 +62,7 @@ export function AttributeEditor({
           icon={<Plus className="size-3.5" strokeWidth={2.8} />}
           onClick={() => setEditing("new")}
         >
-          Caractéristique
+          {t("addAttribute")}
         </AdminButton>
       </header>
 
@@ -78,8 +78,7 @@ export function AttributeEditor({
 
         {attributes.length === 0 ? (
           <p className="px-5 py-8 text-center text-[12.5px] text-subtle">
-            Aucune caractéristique. Une annonce de cette catégorie n'aura que titre, prix,
-            description et photos.
+            {t("empty")}
           </p>
         ) : (
           <ul className="divide-y divide-border/70">
@@ -96,29 +95,29 @@ export function AttributeEditor({
                   />
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-2 text-[13px] font-medium text-foreground">
-                      <span className="truncate">{a.label}</span>
+                      <span className="truncate">{attributeLabel(a.fieldKey, a.label, locale)}</span>
                       {a.required && (
                         <span className="shrink-0 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--tone-warn)]">
-                          requis
+                          {t("requiredTag")}
                         </span>
                       )}
                       {a.filterable && (
                         <span className="shrink-0 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--gold)]">
-                          filtre
+                          {t("filterTag")}
                         </span>
                       )}
                     </span>
                     <span className="mt-0.5 block truncate text-[11.5px] text-subtle">
-                      {TYPE_LABEL[a.dataType] ?? a.dataType}
-                      {a.unit ? ` · ${a.unit}` : ""}
-                      {a.options ? ` · ${a.options.length} options` : ""}
+                      {TYPES.includes(a.dataType) ? t(`types.${a.dataType}`) : a.dataType}
+                      {a.unit ? ` · ${unitLabel(a.unit, locale)}` : ""}
+                      {a.options ? ` · ${t("optionsCount", { count: a.options.length })}` : ""}
                       {" · "}
                       <code className="text-[11px] opacity-70">{a.fieldKey}</code>
                     </span>
                   </span>
                   {a.usedBy > 0 && (
                     <span className="batta-tabular shrink-0 text-[11px] text-subtle">
-                      {a.usedBy} annonce{a.usedBy === 1 ? "" : "s"}
+                      {t("usedBy", { count: a.usedBy })}
                     </span>
                   )}
                 </button>
@@ -140,6 +139,7 @@ function AttributeForm({
   attribute: Attribute | null;
   onDone: () => void;
 }) {
+  const t = useTranslations("admin.catalogue.editor");
   const { run, pending } = useAdminAction();
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -171,7 +171,7 @@ function AttributeForm({
         filterable,
         sort_order: sortOrder,
       },
-      success: isNew ? "Caractéristique ajoutée." : "Caractéristique enregistrée.",
+      success: isNew ? t("added") : t("saved"),
     });
     if (ok) onDone();
   }
@@ -180,12 +180,12 @@ function AttributeForm({
     <div className="border-b border-border bg-[var(--gold-faint)] px-5 py-4">
       <div className="flex items-center justify-between">
         <h3 className={`${EYEBROW} text-[var(--gold)]`}>
-          {isNew ? "Nouvelle caractéristique" : attribute.label}
+          {isNew ? t("newTitle") : attribute.label}
         </h3>
         <button
           type="button"
           onClick={onDone}
-          aria-label="Fermer"
+          aria-label={t("close")}
           className="grid size-6 place-items-center text-subtle transition hover:text-foreground"
         >
           <X className="size-3.5" strokeWidth={2.4} />
@@ -195,43 +195,43 @@ function AttributeForm({
       <div className="mt-3 space-y-3.5">
         <FieldGrid>
           <TextField
-            label="Libellé"
+            label={t("label")}
             value={label}
             onChange={setLabel}
             required
             placeholder="Kilométrage, Boîte, Carburant…"
           />
           <SelectField
-            label="Type"
+            label={t("type")}
             value={dataType}
             onChange={setDataType}
             disabled={!isNew}
-            hint={isNew ? undefined : "Le type ne change pas : des annonces ont déjà des valeurs."}
-            options={Object.entries(TYPE_LABEL).map(([value, l]) => ({ value, label: l }))}
+            hint={isNew ? undefined : t("typeLocked")}
+            options={TYPES.map((value) => ({ value, label: t(`types.${value}`) }))}
           />
         </FieldGrid>
 
         <FieldGrid>
           <TextField
-            label="Unité"
+            label={t("unit")}
             value={unit}
             onChange={setUnit}
             placeholder="km, ch, L…"
-            hint="Affichée après la valeur. Facultatif."
+            hint={t("unitHint")}
           />
           <NumberField
-            label="Ordre"
+            label={t("order")}
             value={sortOrder}
             onChange={setSortOrder}
             min={0}
-            hint="Petit d'abord."
+            hint={t("orderHint")}
           />
         </FieldGrid>
 
         {dataType === "select" && (
           <div>
             <span className="text-[11.5px] font-semibold uppercase tracking-[0.08em] text-subtle">
-              Options
+              {t("options")}
             </span>
             <ul className="mt-2 space-y-1.5">
               {options.map((o, i) => (
@@ -243,13 +243,13 @@ function AttributeForm({
                         prev.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)),
                       )
                     }
-                    placeholder="Automatique"
+                    placeholder={t("optionPlaceholder")}
                     className="h-8 flex-1 border-b border-border bg-transparent px-1 text-[12.5px] text-foreground placeholder:text-subtle focus:border-[var(--gold)] focus:outline-none"
                   />
                   <button
                     type="button"
                     onClick={() => setOptions((prev) => prev.filter((_, j) => j !== i))}
-                    aria-label="Retirer l'option"
+                    aria-label={t("removeOption")}
                     className="grid size-6 place-items-center text-subtle transition hover:text-[var(--tone-bad)]"
                   >
                     <X className="size-3.5" strokeWidth={2.4} />
@@ -262,23 +262,23 @@ function AttributeForm({
               onClick={() => setOptions((prev) => [...prev, { value: "", label: "" }])}
               className="mt-2 inline-flex items-center gap-1 text-[12px] font-medium text-[var(--gold)] hover:underline"
             >
-              <Plus className="size-3" strokeWidth={2.8} /> Ajouter une option
+              <Plus className="size-3" strokeWidth={2.8} /> {t("addOption")}
             </button>
           </div>
         )}
 
         <div className="flex flex-wrap gap-x-8 gap-y-3">
           <ToggleField
-            label="Obligatoire"
+            label={t("required")}
             checked={required}
             onChange={setRequired}
-            hint="Le vendeur ne peut pas publier sans."
+            hint={t("requiredHint")}
           />
           <ToggleField
-            label="Filtrable"
+            label={t("filterable")}
             checked={filterable}
             onChange={setFilterable}
-            hint="Devient un filtre dans le catalogue."
+            hint={t("filterableHint")}
           />
         </div>
 
@@ -287,13 +287,13 @@ function AttributeForm({
             variant="primary"
             pending={pending}
             disabled={!label.trim()}
-            disabledReason="Donnez un libellé."
+            disabledReason={t("labelRequired")}
             onClick={save}
           >
-            {isNew ? "Ajouter" : "Enregistrer"}
+            {isNew ? t("add") : t("save")}
           </AdminButton>
           <AdminButton variant="quiet" onClick={onDone}>
-            Annuler
+            {t("cancel")}
           </AdminButton>
           {!isNew && (
             <AdminButton
@@ -302,7 +302,7 @@ function AttributeForm({
               icon={<Trash2 className="size-3.5" strokeWidth={2.4} />}
               onClick={() => setConfirmDelete(true)}
             >
-              Supprimer
+              {t("delete")}
             </AdminButton>
           )}
         </div>
@@ -310,9 +310,9 @@ function AttributeForm({
 
       <Confirm
         open={confirmDelete}
-        title="Supprimer cette caractéristique ?"
-        body="Refusé si des annonces l'utilisent déjà : leurs valeurs deviendraient illisibles."
-        confirmLabel="Supprimer"
+        title={t("deleteTitle")}
+        body={t("deleteBody")}
+        confirmLabel={t("delete")}
         pending={pending}
         onCancel={() => setConfirmDelete(false)}
         onConfirm={async () => {
@@ -320,7 +320,7 @@ function AttributeForm({
             url: "/api/admin/catalogue",
             method: "POST",
             body: { action: "attribute.delete", id: attribute!.id },
-            success: "Caractéristique supprimée.",
+            success: t("deleted"),
           });
           if (ok) {
             setConfirmDelete(false);

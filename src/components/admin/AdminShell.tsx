@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { useScrollLock } from "@/lib/scrollLock";
 import { Link, usePathname } from "@/i18n/navigation";
 import {
@@ -10,6 +11,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { NavIcon } from "./kit/LinkPending";
+import { LocaleChoice } from "@/components/i18n/LocaleSwitch";
 
 /**
  * Console navigation.
@@ -32,72 +34,30 @@ import { NavIcon } from "./kit/LinkPending";
  */
 
 type Item = {
-  label: string;
+  /** Names the label and hint under `admin.shell.nav`. */
+  key: string;
   href: string;
   Icon: LucideIcon;
-  hint: string;
   /** Key into the `counts` map — a badge for work that is waiting. */
   countKey?: "annonces" | "paiements" | "boutiques";
 };
 
 const NAV: Item[] = [
-  {
-    label: "Tableau de bord",
-    href: "/admin",
-    Icon: LayoutDashboard,
-    hint: "Ce qui attend une décision",
-  },
-  {
-    label: "Annonces",
-    href: "/admin/annonces",
-    Icon: Inbox,
-    hint: "Modérer, créer, mettre en avant",
-    countKey: "annonces",
-  },
-  {
-    label: "Paiements",
-    href: "/admin/paiements",
-    Icon: Receipt,
-    hint: "Reçus à valider",
-    countKey: "paiements",
-  },
-  {
-    label: "Offres & prix",
-    href: "/admin/offres",
-    Icon: Tag,
-    hint: "Annonces, packs, mises en avant, badge",
-  },
-  {
-    label: "Boutiques",
-    href: "/admin/boutiques",
-    Icon: Store,
-    hint: "Vérifications, justificatifs, abonnements",
-    countKey: "boutiques",
-  },
-  {
-    label: "Vendeurs",
-    href: "/admin/vendeurs",
-    Icon: Users,
-    hint: "Comptes, rôles, badges",
-  },
-  {
-    label: "Catalogue",
-    href: "/admin/catalogue",
-    Icon: FolderTree,
-    hint: "Catégories et caractéristiques",
-  },
+  { key: "dashboard", href: "/admin", Icon: LayoutDashboard },
+  { key: "annonces", href: "/admin/annonces", Icon: Inbox, countKey: "annonces" },
+  { key: "paiements", href: "/admin/paiements", Icon: Receipt, countKey: "paiements" },
+  { key: "offres", href: "/admin/offres", Icon: Tag },
+  { key: "boutiques", href: "/admin/boutiques", Icon: Store, countKey: "boutiques" },
+  { key: "vendeurs", href: "/admin/vendeurs", Icon: Users },
+  { key: "catalogue", href: "/admin/catalogue", Icon: FolderTree },
 ];
 
-const SITE: Item = {
-  label: "Site",
-  href: "/admin/site",
-  Icon: SlidersHorizontal,
-  hint: "Accueil, popups, documents, diffusions, réglages, journal",
-};
+const SITE: Item = { key: "site", href: "/admin/site", Icon: SlidersHorizontal };
 
 export type AdminCounts = Partial<Record<"annonces" | "paiements" | "boutiques", number>>;
 
 function BrandMark({ onNavigate }: { onNavigate?: () => void }) {
+  const t = useTranslations("admin.shell");
   return (
     <Link href="/admin" onClick={onNavigate} className="flex items-center gap-2.5">
       <Image
@@ -109,7 +69,7 @@ function BrandMark({ onNavigate }: { onNavigate?: () => void }) {
         className="h-5 w-auto shrink-0"
       />
       <span className="text-[12px] font-bold uppercase tracking-[0.16em] text-foreground">
-        Mazed<span className="text-[var(--gold)]"> Console</span>
+        Mazed<span className="text-[var(--gold)]"> {t("console")}</span>
       </span>
     </Link>
   );
@@ -122,6 +82,7 @@ function NavList({
   counts: AdminCounts;
   onNavigate?: () => void;
 }) {
+  const t = useTranslations("admin.shell.nav");
   const pathname = usePathname();
 
   // `/admin` must match exactly — every other route starts with it, so a
@@ -140,7 +101,7 @@ function NavList({
           href={item.href as "/admin"}
           onClick={onNavigate}
           aria-current={active ? "page" : undefined}
-          title={item.hint}
+          title={t(`${item.key}.hint`)}
           className={`relative flex items-center gap-2.5 py-[7px] ps-4 pe-3 text-[13px] font-medium transition ${
             active
               ? "text-[var(--gold)] before:absolute before:inset-y-0 before:start-0 before:w-[2px] before:bg-[var(--gold)]"
@@ -150,7 +111,7 @@ function NavList({
           {/* Swaps to a spinner while this destination loads — the item you
               clicked is the one that shows it is working. */}
           <NavIcon Icon={item.Icon} active={active} />
-          <span className="truncate">{item.label}</span>
+          <span className="truncate">{t(`${item.key}.label`)}</span>
           {count > 0 && (
             <span
               className={`batta-tabular ms-auto text-[11px] font-bold ${
@@ -174,19 +135,32 @@ function NavList({
 }
 
 function ExitLink({ onNavigate }: { onNavigate?: () => void }) {
+  const t = useTranslations("admin.shell");
   return (
     <Link
       href="/"
       onClick={onNavigate}
       className="flex items-center gap-2.5 px-4 py-[7px] text-[12.5px] font-medium text-subtle transition hover:text-foreground"
     >
-      <ExternalLink className="size-4 shrink-0" strokeWidth={2} />
-      Quitter l&apos;admin
+      <ExternalLink className="size-4 shrink-0 rtl:-scale-x-100" strokeWidth={2} />
+      {t("exit")}
     </Link>
   );
 }
 
-/** Sticky rail — desktop only. */
+/**
+ * The console's language: French or Arabic, the same switch as the site's.
+ * No label beside it — the rail is 196px and the two names say what it is.
+ */
+function LanguageRow() {
+  return (
+    <div className="px-4 py-2">
+      <LocaleChoice />
+    </div>
+  );
+}
+
+/** Sticky rail at the start edge — desktop only. */
 export function AdminRail({ counts }: { counts: AdminCounts }) {
   return (
     <aside className="hidden h-dvh w-[196px] shrink-0 flex-col border-e border-border lg:flex">
@@ -195,6 +169,7 @@ export function AdminRail({ counts }: { counts: AdminCounts }) {
       </header>
       <NavList counts={counts} />
       <footer className="border-t border-border py-2">
+        <LanguageRow />
         <ExitLink />
       </footer>
     </aside>
@@ -203,6 +178,7 @@ export function AdminRail({ counts }: { counts: AdminCounts }) {
 
 /** Top bar + slide-over drawer — below lg. */
 export function AdminMobileBar({ counts }: { counts: AdminCounts }) {
+  const t = useTranslations("admin.shell");
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
@@ -235,7 +211,7 @@ export function AdminMobileBar({ counts }: { counts: AdminCounts }) {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          aria-label="Ouvrir le menu"
+          aria-label={t("openMenu")}
           aria-expanded={open}
           className="tap-target grid size-9 place-items-center rounded text-muted transition hover:text-foreground"
         >
@@ -244,7 +220,7 @@ export function AdminMobileBar({ counts }: { counts: AdminCounts }) {
       </header>
 
       {open && (
-        <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="Navigation admin">
+        <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label={t("navLabel")}>
           <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setOpen(false)}
@@ -256,7 +232,7 @@ export function AdminMobileBar({ counts }: { counts: AdminCounts }) {
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                aria-label="Fermer le menu"
+                aria-label={t("closeMenu")}
                 className="tap-target grid size-8 place-items-center rounded text-muted transition hover:text-foreground"
               >
                 <X className="size-5" strokeWidth={2.2} />
@@ -264,6 +240,7 @@ export function AdminMobileBar({ counts }: { counts: AdminCounts }) {
             </header>
             <NavList counts={counts} onNavigate={() => setOpen(false)} />
             <footer className="border-t border-border py-2">
+              <LanguageRow />
               <ExitLink onNavigate={() => setOpen(false)} />
             </footer>
           </div>

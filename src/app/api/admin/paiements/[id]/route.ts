@@ -3,6 +3,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
+import { apiTranslations } from "@/i18n/api";
 
 /**
  * Receipt review — the v3 money queue.
@@ -56,6 +57,7 @@ export async function POST(
     reason?: unknown;
   };
   const action = typeof body.action === "string" ? body.action : "";
+  const t = await apiTranslations(req, "adminOps.api");
 
   const { data: pay } = await admin
     .from("payments")
@@ -66,7 +68,7 @@ export async function POST(
 
   if (pay.status !== "pending" && pay.status !== "pending_review") {
     return NextResponse.json(
-      { error: "conflict", detail: `Ce paiement est déjà « ${pay.status} ».` },
+      { error: "conflict", detail: t("paymentConflict", { status: pay.status }) },
       { status: 409 },
     );
   }
@@ -74,7 +76,7 @@ export async function POST(
     return NextResponse.json(
       {
         error: "wrong_kind",
-        detail: `« ${pay.kind} » appartient au produit enchères, qui n'existe plus.`,
+        detail: t("wrongKind", { kind: pay.kind }),
       },
       { status: 400 },
     );
@@ -165,7 +167,7 @@ export async function POST(
       return NextResponse.json(
         {
           error: "reason_required",
-          detail: "Dites au vendeur ce qui ne va pas — il doit pouvoir renvoyer un reçu valable.",
+          detail: t("receiptReason"),
         },
         { status: 400 },
       );

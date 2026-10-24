@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/Toast";
 import {
@@ -32,17 +33,7 @@ const PROPERTY_TYPES: PropertyType[] = [
   "van", "coupe", "convertible", "wagon", "spare_part",
 ];
 
-const TYPE_LABELS_FR: Record<PropertyType, string> = {
-  sedan: "Berline",
-  suv: "SUV / 4x4",
-  hatchback: "Citadine",
-  pickup: "Pick-up",
-  van: "Utilitaire",
-  coupe: "Coupé",
-  convertible: "Cabriolet",
-  wagon: "Break",
-  spare_part: "Pièce de rechange",
-};
+// The type names come from the core messages, `property.types.<type>`.
 
 function rowToDraft(r: LegalDocKindRow, idx: number): DraftRow {
   return {
@@ -72,12 +63,14 @@ export function LegalDocsEditor({
 }: {
   initial: Record<PropertyType, LegalDocKindRow[]>;
 }) {
+  const t = useTranslations("admin.legalDocs.editor");
+  const typeLabel = useTranslations("property.types");
   const router = useRouter();
   const { toast } = useToast();
   const [activeType, setActiveType] = useState<PropertyType>("sedan");
   const [drafts, setDrafts] = useState<Record<PropertyType, DraftRow[]>>(() =>
     Object.fromEntries(
-      PROPERTY_TYPES.map((t) => [t, initial[t].map(rowToDraft)]),
+      PROPERTY_TYPES.map((type) => [type, initial[type].map(rowToDraft)]),
     ) as Record<PropertyType, DraftRow[]>,
   );
   const [dirty, setDirty] = useState<Set<PropertyType>>(new Set());
@@ -145,7 +138,7 @@ export function LegalDocsEditor({
     // Client-side validation: empty labels & duplicates.
     for (let i = 0; i < items.length; i++) {
       if (!items[i].label) {
-        toast(`Ligne ${i + 1} : le titre est requis.`, "error");
+        toast(t("titleRequired", { line: i + 1 }), "error");
         return;
       }
     }
@@ -153,7 +146,7 @@ export function LegalDocsEditor({
     for (let i = 0; i < items.length; i++) {
       const key = items[i].label.toLowerCase();
       if (seen.has(key)) {
-        toast(`Doublon : "${items[i].label}".`, "error");
+        toast(t("duplicate", { label: items[i].label }), "error");
         return;
       }
       seen.add(key);
@@ -169,7 +162,7 @@ export function LegalDocsEditor({
       setSavingType(null);
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
-        toast(j.error ?? "Échec de l'enregistrement.", "error");
+        toast(j.error ?? t("saveFailed"), "error");
         return;
       }
       setSavedType(activeType);
@@ -178,7 +171,7 @@ export function LegalDocsEditor({
         next.delete(activeType);
         return next;
       });
-      toast(`Catalogue ${TYPE_LABELS_FR[activeType]} enregistré.`, "success");
+      toast(t("saved", { type: typeLabel(activeType) }), "success");
       router.refresh();
     });
   }
@@ -187,14 +180,14 @@ export function LegalDocsEditor({
     <div>
       {/* Property-type tabs */}
       <nav className="snap-rail hide-scrollbar -mx-4 mb-4 flex gap-1.5 overflow-x-auto px-4 lg:mx-0 lg:flex-wrap lg:px-0">
-        {PROPERTY_TYPES.map((t) => {
-          const isActive = t === activeType;
-          const isDirty = dirty.has(t);
+        {PROPERTY_TYPES.map((type) => {
+          const isActive = type === activeType;
+          const isDirty = dirty.has(type);
           return (
             <button
-              key={t}
+              key={type}
               type="button"
-              onClick={() => setActiveType(t)}
+              onClick={() => setActiveType(type)}
               className={
                 "tap-target inline-flex shrink-0 snap-start items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] transition active:scale-[0.97] " +
                 (isActive
@@ -202,13 +195,13 @@ export function LegalDocsEditor({
                   : "border-border bg-surface text-foreground hover:border-gold/40 hover:text-gold-bright")
               }
             >
-              {TYPE_LABELS_FR[t]}
+              {typeLabel(type)}
               <span className="text-[10px] font-normal opacity-70">
-                · {drafts[t].length}
+                · {drafts[type].length}
               </span>
               {isDirty && (
                 <span
-                  aria-label="non enregistré"
+                  aria-label={t("unsaved")}
                   className="inline-block size-1.5 rounded-full bg-[var(--tone-warn)]"
                 />
               )}
@@ -222,12 +215,10 @@ export function LegalDocsEditor({
         <header className="mb-3 flex items-center justify-between">
           <div>
             <h3 className="text-[14px] font-bold text-foreground">
-              {TYPE_LABELS_FR[activeType]}
+              {typeLabel(activeType)}
             </h3>
             <p className="text-[11.5px] text-[var(--foreground-muted)]">
-              {list.length === 0
-                ? "Aucun document configuré — le vendeur n'aura rien à téléverser."
-                : `${list.length} document${list.length > 1 ? "s" : ""} configuré${list.length > 1 ? "s" : ""}.`}
+              {list.length === 0 ? t("none") : t("configured", { count: list.length })}
             </p>
           </div>
           <button
@@ -236,14 +227,14 @@ export function LegalDocsEditor({
             className="tap-target inline-flex items-center gap-1 rounded-lg bg-batta-gold/12 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-batta-gold-bright ring-1 ring-batta-gold/30 hover:bg-batta-gold/20"
           >
             <Plus className="size-3.5" strokeWidth={2.5} />
-            Ajouter
+            {t("add")}
           </button>
         </header>
 
         {list.length === 0 ? (
           <div className="rounded-xl border border-dashed border-batta-gold/25 bg-batta-surface-2 p-6 text-center">
             <p className="text-[12px] text-[var(--foreground-muted)]">
-              Cliquez sur <b>Ajouter</b> pour créer un document à fournir.
+              {t.rich("emptyHint", { b: (chunks) => <b>{chunks}</b> })}
             </p>
           </div>
         ) : (
@@ -261,7 +252,7 @@ export function LegalDocsEditor({
                       onClick={() => move(i, -1)}
                       disabled={i === 0}
                       className="tap-target inline-flex size-6 items-center justify-center rounded-md text-foreground/70 hover:bg-batta-gold/10 hover:text-batta-gold-bright disabled:opacity-30"
-                      aria-label="Monter"
+                      aria-label={t("moveUp")}
                     >
                       <ChevronUp className="size-3.5" strokeWidth={2.5} />
                     </button>
@@ -270,7 +261,7 @@ export function LegalDocsEditor({
                       onClick={() => move(i, +1)}
                       disabled={i === list.length - 1}
                       className="tap-target inline-flex size-6 items-center justify-center rounded-md text-foreground/70 hover:bg-batta-gold/10 hover:text-batta-gold-bright disabled:opacity-30"
-                      aria-label="Descendre"
+                      aria-label={t("moveDown")}
                     >
                       <ChevronDown className="size-3.5" strokeWidth={2.5} />
                     </button>
@@ -280,14 +271,14 @@ export function LegalDocsEditor({
                     <input
                       type="text"
                       value={row.label}
-                      placeholder="Titre du document (ex. Carte grise)"
+                      placeholder={t("titlePlaceholder")}
                       onChange={(e) => update(i, { label: e.target.value })}
                       className="w-full rounded-lg border border-batta-gold/25 bg-batta-surface px-3 py-2 text-sm font-semibold text-batta-cream focus:border-batta-gold focus:outline-none focus:ring-1 focus:ring-batta-gold/40"
                     />
                     <textarea
                       rows={2}
                       value={row.description}
-                      placeholder="Aide affichée au vendeur (optionnel)"
+                      placeholder={t("helpPlaceholder")}
                       onChange={(e) => update(i, { description: e.target.value })}
                       className="w-full rounded-lg border border-batta-gold/25 bg-batta-surface px-3 py-2 text-[12px] text-batta-cream focus:border-batta-gold focus:outline-none focus:ring-1 focus:ring-batta-gold/40"
                     />
@@ -299,9 +290,9 @@ export function LegalDocsEditor({
                           onChange={(e) => update(i, { required: e.target.checked })}
                           className="size-4 accent-batta-gold-bright"
                         />
-                        <span className="font-semibold">Requis</span>
+                        <span className="font-semibold">{t("required")}</span>
                         <span className="text-[10.5px] text-[var(--foreground-muted)]">
-                          bloque la soumission
+                          {t("requiredHint")}
                         </span>
                       </label>
                       <button
@@ -310,7 +301,7 @@ export function LegalDocsEditor({
                         className="tap-target inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold text-[var(--danger)] hover:bg-[var(--accent-faint)]"
                       >
                         <Trash2 className="size-3.5" />
-                        Supprimer
+                        {t("delete")}
                       </button>
                     </div>
                   </div>
@@ -336,10 +327,10 @@ export function LegalDocsEditor({
             <Save className="size-4" strokeWidth={2.5} />
           )}
           {savingType === activeType
-            ? "Enregistrement…"
+            ? t("saving")
             : savedType === activeType
-              ? "Enregistré"
-              : `Enregistrer (${TYPE_LABELS_FR[activeType]})`}
+              ? t("savedShort")
+              : t("saveType", { type: typeLabel(activeType) })}
         </button>
       </div>
     </div>

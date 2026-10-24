@@ -1,5 +1,7 @@
+import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServiceSupabase } from "@/lib/supabase/admin";
+import { attributeLabel, attributeOptionLabel, categoryLabel, unitLabel } from "@/lib/labels";
 import { PageHeader } from "@/components/admin/kit";
 import { adminBtn } from "@/components/admin/AdminButton";
 import { ManualListingForm, type AdminCategory } from "../ManualListingForm";
@@ -35,12 +37,14 @@ export const revalidate = 0;
  */
 export default async function AdminNewListingPage() {
   const admin = getServiceSupabase();
+  const t = await getTranslations("adminOps");
+  const locale = await getLocale();
 
   if (!admin) {
     return (
       <div>
-        <PageHeader eyebrow="Catalogue" title="Créer une annonce" />
-        <p className="mt-6 text-[13px] text-muted">Service non configuré.</p>
+        <PageHeader eyebrow={t("create.eyebrow")} title={t("create.title")} />
+        <p className="mt-6 text-[13px] text-muted">{t("common.noService")}</p>
       </div>
     );
   }
@@ -52,7 +56,7 @@ export default async function AdminNewListingPage() {
   const [catRes, attrRes] = await Promise.all([
     admin
       .from("categories")
-      .select("id, parent_id, label_fr, kind, sort_order")
+      .select("id, parent_id, slug, label_fr, label_ar, kind, sort_order")
       .eq("is_active", true)
       .order("sort_order"),
     admin
@@ -62,7 +66,7 @@ export default async function AdminNewListingPage() {
   ]);
 
 
-  type CatRow = { id: string; parent_id: string | null; label_fr: string; kind: string };
+  type CatRow = { id: string; parent_id: string | null; slug: string; label_fr: string; label_ar: string | null; kind: string };
   type AttrRow = {
     category_id: string; field_key: string; label: string; data_type: string;
     options: { value: string; label: string }[] | null;
@@ -74,33 +78,41 @@ export default async function AdminNewListingPage() {
 
   const categories: AdminCategory[] = catRows
     .filter((c) => c.parent_id != null)
-    .map((c) => ({
-      id: c.id,
-      label: c.label_fr,
-      groupLabel: parents.find((p) => p.id === c.parent_id)?.label_fr ?? "",
-      kind: c.kind === "part" ? "part" : "vehicle",
-      attributes: attrRows
-        .filter((a) => a.category_id === c.id)
-        .map((a) => ({
-          fieldKey: a.field_key,
-          label: a.label,
-          dataType: asDataType(a.data_type),
-          options: a.options,
-          unit: a.unit,
-          required: a.required,
-        })),
-    }));
+    .map((c) => {
+      const parent = parents.find((p) => p.id === c.parent_id);
+      return {
+        id: c.id,
+        label: categoryLabel(c, locale),
+        groupLabel: parent ? categoryLabel(parent, locale) : "",
+        kind: c.kind === "part" ? "part" : "vehicle",
+        // Labels resolved here, in the console's language: the shared field
+        // renderer shows whatever it is given.
+        attributes: attrRows
+          .filter((a) => a.category_id === c.id)
+          .map((a) => ({
+            fieldKey: a.field_key,
+            label: attributeLabel(a.field_key, a.label, locale),
+            dataType: asDataType(a.data_type),
+            options: a.options?.map((o) => ({
+              value: o.value,
+              label: attributeOptionLabel(a.field_key, o.value, o.label, locale),
+            })) ?? null,
+            unit: a.unit ? unitLabel(a.unit, locale) : null,
+            required: a.required,
+          })),
+      };
+    });
 
   return (
     <div>
       <PageHeader
-        eyebrow="Catalogue"
-        title="Créer une annonce"
-        description="Publiée au nom du vendeur, sans frais ni forfait. La gratuité est enregistrée à votre nom."
+        eyebrow={t("create.eyebrow")}
+        title={t("create.title")}
+        description={t("create.pageDescription")}
         actions={
           <Link href="/admin/annonces" className={adminBtn("ghost", "md")}>
-            <ArrowLeft className="size-4" strokeWidth={2.4} />
-            Retour à la file
+            <ArrowLeft className="size-4 rtl:-scale-x-100" strokeWidth={2.4} />
+            {t("create.backToQueue")}
           </Link>
         }
       />

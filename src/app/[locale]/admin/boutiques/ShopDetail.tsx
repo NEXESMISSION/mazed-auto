@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { formatDate } from "@/lib/dates";
+import { currencyLabel } from "@/lib/utils";
 import { AdminButton } from "@/components/admin/AdminButton";
 import {
   StatusPill, Confirm, SelectField, NumberField, TextareaField, FieldGrid,
@@ -36,12 +39,9 @@ export type ShopDetailData = {
   }[];
 };
 
-const DOC_KIND: Record<string, string> = { rne: "Extrait RNE", patente: "Patente", cin_gerant: "CIN du gérant", autre: "Autre" };
+const DOC_KINDS = ["rne", "patente", "cin_gerant", "autre"];
 
-const dt = (iso: string | null) =>
-  iso ? new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" }) : "—";
-const dtt = (iso: string) =>
-  new Date(iso).toLocaleString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+type Tr = ReturnType<typeof useTranslations>;
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -53,35 +53,56 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 }
 
 /** One line of the trail, in words. */
-function describe(a: ShopDetailData["audit"][number]): string {
+function describe(a: ShopDetailData["audit"][number], t: Tr, dt: (iso: string | null) => string, locale: string): string {
   const b = a.before ?? {};
   const n = a.after ?? {};
-  const change = (k: string) => (b[k] !== undefined && b[k] !== n[k] ? `${statusLabel(String(b[k]))} → ${statusLabel(String(n[k]))}` : null);
+  const label = (v: unknown) => statusLabel(String(v), locale);
+  // The arrow follows the reading direction: « avant → après », « بعد ← قبل ».
+  const arrow = locale === "ar" ? "←" : "→";
+  const change = (k: string) => (b[k] !== undefined && b[k] !== n[k] ? `${label(b[k])} ${arrow} ${label(n[k])}` : null);
   if (a.entity === "shop") {
-    if (a.action === "created") return "Boutique créée";
-    const parts = [change("status") && `statut : ${change("status")}`, change("verification_status") && `vérification : ${change("verification_status")}`].filter(Boolean);
-    return parts.join(" · ") || "Boutique modifiée";
+    if (a.action === "created") return t("shop.trail.shopCreated");
+    const status = change("status");
+    const verification = change("verification_status");
+    const parts = [
+      status && t("shop.trail.status", { change: status }),
+      verification && t("shop.trail.verification", { change: verification }),
+    ].filter(Boolean);
+    return parts.join(" · ") || t("shop.trail.shopEdited");
   }
   if (a.entity === "subscription") {
     if (a.action === "created") {
-      const end = typeof n.ends_at === "string" ? ` jusqu'au ${dt(n.ends_at)}` : "";
-      return `Période ${n.payment_id ? "payée" : "offerte"}${end}`;
+      const paid = Boolean(n.payment_id);
+      return typeof n.ends_at === "string"
+        ? t(paid ? "shop.trail.periodPaidUntil" : "shop.trail.periodOfferedUntil", { date: dt(n.ends_at) })
+        : t(paid ? "shop.trail.periodPaid" : "shop.trail.periodOffered");
     }
-    return `Période : ${change("status") ?? "modifiée"}`;
+    return t("shop.trail.period", { change: change("status") ?? t("shop.trail.edited") });
   }
   if (a.entity === "shop_document") {
-    const kind = DOC_KIND[String(n.kind)] ?? "Justificatif";
-    return a.action === "submitted" ? `${kind} envoyé` : `${kind} : ${statusLabel(String(n.status))}`;
+    const kind = DOC_KINDS.includes(String(n.kind)) ? t(`shop.docKind.${String(n.kind)}`) : t("shop.docGeneric");
+    return a.action === "submitted"
+      ? t("shop.trail.docSent", { kind })
+      : t("shop.trail.docStatus", { kind, status: label(n.status) });
   }
   if (a.entity === "listing") {
-    const why = n.paused_reason ? ` (${String(n.paused_reason).replace("_", " ")})` : "";
-    return `Annonce : ${change("status") ?? "modifiée"}${why}`;
+    const what = change("status") ?? t("shop.trail.edited");
+    return n.paused_reason
+      ? t("shop.trail.listingWhy", { change: what, why: String(n.paused_reason).replace("_", " ") })
+      : t("shop.trail.listing", { change: what });
   }
   return `${a.entity} · ${a.action}`;
 }
 
 export function ShopDetail({ shop, backHref }: { shop: ShopDetailData; backHref: string }) {
   const { run, pending } = useAdminAction();
+  const t = useTranslations("adminOps");
+  const locale = useLocale();
+  const dt = (iso: string | null) =>
+    iso ? formatDate(iso, locale, { day: "2-digit", month: "short", year: "numeric" }) : "—";
+  const dtt = (iso: string) =>
+    formatDate(iso, locale, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+  const docKind = (k: string) => (DOC_KINDS.includes(k) ? t(`shop.docKind.${k}`) : k);
   const [confirm, setConfirm] = useState<null | "suspend" | "reject" | { doc: string }>(null);
   const [granting, setGranting] = useState(false);
   const [plan, setPlan] = useState(shop.plans[0]?.code ?? "");
@@ -98,14 +119,14 @@ export function ShopDetail({ shop, backHref }: { shop: ShopDetailData; backHref:
       <header className="shrink-0 border-b border-border px-5 py-3.5">
         <Link href={backHref as "/admin/boutiques"} className="mb-2 inline-flex items-center gap-1 text-[12px] font-medium text-subtle transition hover:text-foreground lg:hidden">
           <ChevronLeft className="size-3.5 rtl:rotate-180" strokeWidth={2.4} />
-          Boutiques
+          {t("shop.back")}
         </Link>
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <h1 className="truncate text-[16px] font-semibold tracking-tight text-foreground">{s.name}</h1>
           <StatusPill status={s.status} />
           {s.verification === "verified" ? (
             <span className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-[var(--gold)]">
-              <BadgeCheck className="size-3.5" strokeWidth={2.4} /> Vérifiée
+              <BadgeCheck className="size-3.5" strokeWidth={2.4} /> {t("shop.verified")}
             </span>
           ) : (
             <StatusPill status={s.verification === "pending" ? "submitted" : s.verification} />
@@ -114,9 +135,9 @@ export function ShopDetail({ shop, backHref }: { shop: ShopDetailData; backHref:
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11.5px] text-subtle">
           <span>{s.activity}</span>
           <span>{s.place}</span>
-          <span>créée le {dt(s.createdAt)}</span>
-          <a href={`/fr/boutiques/${s.slug}`} target="_blank" rel="noopener" className="inline-flex items-center gap-1 font-medium text-[var(--gold)] hover:underline">
-            Vitrine <ExternalLink className="size-3" strokeWidth={2.2} />
+          <span>{t("shop.created", { date: dt(s.createdAt) })}</span>
+          <a href={`/${locale}/boutiques/${s.slug}`} target="_blank" rel="noopener" className="inline-flex items-center gap-1 font-medium text-[var(--gold)] hover:underline">
+            {t("shop.storefront")} <ExternalLink className="size-3 rtl:-scale-x-100" strokeWidth={2.2} />
           </a>
         </div>
       </header>
@@ -124,50 +145,50 @@ export function ShopDetail({ shop, backHref }: { shop: ShopDetailData; backHref:
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4">
         {s.rejectionReason && ["rejected", "suspended"].some((x) => x === s.status || x === s.verification) && (
           <p className="mb-3 border-s-2 border-[var(--tone-bad)] ps-3 text-[12.5px] text-[var(--tone-bad)]">
-            <span className="font-semibold">Motif communiqué :</span> {s.rejectionReason}
+            <span className="font-semibold">{t("shop.reasonGiven")}</span> {s.rejectionReason}
           </p>
         )}
 
         <section>
-          <h2 className={EYEBROW}>Responsable et coordonnées</h2>
+          <h2 className={EYEBROW}>{t("shop.ownerSection")}</h2>
           <dl className="mt-2">
-            <Row label="Propriétaire">
+            <Row label={t("shop.owner")}>
               <Link href={`/admin/vendeurs?a=${s.owner.id}` as "/admin/vendeurs"} className="font-medium text-[var(--gold)] hover:underline">
                 {s.owner.name}
               </Link>
-              {s.owner.phone && <span className="text-subtle"> · {s.owner.phone}</span>}
+              {s.owner.phone && <span className="text-subtle"> · <span className="ltr-island">{s.owner.phone}</span></span>}
             </Row>
-            <Row label="Téléphone boutique">{s.phone ?? <span className="text-subtle">non renseigné</span>}</Row>
-            <Row label="WhatsApp">{s.whatsapp ?? <span className="text-subtle">—</span>}</Row>
-            {s.description && <Row label="Présentation"><span className="line-clamp-3">{s.description}</span></Row>}
+            <Row label={t("shop.shopPhone")}>{s.phone ? <span className="ltr-island">{s.phone}</span> : <span className="text-subtle">{t("shop.notGiven")}</span>}</Row>
+            <Row label={t("shop.whatsapp")}>{s.whatsapp ? <span className="ltr-island">{s.whatsapp}</span> : <span className="text-subtle">—</span>}</Row>
+            {s.description && <Row label={t("shop.presentation")}><span className="line-clamp-3">{s.description}</span></Row>}
           </dl>
         </section>
 
         <section className="mt-5 border-t border-border pt-4">
-          <h2 className={EYEBROW}>Informations légales (privées)</h2>
+          <h2 className={EYEBROW}>{t("shop.legal")}</h2>
           {s.legal && Object.values(s.legal).some(Boolean) ? (
             <dl className="mt-2">
-              <Row label="Raison sociale">{s.legal.name ?? "—"}</Row>
-              <Row label="Matricule fiscal">{s.legal.taxId ?? "—"}</Row>
-              <Row label="RNE">{s.legal.rne ?? "—"}</Row>
-              <Row label="Adresse légale">{s.legal.address ?? "—"}</Row>
-              <Row label="E-mail">{s.legal.email ?? "—"}</Row>
+              <Row label={t("shop.legalName")}>{s.legal.name ?? "—"}</Row>
+              <Row label={t("shop.taxId")}>{s.legal.taxId ? <span className="ltr-island">{s.legal.taxId}</span> : "—"}</Row>
+              <Row label={t("shop.rne")}>{s.legal.rne ? <span className="ltr-island">{s.legal.rne}</span> : "—"}</Row>
+              <Row label={t("shop.legalAddress")}>{s.legal.address ?? "—"}</Row>
+              <Row label={t("shop.email")}>{s.legal.email ? <span className="ltr-island">{s.legal.email}</span> : "—"}</Row>
             </dl>
           ) : (
-            <p className="mt-2 text-[12px] text-subtle">Non renseignées.</p>
+            <p className="mt-2 text-[12px] text-subtle">{t("shop.legalEmpty")}</p>
           )}
         </section>
 
         <section className="mt-5 border-t border-border pt-4">
-          <h2 className={EYEBROW}>Justificatifs</h2>
+          <h2 className={EYEBROW}>{t("shop.documents")}</h2>
           {s.documents.length === 0 ? (
-            <p className="mt-2 text-[12px] text-subtle">Aucun justificatif envoyé.</p>
+            <p className="mt-2 text-[12px] text-subtle">{t("shop.noDocuments")}</p>
           ) : (
             <ul className="mt-2 divide-y divide-border/70">
               {s.documents.map((d) => (
                 <li key={d.id} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 py-2 text-[12.5px]">
                   <FileText className="size-3.5 shrink-0 text-subtle" />
-                  <span className="font-medium text-foreground">{DOC_KIND[d.kind] ?? d.kind}</span>
+                  <span className="font-medium text-foreground">{docKind(d.kind)}</span>
                   <StatusPill status={d.status} />
                   <span className="text-[11.5px] text-subtle">{dt(d.createdAt)}</span>
                   <a
@@ -176,65 +197,64 @@ export function ShopDetail({ shop, backHref }: { shop: ShopDetailData; backHref:
                     rel="noopener"
                     className="inline-flex items-center gap-1 text-[12px] font-medium text-[var(--gold)] hover:underline"
                   >
-                    Ouvrir <ExternalLink className="size-3" strokeWidth={2.2} />
+                    {t("common.open")} <ExternalLink className="size-3 rtl:-scale-x-100" strokeWidth={2.2} />
                   </a>
                   {d.status === "submitted" && (
                     <span className="ms-auto flex gap-1.5">
-                      <AdminButton size="sm" pending={pending} onClick={() => act({ action: "review_document", document_id: d.id, status: "accepted" }, "Justificatif accepté.")}>
-                        Accepter
+                      <AdminButton size="sm" pending={pending} onClick={() => act({ action: "review_document", document_id: d.id, status: "accepted" }, t("shop.docAccepted"))}>
+                        {t("shop.accept")}
                       </AdminButton>
                       <AdminButton size="sm" variant="quiet" onClick={() => setConfirm({ doc: d.id })}>
-                        Refuser
+                        {t("shop.refuse")}
                       </AdminButton>
                     </span>
                   )}
-                  {d.note && <p className="w-full text-[11.5px] text-subtle">Motif : {d.note}</p>}
+                  {d.note && <p className="w-full text-[11.5px] text-subtle">{t("shop.docReason", { note: d.note })}</p>}
                 </li>
               ))}
             </ul>
           )}
-          <p className="mt-2 text-[11px] text-subtle">Chaque ouverture crée un lien valable 60 secondes, et elle est journalisée.</p>
+          <p className="mt-2 text-[11px] text-subtle">{t("shop.docLinkNote")}</p>
         </section>
 
         <section className="mt-5 border-t border-border pt-4">
           <div className="flex items-center justify-between gap-2">
-            <h2 className={EYEBROW}>Abonnement</h2>
+            <h2 className={EYEBROW}>{t("shop.subscription")}</h2>
             <AdminButton size="sm" icon={<Gift className="size-3.5" strokeWidth={2.4} />} onClick={() => setGranting(!granting)}>
-              Offrir une période
+              {t("shop.grantPeriod")}
             </AdminButton>
           </div>
           {granting && (
             <div className="mt-3 space-y-3.5 border-s-2 border-[var(--gold)] ps-4">
               <p className="text-[11.5px] text-subtle">
-                Geste commercial, virement reçu hors du site, correction : la période suit les règles d&apos;une période payée
-                (elle commence à la fin de celle en cours) et elle est enregistrée à votre nom.
+                {t("shop.grantBody")}
               </p>
               <FieldGrid>
-                <SelectField label="Formule" value={plan} onChange={setPlan} options={s.plans.map((p) => ({ value: p.code, label: p.label }))} />
-                <NumberField label="Durée" value={days} onChange={setDays} min={1} suffix="jours" />
+                <SelectField label={t("shop.plan")} value={plan} onChange={setPlan} options={s.plans.map((p) => ({ value: p.code, label: p.label }))} />
+                <NumberField label={t("shop.duration")} value={days} onChange={setDays} min={1} suffix={t("common.days")} />
               </FieldGrid>
-              <TextareaField label="Motif" value={reason} onChange={setReason} rows={2} />
+              <TextareaField label={t("shop.reason")} value={reason} onChange={setReason} rows={2} />
               <div className="flex justify-end gap-2">
-                <AdminButton variant="quiet" onClick={() => setGranting(false)}>Annuler</AdminButton>
+                <AdminButton variant="quiet" onClick={() => setGranting(false)}>{t("common.cancel")}</AdminButton>
                 <AdminButton
                   variant="primary"
                   pending={pending}
                   disabled={!plan || !days || !reason.trim()}
-                  disabledReason="Formule, durée et motif."
+                  disabledReason={t("shop.grantMissing")}
                   onClick={async () => {
-                    if (await act({ action: "grant_period", plan_code: plan, days, reason }, "Période offerte.")) {
+                    if (await act({ action: "grant_period", plan_code: plan, days, reason }, t("shop.periodGranted"))) {
                       setGranting(false);
                       setReason("");
                     }
                   }}
                 >
-                  Offrir
+                  {t("shop.offer")}
                 </AdminButton>
               </div>
             </div>
           )}
           {s.periods.length === 0 ? (
-            <p className="mt-2 text-[12px] text-subtle">Aucune période.</p>
+            <p className="mt-2 text-[12px] text-subtle">{t("shop.noPeriod")}</p>
           ) : (
             <ul className="mt-2 divide-y divide-border/70 text-[12.5px]">
               {s.periods.map((p) => (
@@ -242,7 +262,7 @@ export function ShopDetail({ shop, backHref }: { shop: ShopDetailData; backHref:
                   <span className="font-medium text-foreground">{p.plan}</span>
                   <span className="text-subtle">{dt(p.startsAt)} → {dt(p.endsAt)}</span>
                   <StatusPill status={p.status === "grace" ? "pending" : p.status === "active" ? "active" : "expired"}>
-                    {p.status === "grace" ? "Grâce" : p.status === "active" ? "Active" : p.status === "expired" ? "Terminée" : p.status}
+                    {["grace", "active", "expired"].includes(p.status) ? t(`shop.periodStatus.${p.status}`) : p.status}
                   </StatusPill>
                   <span className="ms-auto text-[11.5px] text-subtle">{p.origin}</span>
                 </li>
@@ -252,19 +272,19 @@ export function ShopDetail({ shop, backHref }: { shop: ShopDetailData; backHref:
         </section>
 
         <section className="mt-5 border-t border-border pt-4">
-          <h2 className={EYEBROW}>Paiements</h2>
+          <h2 className={EYEBROW}>{t("shop.payments")}</h2>
           {s.payments.length === 0 ? (
-            <p className="mt-2 text-[12px] text-subtle">Aucun paiement.</p>
+            <p className="mt-2 text-[12px] text-subtle">{t("shop.noPayments")}</p>
           ) : (
             <ul className="mt-2 divide-y divide-border/70 text-[12.5px]">
               {s.payments.map((p) => (
                 <li key={p.id}>
                   <Link href={`/admin/paiements?a=${p.id}` as "/admin/paiements"} className="flex flex-wrap items-center gap-x-3 py-1.5 hover:text-[var(--gold)]">
-                    <span className="font-medium">{paymentKindLabel(p.kind)}</span>
-                    <span className="batta-tabular">{p.amount.toFixed(3)} TND</span>
+                    <span className="font-medium">{paymentKindLabel(p.kind, locale)}</span>
+                    <span className="batta-tabular">{p.amount.toFixed(3)} {currencyLabel(locale)}</span>
                     <StatusPill status={p.status} />
-                    <span className="text-[11.5px] text-subtle">{p.provider === "konnect" ? "Konnect" : "virement / D17"} · {dt(p.createdAt)}</span>
-                    {p.receipt && <span className="ms-auto text-[11.5px] text-subtle">{p.receipt}</span>}
+                    <span className="text-[11.5px] text-subtle">{p.provider === "konnect" ? t("shop.viaKonnect") : t("shop.viaTransfer")} · {dt(p.createdAt)}</span>
+                    {p.receipt && <span className="ltr-island ltr:ml-auto rtl:mr-auto text-[11.5px] text-subtle">{p.receipt}</span>}
                   </Link>
                 </li>
               ))}
@@ -273,31 +293,31 @@ export function ShopDetail({ shop, backHref }: { shop: ShopDetailData; backHref:
         </section>
 
         <section className="mt-5 border-t border-border pt-4">
-          <h2 className={EYEBROW}>Annonces</h2>
+          <h2 className={EYEBROW}>{t("shop.listings")}</h2>
           <p className="mt-2 text-[12.5px]">
             <Link href={`/admin/annonces?status=all&q=${encodeURIComponent(s.owner.phone ?? s.name)}` as "/admin/annonces"} className="inline-flex items-center gap-1.5 font-medium text-[var(--gold)] hover:underline">
-              {live} en ligne ou en vérification · {Object.values(s.listings).reduce((a, b) => a + b, 0)} au total
-              <ExternalLink className="size-3" strokeWidth={2.2} />
+              {t("shop.listingsValue", { live, total: Object.values(s.listings).reduce((a, b) => a + b, 0) })}
+              <ExternalLink className="size-3 rtl:-scale-x-100" strokeWidth={2.2} />
             </Link>
           </p>
           {Object.keys(s.listings).length > 0 && (
             <p className="mt-1 text-[11.5px] text-subtle">
-              {Object.entries(s.listings).map(([k, v]) => `${statusLabel(k)} ${v}`).join(" · ")}
+              {Object.entries(s.listings).map(([k, v]) => `${statusLabel(k, locale)} ${v}`).join(" · ")}
             </p>
           )}
         </section>
 
         <section className="mt-5 border-t border-border pt-4">
-          <h2 className={EYEBROW}>Historique</h2>
+          <h2 className={EYEBROW}>{t("shop.history")}</h2>
           {s.audit.length === 0 ? (
-            <p className="mt-2 text-[12px] text-subtle">Rien d&apos;enregistré.</p>
+            <p className="mt-2 text-[12px] text-subtle">{t("shop.historyEmpty")}</p>
           ) : (
             <ol className="mt-2 space-y-1.5">
               {s.audit.map((a) => (
                 <li key={a.id} className="grid grid-cols-[96px_1fr] gap-3 text-[12px]">
                   <span className="text-[11px] text-subtle">{dtt(a.at)}</span>
                   <span className="min-w-0">
-                    <span className="text-foreground">{describe(a)}</span>
+                    <span className="text-foreground">{describe(a, t, dt, locale)}</span>
                     <span className="text-subtle"> — {a.actor}</span>
                     {a.reason && <span className="block text-[11.5px] text-subtle">« {a.reason} »</span>}
                   </span>
@@ -313,19 +333,19 @@ export function ShopDetail({ shop, backHref }: { shop: ShopDetailData; backHref:
           <AdminButton
             icon={<BadgeCheck className="size-3.5" strokeWidth={2.4} />}
             pending={pending}
-            onClick={() => act({ action: "verify" }, "Boutique vérifiée.")}
+            onClick={() => act({ action: "verify" }, t("shop.verifiedToast"))}
           >
-            Vérifier
+            {t("shop.verify")}
           </AdminButton>
         )}
         {s.verification !== "rejected" && s.verification !== "unverified" && (
           <AdminButton variant="quiet" icon={<ShieldX className="size-3.5" strokeWidth={2.4} />} onClick={() => setConfirm("reject")}>
-            {s.verification === "verified" ? "Retirer la vérification" : "Refuser la vérification"}
+            {s.verification === "verified" ? t("shop.removeVerification") : t("shop.refuseVerification")}
           </AdminButton>
         )}
         {s.status === "active" ? (
           <AdminButton variant="quiet" className="ms-auto" icon={<Ban className="size-3.5" strokeWidth={2.4} />} onClick={() => setConfirm("suspend")}>
-            Suspendre
+            {t("shop.suspend")}
           </AdminButton>
         ) : s.status !== "closed" ? (
           <AdminButton
@@ -333,48 +353,48 @@ export function ShopDetail({ shop, backHref }: { shop: ShopDetailData; backHref:
             className="ms-auto"
             pending={pending}
             icon={s.status === "suspended" ? <RotateCcw className="size-3.5" strokeWidth={2.4} /> : <Store className="size-3.5" strokeWidth={2.4} />}
-            onClick={() => act({ action: "activate" }, "Boutique en ligne.")}
+            onClick={() => act({ action: "activate" }, t("shop.activated"))}
           >
-            {s.status === "suspended" ? "Réactiver" : "Ouvrir la boutique"}
+            {s.status === "suspended" ? t("shop.reactivate") : t("shop.openShop")}
           </AdminButton>
         ) : null}
       </footer>
 
       <Confirm
         open={confirm === "suspend"}
-        title="Suspendre cette boutique ?"
-        body="Sa page et ses annonces ne sont plus proposées. Rien n'est supprimé ; le propriétaire voit le motif."
-        confirmLabel="Suspendre"
+        title={t("shop.suspendTitle")}
+        body={t("shop.suspendBody")}
+        confirmLabel={t("shop.suspend")}
         pending={pending}
-        reason={{ label: "Motif (communiqué au propriétaire)", placeholder: "Annonces trompeuses, plainte…", required: true }}
+        reason={{ label: t("common.reasonForOwner"), placeholder: t("shop.suspendPlaceholder"), required: true }}
         onCancel={() => setConfirm(null)}
         onConfirm={async (r) => {
-          if (await act({ action: "suspend", reason: r }, "Boutique suspendue.")) setConfirm(null);
+          if (await act({ action: "suspend", reason: r }, t("shop.suspended"))) setConfirm(null);
         }}
       />
       <Confirm
         open={confirm === "reject"}
-        title={s.verification === "verified" ? "Retirer le badge « vérifiée » ?" : "Refuser la vérification ?"}
-        body="Le badge n'apparaît plus. La boutique reste en ligne et peut envoyer de nouveaux justificatifs."
-        confirmLabel={s.verification === "verified" ? "Retirer" : "Refuser"}
+        title={s.verification === "verified" ? t("shop.removeBadgeTitle") : t("shop.refuseTitle")}
+        body={t("shop.verificationBody")}
+        confirmLabel={s.verification === "verified" ? t("shop.remove") : t("shop.refuse")}
         pending={pending}
-        reason={{ label: "Motif (communiqué au propriétaire)", placeholder: "Document illisible, nom différent…", required: true }}
+        reason={{ label: t("common.reasonForOwner"), placeholder: t("shop.verificationPlaceholder"), required: true }}
         onCancel={() => setConfirm(null)}
         onConfirm={async (r) => {
-          if (await act({ action: "reject_verification", reason: r }, "Vérification refusée.")) setConfirm(null);
+          if (await act({ action: "reject_verification", reason: r }, t("shop.verificationRefused"))) setConfirm(null);
         }}
       />
       <Confirm
         open={typeof confirm === "object" && confirm !== null}
-        title="Refuser ce justificatif ?"
-        body="Le propriétaire est prévenu et peut en envoyer un autre."
-        confirmLabel="Refuser"
+        title={t("shop.docRefuseTitle")}
+        body={t("shop.docRefuseBody")}
+        confirmLabel={t("shop.refuse")}
         pending={pending}
-        reason={{ label: "Motif (communiqué au propriétaire)", placeholder: "Illisible, expiré…", required: true }}
+        reason={{ label: t("common.reasonForOwner"), placeholder: t("shop.docRefusePlaceholder"), required: true }}
         onCancel={() => setConfirm(null)}
         onConfirm={async (r) => {
           if (typeof confirm === "object" && confirm !== null) {
-            if (await act({ action: "review_document", document_id: confirm.doc, status: "rejected", note: r }, "Justificatif refusé.")) setConfirm(null);
+            if (await act({ action: "review_document", document_id: confirm.doc, status: "rejected", note: r }, t("shop.docRefused"))) setConfirm(null);
           }
         }}
       />

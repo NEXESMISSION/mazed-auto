@@ -1,3 +1,4 @@
+import { getLocale, getTranslations } from "next-intl/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { AdminPager } from "@/components/admin/AdminPager";
@@ -8,7 +9,8 @@ import {
 import { ROW_BASE, ROW_IDLE, ROW_SELECTED, ROW_FOCUS } from "@/components/admin/kit/surface";
 import { Link } from "@/i18n/navigation";
 import { PaymentDetail, type PaymentDetailData } from "./PaymentDetail";
-import { formatTND } from "@/lib/utils";
+import { currencyLabel, formatTND } from "@/lib/utils";
+import { productName } from "@/lib/products";
 import { Receipt } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -37,12 +39,6 @@ const V3_KINDS = ["listing_fee", "listing_pack", "subscription", "promo", "badge
 
 type TabKey = "pending" | "captured" | "failed" | "all";
 
-const TAB_LABEL: Record<TabKey, string> = {
-  pending: "À valider",
-  captured: "Validés",
-  failed: "Refusés",
-  all: "Tous",
-};
 const TAB_ORDER: TabKey[] = ["pending", "captured", "failed", "all"];
 
 /** "À valider" spans two DB statuses: a receipt can arrive before or after the
@@ -61,7 +57,10 @@ export default async function AdminPaiementsPage({
 }) {
   const sp = await searchParams;
   const admin = getServiceSupabase();
-  if (!admin) return <p className="text-[13px] text-muted">Service non configuré.</p>;
+  const t = await getTranslations("adminOps");
+  const locale = await getLocale();
+  const cur = currencyLabel(locale);
+  if (!admin) return <p className="text-[13px] text-muted">{t("common.noService")}</p>;
 
   const tab: TabKey = TAB_ORDER.includes(sp.status as TabKey)
     ? (sp.status as TabKey)
@@ -113,10 +112,10 @@ export default async function AdminPaiementsPage({
     } else if (r.status === "failed") counts.failed += 1;
   }
 
-  const tabs: Tab[] = TAB_ORDER.map((t) => ({
-    value: t,
-    label: TAB_LABEL[t],
-    count: counts[t],
+  const tabs: Tab[] = TAB_ORDER.map((k) => ({
+    value: k,
+    label: t(`payments.tabs.${k}`),
+    count: counts[k],
   }));
 
   type PayRow = {
@@ -139,28 +138,28 @@ export default async function AdminPaiementsPage({
   const listHref = `/admin/paiements${base.toString() ? `?${base.toString()}` : ""}`;
 
   const openId = sp.a ?? null;
-  const detail = openId ? await loadDetail(admin, openId) : null;
+  const detail = openId ? await loadDetail(admin, openId, t("common.noName"), locale) : null;
 
   return (
     <FullBleed>
       <header className="flex h-12 shrink-0 items-center gap-4 border-b border-border px-4">
         <h1 className="shrink-0 text-[13px] font-semibold tracking-tight text-foreground">
-          Paiements
+          {t("payments.title")}
         </h1>
         <Toolbar
           tabs={tabs}
           defaultTab="pending"
-          searchPlaceholder="Référence, motif…"
+          searchPlaceholder={t("payments.search")}
           resetParams={["page", "a"]}
         />
         <div className="hidden shrink-0 items-baseline gap-4 xl:flex">
-          <span className={EYEBROW}>Ce mois</span>
+          <span className={EYEBROW}>{t("payments.thisMonth")}</span>
           <span className="batta-tabular text-[13px] font-semibold text-[var(--gold)]">
-            {formatTND(revenueMonth, "fr")} TND
+            {formatTND(revenueMonth, locale)} {cur}
           </span>
-          <span className={EYEBROW}>Total</span>
+          <span className={EYEBROW}>{t("payments.total")}</span>
           <span className="batta-tabular text-[13px] font-medium text-foreground">
-            {formatTND(revenueTotal, "fr")} TND
+            {formatTND(revenueTotal, locale)} {cur}
           </span>
         </div>
       </header>
@@ -178,12 +177,8 @@ export default async function AdminPaiementsPage({
               <EmptyState
                 Icon={Receipt}
                 tone={q ? "filtered" : "idle"}
-                title={q ? "Aucun paiement ne correspond" : `Rien dans « ${TAB_LABEL[tab]} »`}
-                hint={
-                  q
-                    ? "Essayez un autre terme, ou changez d'onglet."
-                    : "Aucun reçu n'attend une décision."
-                }
+                title={q ? t("payments.noMatch") : t("common.emptyTab", { tab: t(`payments.tabs.${tab}`) })}
+                hint={q ? t("common.otherTerm") : t("payments.idleHint")}
               />
             </div>
           ) : (
@@ -210,21 +205,21 @@ export default async function AdminPaiementsPage({
                             selected ? "font-semibold text-foreground" : "font-medium text-foreground/90"
                           }`}
                         >
-                          {r.payer?.full_name ?? "Sans nom"}
+                          {r.payer?.full_name ?? t("common.noName")}
                         </span>
                         <span className="mt-0.5 block truncate text-[11.5px] text-subtle">
-                          {paymentKindLabel(r.kind)}
+                          {paymentKindLabel(r.kind, locale)}
                           {noReceipt && (
-                            <span className="text-[var(--tone-warn)]"> · aucun reçu</span>
+                            <span className="text-[var(--tone-warn)]">{t("payments.noReceiptShort")}</span>
                           )}
                         </span>
                       </span>
                       <span className="shrink-0 text-end">
                         <span className="batta-tabular block text-[12.5px] text-foreground/90">
-                          {formatTND(Number(r.amount) || 0, "fr")} TND
+                          {formatTND(Number(r.amount) || 0, locale)} {cur}
                         </span>
                         <span className="batta-tabular mt-0.5 block text-[11px] text-subtle">
-                          {age(r.receipt_uploaded_at ?? r.created_at)}
+                          {age(r.receipt_uploaded_at ?? r.created_at, t)}
                         </span>
                       </span>
                     </Link>
@@ -249,9 +244,9 @@ export default async function AdminPaiementsPage({
           ) : (
             <div className="grid w-full place-items-center px-6">
               <p className="max-w-xs text-center text-[12.5px] text-subtle">
-                Choisissez un paiement à gauche.
+                {t("payments.pickLeft")}
                 <br />
-                <span className="text-[11.5px]">j / k pour parcourir, Entrée pour ouvrir.</span>
+                <span className="text-[11.5px]">{t("payments.keysHint")}</span>
               </p>
             </div>
           )}
@@ -261,10 +256,10 @@ export default async function AdminPaiementsPage({
   );
 }
 
-function age(iso: string): string {
+function age(iso: string, t: Awaited<ReturnType<typeof getTranslations>>): string {
   const days = Math.round((Date.now() - new Date(iso).getTime()) / 86_400_000);
-  if (days === 0) return "aujourd'hui";
-  return `il y a ${days} j`;
+  if (days === 0) return t("common.today");
+  return t("common.daysAgo", { days });
 }
 
 type Admin = NonNullable<ReturnType<typeof getServiceSupabase>>;
@@ -276,7 +271,7 @@ type Admin = NonNullable<ReturnType<typeof getServiceSupabase>>;
  * key: v3 fees never populated `payments.property_id`, which is also why the
  * `accept_listing_payment` RPC rejects every one of them.
  */
-async function loadDetail(admin: Admin, id: string): Promise<PaymentDetailData | null> {
+async function loadDetail(admin: Admin, id: string, noName: string, locale: string): Promise<PaymentDetailData | null> {
   const { data } = await admin
     .from("payments")
     .select(
@@ -319,7 +314,7 @@ async function loadDetail(admin: Admin, id: string): Promise<PaymentDetailData |
           .maybeSingle()
       : Promise.resolve({ data: null }),
     r.metadata?.product_id
-      ? admin.from("products").select("name_fr").eq("id", r.metadata.product_id).maybeSingle()
+      ? admin.from("products").select("name_fr, name_ar").eq("id", r.metadata.product_id).maybeSingle()
       : Promise.resolve({ data: null }),
   ]);
 
@@ -335,9 +330,12 @@ async function loadDetail(admin: Admin, id: string): Promise<PaymentDetailData |
     uploadedAt: r.receipt_uploaded_at,
     reviewedAt: r.reviewed_at,
     adminNotes: r.admin_notes,
-    sellerName: r.payer?.full_name ?? "Sans nom",
+    sellerName: r.payer?.full_name ?? noName,
     sellerPhone: r.payer?.phone ?? null,
-    productName: (productRes.data as { name_fr: string } | null)?.name_fr ?? null,
+    productName: (() => {
+      const p = productRes.data as { name_fr: string; name_ar: string | null } | null;
+      return p ? productName({ nameFr: p.name_fr, nameAr: p.name_ar }, locale) : null;
+    })(),
     listing,
     receipts,
   };
