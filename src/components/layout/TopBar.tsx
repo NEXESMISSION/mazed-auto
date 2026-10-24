@@ -102,41 +102,28 @@ export function TopBar() {
 
 function BrandMark() {
   const t = useTranslations("brand");
-  // `h-8` (32px) inside a 56px bar (`--batta-topbar-h`).
+  // The logo's emblem and its own « MAZED AUTO » wordmark side by side, as
+  // ONE image (`lockup-wide`, built by scripts/regen-logos.mjs), `h-8` (32px)
+  // in a 56px bar (`--batta-topbar-h`): ~210px across.
   //
-  // Height is the wrong thing to judge this mark by: it is wide, so every
-  // pixel of height costs more than one of WIDTH. The emblem is ~2.35:1, so
-  // 32px puts it at ~75px across — the footprint the old 3:1 « MA » monogram
-  // had at `h-7`, and about twice the cap height of the name, which is where a
-  // mark sits next to its own wordmark. Much bigger and it reads as the
-  // loudest thing in the bar before the name beside it has said anything.
+  // It was the emblem with the name typed beside it in the site font. The
+  // metallic mark next to plain text read as two unrelated things, and at
+  // 32px the emblem outweighed the 15px name. The logo's own wordmark is the
+  // name, so nothing is typed here; the link's aria-label says it.
   //
   // The width auto-scales via `w-auto`. `priority` skips the lazy-load — this
   // is above-the-fold on every page that shows the bar.
   return (
-    <Link href="/" className="flex items-center gap-2" aria-label={t("name")}>
-      {/* The road emblem alone, in a WIDE box — the full logo's « MAZED AUTO »
-          would be a few pixels tall here, and the name is written beside it
-          anyway. The file is pre-trimmed (no transparent margin), which is why
-          no padding is needed here to make it sit right. */}
+    <Link href="/" className="flex items-center" aria-label={t("name")}>
       <Image
-        src="/brand/mark.png"
+        src="/brand/lockup-wide.png"
         alt=""
-        width={953}
-        height={406}
+        width={1573}
+        height={240}
         priority
-        sizes="90px"
+        sizes="210px"
         className="h-8 w-auto shrink-0"
       />
-      {/* The name, back beside the mark and visible.
-          It was `sr-only`, on the reasoning that a logo is the name. That
-          holds for a wordmark and fails for a monogram: « MA » is two letters
-          to anyone who has not already learnt them, so the bar identified the
-          site only to people who did not need telling. The mark gives up a
-          little height to pay for it. */}
-      <span className="truncate text-[15px] font-bold tracking-tight text-foreground">
-        {t("name")}
-      </span>
     </Link>
   );
 }

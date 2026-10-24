@@ -93,29 +93,20 @@ export function DesktopNav() {
         <div className="flex shrink-0 items-center gap-7">
           <Link
             href="/"
-            className="flex shrink-0 items-center gap-2.5"
+            className="flex shrink-0 items-center"
             aria-label="Mazed Auto"
           >
-            {/* The road emblem, in a WIDE box — see the note in TopBar.
-
-                `h-9` (36px) in a 72px nav puts the ~2.35:1 emblem at ~85px
-                wide. Same reasoning as the top bar: much taller and it is
-                wider than any two nav links put together, so the eye reads it
-                as a banner rather than as the thing that takes you home. */}
+            {/* Emblem + the logo's own wordmark as one image — see the note in
+                TopBar. `h-9` (36px) in a 72px nav: ~236px across. */}
             <Image
-              src="/brand/mark.png"
+              src="/brand/lockup-wide.png"
               alt=""
-              width={953}
-              height={406}
+              width={1573}
+              height={240}
               priority
-              sizes="100px"
+              sizes="240px"
               className="h-9 w-auto shrink-0"
             />
-            {/* Visible, not `sr-only` — see the note in TopBar: an emblem
-                does not say the name on its own. */}
-            <span className="text-[17px] font-bold tracking-tight text-foreground">
-              Mazed Auto
-            </span>
           </Link>
 
           <nav className="flex items-center gap-1" aria-label="Navigation principale">

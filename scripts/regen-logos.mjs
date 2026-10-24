@@ -13,10 +13,11 @@
 // black that composites back to the source byte for byte, which is why the
 // gold glow survives as a glow instead of being cut off at a threshold.
 //
-// TWO CROPS. The emblem alone (`mark`) goes next to the name in the bars and
-// into the square icons, where the wordmark would be a few pixels tall and
+// THREE ARRANGEMENTS. The emblem alone (`mark`) goes into the square icons
+// and the admin console, where the wordmark would be a few pixels tall and
 // turn to mush. The full logo (`lockup`) goes where it is shown big and alone:
-// splash, sign-in screens, social previews.
+// sign-in screens, offline page, social previews. The two side by side
+// (`lockup-wide`) goes in the site's top bars.
 import sharp from "sharp";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -94,12 +95,39 @@ for (let y = Math.round(H * 0.5), best = Infinity; y < Math.round(H * 0.65); y++
 }
 
 const MARK_BOX = inkBox(0, split);
+const WORD_BOX = inkBox(split, H);
 const LOCKUP_BOX = inkBox(0, H);
 
 const cut = (box) =>
   sharp(rgba, { raw: { width: W, height: H, channels: 4 } }).extract(box).png().toBuffer();
 const markFull = await cut(MARK_BOX);
+const wordFull = await cut(WORD_BOX);
 const lockupFull = await cut(LOCKUP_BOX);
+
+/**
+ * The same emblem and wordmark side by side, for the bars. Stacked, the
+ * wordmark is a third of the logo's height and unreadable at bar size; next
+ * to the emblem it gets most of it. 85% of the emblem's height is where the
+ * two read as one logo rather than a picture beside a caption. Built from the
+ * source's own wordmark, not set in the site font, so it matches the logo.
+ */
+async function wideLockup(height) {
+  const emblem = await sharp(markFull).resize({ height, kernel: "lanczos3" }).toBuffer();
+  const { width: emblemW } = await sharp(emblem).metadata();
+  const wordH = Math.round(height * 0.85);
+  const word = await sharp(wordFull).resize({ height: wordH, kernel: "lanczos3" }).toBuffer();
+  const { width: wordW } = await sharp(word).metadata();
+  const gap = Math.round(height * 0.16);
+  return sharp({
+    create: { width: emblemW + gap + wordW, height, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
+  })
+    .composite([
+      { input: emblem, left: 0, top: 0 },
+      { input: word, left: emblemW + gap, top: Math.round((height - wordH) / 2) },
+    ])
+    .png({ compressionLevel: 9 })
+    .toBuffer();
+}
 
 const written = [];
 async function write(file, pipeline) {
@@ -181,6 +209,8 @@ function ico(frames) {
 // make-watermark-stamp.py and of the photo backfill.
 await write(path.join(BRAND, "mark.png"), markFull);
 await write(path.join(BRAND, "lockup.png"), lockupFull);
+// The bars show it 32-36px tall; 240px covers that at 3x with room to spare.
+await write(path.join(BRAND, "lockup-wide.png"), await wideLockup(240));
 // Direct-load copies. The splash and the offline page use <picture>/<img>, not
 // next/image, and show the lockup ~200px wide; the watermark draws the plain
 // mark at most 300px wide. 480px covers both at 2.5x. The brushed metal
