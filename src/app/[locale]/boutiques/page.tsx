@@ -9,6 +9,7 @@ import { BadgeCheck, MapPin, Store } from "lucide-react";
 import { ShopsPreviewBanner } from "./ShopsPreviewBanner";
 import { jsonLdSafe } from "@/lib/jsonld";
 import { siteUrl } from "@/lib/siteUrl";
+import { OG_IMAGE } from "@/lib/ogImage";
 
 const DESCRIPTION =
   "Concessionnaires, loueurs et vendeurs de pièces auto en Tunisie : leurs annonces et leurs coordonnées.";
@@ -19,7 +20,7 @@ export const metadata: Metadata = {
   title: "Boutiques — Mazed Auto",
   description: DESCRIPTION,
   alternates: { canonical: "/fr/boutiques" },
-  openGraph: { type: "website", url: "/fr/boutiques", title: "Boutiques — Mazed Auto", description: DESCRIPTION, siteName: "Mazed Auto", locale: "fr_TN" },
+  openGraph: { type: "website", url: "/fr/boutiques", title: "Boutiques — Mazed Auto", description: DESCRIPTION, siteName: "Mazed Auto", locale: "fr_TN", images: [OG_IMAGE] },
 };
 
 // Reads the shops and the public switch on every request.

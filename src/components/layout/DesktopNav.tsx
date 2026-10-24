@@ -96,24 +96,22 @@ export function DesktopNav() {
             className="flex shrink-0 items-center gap-2.5"
             aria-label="Mazed Auto"
           >
-            {/* The MA monogram, in a WIDE box — see the note in TopBar. The
-                round `object-cover` crop it replaces cut the speed lines and
-                most of the A off a mark that is nearly 3:1.
+            {/* The road emblem, in a WIDE box — see the note in TopBar.
 
-                `h-8` (32px) in a 72px nav, down from `h-10`. Same reasoning as
-                the top bar: at 40px tall the 3:1 mark was 118px wide, wider
-                than any two nav links put together, so the eye read it as a
-                banner rather than as the thing that takes you home. */}
+                `h-9` (36px) in a 72px nav puts the ~2.35:1 emblem at ~85px
+                wide. Same reasoning as the top bar: much taller and it is
+                wider than any two nav links put together, so the eye reads it
+                as a banner rather than as the thing that takes you home. */}
             <Image
-              src="/logo-mark.webp"
+              src="/brand/mark.png"
               alt=""
-              width={842}
-              height={285}
+              width={953}
+              height={406}
               priority
               sizes="100px"
-              className="h-8 w-auto shrink-0"
+              className="h-9 w-auto shrink-0"
             />
-            {/* Visible, not `sr-only` — see the note in TopBar: a monogram
+            {/* Visible, not `sr-only` — see the note in TopBar: an emblem
                 does not say the name on its own. */}
             <span className="text-[17px] font-bold tracking-tight text-foreground">
               Mazed Auto

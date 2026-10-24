@@ -24,14 +24,25 @@ export default async function ResetPasswordPage() {
       <div aria-hidden className="batta-gradient-gold h-[2px] w-full" />
       <div className="p-7 sm:p-8">
         <div className="flex flex-col items-center text-center">
+          {/* The full logo on phones, where this card is the only brand on
+              screen; the emblem alone on desktop, where AuthHeroPanel beside
+              it already shows the full logo. */}
           <Image
-            src="/logo-mark.webp"
+            src="/brand/lockup.png"
             alt={t("brand.name")}
-            width={842}
-            height={285}
+            width={1115}
+            height={655}
             priority
-            sizes="220px"
-            className="h-16 w-auto"
+            sizes="170px"
+            className="h-24 w-auto lg:hidden"
+          />
+          <Image
+            src="/brand/mark.png"
+            alt={t("brand.name")}
+            width={953}
+            height={406}
+            sizes="160px"
+            className="hidden h-16 w-auto lg:block"
           />
           <h1
             className={`mt-5 text-[24px] font-extrabold leading-[1.1] tracking-tight ${

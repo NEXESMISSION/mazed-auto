@@ -1,5 +1,5 @@
 """
-Build `public/logo-stamp.webp` — the mark stamped into every listing photo.
+Build `public/brand/stamp.webp` — the mark stamped into every listing photo.
 
 WHY A GENERATED ASSET AND NOT CANVAS TEXT. `watermark.ts` runs in the browser
 and could draw the caption with `ctx.fillText`. It must not: the caption would
@@ -18,7 +18,8 @@ fallback. fontTools reads the woff2 and pins the variable axis at the weight
 we want; Pillow draws that instance directly. Neither has a usable Node
 equivalent here.
 
-Run it after changing the wordmark, the caption or the brand colours:
+Run it after changing the logo (`node scripts/regen-logos.mjs` first, which
+writes the `brand/mark.png` this reads), the caption or the brand colours:
 
     pip install fonttools brotli pillow
     python scripts/make-watermark-stamp.py
@@ -35,9 +36,9 @@ from PIL import Image, ImageDraw, ImageFont
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 FONT_SRC = os.path.join(ROOT, "src", "app", "fonts", "PlusJakartaSans-latin.woff2")
-MARK_SRC = os.path.join(ROOT, "public", "logo-mark.png")
-OUT_PNG = os.path.join(ROOT, "public", "logo-stamp.png")
-OUT_WEBP = os.path.join(ROOT, "public", "logo-stamp.webp")
+MARK_SRC = os.path.join(ROOT, "public", "brand", "mark.png")
+OUT_PNG = os.path.join(ROOT, "public", "brand", "stamp.png")
+OUT_WEBP = os.path.join(ROOT, "public", "brand", "stamp.webp")
 
 # The business, then where to find it. Both, because neither alone is enough:
 # a thief's repost carries the name to somebody who then has to search for us,

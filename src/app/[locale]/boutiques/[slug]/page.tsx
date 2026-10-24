@@ -14,6 +14,7 @@ import {
   shopSchemaType,
 } from "@/lib/shops/format";
 import { siteUrl } from "@/lib/siteUrl";
+import { OG_IMAGE } from "@/lib/ogImage";
 import { ListingCard, LISTING_CARD_SELECT, type CardListing } from "@/components/listing/ListingCard";
 import { ContactReveal } from "../../annonces/[id]/ContactReveal";
 import { ShopsPreviewBanner } from "../ShopsPreviewBanner";
@@ -68,7 +69,7 @@ export async function generateMetadata({
     title,
     description,
     alternates: { canonical: url },
-    openGraph: { type: "website", url, title, description, siteName: "Mazed Auto", locale: "fr_TN", ...(picture ? { images: [picture] } : {}) },
+    openGraph: { type: "website", url, title, description, siteName: "Mazed Auto", locale: "fr_TN", images: [picture ?? OG_IMAGE] },
   };
 }
 

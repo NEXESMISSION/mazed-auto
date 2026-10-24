@@ -4,6 +4,7 @@ import { PWARegister } from "@/components/layout/PWARegister";
 import { Suspense } from "react";
 import { ClientLogger } from "@/components/dev/ClientLogger";
 import { ClientErrorReporter } from "@/components/observability/ClientErrorReporter";
+import { OG_IMAGE } from "@/lib/ogImage";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
@@ -40,12 +41,12 @@ export const metadata: Metadata = {
     capable: true,
     title: "Mazed Auto",
     statusBarStyle: "default",
-    startupImage: ["/logo-square.png"],
+    startupImage: ["/brand/icon-512.png"],
   },
-  // Browser-tab + PWA + apple-touch icons are provided by the file-based
-  // metadata convention (src/app/icon.png, apple-icon.png, favicon.ico) —
-  // copied straight from v1 so the gold "MA" shows everywhere, including the
-  // /favicon.ico path browsers request by default.
+  // Browser-tab + apple-touch icons are provided by the file-based metadata
+  // convention (src/app/icon.png, apple-icon.png, favicon.ico), including the
+  // /favicon.ico path browsers request by default. They and everything in
+  // public/brand/ are generated from one source by scripts/regen-logos.mjs.
   openGraph: {
     title: "Mazed Auto — Petites annonces automobiles en Tunisie",
     description:
@@ -53,22 +54,16 @@ export const metadata: Metadata = {
       + "vous appelez le vendeur.",
     type: "website",
     siteName: "Mazed Auto",
-    images: [
-      {
-        url: "/logo-square.png",
-        width: 1104,
-        height: 1104,
-        alt: "Mazed Auto — Petites annonces automobiles en Tunisie",
-      },
-    ],
+    images: [OG_IMAGE],
   },
   twitter: {
-    card: "summary",
+    // The preview is 1200x630; a plain "summary" card crops it to a square.
+    card: "summary_large_image",
     title: "Mazed Auto — Petites annonces automobiles en Tunisie",
     description:
       "Voitures et pièces de rechange partout en Tunisie. Le prix est affiché, "
       + "vous appelez le vendeur.",
-    images: ["/logo-square.png"],
+    images: [OG_IMAGE.url],
   },
   formatDetection: { telephone: false },
 };
@@ -123,25 +118,10 @@ export default async function RootLayout({
             pages, but pre-warming costs ~0 and shaves perceived load
             time on the map iframe. */}
         <link rel="dns-prefetch" href="https://tile.openstreetmap.org" />
-        {/* Preload the splash-screen wordmark so it paints before any
-            JS hydrates. AVIF is ~4 KB; the second preload covers the
-            handful of browsers (older Safari, Firefox without AVIF) that
-            need WebP. The `imagesrcset` makes the browser pick exactly
-            one — no double download. */}
-        <link
-          rel="preload"
-          as="image"
-          href="/logo-mark.avif"
-          type="image/avif"
-          fetchPriority="high"
-        />
-        <link
-          rel="preload"
-          as="image"
-          href="/logo-mark.webp"
-          type="image/webp"
-          fetchPriority="high"
-        />
+        {/* No logo preload here. There used to be one for the splash
+            screen, but SplashScreen is not mounted anywhere, so every page
+            fetched a logo file nothing displayed. The bar logos are
+            next/image `priority`, which emits its own preload. */}
       </head>
       <body
         className="min-h-full bg-background text-foreground font-sans"

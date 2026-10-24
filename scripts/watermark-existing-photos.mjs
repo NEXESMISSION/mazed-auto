@@ -44,9 +44,9 @@ import { config as loadEnv } from "dotenv";
 loadEnv({ path: ".env.local" });
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-/** Monogram + caption, and the monogram alone — see markSrcFor in lib/watermark. */
-const STAMP = path.join(ROOT, "public", "logo-stamp.png");
-const PLAIN = path.join(ROOT, "public", "logo-mark.png");
+/** Emblem + caption, and the emblem alone — see markSrcFor in lib/watermark. */
+const STAMP = path.join(ROOT, "public", "brand", "stamp.png");
+const PLAIN = path.join(ROOT, "public", "brand", "mark.png");
 const markFileFor = (w) => (w >= CAPTION_MIN_PHOTO_PX ? STAMP : PLAIN);
 const LOG = path.join(ROOT, "scripts", "watermark-backfill.log.json");
 

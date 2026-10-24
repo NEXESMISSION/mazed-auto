@@ -14,7 +14,7 @@
 // pages while leaving this alone hands returning visitors the previous app.
 // That is exactly what happened with the v3 catalog: the bytes of this file
 // never changed, so no update event ever fired.
-const VERSION = "mazed-v3-1";
+const VERSION = "mazed-v3-2";
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 const ASSET_CACHE = `${VERSION}-assets`;
 const IMAGE_CACHE = `${VERSION}-images`;
@@ -29,9 +29,8 @@ const MAX_RUNTIME_ENTRIES = 80;
 
 const PRECACHE = [
   "/fr/offline",
-  "/icons/icon.svg",
-  "/icons/icon-maskable.svg",
-  "/icons/apple-touch-icon.svg",
+  // The logo on the offline page, which is useless if it needs the network.
+  "/brand/lockup.webp",
   "/manifest.webmanifest",
 ];
 
@@ -76,7 +75,7 @@ async function trim(cacheName, maxEntries) {
 /**
  * Heuristic for "this request fetches a bitmap that's worth caching".
  * Catches:
- *   - Direct hits on /public/properties/*.webp + the /icons/* set.
+ *   - Direct hits on /public/properties/*.webp + the /brand/* logos.
  *   - Next/Image-optimized URLs (`/_next/image?url=...`).
  *   - Anything served with an image/* MIME (covers Supabase storage
  *     proxy paths that don't end in a recognizable extension).
@@ -170,7 +169,9 @@ self.addEventListener("fetch", (event) => {
           }
           return fresh;
         } catch {
-          return new Response("", { status: 504 });
+          // Offline and never fetched into IMAGE_CACHE: it may still be in
+          // PRECACHE (the offline page's logo), which lives in ASSET_CACHE.
+          return (await caches.match(request)) || new Response("", { status: 504 });
         }
       })(),
     );

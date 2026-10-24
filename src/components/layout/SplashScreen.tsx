@@ -70,22 +70,22 @@ export function SplashScreen() {
       {/* Logo — preloaded in <head>, served via <picture> so AVIF wins where
           supported, with a WebP fallback.
 
-          The comment here used to say the mark was flipped to white with
-          `brightness(0) invert(1)`. `.batta-splash-logo` carries only a
-          drop-shadow and never did that — worth noting, because the MA
-          monogram is metallic gold and such a filter WOULD flatten it to a
-          white silhouette. It must not be added. */}
+          The full logo — emblem over « MAZED AUTO » — because here it is
+          shown big and alone, with no name beside it.
+
+          `.batta-splash-logo` carries only a drop-shadow. The logo is
+          metallic silver and gold; a `brightness(0) invert(1)` style filter
+          WOULD flatten it to a white silhouette. It must not be added. */}
       <picture className="relative animate-[batta-float-up_220ms_ease-out_both]">
-        <source srcSet="/logo-mark.avif" type="image/avif" />
-        <source srcSet="/logo-mark.webp" type="image/webp" />
+        <source srcSet="/brand/lockup.avif" type="image/avif" />
         <img
-          src="/logo-mark.png"
+          src="/brand/lockup.webp"
           alt="Mazed Auto"
-          width={842}
-          height={285}
+          width={480}
+          height={282}
           decoding="async"
           fetchPriority="high"
-          className="batta-splash-logo h-14 w-auto sm:h-16"
+          className="batta-splash-logo h-28 w-auto sm:h-32"
         />
       </picture>
 

@@ -7,6 +7,7 @@ import { getProContext } from "@/lib/shops/proContext";
 import { plansForSale } from "@/lib/shops/plans";
 import { ShopsPreviewBanner } from "../boutiques/ShopsPreviewBanner";
 import { BadgeCheck, Car, KeyRound, Wrench, Check, ArrowRight } from "lucide-react";
+import { OG_IMAGE } from "@/lib/ogImage";
 
 const DESCRIPTION =
   "Concessionnaires, loueurs et vendeurs de pièces : votre boutique sur Mazed Auto, vos annonces dans le catalogue, vos clients vous appellent directement.";
@@ -15,7 +16,7 @@ export const metadata: Metadata = {
   title: "Boutiques professionnelles — Mazed Auto",
   description: DESCRIPTION,
   alternates: { canonical: "/fr/pro" },
-  openGraph: { type: "website", url: "/fr/pro", title: "Boutiques professionnelles — Mazed Auto", description: DESCRIPTION, siteName: "Mazed Auto", locale: "fr_TN" },
+  openGraph: { type: "website", url: "/fr/pro", title: "Boutiques professionnelles — Mazed Auto", description: DESCRIPTION, siteName: "Mazed Auto", locale: "fr_TN", images: [OG_IMAGE] },
 };
 
 export const dynamic = "force-dynamic";

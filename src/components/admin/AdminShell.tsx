@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { useScrollLock } from "@/lib/scrollLock";
 import { Link, usePathname } from "@/i18n/navigation";
 import {
   LayoutDashboard, Inbox, Receipt, Tag, Users, FolderTree,
-  SlidersHorizontal, ExternalLink, Menu, X, Car, Store,
+  SlidersHorizontal, ExternalLink, Menu, X, Store,
   type LucideIcon,
 } from "lucide-react";
 import { NavIcon } from "./kit/LinkPending";
@@ -99,7 +100,14 @@ export type AdminCounts = Partial<Record<"annonces" | "paiements" | "boutiques",
 function BrandMark({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <Link href="/admin" onClick={onNavigate} className="flex items-center gap-2.5">
-      <Car className="size-4 text-[var(--gold)]" strokeWidth={2.2} />
+      <Image
+        src="/brand/mark.png"
+        alt=""
+        width={953}
+        height={406}
+        sizes="48px"
+        className="h-5 w-auto shrink-0"
+      />
       <span className="text-[12px] font-bold uppercase tracking-[0.16em] text-foreground">
         Mazed<span className="text-[var(--gold)]"> Console</span>
       </span>

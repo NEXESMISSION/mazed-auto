@@ -11,6 +11,7 @@ import { NavigationProgress } from "@/components/ui/NavigationProgress";
 import { PopupManagerLazy } from "@/components/popups/PopupManagerLazy";
 import { WatchlistSync } from "@/components/watchlist/WatchlistSync";
 import type { Metadata } from "next";
+import { OG_IMAGE } from "@/lib/ogImage";
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -32,6 +33,8 @@ export async function generateMetadata({
       description: t("tagline"),
       type: "website",
       siteName: t("domain"),
+      // Restated, not inherited: this object replaces the root layout's.
+      images: [OG_IMAGE],
     },
     alternates: {
       languages: {

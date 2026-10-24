@@ -31,13 +31,13 @@ export default async function SignupPage() {
             <div className="p-7 sm:p-8">
               <div className="flex flex-col items-center text-center">
                 <Image
-                  src="/logo-mark.webp"
+                  src="/brand/lockup.png"
                   alt={t("brand.name")}
-                  width={842}
-                  height={285}
+                  width={1115}
+                  height={655}
                   priority
-                  sizes="220px"
-                  className="h-16 w-auto"
+                  sizes="170px"
+                  className="h-24 w-auto"
                 />
                 <h1
                   className={`mt-5 text-[24px] font-extrabold leading-[1.1] tracking-tight ${
@@ -80,12 +80,13 @@ export default async function SignupPage() {
             <div aria-hidden className="batta-gradient-gold absolute inset-x-0 top-0 h-[3px]" />
 
             <div className="flex flex-col items-center text-center">
-              {/* The wide mark, not a round crop of it — see TopBar. */}
+              {/* The emblem alone: AuthHeroPanel beside this card already
+                  shows the full logo. */}
               <Image
-                src="/logo-mark.webp"
+                src="/brand/mark.png"
                 alt=""
-                width={842}
-                height={285}
+                width={953}
+                height={406}
                 priority
                 sizes="200px"
                 className="h-16 w-auto drop-shadow-[0_4px_18px_rgba(212,175,55,0.28)]"

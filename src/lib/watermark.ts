@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Stamp the Mazed monogram into the middle of a listing photo.
+ * Stamp the Mazed Auto emblem into the middle of a listing photo.
  *
  * WHY THE MIDDLE. A corner watermark is removed with one crop, and on a
  * classifieds site the photos ARE the product — they get lifted and reposted
@@ -9,12 +9,12 @@
  * remove it is to crop away the subject, which is exactly the trade we want to
  * force.
  *
- * WHAT IT SAYS. The monogram alone identifies us to somebody who already
+ * WHAT IT SAYS. The emblem alone identifies us to somebody who already
  * knows us, which is the wrong audience — the person who matters is the one
  * seeing the photo on somebody else's Facebook post. So the stamp carries the
  * business name AND the domain under the mark: the name so the picture is
  * attributable at a glance, the domain so acting on it needs no search. The
- * caption is baked into `logo-stamp.webp` rather than drawn with `fillText`,
+ * caption is baked into `brand/stamp.webp` rather than drawn with `fillText`,
  * because drawing it here would make every stamped photo depend on the web
  * font having loaded at the instant the seller picked the file — a seller on a
  * slow phone would get the fallback system font burnt into their photo for
@@ -33,7 +33,7 @@
  * size relative to the mark, so on a small or low-quality upload it lands at a
  * handful of pixels tall and turns to mush — a smear that reads as a
  * compression artefact rather than as our name, which is worse than no caption
- * at all. Under `CAPTION_MIN_PHOTO_PX` the plain monogram is used instead: the
+ * at all. Under `CAPTION_MIN_PHOTO_PX` the plain emblem is used instead: the
  * mark stays clean at any size, and the words appear only where there is
  * enough resolution to carry them.
  *
@@ -57,16 +57,16 @@ const MARK_OPACITY = 0.18;
  * which on a low-quality upload is indistinguishable from JPEG noise.
  */
 const CAPTION_MIN_PHOTO_PX = 1000;
-/** Monogram over « MAZED AUTO · MAZED.TN », gold on transparent, ~2.39:1. */
-const STAMP_SRC = "/logo-stamp.webp";
-/** The monogram alone, for photos too small to carry the caption. */
-const MARK_SRC = "/logo-mark.webp";
+/** Emblem over « MAZED AUTO · MAZED.TN », on transparent, ~1.97:1. */
+const STAMP_SRC = "/brand/stamp.webp";
+/** The emblem alone, for photos too small to carry the caption. */
+const MARK_SRC = "/brand/mark.webp";
 
 /**
  * The decoded mark, fetched once per page rather than per photo.
  *
- * A seller uploads eight photos at a time; without this the same 28 KB file
- * is fetched and decoded eight times while the phone is already busy
+ * A seller uploads eight photos at a time; without this the same file (up to
+ * ~160 KB) is fetched and decoded eight times while the phone is already busy
  * re-encoding images.
  */
 const marks = new Map<string, Promise<HTMLImageElement | null>>();
@@ -122,7 +122,7 @@ export function drawWatermark(
   ctx.save();
   ctx.globalAlpha = MARK_OPACITY;
 
-  // A soft dark shadow under the gold. The monogram is bright, so it reads on
+  // A soft dark shadow under the metal. The emblem is bright, so it reads on
   // its own against a dark photo but disappears into an overexposed sky or a
   // white studio background — which is most parts photography. The shadow is
   // what keeps it legible on both without raising the opacity.
@@ -136,7 +136,7 @@ export function drawWatermark(
 }
 
 /**
- * Return a copy of `file` with the monogram stamped in the middle.
+ * Return a copy of `file` with the emblem stamped in the middle.
  *
  * Returns the ORIGINAL file if anything goes wrong — a missing logo, a
  * browser that will not encode, a decode failure. A photo without a watermark

@@ -102,38 +102,31 @@ export function TopBar() {
 
 function BrandMark() {
   const t = useTranslations("brand");
-  // `h-7` (28px) inside a 56px bar (`--batta-topbar-h`).
+  // `h-8` (32px) inside a 56px bar (`--batta-topbar-h`).
   //
-  // Height is the wrong thing to judge this mark by. It is nearly 3:1, so
-  // every pixel of height costs three of WIDTH: at `h-8` the monogram was
-  // 94px across, a quarter of a 375px phone, and it read as the loudest thing
-  // in the bar before the name beside it had said anything. 28px puts it at
-  // ~83px and about 1.9x the cap height of the name, which is where a mark
-  // sits next to its own wordmark.
-  //
-  // (It was `h-11` before that, which left six pixels of air above and below
-  // and stopped reading as a logo at all.)
+  // Height is the wrong thing to judge this mark by: it is wide, so every
+  // pixel of height costs more than one of WIDTH. The emblem is ~2.35:1, so
+  // 32px puts it at ~75px across — the footprint the old 3:1 « MA » monogram
+  // had at `h-7`, and about twice the cap height of the name, which is where a
+  // mark sits next to its own wordmark. Much bigger and it reads as the
+  // loudest thing in the bar before the name beside it has said anything.
   //
   // The width auto-scales via `w-auto`. `priority` skips the lazy-load — this
-  // is above-the-fold on every page that shows the bar — and the asset is also
-  // `<link rel="preload">`-ed in the root layout, so by the time this paints
-  // it's already in cache.
+  // is above-the-fold on every page that shows the bar.
   return (
     <Link href="/" className="flex items-center gap-2" aria-label={t("name")}>
-      {/* The MA monogram, in a WIDE box.
-          It used to be `/logo.webp` inside a round `size-9` with
-          `object-cover` — a square crop of a mark that is nearly 3:1, so the
-          speed lines and most of the A were simply cut off. The file is
-          pre-trimmed (no transparent margin), which is why no padding is
-          needed here to make it sit right. */}
+      {/* The road emblem alone, in a WIDE box — the full logo's « MAZED AUTO »
+          would be a few pixels tall here, and the name is written beside it
+          anyway. The file is pre-trimmed (no transparent margin), which is why
+          no padding is needed here to make it sit right. */}
       <Image
-        src="/logo-mark.webp"
+        src="/brand/mark.png"
         alt=""
-        width={842}
-        height={285}
+        width={953}
+        height={406}
         priority
         sizes="90px"
-        className="h-7 w-auto shrink-0"
+        className="h-8 w-auto shrink-0"
       />
       {/* The name, back beside the mark and visible.
           It was `sr-only`, on the reasoning that a logo is the name. That
