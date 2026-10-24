@@ -45,6 +45,15 @@ describe("parseRejection", () => {
     expect(parseRejection("").message).toBe("");
     expect(parseRejection(null).category).toBe("general");
   });
+
+  it("words the label and the hint in Arabic, leaving the motif as typed", () => {
+    const r = parseRejection("[PHOTOS,PRICE] Photos floues.", "ar");
+    expect(r.label).toBe("الصور · السعر");
+    expect(r.hint).toContain("عدّة نقاط");
+    expect(r.message).toBe("Photos floues.");
+    expect(parseRejection("[PHOTOS] x", "ar").hint).toContain("صور");
+    expect(parseRejection("[PHOTOS] x").label).toBe("Photos");
+  });
 });
 
 describe("encodeRejection <-> parseRejection round-trip", () => {

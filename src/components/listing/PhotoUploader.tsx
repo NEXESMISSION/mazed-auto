@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { compressImage } from "@/lib/imageCompress";
 import { watermarkImage } from "@/lib/watermark";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
@@ -65,6 +66,7 @@ export function PhotoUploader({
   max?: number;
   disabled?: boolean;
 }) {
+  const t = useTranslations("uploader");
   const { toast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState<Pending[]>([]);
@@ -156,7 +158,7 @@ export function PhotoUploader({
         });
         disarm();
         if (!urlRes.ok) {
-          mark({ phase: "failed", error: "Le serveur a refusé l'envoi." });
+          mark({ phase: "failed", error: t("errors.refused") });
           return null;
         }
         const { uploads } = (await urlRes.json()) as {
@@ -164,7 +166,7 @@ export function PhotoUploader({
         };
         const target = uploads?.[0];
         if (!target) {
-          mark({ phase: "failed", error: "Réponse inattendue du serveur." });
+          mark({ phase: "failed", error: t("errors.unexpected") });
           return null;
         }
 
@@ -189,7 +191,7 @@ export function PhotoUploader({
         });
         disarm();
         if (!put.ok) {
-          mark({ phase: "failed", error: `Envoi refusé (${put.status}).` });
+          mark({ phase: "failed", error: t("errors.putRefused", { status: put.status }) });
           return null;
         }
 
@@ -205,14 +207,14 @@ export function PhotoUploader({
         if (cancelled.current.has(tempId)) return null;
         mark({
           phase: "failed",
-          error: timedOut ? "Connexion trop lente." : "Échec de l'envoi.",
+          error: timedOut ? t("errors.slow") : t("errors.failed"),
         });
         return null;
       } finally {
         done();
       }
     },
-    [],
+    [t],
   );
 
   const accept = useCallback(
@@ -221,13 +223,13 @@ export function PhotoUploader({
       const images = files.filter((f) => f.type.startsWith("image/"));
       if (images.length === 0) return;
       if (room <= 0) {
-        toast(`Maximum ${max} photos.`, "warning");
+        toast(t("max", { max }), "warning");
         return;
       }
 
       const batch = images.slice(0, room);
       for (const f of batch.filter((f) => f.size > MAX_PHOTO_MB * 1024 * 1024)) {
-        toast(`« ${f.name} » dépasse ${MAX_PHOTO_MB} Mo.`, "error");
+        toast(t("tooBig", { name: f.name, mb: MAX_PHOTO_MB }), "error");
       }
       const ok = batch.filter((f) => f.size <= MAX_PHOTO_MB * 1024 * 1024);
       if (ok.length === 0) return;
@@ -250,7 +252,7 @@ export function PhotoUploader({
         if (path) onChange((prev) => [...prev, { path }]);
       }
     },
-    [disabled, room, max, toast, send, onChange, ],
+    [disabled, room, max, toast, send, onChange, t],
   );
 
   function retry(id: string) {
@@ -321,12 +323,10 @@ export function PhotoUploader({
           <Camera className="size-5" />
         </span>
         <span className="text-[13.5px] font-bold text-foreground">
-          {photos.length === 0 ? "Ajoutez vos photos" : "Ajouter d'autres photos"}
+          {photos.length === 0 ? t("add") : t("addMore")}
         </span>
         <span className="text-[11.5px] text-muted">
-          {room > 0
-            ? `Jusqu'à ${max} photos · ${room} restante${room > 1 ? "s" : ""}`
-            : `Maximum ${max} photos atteint`}
+          {room > 0 ? t("room", { max, room }) : t("full", { max })}
         </span>
       </button>
 
@@ -347,27 +347,24 @@ export function PhotoUploader({
       {sending > 0 && (
         <p className="mt-3 inline-flex items-center gap-2 rounded-xl bg-gold-faint px-3 py-2 text-[12.5px] font-semibold text-gold ring-1 ring-gold-soft">
           <Loader2 className="size-3.5 animate-spin" />
-          Envoi de {sending} photo{sending > 1 ? "s" : ""}… restez sur cette page.
+          {t("sending", { count: sending })}
         </p>
       )}
       {sending === 0 && failed > 0 && (
         <p className="mt-3 inline-flex items-center gap-2 rounded-xl bg-[var(--accent-faint)] px-3 py-2 text-[12.5px] font-semibold text-[var(--accent-deep)]">
           <CircleAlert className="size-3.5" />
-          {failed} photo{failed > 1 ? "s" : ""} n&apos;{failed > 1 ? "ont" : "a"} pas pu être
-          envoyée{failed > 1 ? "s" : ""}. Réessayez ci-dessous.
+          {t("failedCount", { count: failed })}
         </p>
       )}
       {sending === 0 && failed === 0 && photos.length > 0 && (
         <p className="mt-3 text-[11.5px] text-muted">
-          {photos.length} photo{photos.length > 1 ? "s" : ""} envoyée
-          {photos.length > 1 ? "s" : ""} · la première est la couverture de votre annonce.
+          {t("sent", { count: photos.length })}
         </p>
       )}
 
       {photos.length > 1 && (
         <p className="mt-2 text-[11.5px] text-muted">
-          La première photo est la couverture. Utilisez les flèches pour changer
-          l&apos;ordre, ou l&apos;étoile pour choisir la couverture directement.
+          {t("orderHint")}
         </p>
       )}
 
@@ -386,7 +383,7 @@ export function PhotoUploader({
 
               {i === 0 && (
                 <span className="absolute inset-x-1 top-1 inline-flex items-center justify-center gap-1 rounded-md batta-gold-fill py-0.5 text-[9px] font-extrabold uppercase tracking-wider ">
-                  <Star className="size-2.5" /> Couverture
+                  <Star className="size-2.5" /> {t("cover")}
                 </span>
               )}
 
@@ -406,17 +403,19 @@ export function PhotoUploader({
                   type="button"
                   onClick={() => move(i, i - 1)}
                   disabled={i === 0}
-                  aria-label="Déplacer avant"
+                  aria-label={t("moveBefore")}
                   className="tap-target rounded p-1.5 text-white disabled:opacity-25"
                 >
-                  <ArrowLeft className="size-4" />
+                  {/* « Before » is toward the start: left in French, right in
+                      Arabic, where the grid runs right to left. */}
+                  <ArrowLeft className="size-4 rtl:-scale-x-100" />
                 </button>
                 <button
                   type="button"
                   onClick={() => makeCover(i)}
                   disabled={i === 0}
-                  aria-label="Définir comme couverture"
-                  title="Couverture"
+                  aria-label={t("makeCover")}
+                  title={t("cover")}
                   className="tap-target rounded p-1.5 text-white disabled:opacity-25"
                 >
                   <Star className="size-4" />
@@ -424,7 +423,7 @@ export function PhotoUploader({
                 <button
                   type="button"
                   onClick={() => onChange((prev) => prev.filter((_, j) => j !== i))}
-                  aria-label="Supprimer la photo"
+                  aria-label={t("delete")}
                   className="tap-target rounded p-1.5 text-white"
                 >
                   <Trash2 className="size-4" />
@@ -433,10 +432,10 @@ export function PhotoUploader({
                   type="button"
                   onClick={() => move(i, i + 1)}
                   disabled={i === photos.length - 1}
-                  aria-label="Déplacer après"
+                  aria-label={t("moveAfter")}
                   className="tap-target rounded p-1.5 text-white disabled:opacity-25"
                 >
-                  <ArrowRight className="size-4" />
+                  <ArrowRight className="size-4 rtl:-scale-x-100" />
                 </button>
               </div>
             </li>
@@ -460,7 +459,7 @@ export function PhotoUploader({
                     onClick={() => retry(p.id)}
                     className="inline-flex items-center gap-1 rounded-lg batta-gold-fill px-2 py-1 text-[10px] font-extrabold "
                   >
-                    <RotateCw className="size-3" /> Réessayer
+                    <RotateCw className="size-3" /> {t("retry")}
                   </button>
                   <button
                     type="button"
@@ -470,7 +469,7 @@ export function PhotoUploader({
                     }}
                     className="text-[9.5px] font-bold text-white/70 underline"
                   >
-                    Retirer
+                    {t("remove")}
                   </button>
                 </div>
               ) : (
@@ -478,7 +477,7 @@ export function PhotoUploader({
                   <div className="absolute inset-0 grid place-items-center gap-1">
                     <Loader2 className="size-5 animate-spin text-gold" />
                     <span className="text-[9px] font-bold uppercase tracking-wider text-white/80">
-                      {p.phase === "preparing" ? "Préparation" : "Envoi"}
+                      {p.phase === "preparing" ? t("preparing") : t("uploading")}
                     </span>
                   </div>
                   {/* Waiting for an upload you no longer want is not a state
@@ -486,8 +485,8 @@ export function PhotoUploader({
                   <button
                     type="button"
                     onClick={() => cancel(p.id)}
-                    aria-label="Annuler l'envoi de cette photo"
-                    title="Annuler"
+                    aria-label={t("cancel")}
+                    title={t("cancelShort")}
                     className="absolute end-1 top-1 grid size-6 place-items-center rounded-full bg-black/75 text-white ring-1 ring-white/25 transition hover:bg-[var(--accent-deep)]"
                   >
                     <X className="size-3.5" />

@@ -1,5 +1,8 @@
 "use client";
 
+import { useLocale } from "next-intl";
+import { attributeLabel, attributeOptionLabel, unitLabel } from "@/lib/labels";
+
 /**
  * The form primitives shared by every surface that composes an annonce: the
  * seller wizard (`/annonces/nouvelle`) and the admin's manual creation panel.
@@ -77,7 +80,11 @@ export function CheckField({
   );
 }
 
-/** One category attribute, rendered from its own definition. */
+/**
+ * One category attribute, rendered from its own definition. Its label, options
+ * and unit are stored in French; src/lib/labels.ts words the known ones in the
+ * page's language and leaves an attribute it does not know as the admin wrote it.
+ */
 export function AttributeField({
   attr, value, onChange,
 }: {
@@ -85,23 +92,29 @@ export function AttributeField({
   value: string | boolean | undefined;
   onChange: (v: string | boolean) => void;
 }) {
+  const locale = useLocale();
+  const label = attributeLabel(attr.fieldKey, attr.label, locale);
   if (attr.dataType === "boolean") {
-    return <CheckField label={attr.label} checked={value === true} onChange={onChange} />;
+    return <CheckField label={label} checked={value === true} onChange={onChange} />;
   }
   if (attr.dataType === "select" && attr.options) {
     return (
       <label className="block">
-        <Label>{attr.label}{attr.required && " *"}</Label>
+        <Label>{label}{attr.required && " *"}</Label>
         <select value={(value as string) ?? ""} onChange={(e) => onChange(e.target.value)} className={INPUT}>
           <option value="">—</option>
-          {attr.options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          {attr.options.map((o) => (
+            <option key={o.value} value={o.value}>
+              {attributeOptionLabel(attr.fieldKey, o.value, o.label, locale)}
+            </option>
+          ))}
         </select>
       </label>
     );
   }
   return (
     <Field
-      label={attr.unit ? `${attr.label} (${attr.unit})` : attr.label + (attr.required ? " *" : "")}
+      label={attr.unit ? `${label} (${unitLabel(attr.unit, locale)})` : label + (attr.required ? " *" : "")}
       type={attr.dataType === "number" ? "number" : "text"}
       value={(value as string) ?? ""}
       onChange={onChange}

@@ -5,8 +5,9 @@ import { isSameOrigin } from "@/lib/sameOrigin";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { refuseIfSuspended } from "@/lib/http/suspended";
-import { pickScope, publicationErrorFromDb, type ListingKind } from "@/lib/publication";
-import { refusalResponse } from "@/lib/http/refusal";
+import { localizeRefusal, pickScope, publicationErrorFromDb, type ListingKind, type Refusal } from "@/lib/publication";
+import { refusalResponse as sendRefusal } from "@/lib/http/refusal";
+import { apiTranslations, localeFromRequest } from "@/i18n/api";
 import { sanitizeRentalAttributes } from "@/lib/rental";
 import { memberShops } from "@/lib/shops/server";
 
@@ -90,6 +91,11 @@ export async function POST(req: NextRequest) {
   const suspended = await refuseIfSuspended(admin, user.id);
   if (suspended) return suspended;
 
+  // Sentences for the seller, in the language of the page that called.
+  const t = await apiTranslations(req, "publish.api");
+  const locale = localeFromRequest(req);
+  const refusalResponse = (r: Refusal) => sendRefusal(localizeRefusal(r, locale));
+
   const body = (await req.json().catch(() => ({}))) as Body;
 
   const categoryId = text(body.category_id, 40);
@@ -99,7 +105,7 @@ export async function POST(req: NextRequest) {
   const id = text(body.id, 40);
   if (!id && (!categoryId || !title || !governorate)) {
     return NextResponse.json(
-      { error: "incomplete", detail: "Catégorie, titre et gouvernorat sont requis." },
+      { error: "incomplete", detail: t("incomplete") },
       { status: 400 },
     );
   }
@@ -118,7 +124,7 @@ export async function POST(req: NextRequest) {
     }
     if (cat.parent_id == null) {
       return NextResponse.json(
-        { error: "category_not_leaf", detail: "Choisissez une sous-catégorie." },
+        { error: "category_not_leaf", detail: t("categoryNotLeaf") },
         { status: 400 },
       );
     }
@@ -129,7 +135,7 @@ export async function POST(req: NextRequest) {
   const price = num(body.price);
   if (!priceOnRequest && price == null && !id) {
     return NextResponse.json(
-      { error: "price_required", detail: "Indiquez un prix, ou cochez « prix sur demande »." },
+      { error: "price_required", detail: t("priceRequired") },
       { status: 400 },
     );
   }
@@ -185,7 +191,7 @@ export async function POST(req: NextRequest) {
     // wizard: silently rewriting a published annonce would skip moderation.
     if (!["draft", "rejected", "pending_payment"].includes(owned.status as string)) {
       return NextResponse.json(
-        { error: "not_editable", detail: "Cette annonce est déjà en cours de traitement." },
+        { error: "not_editable", detail: t("notEditable") },
         { status: 409 },
       );
     }

@@ -2,9 +2,12 @@ import { describe, it, expect } from "vitest";
 import {
   decidePublication,
   describePublishing,
+  localizeRefusal,
+  phraseText,
   pickScope,
   publicationErrorFromDb,
   quotaMessage,
+  quotaPhrase,
   type QuotaStatus,
   type ShopSummary,
 } from "./publication";
@@ -138,7 +141,7 @@ describe("pickScope — which scope a new annonce is filed under", () => {
 describe("describePublishing — what the wizard says", () => {
   it("tells a person their car is free, one at a time", () => {
     expect(describePublishing({ kind: "vehicle", personal: personal(), shop: null }))
-      .toEqual({ free: true, blocked: false, note: "Gratuit pour un particulier : 1 véhicule en ligne à la fois." });
+      .toMatchObject({ free: true, blocked: false, note: "Gratuit pour un particulier : 1 véhicule en ligne à la fois." });
   });
 
   it("counts down parts once some are live", () => {
@@ -160,7 +163,7 @@ describe("describePublishing — what the wizard says", () => {
     const d = describePublishing({
       kind: "vehicle", personal: personal(), shop: { summary: dealer, quota: shopQuota() },
     });
-    expect(d).toEqual({
+    expect(d).toMatchObject({
       free: true,
       blocked: false,
       note: "Inclus dans l'abonnement de « Auto Deal · Tunis » — 22 / 120 véhicules en ligne.",
@@ -177,7 +180,7 @@ describe("describePublishing — what the wizard says", () => {
 
   it("says nothing extra on the fee path while there is room", () => {
     expect(describePublishing({ kind: "vehicle", personal: personal({ free: false }), shop: null }))
-      .toEqual({ free: false, blocked: false, note: null });
+      .toEqual({ free: false, blocked: false, note: null, phrase: null });
   });
 });
 
@@ -204,5 +207,30 @@ describe("quotaMessage", () => {
   it("speaks of parts in the plural", () => {
     expect(quotaMessage({ scope: "personal", bucket: "parts", limit: 5 }))
       .toContain("5 pièces en ligne");
+  });
+});
+
+describe("the same sentences in Arabic", () => {
+  it("words a phrase, its counts included, in Arabic", () => {
+    const text = phraseText(quotaPhrase({ scope: "personal", bucket: "parts", limit: 5 }), "ar");
+    expect(text).toMatch(/\p{Script=Arabic}/u);
+    expect(text).toContain("5 قطع");
+    expect(phraseText(quotaPhrase({ scope: "shop", bucket: "vehicles", limit: 1 }), "ar")).toContain("مركبة واحدة");
+  });
+
+  it("re-words a refusal's detail for an API response, keeping its code", () => {
+    const d = decidePublication({ shopId: null, shop: null, quota: personal({ used: 1, remaining: 0 }) });
+    if (d.kind !== "refused") throw new Error("expected a refusal");
+    const ar = localizeRefusal(d, "ar");
+    expect(ar).toMatchObject({ status: 409, error: "quota_exceeded" });
+    expect(ar.detail).toMatch(/\p{Script=Arabic}/u);
+    expect(localizeRefusal(d, "fr").detail).toBe(d.detail);
+  });
+
+  it("names the shop in the wizard's note", () => {
+    const d = describePublishing({
+      kind: "vehicle", personal: personal(), shop: { summary: dealer, quota: shopQuota() },
+    });
+    expect(phraseText(d.phrase!, "ar")).toContain("Auto Deal · Tunis");
   });
 });

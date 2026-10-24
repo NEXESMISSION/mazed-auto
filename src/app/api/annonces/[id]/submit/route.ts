@@ -5,9 +5,10 @@ import { isSameOrigin } from "@/lib/sameOrigin";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { refuseIfSuspended } from "@/lib/http/suspended";
-import { refusalResponse } from "@/lib/http/refusal";
+import { refusalResponse as sendRefusal } from "@/lib/http/refusal";
 import { PRODUCT_SELECT, resolveListingFee, toProduct } from "@/lib/products";
-import { decidePublication, publicationErrorFromDb, type ListingType } from "@/lib/publication";
+import { decidePublication, localizeRefusal, publicationErrorFromDb, type ListingType, type Refusal } from "@/lib/publication";
+import { apiTranslations, localeFromRequest } from "@/i18n/api";
 import { quotaStatus, shopSummary } from "@/lib/shops/server";
 
 /**
@@ -60,6 +61,12 @@ export async function POST(
   const suspended = await refuseIfSuspended(admin, user.id);
   if (suspended) return suspended;
 
+  // The seller reads these, and the notification below goes to the same
+  // person: both in the language of the page they submitted from.
+  const t = await apiTranslations(req, "publish");
+  const locale = localeFromRequest(req);
+  const refusalResponse = (r: Refusal) => sendRefusal(localizeRefusal(r, locale));
+
   const { data: listing } = await admin
     .from("listings")
     .select("id, seller_id, category_id, status, title, contact_phone, seller_attestation_version, shop_id, listing_type, fee_payment_id")
@@ -76,7 +83,7 @@ export async function POST(
   const submittable = ["draft", "rejected", "pending_payment"];
   if (!submittable.includes(listing.status as string)) {
     return NextResponse.json(
-      { error: "not_submittable", detail: `Cette annonce est déjà « ${listing.status} ».` },
+      { error: "not_submittable", detail: t("api.notSubmittable", { status: statusWord(t, listing.status as string) }) },
       { status: 409 },
     );
   }
@@ -84,13 +91,13 @@ export async function POST(
   // Two things a listing cannot go live without, checked before any money moves.
   if (!listing.contact_phone) {
     return NextResponse.json(
-      { error: "contact_required", detail: "Ajoutez un numéro de téléphone joignable." },
+      { error: "contact_required", detail: t("api.contactRequired") },
       { status: 400 },
     );
   }
   if (!listing.seller_attestation_version) {
     return NextResponse.json(
-      { error: "attestation_required", detail: "Cochez l'attestation sur l'honneur." },
+      { error: "attestation_required", detail: t("api.attestationRequired") },
       { status: 400 },
     );
   }
@@ -101,7 +108,7 @@ export async function POST(
     .eq("listing_id", id);
   if ((photoCount ?? 0) === 0) {
     return NextResponse.json(
-      { error: "photo_required", detail: "Ajoutez au moins une photo." },
+      { error: "photo_required", detail: t("api.photoRequired") },
       { status: 400 },
     );
   }
@@ -133,7 +140,7 @@ export async function POST(
         return NextResponse.json(
           {
             error: "payment_under_review",
-            detail: "Votre reçu est en cours de vérification : l'annonce partira en vérification dès sa validation.",
+            detail: t("api.paymentUnderReview"),
           },
           { status: 409 },
         );
@@ -173,10 +180,10 @@ export async function POST(
       .rpc("enqueue_notification", {
         p_user_id: user.id,
         p_kind: "listing_submitted",
-        p_title: "Annonce envoyée à la vérification",
+        p_title: t("api.notif.submittedTitle"),
         p_body: reason === "subscription"
-          ? `« ${listing.title} » est en cours de vérification. Elle est incluse dans l'abonnement de ${shop?.name ?? "votre boutique"}.`
-          : `« ${listing.title} » est en cours de vérification. La publication est gratuite.`,
+          ? t("api.notif.subscription", { title: listing.title as string, shop: shop?.name ?? t("api.notif.yourShop") })
+          : t("api.notif.personalFree", { title: listing.title as string }),
         p_link: "/account/listings",
       })
       .then(() => {}, () => {});
@@ -204,8 +211,8 @@ export async function POST(
       .rpc("enqueue_notification", {
         p_user_id: user.id,
         p_kind: "listing_submitted",
-        p_title: "Annonce envoyée à la vérification",
-        p_body: `« ${listing.title} » est en cours de vérification. Il vous reste ${credited.remaining} publication(s).`,
+        p_title: t("api.notif.submittedTitle"),
+        p_body: t("api.notif.credit", { title: listing.title as string, count: credited.remaining }),
         p_link: "/account/listings",
       })
       .then(() => {}, () => {});
@@ -259,8 +266,8 @@ export async function POST(
       .rpc("enqueue_notification", {
         p_user_id: user.id,
         p_kind: "listing_submitted",
-        p_title: "Annonce envoyée à la vérification",
-        p_body: `« ${listing.title} » est en cours de vérification. La publication est gratuite dans cette catégorie.`,
+        p_title: t("api.notif.submittedTitle"),
+        p_body: t("api.notif.freeCategory", { title: listing.title as string }),
         p_link: "/account/listings",
       })
       .then(() => {}, () => {});
@@ -294,13 +301,10 @@ export async function POST(
       .rpc("enqueue_notification", {
         p_user_id: user.id,
         p_kind: "listing_submitted",
-        p_title: "Annonce envoyée à la vérification",
-        p_body:
-          `« ${listing.title} » est en cours de vérification. `
-          + `Cette publication vous est offerte`
-          + (waived.remaining > 0
-            ? `, il vous en reste ${waived.remaining}.`
-            : ` — c'était la dernière de votre allocation de bienvenue.`),
+        p_title: t("api.notif.submittedTitle"),
+        p_body: waived.remaining > 0
+          ? t("api.notif.welcomeLeft", { title: listing.title as string, count: waived.remaining })
+          : t("api.notif.welcomeLast", { title: listing.title as string }),
         p_link: "/account/listings",
       })
       .then(() => {}, () => {});
@@ -360,4 +364,10 @@ export async function POST(
     paymentId,
     amount: fee.price,
   });
+}
+
+/** A listing status as the seller reads it; the raw code when there is no word for it. */
+function statusWord(t: (key: string) => string, status: string): string {
+  const known = ["draft", "pending_payment", "pending_review", "published", "rejected", "expired", "archived", "sold"];
+  return known.includes(status) ? t(`status.${status}`) : status;
 }

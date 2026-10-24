@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useToast } from "@/components/ui/Toast";
 import { PhotoUploader, type UploadedPhoto } from "@/components/listing/PhotoUploader";
 import { ListingImage } from "@/components/media/ListingImage";
-import { formatTND, cn } from "@/lib/utils";
+import { formatTND, currencyLabel, cn } from "@/lib/utils";
 import { GOVERNORATES } from "@/lib/governorates";
+import { governorateLabel } from "@/lib/labels";
+import { formatDate } from "@/lib/dates";
 import {
   CAR_MAKES, MOTO_MAKES, PART_BRANDS, FUELS, TRANSMISSIONS, CONDITIONS,
   modelsFor, modelYears,
@@ -72,13 +75,6 @@ function keepAttrsFor(
   const keep = new Set(ATTR_KEYS[kind]);
   return Object.fromEntries(Object.entries(attrs).filter(([k]) => keep.has(k)));
 }
-
-const ATTESTATION_TEXT =
-  "J'atteste sur l'honneur que toutes les informations, photos et documents " +
-  "fournis sont exacts, complets et concernent bien cet article. Je suis seul " +
-  "responsable de toute information fausse, inexacte ou trompeuse. En cas de " +
-  "fausse déclaration, Mazed Auto peut refuser ou retirer l'annonce et " +
-  "conserver les frais déjà réglés.";
 
 export type WizardCategory = {
   id: string;
@@ -149,6 +145,8 @@ export function PublishWizard({
   locale: string;
 }) {
   const d = initialDraft;
+  const t = useTranslations("publish.wizard");
+  const cur = currencyLabel(locale);
   const router = useRouter();
   const { toast, alert } = useToast();
 
@@ -245,39 +243,39 @@ export function PublishWizard({
   // Each entry knows the section it belongs to, so the dialog can take the
   // seller straight there instead of leaving them to scan the page for it.
   const missing: { label: string; fieldId: string }[] = [];
-  if (!categoryId) missing.push({ label: "Choisissez ce que vous vendez.", fieldId: "f-category" });
+  if (!categoryId) missing.push({ label: t("missing.category"), fieldId: "f-category" });
   if (photosUploading > 0) {
     missing.push({
-      label: `Encore ${photosUploading} photo${photosUploading > 1 ? "s" : ""} en cours d'envoi…`,
+      label: t("missing.photosUploading", { count: photosUploading }),
       fieldId: "f-photos",
     });
   } else if (photos.length === 0) {
-    missing.push({ label: "Ajoutez au moins une photo.", fieldId: "f-photos" });
+    missing.push({ label: t("missing.photo"), fieldId: "f-photos" });
   }
   if (categoryId) {
     if (isPart) {
       if (!attrs.part_name?.trim()) {
-        missing.push({ label: "Indiquez de quelle pièce il s'agit.", fieldId: "f-details" });
+        missing.push({ label: t("missing.partName"), fieldId: "f-details" });
       }
     } else if (!attrs.make?.trim()) {
-      missing.push({ label: "Choisissez la marque.", fieldId: "f-details" });
+      missing.push({ label: t("missing.make"), fieldId: "f-details" });
     } else if (!attrs.model?.trim()) {
-      missing.push({ label: "Choisissez le modèle.", fieldId: "f-details" });
+      missing.push({ label: t("missing.model"), fieldId: "f-details" });
     } else if (!attrs.year) {
-      missing.push({ label: "Indiquez l'année.", fieldId: "f-details" });
+      missing.push({ label: t("missing.year"), fieldId: "f-details" });
     }
   }
   if (title.trim().length < 3) {
-    missing.push({ label: "Donnez un titre à votre annonce.", fieldId: "f-title" });
+    missing.push({ label: t("missing.title"), fieldId: "f-title" });
   }
   if (!onRequest && !(Number(price) > 0)) {
-    missing.push({ label: "Indiquez un prix, ou cochez « prix sur demande ».", fieldId: "f-price" });
+    missing.push({ label: t("missing.price"), fieldId: "f-price" });
   }
   if (contactPhone.replace(/\D/g, "").length < 8) {
-    missing.push({ label: "Un numéro joignable est obligatoire.", fieldId: "f-phone" });
+    missing.push({ label: t("missing.phone"), fieldId: "f-phone" });
   }
   if (!attested) {
-    missing.push({ label: "Cochez l'attestation pour publier.", fieldId: "f-contact" });
+    missing.push({ label: t("missing.attestation"), fieldId: "f-contact" });
   }
 
   // Red only survives while the field is still empty: fill it and the outline
@@ -357,7 +355,7 @@ export function PublishWizard({
     });
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
-      toast(j.detail ?? j.error ?? "Enregistrement impossible.", "error");
+      toast(j.detail ?? j.error ?? t("errors.save"), "error");
       setSaved("idle");
       return null;
     }
@@ -401,18 +399,15 @@ export function PublishWizard({
       // The old list sat at the bottom of a long page: you pressed Publier,
       // nothing appeared to happen, and the reason was below the fold.
       alert({
-        title:
-          missing.length === 1
-            ? "Il manque une chose"
-            : `Il manque ${missing.length} choses`,
-        body: "Touchez une ligne pour aller directement au champ concerné.",
+        title: t("alert.title", { count: missing.length }),
+        body: t("alert.body"),
         items: missing,
         // The dialog can only flash the field for a second, and the seller is
         // watching a smooth scroll while it does. This keeps it outlined in
         // red afterwards, until it is actually filled.
         onJump: (id) => setFlagged((f) => (f.includes(id) ? f : [...f, id])),
         variant: "warning",
-        confirmLabel: "Corriger",
+        confirmLabel: t("alert.confirm"),
       });
       return;
     }
@@ -447,7 +442,7 @@ export function PublishWizard({
         paymentId?: string; error?: string; detail?: string;
       };
       if (!res.ok) {
-        toast(j.detail ?? j.error ?? "Envoi impossible.", "error");
+        toast(j.detail ?? j.error ?? t("errors.submit"), "error");
         return;
       }
       if (j.status === "pending_payment" && j.paymentId) {
@@ -468,22 +463,20 @@ export function PublishWizard({
           <Check className="size-8" strokeWidth={2.6} />
         </span>
         <h1 className="mt-5 text-[22px] font-extrabold tracking-tight">
-          Annonce envoyée
+          {t("done.title")}
         </h1>
         <p className="mt-2 text-[13.5px] leading-relaxed text-muted">
-          Notre équipe la vérifie avant publication — généralement en moins de
-          24 h. Vous serez prévenu dès qu&apos;elle est en ligne.
+          {t("done.body")}
           {done.paidWith === "credit" && typeof done.remaining === "number" && (
-            <> Il vous reste {done.remaining} publication{done.remaining > 1 ? "s" : ""}.</>
+            <> {t("done.credit", { count: done.remaining })}</>
           )}
-          {done.paidWith === "free" && <> La publication était gratuite dans cette catégorie.</>}
-          {done.paidWith === "personal_free" && <> La publication est gratuite.</>}
-          {done.paidWith === "subscription" && <> Elle est incluse dans l&apos;abonnement de votre boutique.</>}
+          {done.paidWith === "free" && <> {t("done.free")}</>}
+          {done.paidWith === "personal_free" && <> {t("done.personalFree")}</>}
+          {done.paidWith === "subscription" && <> {t("done.subscription")}</>}
           {done.paidWith === "welcome" && (
-            <> Cette publication vous a été offerte
-              {typeof done.remaining === "number" && done.remaining > 0
-                ? `, il vous en reste ${done.remaining}.`
-                : "."}
+            <> {typeof done.remaining === "number" && done.remaining > 0
+              ? t("done.welcomeLeft", { count: done.remaining })
+              : t("done.welcome")}
             </>
           )}
         </p>
@@ -491,7 +484,7 @@ export function PublishWizard({
           onClick={() => router.push("/account/listings" as never)}
           className="batta-btn-luxe tap-target mt-7 inline-flex px-6 py-3 text-[13.5px]"
         >
-          Voir mes annonces
+          {t("done.cta")}
         </button>
       </main>
     );
@@ -506,19 +499,19 @@ export function PublishWizard({
           classified is a short form; it reads better as one. */}
       <div className="flex items-start justify-between gap-3 pt-2">
         <div>
-          <h1 className="text-[24px] font-extrabold tracking-tight">Publier une annonce</h1>
+          <h1 className="text-[24px] font-extrabold tracking-tight">{t("title")}</h1>
           <p className="mt-1 text-[13px] text-muted">
-            Quelques informations, des photos, votre numéro — c&apos;est tout.
+            {t("subtitle")}
           </p>
         </div>
         {saved === "saving" && (
           <span className="mt-1 inline-flex shrink-0 items-center gap-1 text-[11px] text-muted">
-            <Loader2 className="size-3 animate-spin" /> Enregistrement…
+            <Loader2 className="size-3 animate-spin" /> {t("saving")}
           </span>
         )}
         {saved === "ok" && (
           <span className="mt-1 inline-flex shrink-0 items-center gap-1 text-[11px] text-muted">
-            <Check className="size-3" /> Brouillon enregistré
+            <Check className="size-3" /> {t("saved")}
           </span>
         )}
       </div>
@@ -526,15 +519,18 @@ export function PublishWizard({
       {resumed && (
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gold-soft bg-gold-faint px-4 py-3">
           <p className="text-[12.5px] font-semibold text-gold">
-            Nous avons repris votre brouillon
-            {d?.updated_at ? ` du ${new Date(d.updated_at).toLocaleDateString("fr-FR")}` : ""}.
+            {d?.updated_at
+              ? t("resumedOn", {
+                  date: formatDate(d.updated_at, locale, { day: "2-digit", month: "2-digit", year: "numeric" }),
+                })
+              : t("resumed")}
           </p>
           <button
             type="button"
             onClick={startOver}
             className="text-[12px] font-bold text-muted underline hover:text-foreground"
           >
-            Recommencer à zéro
+            {t("startOver")}
           </button>
         </div>
       )}
@@ -543,23 +539,22 @@ export function PublishWizard({
         <div className="space-y-4">
       {/* ── Category ── */}
               <section id="f-category" className={`scroll-mt-24 rounded-2xl border border-border bg-surface p-4 sm:p-5${flagCls("f-category")}`}>
-          <SectionHead icon={Tag} title="Que vendez-vous ?" />
+          <SectionHead icon={Tag} title={t("category.title")} />
           <p className="mt-1 text-[13px] text-muted">
-            Cela décide des informations qui vous seront demandées.
+            {t("category.hint")}
           </p>
 
           {usingWelcome && (
             <p className="mt-4 inline-flex items-center gap-2 rounded-xl bg-gold-faint px-3 py-2 text-[12.5px] font-bold text-gold ring-1 ring-gold-soft">
               <Gift className="size-4" />
-              Offerte — {freeLeft} publication{freeLeft > 1 ? "s" : ""} gratuite
-              {freeLeft > 1 ? "s" : ""} restante{freeLeft > 1 ? "s" : ""}
+              {t("category.welcome", { count: freeLeft })}
             </p>
           )}
 
           {usingCredit && (
             <p className="mt-4 inline-flex items-center gap-2 rounded-xl bg-gold-faint px-3 py-2 text-[12.5px] font-bold text-gold ring-1 ring-gold-soft">
               <Ticket className="size-4" />
-              {creditsLeft} publication{creditsLeft > 1 ? "s" : ""} dans votre forfait
+              {t("category.credits", { count: creditsLeft })}
             </p>
           )}
 
@@ -575,12 +570,12 @@ export function PublishWizard({
           <div className="mt-4">
             <div
               role="radiogroup"
-              aria-label="Type d'annonce"
+              aria-label={t("category.kindGroup")}
               className="grid grid-cols-2 gap-1 rounded-xl bg-surface-2 p-1"
             >
               {([
-                { k: "vehicle" as const, label: "Un véhicule", Icon: Car },
-                { k: "part" as const, label: "Une pièce", Icon: Wrench },
+                { k: "vehicle" as const, label: t("category.vehicle"), Icon: Car },
+                { k: "part" as const, label: t("category.part"), Icon: Wrench },
               ]).map(({ k, label, Icon }) => {
                 const on = pickKind === k;
                 return (
@@ -617,7 +612,7 @@ export function PublishWizard({
 
             <div
               role="radiogroup"
-              aria-label="Catégorie"
+              aria-label={t("category.group")}
               className="mt-2.5 flex flex-wrap gap-1.5"
             >
               {categories
@@ -667,9 +662,9 @@ export function PublishWizard({
                 ) : note ? (
                   <><Gift className="mt-0.5 size-3.5 shrink-0" /> {note}</>
                 ) : free ? (
-                  <><Gift className="size-3.5" /> Publication gratuite dans cette catégorie.</>
+                  <><Gift className="size-3.5" /> {t("category.free")}</>
                 ) : (
-                  <>Publication : {formatTND(fee ?? 0, locale)} TND</>
+                  <>{t("category.fee", { price: formatTND(fee ?? 0, locale), currency: cur })}</>
                 )}
               </p>
             )}
@@ -679,10 +674,9 @@ export function PublishWizard({
 
       {/* ── STEP 2 · Photos ── */}
               <section id="f-photos" className={`scroll-mt-24 rounded-2xl border border-border bg-surface p-4 sm:p-5${flagCls("f-photos")}`}>
-          <SectionHead icon={Camera} title="Vos photos" />
+          <SectionHead icon={Camera} title={t("photos.title")} />
           <p className="mt-1 text-[13px] text-muted">
-            Elles décident si un acheteur clique. Montrez l&apos;avant, l&apos;arrière,
-            les côtés, l&apos;intérieur et le compteur.
+            {t("photos.hint")}
           </p>
           <div className="mt-5">
             <PhotoUploader
@@ -695,38 +689,37 @@ export function PublishWizard({
 
       {/* ── STEP 3 · Details ── */}
               <section id="f-details" className={`scroll-mt-24 rounded-2xl border border-border bg-surface p-4 sm:p-5${flagCls("f-details")}`}>
-          <SectionHead icon={ClipboardList} title={isPart ? "La pièce" : "Le véhicule"} />
+          <SectionHead icon={ClipboardList} title={isPart ? t("details.partTitle") : t("details.vehicleTitle")} />
           <p className="mt-1 text-[13px] text-muted">
-            {isPart
-              ? "Plus c'est précis, moins vous recevrez d'appels pour rien."
-              : "Ces informations servent aux filtres de recherche."}
+            {isPart ? t("details.partHint") : t("details.vehicleHint")}
           </p>
 
           {isPart ? (
             <div className="mt-5 space-y-4">
               <Field
-                label="De quelle pièce s'agit-il ?"
+                label={t("details.partName")}
                 required
                 value={attrs.part_name ?? ""}
                 onChange={(v) => setAttrs((s) => ({ ...s, part_name: v }))}
-                placeholder="Plaquettes de frein avant"
+                placeholder={t("details.partNamePlaceholder")}
               />
               <Picker
-                label="Marque de la pièce"
+                label={t("details.partBrand")}
                 value={attrs.brand ?? ""}
                 onChange={(v) => setAttrs((s) => ({ ...s, brand: v }))}
                 options={PART_BRANDS}
-                placeholder="Bosch, Valeo…"
+                placeholder={t("details.partBrandPlaceholder")}
               />
               <div className="grid grid-cols-2 gap-3">
                 <Field
-                  label="Référence"
+                  label={t("details.reference")}
                   value={attrs.reference ?? ""}
                   onChange={(v) => setAttrs((s) => ({ ...s, reference: v }))}
                   placeholder="0986494600"
+                  ltr
                 />
                 <Field
-                  label="Quantité"
+                  label={t("details.quantity")}
                   type="number"
                   value={attrs.quantity ?? ""}
                   onChange={(v) => setAttrs((s) => ({ ...s, quantity: v }))}
@@ -735,20 +728,19 @@ export function PublishWizard({
               </div>
 
               <Chips
-                label="État"
+                label={t("details.condition")}
                 value={condition}
                 onChange={setCondition}
-                options={CONDITIONS.map((c) => ({ value: c.value, label: c.label }))}
+                options={CONDITIONS.map((c) => ({ value: c.value, label: t(`options.condition.${c.value}`) }))}
               />
 
               {/* Compatibility — the query this catalog lives on. */}
               <div className="rounded-2xl border border-border bg-surface-2/40 p-3.5">
                 <span className="text-[12px] font-extrabold text-foreground">
-                  Compatible avec
+                  {t("fitment.title")}
                 </span>
                 <p className="mt-0.5 text-[11.5px] text-muted">
-                  C&apos;est ainsi qu&apos;un acheteur trouve votre pièce en cherchant
-                  « pour ma Clio 5 de 2020 ».
+                  {t("fitment.hint")}
                 </p>
                 <div className="mt-3 space-y-2">
                   {fitments.map((f, i) => (
@@ -757,20 +749,20 @@ export function PublishWizard({
                         value={f.make}
                         onChange={(v) => setFitments((s) => s.map((x, j) => (j === i ? { ...x, make: v } : x)))}
                         options={CAR_MAKES.map((m) => m.name)}
-                        placeholder="Marque"
+                        placeholder={t("fitment.make")}
                         compact
                       />
                       <Picker
                         value={f.model}
                         onChange={(v) => setFitments((s) => s.map((x, j) => (j === i ? { ...x, model: v } : x)))}
                         options={modelsFor(f.make)}
-                        placeholder="Modèle"
+                        placeholder={t("fitment.model")}
                         compact
                       />
                       <button
                         type="button"
                         onClick={() => setFitments((s) => s.filter((_, j) => j !== i))}
-                        aria-label="Retirer"
+                        aria-label={t("fitment.remove")}
                         className="grid size-11 place-items-center rounded-xl border border-border text-muted hover:text-foreground"
                       >
                         <Trash2 className="size-4" />
@@ -781,14 +773,14 @@ export function PublishWizard({
                           type="number"
                           value={f.yearFrom}
                           onChange={(v) => setFitments((s) => s.map((x, j) => (j === i ? { ...x, yearFrom: v } : x)))}
-                          placeholder="De (année)"
+                          placeholder={t("fitment.yearFrom")}
                         />
                         <Field
                           compact
                           type="number"
                           value={f.yearTo}
                           onChange={(v) => setFitments((s) => s.map((x, j) => (j === i ? { ...x, yearTo: v } : x)))}
-                          placeholder="À (année)"
+                          placeholder={t("fitment.yearTo")}
                         />
                       </div>
                     </div>
@@ -798,7 +790,7 @@ export function PublishWizard({
                     onClick={() => setFitments((s) => [...s, { make: "", model: "", yearFrom: "", yearTo: "" }])}
                     className="inline-flex items-center gap-1.5 rounded-xl border border-dashed border-border px-3 py-2 text-[12.5px] font-bold text-muted hover:text-foreground"
                   >
-                    <Plus className="size-3.5" /> Ajouter un véhicule compatible
+                    <Plus className="size-3.5" /> {t("fitment.add")}
                   </button>
                 </div>
               </div>
@@ -807,7 +799,7 @@ export function PublishWizard({
             <div className="mt-5 space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <Picker
-                  label="Marque"
+                  label={t("details.make")}
                   required
                   value={attrs.make ?? ""}
                   onChange={(v) => setAttrs((s) => ({ ...s, make: v, model: "" }))}
@@ -815,18 +807,18 @@ export function PublishWizard({
                   placeholder="Renault"
                 />
                 <Picker
-                  label="Modèle"
+                  label={t("details.model")}
                   required
                   value={attrs.model ?? ""}
                   onChange={(v) => setAttrs((s) => ({ ...s, model: v }))}
                   options={models}
-                  placeholder={models.length ? "Clio" : "Choisissez la marque"}
+                  placeholder={models.length ? t("details.modelPlaceholder") : t("details.pickMakeFirst")}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <Picker
-                  label="Année"
+                  label={t("details.year")}
                   required
                   value={attrs.year ?? ""}
                   onChange={(v) => setAttrs((s) => ({ ...s, year: v }))}
@@ -834,38 +826,38 @@ export function PublishWizard({
                   placeholder="2019"
                 />
                 <Field
-                  label="Kilométrage"
+                  label={t("details.mileage")}
                   type="number"
                   value={attrs.mileage ?? ""}
                   onChange={(v) => setAttrs((s) => ({ ...s, mileage: v }))}
                   placeholder="120000"
-                  suffix="km"
+                  suffix={t("details.km")}
                 />
               </div>
 
               <Chips
-                label="Carburant"
+                label={t("details.fuel")}
                 value={attrs.fuel ?? ""}
                 onChange={(v) => setAttrs((s) => ({ ...s, fuel: v }))}
-                options={FUELS.map((f) => ({ value: f.value, label: f.label }))}
+                options={FUELS.map((f) => ({ value: f.value, label: t(`options.fuel.${f.value}`) }))}
               />
               <Chips
-                label="Boîte"
+                label={t("details.transmission")}
                 value={attrs.transmission ?? ""}
                 onChange={(v) => setAttrs((s) => ({ ...s, transmission: v }))}
-                options={TRANSMISSIONS.map((t) => ({ value: t.value, label: t.label }))}
+                options={TRANSMISSIONS.map((x) => ({ value: x.value, label: t(`options.transmission.${x.value}`) }))}
               />
               <Chips
-                label="État"
+                label={t("details.condition")}
                 value={condition}
                 onChange={setCondition}
-                options={CONDITIONS.map((c) => ({ value: c.value, label: c.label }))}
+                options={CONDITIONS.map((c) => ({ value: c.value, label: t(`options.condition.${c.value}`) }))}
               />
               <Field
-                label="Couleur"
+                label={t("details.color")}
                 value={attrs.color ?? ""}
                 onChange={(v) => setAttrs((s) => ({ ...s, color: v }))}
-                placeholder="Blanc"
+                placeholder={t("details.colorPlaceholder")}
               />
             </div>
           )}
@@ -877,42 +869,42 @@ export function PublishWizard({
           agency does not keep up would be a promise we cannot keep. */}
       {isRental && (
         <section id="f-rental" className="scroll-mt-24 rounded-2xl border border-border bg-surface p-4 sm:p-5">
-          <SectionHead icon={KeyRound} title="Conditions de location" />
+          <SectionHead icon={KeyRound} title={t("rental.title")} />
           <p className="mt-1 text-[13px] text-muted">
-            Pas de calendrier : indiquez si le véhicule est disponible, le client vous appelle pour réserver.
+            {t("rental.hint")}
           </p>
           <div className="mt-4 space-y-4">
             <Chips
-              label="Disponibilité"
+              label={t("rental.availability")}
               value={attrs.rental_availability ?? ""}
               onChange={(v) => setAttrs((s) => ({ ...s, rental_availability: v }))}
               options={[
-                { value: "available", label: "Disponible" },
-                { value: "on_request", label: "Sur demande" },
+                { value: "available", label: t("rental.available") },
+                { value: "on_request", label: t("rental.onRequest") },
               ]}
             />
             <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Caution" type="number" suffix="TND" compact
+              <Field label={t("rental.deposit")} type="number" suffix={cur} compact
                 value={attrs.rental_deposit ?? ""} placeholder="500"
                 onChange={(v) => setAttrs((s) => ({ ...s, rental_deposit: v }))} />
-              <Field label="Kilométrage inclus (0 = illimité)" type="number" suffix="km/j" compact
+              <Field label={t("rental.kmIncluded")} type="number" suffix={t("rental.kmPerDay")} compact
                 value={attrs.rental_km_per_day ?? ""} placeholder="250"
                 onChange={(v) => setAttrs((s) => ({ ...s, rental_km_per_day: v }))} />
-              <Field label="Âge minimum du conducteur" type="number" suffix="ans" compact
+              <Field label={t("rental.minAge")} type="number" suffix={t("rental.years")} compact
                 value={attrs.rental_min_age ?? ""} placeholder="21"
                 onChange={(v) => setAttrs((s) => ({ ...s, rental_min_age: v }))} />
-              <Field label="Permis depuis" type="number" suffix="ans" compact
+              <Field label={t("rental.licenseYears")} type="number" suffix={t("rental.years")} compact
                 value={attrs.rental_license_years ?? ""} placeholder="2"
                 onChange={(v) => setAttrs((s) => ({ ...s, rental_license_years: v }))} />
             </div>
             <label className="block">
-              <Label>Autres conditions</Label>
+              <Label>{t("rental.otherTerms")}</Label>
               <textarea
                 value={attrs.rental_terms ?? ""}
                 onChange={(e) => setAttrs((s) => ({ ...s, rental_terms: e.target.value }))}
                 rows={3}
                 maxLength={600}
-                placeholder="Carburant rendu plein, livraison possible à l'aéroport…"
+                placeholder={t("rental.otherTermsPlaceholder")}
                 className="mt-1 w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-[14px] text-foreground placeholder:text-muted focus:border-gold focus:outline-none"
               />
             </label>
@@ -922,25 +914,24 @@ export function PublishWizard({
 
       {/* ── STEP 4 · Price & description ── */}
               <section id="f-price" className={`scroll-mt-24 rounded-2xl border border-border bg-surface p-4 sm:p-5${flagCls("f-price")}`}>
-          <SectionHead icon={Wallet} title="Titre et prix" />
+          <SectionHead icon={Wallet} title={t("price.title")} />
           <p className="mt-1 text-[13px] text-muted">
-            Le titre est proposé d&apos;après ce que vous avez saisi — modifiez-le si
-            vous voulez.
+            {t("price.hint")}
           </p>
 
           <div className="mt-5 space-y-4">
             <div id="f-title" className={`scroll-mt-24 rounded-xl${flagCls("f-title")}`}>
             <Field
-              label="Titre de l'annonce"
+              label={t("price.titleLabel")}
               required
               value={title}
               onChange={setTitle}
-              placeholder={isPart ? "Plaquettes de frein avant · Bosch" : "Renault Clio 2019"}
+              placeholder={isPart ? t("price.titlePlaceholderPart") : t("price.titlePlaceholderVehicle")}
             />
             </div>
 
             <div>
-              <Label>{isRental ? "Prix par jour" : "Prix"} {!onRequest && <span className="text-gold">*</span>}</Label>
+              <Label>{isRental ? t("price.perDay") : t("price.price")} {!onRequest && <span className="text-gold">*</span>}</Label>
               <div className="relative mt-1">
                 <input
                   type="number"
@@ -952,17 +943,17 @@ export function PublishWizard({
                   className="w-full rounded-xl border border-border bg-surface px-3 py-3 pe-24 text-[16px] font-bold text-foreground placeholder:font-normal placeholder:text-muted focus:border-gold focus:outline-none disabled:opacity-40"
                 />
                 <span className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-[13px] font-bold text-muted">
-                  {isRental ? "TND / jour" : "TND"}
+                  {isRental ? t("price.unitPerDay", { currency: cur }) : cur}
                 </span>
               </div>
               <div className="mt-2.5 flex flex-wrap gap-2">
-                <Toggle label="Négociable" on={negotiable} onClick={() => setNegotiable((v) => !v)} />
-                <Toggle label="Prix sur demande" on={onRequest} onClick={() => setOnRequest((v) => !v)} />
+                <Toggle label={t("price.negotiable")} on={negotiable} onClick={() => setNegotiable((v) => !v)} />
+                <Toggle label={t("price.onRequest")} on={onRequest} onClick={() => setOnRequest((v) => !v)} />
               </div>
             </div>
 
             <div>
-              <Label>Description</Label>
+              <Label>{t("price.description")}</Label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -970,8 +961,8 @@ export function PublishWizard({
                 maxLength={4000}
                 placeholder={
                   isPart
-                    ? "État, provenance, garantie, ce qui est inclus…"
-                    : "Entretien, équipements, ce qu'il y a à refaire. Soyez honnête : c'est ce qui évite les visites pour rien."
+                    ? t("price.descriptionPlaceholderPart")
+                    : t("price.descriptionPlaceholderVehicle")
                 }
                 className="mt-1 w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-[13.5px] leading-relaxed text-foreground placeholder:text-muted focus:border-gold focus:outline-none"
               />
@@ -982,21 +973,21 @@ export function PublishWizard({
 
       {/* ── STEP 5 · Contact, preview, publish ── */}
               <section id="f-contact" className={`scroll-mt-24 rounded-2xl border border-border bg-surface p-4 sm:p-5${flagCls("f-contact")}`}>
-          <SectionHead icon={Phone} title="Contact et publication" />
+          <SectionHead icon={Phone} title={t("contact.title")} />
           <p className="mt-1 text-[13px] text-muted">
-            Les acheteurs vous appellent directement sur ce numéro.
+            {t("contact.hint")}
           </p>
 
           <div className="mt-5 space-y-4">
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Nom affiché" value={contactName} onChange={setContactName} placeholder="Karim B." />
+              <Field label={t("contact.name")} value={contactName} onChange={setContactName} placeholder={t("contact.namePlaceholder")} />
               <div id="f-phone" className={`scroll-mt-24 rounded-xl${flagCls("f-phone")}`}>
-                <Field label="Téléphone" required value={contactPhone} onChange={setContactPhone} placeholder="+216 …" />
+                <Field label={t("contact.phone")} required value={contactPhone} onChange={setContactPhone} placeholder="+216 …" type="tel" ltr />
               </div>
             </div>
 
             <div>
-              <Label>Gouvernorat <span className="text-gold">*</span></Label>
+              <Label>{t("contact.governorate")} <span className="text-gold">*</span></Label>
               <div className="relative mt-1">
                 <MapPin className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
                 <select
@@ -1004,7 +995,7 @@ export function PublishWizard({
                   onChange={(e) => setGovernorate(e.target.value)}
                   className="w-full appearance-none rounded-xl border border-border bg-surface py-3 ps-9 pe-3 text-[14px] text-foreground focus:border-gold focus:outline-none"
                 >
-                  {GOVERNORATES.map((g) => <option key={g} value={g}>{g}</option>)}
+                  {GOVERNORATES.map((g) => <option key={g} value={g}>{governorateLabel(g, locale)}</option>)}
                 </select>
               </div>
             </div>
@@ -1017,7 +1008,7 @@ export function PublishWizard({
                 180px. ListingImage is what every real card uses — whole photo
                 over a blurred fill of itself, resized to the box. */}
             <div>
-              <Label>Aperçu</Label>
+              <Label>{t("preview.label")}</Label>
               <div className="mt-1 w-[180px] overflow-hidden rounded-2xl border border-border bg-surface">
                 <div className="relative aspect-[4/3] bg-surface-2">
                   {photos[0] ? (
@@ -1025,7 +1016,7 @@ export function PublishWizard({
                   ) : (
                     <span className="grid size-full place-items-center gap-1 text-center text-muted">
                       <ImageOff className="mx-auto size-5" />
-                      <span className="px-2 text-[10px] leading-tight">Aucune photo</span>
+                      <span className="px-2 text-[10px] leading-tight">{t("preview.noPhoto")}</span>
                     </span>
                   )}
                 </div>
@@ -1036,11 +1027,11 @@ export function PublishWizard({
                   <h3 className="mt-0.5 line-clamp-2 text-[12.5px] font-bold leading-snug">{title || "—"}</h3>
                   <p className="batta-tabular mt-1 text-[13px] font-extrabold">
                     {onRequest || !(Number(price) > 0)
-                      ? "Sur demande"
-                      : `${formatTND(Number(price), locale)} TND${isRental ? " / jour" : ""}`}
+                      ? t("preview.onRequest")
+                      : `${formatTND(Number(price), locale)} ${cur}${isRental ? ` ${t("preview.perDay")}` : ""}`}
                   </p>
                   <p className="mt-0.5 inline-flex items-center gap-1 text-[10px] text-muted">
-                    <MapPin className="size-2.5" /> {governorate}
+                    <MapPin className="size-2.5" /> {governorateLabel(governorate, locale)}
                   </p>
                 </div>
               </div>
@@ -1053,26 +1044,26 @@ export function PublishWizard({
                 onChange={(e) => setAttested(e.target.checked)}
                 className="mt-0.5 size-5 shrink-0 accent-[var(--gold)]"
               />
-              <span className="text-[12.5px] leading-relaxed text-foreground">{ATTESTATION_TEXT}</span>
+              <span className="text-[12.5px] leading-relaxed text-foreground">{t("attestation")}</span>
             </label>
 
             <div className="rounded-2xl bg-surface-2 p-4 ring-1 ring-border">
               <div className="flex items-center justify-between gap-3">
                 <span className="text-[13px] text-muted">
                   {usingCredit
-                    ? "Publication depuis votre forfait"
+                    ? t("fee.fromPack")
                     : free
-                      ? "Publication"
-                      : "Frais de publication"}
+                      ? t("fee.publication")
+                      : t("fee.fees")}
                 </span>
                 <span className="batta-tabular text-[18px] font-extrabold text-foreground">
                   {usingCredit
-                    ? `1 / ${creditsLeft}`
+                    ? <span className="ltr-island">1 / {creditsLeft}</span>
                     : fee == null
                       ? "—"
                       : free
-                        ? "Gratuit"
-                        : `${formatTND(fee, locale)} TND`}
+                        ? t("fee.free")
+                        : `${formatTND(fee, locale)} ${cur}`}
                 </span>
               </div>
               <p
@@ -1084,10 +1075,10 @@ export function PublishWizard({
                 {blocked
                   ? note
                   : usingCredit
-                    ? "Aucun paiement : une publication est décomptée de votre forfait."
+                    ? t("fee.packNote")
                     : free
-                      ? `${note ?? "Gratuit dans cette catégorie."} Votre annonce part directement en vérification.`
-                      : "Vous serez redirigé vers le paiement. L'annonce part en vérification dès la réception du reçu."}
+                      ? `${note ?? t("fee.freeDefault")} ${t("fee.straightToReview")}`
+                      : t("fee.payNote")}
               </p>
             </div>
           </div>
@@ -1112,16 +1103,16 @@ export function PublishWizard({
           <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-3 p-4 sm:p-5">
             <div className="min-w-0">
               <span className="block text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-muted">
-                Avant de publier
+                {t("footer.before")}
               </span>
               {missing.length === 0 ? (
                 <p className="mt-1 flex items-center gap-1.5 text-[14.5px] font-extrabold text-foreground">
                   <Check className="size-4 shrink-0 text-[var(--success,#4ade80)]" strokeWidth={3} />
-                  Tout est prêt.
+                  {t("footer.ready")}
                 </p>
               ) : (
                 <p className="mt-1 text-[14.5px] font-extrabold text-foreground">
-                  {missing.length} élément{missing.length > 1 ? "s" : ""} à compléter
+                  {t("footer.toComplete", { count: missing.length })}
                 </p>
               )}
             </div>
@@ -1146,11 +1137,11 @@ export function PublishWizard({
               className="batta-btn-luxe tap-target h-11 shrink-0 items-center justify-center gap-1.5 px-7 text-[13.5px] disabled:opacity-60"
             >
               {busy ? (
-                <><Loader2 className="size-4 animate-spin" /> Un instant…</>
+                <><Loader2 className="size-4 animate-spin" /> {t("cta.busy")}</>
               ) : photosUploading > 0 ? (
-                <><Loader2 className="size-4 animate-spin" /> Envoi des photos…</>
+                <><Loader2 className="size-4 animate-spin" /> {t("cta.sendingPhotos")}</>
               ) : (
-                <>Publier mon annonce</>
+                <>{t("cta.publish")}</>
               )}
             </button>
             </div>
@@ -1195,25 +1186,25 @@ export function PublishWizard({
           className="batta-btn-luxe tap-target inline-flex h-12 w-full items-center justify-center gap-1.5 text-[14px] disabled:opacity-60"
         >
           {busy ? (
-            <><Loader2 className="size-4 animate-spin" /> Un instant…</>
+            <><Loader2 className="size-4 animate-spin" /> {t("cta.busy")}</>
           ) : photosUploading > 0 ? (
-            <><Loader2 className="size-4 animate-spin" /> Envoi des photos…</>
+            <><Loader2 className="size-4 animate-spin" /> {t("cta.sendingPhotos")}</>
           ) : (
-            <>Publier mon annonce</>
+            <>{t("cta.publish")}</>
           )}
         </button>
         <p className="mt-2 text-center text-[11px] text-muted lg:mt-3">
           {blocked
-            ? "Limite atteinte : l'annonce sera enregistrée, mais pas mise en ligne."
+            ? t("bar.blocked")
             : free
-            ? (note ?? "Publication gratuite dans cette catégorie.")
+            ? (note ?? t("category.free"))
             : usingCredit
-              ? `Utilise 1 de vos ${creditsLeft} publications.`
+              ? t("bar.credit", { count: creditsLeft })
               : usingWelcome
-                ? "Offerte — aucune somme à régler."
+                ? t("bar.welcome")
               : fee != null
-                ? `${fee} TND — à régler après vérification.`
-                : "Le prix de publication s'affiche dès que la catégorie est choisie."}
+                ? t("bar.fee", { price: formatTND(fee, locale), currency: cur })
+                : t("bar.noCategory")}
         </p>
       </div>
     </main>
@@ -1255,7 +1246,7 @@ function Label({ children }: { children: React.ReactNode }) {
 }
 
 function Field({
-  label, value, onChange, placeholder, type = "text", required, suffix, compact,
+  label, value, onChange, placeholder, type = "text", required, suffix, compact, ltr,
 }: {
   label?: string;
   value: string;
@@ -1265,6 +1256,8 @@ function Field({
   required?: boolean;
   suffix?: string;
   compact?: boolean;
+  /** A phone number or a reference: typed left to right in Arabic too. */
+  ltr?: boolean;
 }) {
   return (
     <label className="block">
@@ -1272,12 +1265,14 @@ function Field({
       <div className="relative mt-1">
         <input
           type={type}
-          inputMode={type === "number" ? "numeric" : undefined}
+          inputMode={type === "number" ? "numeric" : type === "tel" ? "tel" : undefined}
+          dir={ltr ? "ltr" : undefined}
           value={value}
           placeholder={placeholder}
           onChange={(e) => onChange(e.target.value)}
           className={cn(
             "w-full rounded-xl border border-border bg-surface px-3 text-foreground placeholder:text-muted focus:border-gold focus:outline-none",
+            ltr && "rtl:text-end",
             compact ? "py-2.5 text-[13.5px]" : "py-3 text-[14px]",
             suffix ? "pe-12" : "",
           )}

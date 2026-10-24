@@ -91,6 +91,11 @@ export function toProduct(row: ProductRow): Product {
   };
 }
 
+/** A product's name in `locale`: `name_ar` on an Arabic page when an admin filled it, else French. */
+export function productName(p: Pick<Product, "nameFr" | "nameAr">, locale: string): string {
+  return locale === "ar" && p.nameAr?.trim() ? p.nameAr : p.nameFr;
+}
+
 /**
  * What it costs THIS seller to publish in THIS category.
  *

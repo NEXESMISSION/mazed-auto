@@ -19,7 +19,16 @@
  *     unless `personal_limits.free` is switched off, in which case the old
  *     per-annonce fee applies (limits still hold);
  *   • nothing is ever "free" past its limit.
+ *
+ * Every sentence is a `Phrase` — a key under `publish.rules` in
+ * messages/publish/<locale>.json and its values — so the API and the wizard can
+ * word it in the reader's language with `phraseText`. `detail` / `note` keep
+ * the French wording for callers that have not moved to phrases yet.
  */
+
+import { createTranslator } from "next-intl";
+import frMessages from "../../messages/publish/fr.json";
+import arMessages from "../../messages/publish/ar.json";
 
 export type ListingKind = "vehicle" | "part";
 export type ListingType = "vente_auto" | "location_auto" | "pieces_auto";
@@ -46,7 +55,10 @@ export type ShopSummary = {
   activityType: ListingType;
 };
 
-export type Refusal = { status: number; error: string; detail: string };
+/** A sentence for the seller: a key under `publish.rules`, and its values (a value may itself be a phrase). */
+export type Phrase = { key: string; values?: Record<string, string | number | Phrase> };
+
+export type Refusal = { status: number; error: string; phrase: Phrase; detail: string };
 
 export type PublicationDecision =
   | { kind: "subscription"; shopId: string }
@@ -54,31 +66,51 @@ export type PublicationDecision =
   | { kind: "legacy_fee" }
   | ({ kind: "refused" } & Refusal);
 
-const BUCKET_WORD = {
-  vehicles: { one: "véhicule", many: "véhicules" },
-  parts: { one: "pièce", many: "pièces" },
-} as const;
+const MESSAGES = { fr: frMessages, ar: arMessages } as const;
 
-function count(n: number, bucket: QuotaStatus["bucket"]): string {
-  const w = BUCKET_WORD[bucket];
-  return `${n} ${n > 1 ? w.many : w.one}`;
+type Translate = (key: string, values?: Record<string, string | number>) => string;
+
+const translators = new Map<string, Translate>();
+
+function translatorFor(locale: string): Translate {
+  const l = locale === "ar" ? "ar" : "fr";
+  let t = translators.get(l);
+  if (!t) {
+    t = createTranslator({ locale: l, messages: MESSAGES[l], namespace: "rules" }) as unknown as Translate;
+    translators.set(l, t);
+  }
+  return t;
 }
 
-/** The sentence a seller reads when an annonce cannot go live: limit reached. */
-export function quotaMessage(q: Pick<QuotaStatus, "scope" | "bucket" | "limit">): string {
-  if (q.scope === "shop") {
-    return (
-      `Votre abonnement permet ${count(q.limit, q.bucket)} en ligne à la fois, `
-      + "et la limite est atteinte. Retirez une annonce ou passez à une formule supérieure."
-    );
+/** A phrase in `locale` (French unless "ar"). */
+export function phraseText(phrase: Phrase, locale: string): string {
+  const t = translatorFor(locale);
+  const values: Record<string, string | number> = {};
+  for (const [k, v] of Object.entries(phrase.values ?? {})) {
+    values[k] = typeof v === "object" ? phraseText(v, locale) : v;
   }
-  const what = q.limit === 1 && q.bucket === "vehicles"
-    ? "un véhicule en ligne"
-    : `${count(q.limit, q.bucket)} en ligne`;
-  return (
-    `Vous avez déjà ${what} : c'est la limite pour un particulier. `
-    + "Retirez une annonce, ou ouvrez une boutique professionnelle pour en publier davantage."
-  );
+  return t(phrase.key, values);
+}
+
+/** The same refusal, its `detail` worded in `locale` — for an API response. */
+export function localizeRefusal<R extends Refusal>(r: R, locale: string): R {
+  return { ...r, detail: phraseText(r.phrase, locale) };
+}
+
+function count(n: number, bucket: QuotaStatus["bucket"]): Phrase {
+  return { key: `count.${bucket}`, values: { n } };
+}
+
+/** The phrase a seller reads when an annonce cannot go live: limit reached. */
+export function quotaPhrase(q: Pick<QuotaStatus, "scope" | "bucket" | "limit">): Phrase {
+  if (q.scope === "shop") return { key: "quotaShop", values: { count: count(q.limit, q.bucket) } };
+  if (q.limit === 1 && q.bucket === "vehicles") return { key: "quotaPersonalOne" };
+  return { key: "quotaPersonal", values: { count: count(q.limit, q.bucket) } };
+}
+
+/** `quotaPhrase`, in French. */
+export function quotaMessage(q: Pick<QuotaStatus, "scope" | "bucket" | "limit">): string {
+  return phraseText(quotaPhrase(q), "fr");
 }
 
 /** The bucket an annonce of this kind draws on. */
@@ -109,8 +141,7 @@ export function pickScope(
 
   if (requested.as === "personal") {
     if (kind === "vehicle" && wantedType === "location_auto") {
-      return refused(400, "rental_requires_shop",
-        "La location de véhicules se publie depuis une boutique de location.");
+      return refused(400, "rental_requires_shop", { key: "rentalRequiresShop" });
     }
     return { shopId: null, listingType: listingTypeFor(kind) };
   }
@@ -118,7 +149,7 @@ export function pickScope(
   if (typeof requested.shopId === "string" && requested.shopId) {
     const shop = shops.find((s) => s.id === requested.shopId);
     if (!shop) {
-      return refused(403, "not_shop_member", "Vous ne faites pas partie de cette boutique.");
+      return refused(403, "not_shop_member", { key: "notShopMember" });
     }
     if (!fits(shop)) {
       return refused(400, "shop_activity_mismatch", activityMismatch(shop));
@@ -136,8 +167,7 @@ export function pickScope(
 
   if (chosen) return { shopId: chosen.id, listingType: chosen.activityType };
   if (kind === "vehicle" && wantedType === "location_auto") {
-    return refused(400, "rental_requires_shop",
-      "La location de véhicules se publie depuis une boutique de location.");
+    return refused(400, "rental_requires_shop", { key: "rentalRequiresShop" });
   }
   return { shopId: null, listingType: listingTypeFor(kind) };
 }
@@ -152,18 +182,16 @@ export function decidePublication(input: {
 
   if (shopId) {
     if (!shop || shop.status !== "active") {
-      return refused(409, "shop_not_active",
-        "Votre boutique n'est pas active : ses annonces ne peuvent pas être mises en ligne pour l'instant.");
+      return refused(409, "shop_not_active", { key: "shopNotActive" });
     }
     if (!quota.has_subscription) {
-      return refused(409, "subscription_required",
-        "Votre boutique n'a pas d'abonnement en cours. Renouvelez-le pour mettre des annonces en ligne.");
+      return refused(409, "subscription_required", { key: "subscriptionRequired" });
     }
-    if (quota.remaining <= 0) return refused(409, "quota_exceeded", quotaMessage(quota));
+    if (quota.remaining <= 0) return refused(409, "quota_exceeded", quotaPhrase(quota));
     return { kind: "subscription", shopId };
   }
 
-  if (quota.remaining <= 0) return refused(409, "quota_exceeded", quotaMessage(quota));
+  if (quota.remaining <= 0) return refused(409, "quota_exceeded", quotaPhrase(quota));
   return quota.free === false ? { kind: "legacy_fee" } : { kind: "personal_free" };
 }
 
@@ -172,8 +200,14 @@ export type PublishingNote = {
   free: boolean;
   /** Submitting will be refused as things stand — show the note as a warning. */
   blocked: boolean;
+  /** The sentence, in French; `phrase` words it in another language. */
   note: string | null;
+  phrase: Phrase | null;
 };
+
+function noted(free: boolean, blocked: boolean, phrase: Phrase | null): PublishingNote {
+  return { free, blocked, note: phrase ? phraseText(phrase, "fr") : null, phrase };
+}
 
 /**
  * What the sell wizard says about publishing an annonce of this kind, before
@@ -189,29 +223,21 @@ export function describePublishing(input: {
   if (shop) {
     const q = shop.quota;
     if (!q.has_subscription) {
-      return {
-        free: false,
-        blocked: true,
-        note: `« ${shop.summary.name} » n'a pas d'abonnement en cours : l'annonce sera enregistrée mais ne pourra pas être mise en ligne.`,
-      };
+      return noted(false, true, { key: "noteNoSubscription", values: { shop: shop.summary.name } });
     }
-    if (q.remaining <= 0) return { free: true, blocked: true, note: quotaMessage(q) };
-    return {
-      free: true,
-      blocked: false,
-      note: `Inclus dans l'abonnement de « ${shop.summary.name} » — ${q.used} / ${count(q.limit, q.bucket)} en ligne.`,
-    };
+    if (q.remaining <= 0) return noted(true, true, quotaPhrase(q));
+    return noted(true, false, {
+      key: "noteIncluded",
+      values: { shop: shop.summary.name, used: q.used, count: count(q.limit, q.bucket) },
+    });
   }
 
-  if (personal.remaining <= 0) {
-    return { free: personal.free !== false, blocked: true, note: quotaMessage(personal) };
-  }
-  if (personal.free === false) return { free: false, blocked: false, note: null };
-  const allowance = personal.limit === 1 && personal.bucket === "vehicles"
-    ? "1 véhicule en ligne à la fois"
-    : `jusqu'à ${count(personal.limit, personal.bucket)} en ligne à la fois`
-      + (personal.used > 0 ? ` (encore ${personal.remaining})` : "");
-  return { free: true, blocked: false, note: `Gratuit pour un particulier : ${allowance}.` };
+  if (personal.remaining <= 0) return noted(personal.free !== false, true, quotaPhrase(personal));
+  if (personal.free === false) return noted(false, false, null);
+  if (personal.limit === 1 && personal.bucket === "vehicles") return noted(true, false, { key: "noteFreeOne" });
+  return noted(true, false, personal.used > 0
+    ? { key: "noteFreeLeft", values: { count: count(personal.limit, personal.bucket), left: personal.remaining } }
+    : { key: "noteFree", values: { count: count(personal.limit, personal.bucket) } });
 }
 
 /**
@@ -220,44 +246,24 @@ export function describePublishing(input: {
  */
 export function publicationErrorFromDb(err: { message?: string } | null | undefined): Refusal | null {
   const m = err?.message ?? "";
-  if (m.includes("quota_exceeded")) {
-    return { status: 409, error: "quota_exceeded", detail: "La limite d'annonces en ligne est atteinte." };
-  }
-  if (m.includes("subscription_required")) {
-    return { status: 409, error: "subscription_required",
-      detail: "Votre boutique n'a pas d'abonnement en cours. Renouvelez-le pour mettre des annonces en ligne." };
-  }
-  if (m.includes("shop_not_active")) {
-    return { status: 409, error: "shop_not_active",
-      detail: "Votre boutique n'est pas active : ses annonces ne peuvent pas être mises en ligne pour l'instant." };
-  }
-  if (m.includes("seller_banned")) {
-    return { status: 403, error: "account_suspended",
-      detail: "Votre compte est suspendu : vous ne pouvez pas publier d'annonce." };
-  }
-  if (m.includes("rental_requires_shop")) {
-    return { status: 400, error: "rental_requires_shop",
-      detail: "La location de véhicules se publie depuis une boutique de location." };
-  }
-  if (m.includes("shop_activity_mismatch")) {
-    return { status: 400, error: "shop_activity_mismatch",
-      detail: "Cette catégorie ne correspond pas à l'activité de votre boutique." };
-  }
-  if (m.includes("not_shop_member")) {
-    return { status: 403, error: "not_shop_member", detail: "Vous ne faites pas partie de cette boutique." };
-  }
+  const r = (status: number, error: string, key: string): Refusal => {
+    const phrase = { key };
+    return { status, error, phrase, detail: phraseText(phrase, "fr") };
+  };
+  if (m.includes("quota_exceeded")) return r(409, "quota_exceeded", "dbQuota");
+  if (m.includes("subscription_required")) return r(409, "subscription_required", "subscriptionRequired");
+  if (m.includes("shop_not_active")) return r(409, "shop_not_active", "shopNotActive");
+  if (m.includes("seller_banned")) return r(403, "account_suspended", "accountSuspended");
+  if (m.includes("rental_requires_shop")) return r(400, "rental_requires_shop", "rentalRequiresShop");
+  if (m.includes("shop_activity_mismatch")) return r(400, "shop_activity_mismatch", "categoryMismatch");
+  if (m.includes("not_shop_member")) return r(403, "not_shop_member", "notShopMember");
   return null;
 }
 
-function activityMismatch(shop: ShopSummary): string {
-  const what = shop.activityType === "pieces_auto"
-    ? "des pièces"
-    : shop.activityType === "location_auto"
-      ? "des véhicules en location"
-      : "des véhicules à vendre";
-  return `« ${shop.name} » publie ${what} : cette catégorie n'y correspond pas.`;
+function activityMismatch(shop: ShopSummary): Phrase {
+  return { key: `activityMismatch.${shop.activityType}`, values: { shop: shop.name } };
 }
 
-function refused(status: number, error: string, detail: string): { kind: "refused" } & Refusal {
-  return { kind: "refused", status, error, detail };
+function refused(status: number, error: string, phrase: Phrase): { kind: "refused" } & Refusal {
+  return { kind: "refused", status, error, phrase, detail: phraseText(phrase, "fr") };
 }

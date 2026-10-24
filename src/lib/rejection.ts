@@ -41,7 +41,8 @@ export type RejectionCategory = (typeof REJECTION_CATEGORIES)[number];
 
 // Human-readable labels per category. Kept here (not in i18n messages)
 // because the admin reject form, the seller dashboard, and the edit
-// banner all read from the same source.
+// banner all read from the same source — server and client alike, in
+// French and in Arabic (`parseRejection(raw, "ar")`).
 export const REJECTION_CATEGORY_LABELS: Record<RejectionCategory, string> = {
   photos: "Photos",
   documents: "Documents",
@@ -65,6 +66,41 @@ export const REJECTION_CATEGORY_HINTS: Record<RejectionCategory, string> = {
   title:       "Reformulez le titre — soyez clair et descriptif.",
   general:     "Consultez le motif et corrigez l'annonce en conséquence.",
 };
+
+export const REJECTION_CATEGORY_LABELS_AR: Record<RejectionCategory, string> = {
+  photos: "الصور",
+  documents: "الوثائق",
+  address: "العنوان",
+  price: "السعر",
+  description: "الوصف",
+  title: "العنوان الرئيسي",
+  general: "عام",
+};
+
+export const REJECTION_CATEGORY_HINTS_AR: Record<RejectionCategory, string> = {
+  photos:      "أعد التقاط صور واضحة وجيّدة الإضاءة.",
+  documents:   "أعد رفع وثائقك القانونية.",
+  address:     "أكمل عنوان الإعلان أو صحّحه.",
+  price:       "راجع سعر البيع أو السعر الافتتاحي.",
+  description: "أثرِ الوصف: عدد الكيلومترات، الحالة، الصيانة.",
+  title:       "أعد صياغة العنوان — كن واضحًا ودقيقًا.",
+  general:     "اطّلع على السبب وصحّح الإعلان وفقًا له.",
+};
+
+const SEVERAL_HINT = {
+  fr: "Plusieurs points à corriger — voyez les sections mises en évidence ci-dessous.",
+  ar: "عدّة نقاط للتصحيح — اطّلع على الأقسام المُبرزة أدناه.",
+};
+
+/** The label of a category in `locale` ("fr" unless "ar"). */
+export function rejectionCategoryLabel(c: RejectionCategory, locale = "fr"): string {
+  return (locale === "ar" ? REJECTION_CATEGORY_LABELS_AR : REJECTION_CATEGORY_LABELS)[c];
+}
+
+/** The hint of a category in `locale` ("fr" unless "ar"). */
+export function rejectionCategoryHint(c: RejectionCategory, locale = "fr"): string {
+  return (locale === "ar" ? REJECTION_CATEGORY_HINTS_AR : REJECTION_CATEGORY_HINTS)[c];
+}
 
 export type RejectionMode = "focused" | "full";
 
@@ -99,14 +135,18 @@ function dedupeOrder<T>(arr: T[]): T[] {
   return out;
 }
 
-export function parseRejection(raw: string | null | undefined): ParsedRejection {
+/**
+ * `locale` picks the language of `label` and `hint` ("fr" unless "ar"). The
+ * motif itself is what the admin typed, in whatever language they typed it.
+ */
+export function parseRejection(raw: string | null | undefined, locale = "fr"): ParsedRejection {
   const text = (raw ?? "").trim();
   const fallback: ParsedRejection = {
     categories: ["general"],
     category: "general",
     message: text,
-    label: REJECTION_CATEGORY_LABELS.general,
-    hint: REJECTION_CATEGORY_HINTS.general,
+    label: rejectionCategoryLabel("general", locale),
+    hint: rejectionCategoryHint("general", locale),
     tagged: false,
     // Un-tagged rejections default to full mode — there are no
     // specific sections to focus on, so hiding parts of the form
@@ -137,11 +177,11 @@ export function parseRejection(raw: string | null | undefined): ParsedRejection 
   const mode: RejectionMode = modeRaw === "all" ? "full" : "focused";
 
   const message = match[3].trim();
-  const label = categories.map((c) => REJECTION_CATEGORY_LABELS[c]).join(" · ");
+  const label = categories.map((c) => rejectionCategoryLabel(c, locale)).join(" · ");
   const hint =
     categories.length === 1
-      ? REJECTION_CATEGORY_HINTS[categories[0]]
-      : "Plusieurs points à corriger — voyez les sections mises en évidence ci-dessous.";
+      ? rejectionCategoryHint(categories[0], locale)
+      : SEVERAL_HINT[locale === "ar" ? "ar" : "fr"];
 
   return {
     categories,

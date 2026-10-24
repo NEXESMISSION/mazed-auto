@@ -5,7 +5,7 @@
  * server, and reading the clock is the correct way to answer "what is overdue"
  * or "which badge has lapsed". There is no render to replay. */
 import { redirect } from "next/navigation";
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { PublishWizard, type InitialDraft, type WizardCategory } from "./PublishWizard";
@@ -18,11 +18,13 @@ import {
 import {
   describePublishing,
   listingTypeFor,
+  phraseText,
   pickScope,
   type ListingKind,
   type PublishingNote,
 } from "@/lib/publication";
 import { memberShops, quotaStatus } from "@/lib/shops/server";
+import { categoryLabel } from "@/lib/labels";
 
 export const dynamic = "force-dynamic";
 
@@ -42,11 +44,12 @@ export default async function NewListingPage() {
     redirect(`/${locale}/login?next=${encodeURIComponent(`/${locale}/annonces/nouvelle`)}`);
   }
 
+  const t = await getTranslations("publish");
   const admin = getServiceSupabase();
   if (!admin) {
     return (
       <main className="mx-auto max-w-md px-4 py-16 text-center">
-        <p className="text-[13px] text-muted">Service indisponible.</p>
+        <p className="text-[13px] text-muted">{t("unavailable")}</p>
       </main>
     );
   }
@@ -54,7 +57,7 @@ export default async function NewListingPage() {
   const [catRes, prodRes, creditRes, profRes, draftRes] = await Promise.all([
     admin
       .from("categories")
-      .select("id, parent_id, slug, label_fr, kind, sort_order")
+      .select("id, parent_id, slug, label_fr, label_ar, kind, sort_order")
       .eq("is_active", true)
       .order("sort_order"),
     admin.from("products").select(PRODUCT_SELECT).eq("is_active", true),
@@ -84,7 +87,7 @@ export default async function NewListingPage() {
 
   type CatRow = {
     id: string; parent_id: string | null; slug: string;
-    label_fr: string; kind: string; sort_order: number;
+    label_fr: string; label_ar: string | null; kind: string; sort_order: number;
   };
   const catRows = (catRes.data ?? []) as CatRow[];
   const parents = catRows.filter((c) => c.parent_id == null);
@@ -98,9 +101,9 @@ export default async function NewListingPage() {
     .map((c) => ({
       id: c.id,
       slug: c.slug,
-      label: c.label_fr,
+      label: categoryLabel(c, locale),
       kind: c.kind === "part" ? "part" : "vehicle",
-      groupLabel: parents.find((p) => p.id === c.parent_id)?.label_fr ?? "Autres",
+      groupLabel: categoryLabel(parents.find((p) => p.id === c.parent_id), locale) || t("otherGroup"),
     }));
 
   const products: Product[] = (prodRes.data ?? []).map((r) =>
@@ -121,7 +124,9 @@ export default async function NewListingPage() {
       const shop = summary && !("kind" in scope)
         ? { summary, quota: await quotaStatus(admin, user!.id, summary.id, scope.listingType) }
         : null;
-      return { personal, note: describePublishing({ kind, personal, shop }) };
+      // Worded here, in the page's language: the wizard only shows it.
+      const note = describePublishing({ kind, personal, shop });
+      return { personal, note: { ...note, note: note.phrase ? phraseText(note.phrase, locale) : null } };
     }),
   );
   const publishing = { vehicle: notes[0].note, part: notes[1].note } as Record<ListingKind, PublishingNote>;

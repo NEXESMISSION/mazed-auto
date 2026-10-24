@@ -5,6 +5,7 @@ import { isSameOrigin } from "@/lib/sameOrigin";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { memberRole, CAN_EDIT_SHOP } from "@/lib/shops/server";
+import { apiTranslations } from "@/i18n/api";
 
 /**
  * POST /api/annonces/[id]/archive — take an annonce off the catalogue.
@@ -51,9 +52,10 @@ export async function POST(
   }
   if (!allowed) return NextResponse.json({ error: "not_owner" }, { status: 403 });
 
+  const t = await apiTranslations(req, "publish.api");
   if (!WITHDRAWABLE.includes(listing.status as string)) {
     return NextResponse.json(
-      { error: "not_withdrawable", detail: "Cette annonce n'est ni en ligne ni en vérification." },
+      { error: "not_withdrawable", detail: t("notWithdrawable") },
       { status: 409 },
     );
   }
@@ -68,7 +70,7 @@ export async function POST(
     .select("id");
   if (error) return fail("listing_archive_failed", 500, error);
   if (!done || done.length === 0) {
-    return NextResponse.json({ error: "changed", detail: "L'annonce a changé d'état entre-temps." }, { status: 409 });
+    return NextResponse.json({ error: "changed", detail: t("changed") }, { status: 409 });
   }
 
   logAction(req, user, "listing.archive", { id, shopId: listing.shop_id });

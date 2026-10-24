@@ -5,9 +5,10 @@ import { isSameOrigin } from "@/lib/sameOrigin";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { refuseIfSuspended } from "@/lib/http/suspended";
-import { refusalResponse } from "@/lib/http/refusal";
+import { refusalResponse as sendRefusal } from "@/lib/http/refusal";
 import { PRODUCT_SELECT, isFree, resolveListingFee, toProduct } from "@/lib/products";
-import { decidePublication, publicationErrorFromDb, type ListingType } from "@/lib/publication";
+import { decidePublication, localizeRefusal, publicationErrorFromDb, type ListingType, type Refusal } from "@/lib/publication";
+import { apiTranslations, localeFromRequest } from "@/i18n/api";
 import { CAN_EDIT_SHOP, memberRole, quotaStatus, shopSummary } from "@/lib/shops/server";
 
 /**
@@ -43,6 +44,10 @@ export async function POST(
   const suspended = await refuseIfSuspended(admin, user.id);
   if (suspended) return suspended;
 
+  const t = await apiTranslations(req, "publish.api");
+  const locale = localeFromRequest(req);
+  const refusalResponse = (r: Refusal) => sendRefusal(localizeRefusal(r, locale));
+
   const { data: listing } = await admin
     .from("listings")
     .select("id, seller_id, category_id, status, title, contact_phone, renewed_count, shop_id, listing_type")
@@ -64,14 +69,14 @@ export async function POST(
     return NextResponse.json(
       {
         error: "not_renewable",
-        detail: "Cette annonce est encore en ligne ou en cours de traitement.",
+        detail: t("notRenewable"),
       },
       { status: 409 },
     );
   }
   if (!listing.contact_phone) {
     return NextResponse.json(
-      { error: "contact_required", detail: "Ajoutez un numéro joignable avant de renouveler." },
+      { error: "contact_required", detail: t("contactRequiredRenew") },
       { status: 400 },
     );
   }
