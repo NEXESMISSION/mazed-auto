@@ -83,7 +83,7 @@ export function AdminQueryBar({
             type="button"
             onClick={() => push({ range: r.key || null })}
             className={`rounded-md px-2.5 py-1.5 text-[12px] font-semibold transition ${
-              range === r.key ? "bg-[var(--gold)] text-white" : "text-muted hover:text-foreground"
+              range === r.key ? "bg-foreground text-background" : "text-muted hover:text-foreground"
             }`}
           >
             {r.label}

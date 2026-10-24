@@ -279,7 +279,7 @@ function ComposeTab() {
                   onClick={() => setRole(r)}
                   className={`rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.1em] ring-1 transition ${
                     role === r
-                      ? "bg-gold/15 text-gold-bright ring-gold/40"
+                      ? "bg-foreground text-background ring-foreground"
                       : "bg-surface text-muted ring-border hover:text-foreground"
                   }`}
                 >
@@ -324,7 +324,7 @@ function ComposeTab() {
             type="button"
             onClick={() => send(false)}
             disabled={!canSend}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full batta-gold-fill px-4 py-2.5 text-[12px] font-bold uppercase tracking-[0.12em] transition hover:bg-[var(--gold-bright)] disabled:opacity-40 disabled:hover:batta-gold-fill"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-foreground px-4 py-2.5 text-[12px] font-bold uppercase tracking-[0.12em] text-background transition hover:bg-white disabled:opacity-40 disabled:hover:bg-foreground"
           >
             <Send className="size-3.5" strokeWidth={2.4} />
             {sending ? "Envoi..." : "Diffuser"}
@@ -885,7 +885,7 @@ function QueueRow({
             <button
               type="button"
               onClick={onFilterByBroadcast}
-              className="inline-flex items-center gap-1 rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-gold-bright transition hover:bg-gold/25"
+              className="inline-flex items-center gap-1 rounded-full bg-surface-2 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-foreground ring-1 ring-border transition hover:bg-surface-3"
               title="Filtrer par cette diffusion"
             >
               <Radio className="size-3" strokeWidth={2.4} />

@@ -236,8 +236,8 @@ export function DiagnosticEditor({
               className={
                 "rounded-xl px-3 py-2.5 text-[12.5px] font-bold transition ring-1 " +
                 (verdict === v
-                  ? "bg-[var(--gold)] text-white ring-[var(--gold)]"
-                  : "bg-surface text-foreground ring-border hover:ring-[var(--gold-soft)]")
+                  ? "bg-foreground text-background ring-foreground"
+                  : "bg-surface text-foreground ring-border hover:ring-[var(--border-strong)]")
               }
             >
               {VERDICT_LABEL[v]}

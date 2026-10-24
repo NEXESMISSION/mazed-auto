@@ -219,7 +219,7 @@ export default async function AdminAnalyticsPage({
             className={
               "rounded-full px-3 py-1.5 text-[12px] font-bold transition " +
               (sort === s.key
-                ? "bg-[var(--gold)] text-black"
+                ? "bg-foreground text-background"
                 : "bg-surface-2 text-muted ring-1 ring-border hover:text-foreground")
             }
           >

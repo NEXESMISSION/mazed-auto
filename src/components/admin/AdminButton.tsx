@@ -33,15 +33,14 @@ const SIZES: Record<AdminButtonSize, string> = {
 };
 
 const VARIANTS: Record<string, string> = {
-  // The single filled element on any screen.
-  // `.batta-gold-fill` carries the metallic ramp; the inset rim is what stops
-  // a small control reading as a flat yellow chip. No hover COLOUR change —
-  // the sheen shifts instead, which is what a metal surface does.
+  // The single filled element on any screen: a plain light fill, the same as
+  // the public site's primary button (`.batta-btn-luxe`). It was the metallic
+  // gold ramp, which on a working tool read as decoration, not as a control.
   primary:
-    "batta-gold-fill gold-rim-flat hover:brightness-[1.06]",
+    "bg-foreground text-background hover:bg-white",
   // Hairline outline — the default for everything else.
   default:
-    "border border-border text-foreground hover:border-[var(--gold-soft)] hover:text-[var(--gold)]",
+    "border border-border text-foreground hover:border-[var(--border-strong)] hover:bg-surface-2",
   // Danger is text + border, never a fill: a red block reads as an error
   // message, not as a control you may press on purpose.
   danger:

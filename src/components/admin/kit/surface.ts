@@ -8,9 +8,10 @@
  * everything is a card, nothing is emphasised — and made a working tool read
  * like a marketing page.
  *
- * Gold is spent in exactly two places: the row you are on, and the one
- * primary action on screen. Everywhere else is grey, and status is carried by
- * a small coloured dot rather than by a filled badge.
+ * Gold marks where you are — the row you are on, the active tab and nav
+ * item — and nothing else: buttons, the primary one included, are neutral
+ * (see AdminButton). Everywhere else is grey, and status is carried by a
+ * small coloured dot rather than by a filled badge.
  */
 
 /** A 1px divider. The only structural device in the console. */

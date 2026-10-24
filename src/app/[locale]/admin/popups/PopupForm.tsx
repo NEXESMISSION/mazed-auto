@@ -650,7 +650,7 @@ function LocalisedInputs({
               onClick={() => setActive(l)}
               className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider transition ${
                 active === l
-                  ? "batta-gold-fill text-foreground"
+                  ? "bg-foreground text-background"
                   : "bg-surface-2 text-muted hover:text-foreground"
               }`}
             >
@@ -701,8 +701,8 @@ function RoleMultiSelect({
             }}
             className={`rounded-full border px-3 py-1.5 text-[11px] font-bold transition ${
               active
-                ? "border-[var(--gold)] bg-[var(--gold)] text-white"
-                : "border-[var(--border)] bg-surface text-muted hover:border-[var(--gold-soft)] hover:text-[var(--gold)]"
+                ? "border-foreground bg-foreground text-background"
+                : "border-[var(--border)] bg-surface text-muted hover:border-[var(--border-strong)] hover:text-foreground"
             }`}
           >
             {r.label}
