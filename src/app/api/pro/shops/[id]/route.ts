@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiTranslations } from "@/i18n/api";
 import { requireShopRole } from "@/lib/shops/routeGuard";
 import { CAN_EDIT_SHOP } from "@/lib/shops/server";
 import { sanitizeShopProfile, type ShopProfileInput } from "@/lib/shops/profile";
@@ -25,7 +26,8 @@ export async function POST(
   const body = (await req.json().catch(() => ({}))) as ShopProfileInput;
   const { patch, errors } = sanitizeShopProfile(body, id);
   if (errors.length > 0) {
-    return NextResponse.json({ error: "invalid", detail: errors.join(" ") }, { status: 400 });
+    const t = await apiTranslations(req, "pro.profileErrors");
+    return NextResponse.json({ error: "invalid", detail: errors.map((e) => t(e)).join(" ") }, { status: 400 });
   }
   if (Object.keys(patch).length === 0) return NextResponse.json({ ok: true, updated: 0 });
 

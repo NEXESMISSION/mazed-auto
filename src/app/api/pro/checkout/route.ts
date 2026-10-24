@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiTranslations } from "@/i18n/api";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
@@ -56,11 +57,11 @@ export async function POST(req: NextRequest) {
     shopId = body.shop_id;
     const role = /^[0-9a-f-]{36}$/i.test(shopId) ? await memberRole(admin, user.id, shopId) : null;
     if (!role || !CAN_EDIT_SHOP.includes(role)) {
-      return NextResponse.json({ error: "not_shop_member", detail: "Vous ne gérez pas cette boutique." }, { status: 403 });
+      return NextResponse.json({ error: "not_shop_member", detail: (await apiTranslations(req, "pro.api"))("notShopMember") }, { status: 403 });
     }
     const { data: shop } = await admin.from("shops").select("status").eq("id", shopId).maybeSingle();
     if (!shop || ["suspended", "closed", "rejected"].includes(shop.status as string)) {
-      return NextResponse.json({ error: "shop_not_allowed", detail: "Cette boutique ne peut pas souscrire d'abonnement." }, { status: 409 });
+      return NextResponse.json({ error: "shop_not_allowed", detail: (await apiTranslations(req, "pro.api"))("shopNotAllowed") }, { status: 409 });
     }
     const { data } = await admin
       .from("products")
@@ -86,7 +87,7 @@ export async function POST(req: NextRequest) {
     }
     if (!allowed) return NextResponse.json({ error: "not_owner" }, { status: 403 });
     if (listing.status !== "published") {
-      return NextResponse.json({ error: "not_published", detail: "Seule une annonce en ligne peut être boostée." }, { status: 409 });
+      return NextResponse.json({ error: "not_published", detail: (await apiTranslations(req, "pro.api"))("notPublished") }, { status: 409 });
     }
     shopId = (listing.shop_id as string | null) ?? null;
     // A shop boosts while a period is running — not in grace (brief, 0192).
@@ -102,7 +103,7 @@ export async function POST(req: NextRequest) {
         .limit(1);
       if (!period?.length) {
         return NextResponse.json(
-          { error: "no_current_period", detail: "Renouvelez l'abonnement de la boutique pour booster ses annonces." },
+          { error: "no_current_period", detail: (await apiTranslations(req, "pro.api"))("noCurrentPeriod") },
           { status: 409 },
         );
       }
@@ -120,7 +121,7 @@ export async function POST(req: NextRequest) {
 
   if (!product) {
     return NextResponse.json(
-      { error: "not_for_sale", detail: "Cette offre n'est pas encore en vente." },
+      { error: "not_for_sale", detail: (await apiTranslations(req, "pro.api"))("notForSale") },
       { status: 409 },
     );
   }

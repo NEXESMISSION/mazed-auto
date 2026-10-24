@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiTranslations } from "@/i18n/api";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest) {
     ? body.activity_type
     : null;
   if (!activity) {
-    return NextResponse.json({ error: "invalid", detail: "Choisissez votre activité." }, { status: 400 });
+    return NextResponse.json({ error: "invalid", detail: (await apiTranslations(req, "pro.api"))("chooseActivity") }, { status: 400 });
   }
   // Only the fields actually sent: an absent phone is not an invalid one.
   const sent = Object.fromEntries(
@@ -56,10 +57,11 @@ export async function POST(req: NextRequest) {
       .map((k) => [k, body[k]]),
   );
   const { patch, errors } = sanitizeShopProfile(sent, "new");
-  if (!patch.name) errors.unshift("Indiquez le nom de la boutique.");
-  if (!patch.governorate) errors.push("Choisissez un gouvernorat.");
+  if (!patch.name) errors.unshift("nameMissing");
+  if (!patch.governorate) errors.push("governorate");
   if (errors.length > 0) {
-    return NextResponse.json({ error: "invalid", detail: [...new Set(errors)].join(" ") }, { status: 400 });
+    const t = await apiTranslations(req, "pro.profileErrors");
+    return NextResponse.json({ error: "invalid", detail: [...new Set(errors)].map((e) => t(e)).join(" ") }, { status: 400 });
   }
 
   const { data: existing } = await admin
@@ -71,7 +73,7 @@ export async function POST(req: NextRequest) {
     .find((m) => m.shop && m.shop.status !== "closed");
   if (open?.shop) {
     return NextResponse.json(
-      { error: "already_has_shop", detail: "Vous avez déjà une boutique.", shopId: open.shop.id },
+      { error: "already_has_shop", detail: (await apiTranslations(req, "pro.api"))("alreadyHasShop"), shopId: open.shop.id },
       { status: 409 },
     );
   }
@@ -99,7 +101,7 @@ export async function POST(req: NextRequest) {
     .single();
   if (error || !shop) {
     if (error?.code === "23505") {
-      return NextResponse.json({ error: "already_has_shop", detail: "Vous avez déjà une boutique." }, { status: 409 });
+      return NextResponse.json({ error: "already_has_shop", detail: (await apiTranslations(req, "pro.api"))("alreadyHasShop") }, { status: 409 });
     }
     return fail("shop_create_failed", 500, error);
   }

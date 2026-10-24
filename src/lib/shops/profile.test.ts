@@ -39,7 +39,7 @@ describe("sanitizeShopProfile", () => {
 
   it("refuses a too-short name, an unknown governorate and a bad phone", () => {
     const { errors } = sanitizeShopProfile({ name: "A", governorate: "Paris", whatsapp: "abc" }, SHOP);
-    expect(errors).toHaveLength(3);
+    expect(errors.sort()).toEqual(["governorate", "nameShort", "whatsapp"]);
   });
 
   it("accepts a logo inside the shop's folder and nothing else", () => {

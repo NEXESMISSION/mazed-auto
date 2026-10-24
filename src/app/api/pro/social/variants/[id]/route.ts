@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiTranslations } from "@/i18n/api";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireShopRole } from "@/lib/shops/routeGuard";
 import { CAN_EDIT_SHOP } from "@/lib/shops/server";
@@ -31,7 +32,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   const gate = await requireShopRole(req, request.shop_id, CAN_EDIT_SHOP);
   if (gate instanceof NextResponse) return gate;
   if (request.status !== "draft") {
-    return NextResponse.json({ error: "locked", detail: "Cette publication est déjà envoyée." }, { status: 409 });
+    return NextResponse.json({ error: "locked", detail: (await apiTranslations(req, "social.api"))("locked") }, { status: 409 });
   }
 
   const input = (await req.json().catch(() => ({}))) as { body?: unknown; hashtags?: unknown; validate?: unknown };
@@ -41,19 +42,19 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
         .map((h) => `#${h.replace(/^#+/, "").replace(/\s+/g, "")}`).filter((h) => h.length > 2))].slice(0, 15)
     : ((v.hashtags as string[]) ?? []);
   if (body.length < 1 || body.length > 2000) {
-    return NextResponse.json({ error: "invalid", detail: "Le texte doit faire entre 1 et 2 000 caractères." }, { status: 400 });
+    return NextResponse.json({ error: "invalid", detail: (await apiTranslations(req, "social.api"))("textLength") }, { status: 400 });
   }
 
   const listing = await loadSocialListing(gate.admin, request.listing_id);
   if (!listing || listing.status !== "published") {
-    return NextResponse.json({ error: "listing_not_published", detail: "L'annonce n'est plus en ligne." }, { status: 409 });
+    return NextResponse.json({ error: "listing_not_published", detail: (await apiTranslations(req, "social.api"))("listingGone") }, { status: 409 });
   }
   const check = checkFacts(body, hashtags, listing.facts);
   if (!check.ok) {
     return NextResponse.json({
       error: "facts",
       unknown: check.unknown,
-      detail: `Ces chiffres ne figurent pas dans l'annonce : ${check.unknown.join(", ")}. Corrigez le texte ou l'annonce.`,
+      detail: (await apiTranslations(req, "social.api"))("facts", { numbers: check.unknown.join(", ") }),
     }, { status: 400 });
   }
 

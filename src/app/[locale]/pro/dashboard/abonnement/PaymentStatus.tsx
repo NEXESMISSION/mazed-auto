@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { CheckCircle2, Clock, Loader2, XCircle } from "lucide-react";
 
@@ -11,6 +12,7 @@ import { CheckCircle2, Clock, Loader2, XCircle } from "lucide-react";
  * Konnect's confirmation can trail the redirect.
  */
 export function PaymentStatus({ paymentId }: { paymentId: string }) {
+  const t = useTranslations("pro.paymentStatus");
   const router = useRouter();
   const [status, setStatus] = useState<string | null>(null);
   const [kind, setKind] = useState<string | null>(null);
@@ -42,29 +44,28 @@ export function PaymentStatus({ paymentId }: { paymentId: string }) {
   if (status === null) {
     return (
       <p className="flex items-center gap-2 rounded-2xl bg-surface-2 px-4 py-3 text-[13px] ring-1 ring-border">
-        <Loader2 className="size-4 animate-spin" /> Vérification de votre paiement…
+        <Loader2 className="size-4 animate-spin" /> {t("checking")}
       </p>
     );
   }
   if (status === "captured") {
     return (
       <p className="batta-tone-ok flex items-center gap-2 rounded-2xl px-4 py-3 text-[13px]">
-        <CheckCircle2 className="size-4" /> Paiement confirmé.{" "}
-        {kind === "promo" ? "Votre annonce est sponsorisée." : "Votre abonnement est actif."}
+        <CheckCircle2 className="size-4" /> {t("confirmed")}{" "}
+        {kind === "promo" ? t("sponsored") : t("active")}
       </p>
     );
   }
   if (status === "pending" || status === "pending_review") {
     return (
       <p className="batta-tone-warn flex items-center gap-2 rounded-2xl px-4 py-3 text-[13px]">
-        <Clock className="size-4" /> Paiement en cours de vérification. Rien n&apos;est activé tant qu&apos;il n&apos;est pas confirmé ;
-        cette page se met à jour toute seule.
+        <Clock className="size-4" /> {t("pending")}
       </p>
     );
   }
   return (
     <p className="batta-tone-bad flex items-center gap-2 rounded-2xl px-4 py-3 text-[13px]">
-      <XCircle className="size-4" /> Ce paiement n&apos;a pas abouti. Vous pouvez recommencer ci-dessous.
+      <XCircle className="size-4" /> {t("failed")}
     </p>
   );
 }

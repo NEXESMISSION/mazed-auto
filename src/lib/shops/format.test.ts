@@ -33,6 +33,10 @@ describe("openingHoursRows", () => {
     ]);
   });
 
+  it("names the days in Arabic on an Arabic page", () => {
+    expect(openingHoursRows({ fri: "9h – 12h" }, "ar")).toEqual([{ day: "الجمعة", hours: "9h – 12h" }]);
+  });
+
   it("ignores anything that is not a day with text", () => {
     expect(openingHoursRows({ mon: "", tue: 9, xyz: "8h" })).toEqual([]);
     expect(openingHoursRows(null)).toEqual([]);
@@ -56,6 +60,8 @@ describe("labels and types", () => {
   it("names each activity", () => {
     expect(activityLabel("location_auto")).toBe("Location de véhicules");
     expect(activityLabel("nope")).toBe("Boutique");
+    expect(activityLabel("location_auto", "ar")).toBe("كراء المركبات");
+    expect(activityLabel("nope", "ar")).toBe("متجر");
   });
 
   it("files each activity under its schema.org type", () => {

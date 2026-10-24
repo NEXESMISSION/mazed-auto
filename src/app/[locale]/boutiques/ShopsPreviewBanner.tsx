@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { Eye } from "lucide-react";
 
 /**
@@ -6,19 +7,17 @@ import { Eye } from "lucide-react";
  * preview, and how it goes live.
  */
 export function ShopsPreviewBanner({ who = "admin" }: { who?: "admin" | "owner" }) {
+  const t = useTranslations("shops.preview");
   return (
     <div className="mb-5 flex items-start gap-2.5 rounded-2xl bg-gold-faint px-4 py-3 text-[12.5px] leading-relaxed text-gold ring-1 ring-gold-soft">
       <Eye className="mt-0.5 size-4 shrink-0" />
       {who === "owner" ? (
         <p>
-          <strong>Aperçu de votre page.</strong> Les pages boutiques ne sont pas encore ouvertes au
-          public : vous seul la voyez. Profitez-en pour la compléter depuis l&apos;espace pro.
+          <strong>{t("ownerTitle")}</strong> {t("ownerBody")}
         </p>
       ) : (
         <p>
-          <strong>Aperçu administrateur.</strong> Les pages boutiques ne sont pas encore publiques :
-          un visiteur obtient une page introuvable. Elles s&apos;ouvrent à tous dès que « Boutiques
-          professionnelles » est activé dans Admin → Site → Réglages.
+          <strong>{t("adminTitle")}</strong> {t("adminBody")}
         </p>
       )}
     </div>

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiTranslations } from "@/i18n/api";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
-import { overRevealLimit, revealIpHash, REVEAL_LIMITED_DETAIL } from "@/lib/http/revealLimit";
+import { overRevealLimit, revealIpHash, revealLimitedDetail } from "@/lib/http/revealLimit";
 import { shopViewer } from "@/lib/shops/public";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
@@ -31,7 +32,7 @@ export async function POST(
 
   const ipHash = revealIpHash(req);
   if (await overRevealLimit(admin, ipHash)) {
-    return NextResponse.json({ error: "rate_limited", detail: REVEAL_LIMITED_DETAIL }, { status: 429 });
+    return NextResponse.json({ error: "rate_limited", detail: revealLimitedDetail(req) }, { status: 429 });
   }
 
   const { data: shop } = await admin
@@ -46,7 +47,7 @@ export async function POST(
   }
   if (!shop.phone && !shop.whatsapp) {
     return NextResponse.json(
-      { error: "hidden", detail: "Cette boutique n'a pas encore indiqué de numéro." },
+      { error: "hidden", detail: (await apiTranslations(req, "shops.api"))("hidden") },
       { status: 403 },
     );
   }

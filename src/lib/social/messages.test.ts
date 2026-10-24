@@ -18,7 +18,9 @@ function flatten(t: Tree, prefix = ""): Record<string, string> {
 }
 
 // A placeholder is {name} or {name, plural…}; « {Aucune photo} » is the text of a branch.
-const args = (s: string) => [...s.matchAll(/\{(\w+)\s*[,}]/g)].map((m) => m[1]).sort();
+// A set: an Arabic plural repeats its argument in the branches ({count} rather
+// than #, which can print Arabic-Indic digits), the French uses # once.
+const args = (s: string) => [...new Set([...s.matchAll(/\{(\w+)\s*[,}]/g)].map((m) => m[1]))].sort();
 
 describe("Social Publisher messages", () => {
   const f = flatten(fr as Tree);

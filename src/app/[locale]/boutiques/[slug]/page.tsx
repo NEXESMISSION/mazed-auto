@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { localeAlternates } from "@/i18n/alternates";
 import { ogLocale } from "@/i18n/routing";
 import { notFound } from "next/navigation";
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
+import { governorateLabel } from "@/lib/labels";
 import { Link } from "@/i18n/navigation";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { jsonLdSafe } from "@/lib/jsonld";
@@ -60,11 +61,19 @@ export async function generateMetadata({
   // hidden shop's name and description would ship in <title> and <meta>.
   const admin = getServiceSupabase();
   const shop = admin ? await fetchShop(slug) : null;
-  if (!admin || !shop || !(await shopViewer(admin, shop.id))) return { title: "Boutique" };
-  const title = `${shop.name} — ${activityLabel(shop.activity_type)} · Mazed Auto`;
+  const t = await getTranslations({ locale, namespace: "shops.meta" });
+  if (!admin || !shop || !(await shopViewer(admin, shop.id))) return { title: t("shopFallbackTitle") };
+  const activity = activityLabel(shop.activity_type, locale);
+  const title = t("shopTitle", { name: shop.name, activity });
+  // The owner's own description when there is one — written in whatever
+  // language they wrote it — else a line in the page's language.
   const description =
     shop.description?.slice(0, 160)
-    ?? `${shop.name}, ${activityLabel(shop.activity_type).toLowerCase()} à ${shop.governorate}. Annonces et contact.`;
+    ?? t("shopDescription", {
+      name: shop.name,
+      activity: locale === "ar" ? activity : activity.toLowerCase(),
+      governorate: governorateLabel(shop.governorate, locale),
+    });
   const picture = shopMediaUrl(shop.banner_path) ?? shopMediaUrl(shop.logo_path);
   const url = `${siteUrl()}/${locale}/boutiques/${shop.slug}`;
   return {
@@ -90,6 +99,7 @@ export default async function BoutiquePage({
   const viewer = await shopViewer(admin, shop.id);
   if (!viewer) notFound();
   const locale = await getLocale();
+  const t = await getTranslations("shops");
 
   const { data } = await admin
     .from("listings")
@@ -103,14 +113,16 @@ export default async function BoutiquePage({
   const verified = isShopVerified(shop);
   const logo = shopMediaUrl(shop.logo_path);
   const banner = shopMediaUrl(shop.banner_path);
-  const hours = openingHoursRows(shop.opening_hours);
-  const place = [shop.address, shop.city, shop.governorate].filter(Boolean).join(", ");
+  const hours = openingHoursRows(shop.opening_hours, locale);
+  const place = [shop.address, shop.city, governorateLabel(shop.governorate, locale)]
+    .filter(Boolean)
+    .join(locale === "ar" ? "، " : ", ");
 
   // What a search engine files this page as. No telephone, on purpose: the
   // number is revealed on request only, and JSON-LD is the easiest thing on a
   // page to scrape.
   const site = siteUrl();
-  const url = `${site}/fr/boutiques/${shop.slug}`;
+  const url = `${site}/${locale}/boutiques/${shop.slug}`;
   const hoursSpec = openingHoursSpec(shop.opening_hours);
   const jsonLd = {
     "@context": "https://schema.org",
@@ -133,10 +145,10 @@ export default async function BoutiquePage({
       ? {
           hasOfferCatalog: {
             "@type": "OfferCatalog",
-            name: `Annonces de ${shop.name}`,
+            name: t("meta.catalogName", { name: shop.name }),
             itemListElement: listings.slice(0, 30).map((l) => ({
               "@type": "Offer",
-              url: `${site}/fr/annonces/${l.id}`,
+              url: `${site}/${locale}/annonces/${l.id}`,
               priceCurrency: "TND",
               ...(l.price != null && !l.price_on_request ? { price: Number(l.price) } : {}),
               itemOffered: { "@type": "Product", name: l.title },
@@ -182,13 +194,13 @@ export default async function BoutiquePage({
             <h1 className="text-[22px] font-black tracking-tight lg:text-[28px]">{shop.name}</h1>
             {verified && (
               <span className="inline-flex items-center gap-1 rounded-full bg-gold-faint px-2.5 py-1 text-[11px] font-extrabold text-gold ring-1 ring-gold-soft">
-                <BadgeCheck className="size-3.5" /> Boutique vérifiée
+                <BadgeCheck className="size-3.5" /> {t("store.verified")}
               </span>
             )}
           </div>
           <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12.5px] text-muted">
             <span className="inline-flex items-center gap-1 font-bold">
-              <Store className="size-3.5" /> {activityLabel(shop.activity_type)}
+              <Store className="size-3.5" /> {activityLabel(shop.activity_type, locale)}
             </span>
             <span className="inline-flex items-center gap-1">
               <MapPin className="size-3.5" /> {place}
@@ -206,11 +218,11 @@ export default async function BoutiquePage({
         {/* The annonces */}
         <section className="order-2 lg:order-1">
           <h2 className="text-[16px] font-extrabold">
-            {listings.length} annonce{listings.length > 1 ? "s" : ""} en ligne
+            {t("store.online", { count: listings.length })}
           </h2>
           {listings.length === 0 ? (
             <p className="mt-3 rounded-2xl border border-border bg-surface p-6 text-center text-[13px] text-muted">
-              Cette boutique n&apos;a pas d&apos;annonce en ligne pour le moment.
+              {t("store.empty")}
             </p>
           ) : (
             <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -231,10 +243,9 @@ export default async function BoutiquePage({
         {/* Contact and hours */}
         <aside className="order-1 space-y-3 lg:order-2">
           <section className="rounded-2xl border border-border bg-surface p-4">
-            <h2 className="text-[13px] font-extrabold">Contacter la boutique</h2>
+            <h2 className="text-[13px] font-extrabold">{t("store.contactTitle")}</h2>
             <p className="mt-1 text-[11.5px] leading-relaxed text-muted">
-              Vous traitez directement avec la boutique : Mazed n&apos;intervient pas dans la vente
-              ni dans la location.
+              {t("store.contactBody")}
             </p>
             <div className="mt-3">
               <ContactReveal
@@ -247,13 +258,13 @@ export default async function BoutiquePage({
           {hours.length > 0 && (
             <section className="rounded-2xl border border-border bg-surface p-4">
               <h2 className="inline-flex items-center gap-1.5 text-[13px] font-extrabold">
-                <Clock className="size-3.5" /> Horaires
+                <Clock className="size-3.5" /> {t("store.hours")}
               </h2>
               <dl className="mt-2 space-y-1 text-[12.5px]">
                 {hours.map((h) => (
                   <div key={h.day} className="flex justify-between gap-3">
                     <dt className="text-muted">{h.day}</dt>
-                    <dd className="font-bold text-foreground">{h.hours}</dd>
+                    <dd className="font-bold text-foreground" dir="auto">{h.hours}</dd>
                   </div>
                 ))}
               </dl>
@@ -264,7 +275,7 @@ export default async function BoutiquePage({
             href={"/boutiques" as never}
             className="inline-flex items-center gap-1 text-[12.5px] font-bold text-gold hover:underline"
           >
-            <ArrowLeft className="size-3.5 rtl:rotate-180" /> Toutes les boutiques
+            <ArrowLeft className="size-3.5 rtl:rotate-180" /> {t("store.allShops")}
           </Link>
         </aside>
       </div>

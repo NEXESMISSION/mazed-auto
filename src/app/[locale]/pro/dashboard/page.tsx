@@ -1,7 +1,9 @@
 /* eslint-disable react-hooks/purity -- Server Component.
  * Reads the clock once per request to say how many days a subscription has
  * left; there is no client render to replay. */
+import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
+import { formatDate } from "@/lib/dates";
 import { getProContext } from "@/lib/shops/proContext";
 import { quotaStatus } from "@/lib/shops/server";
 import { shopsGate } from "@/lib/shops/public";
@@ -24,7 +26,7 @@ export default async function ProSummaryPage() {
     quotaStatus(admin, user.id, shop.id, shop.activity_type as ListingType),
     admin
       .from("subscriptions")
-      .select("starts_at, ends_at, grace_ends_at, status, reason, product:products (name_fr)")
+      .select("starts_at, ends_at, grace_ends_at, status, reason, product:products (name_fr, name_ar)")
       .eq("shop_id", shop.id)
       .neq("status", "cancelled")
       .order("ends_at", { ascending: false })
@@ -34,11 +36,16 @@ export default async function ProSummaryPage() {
     shopsGate(admin),
   ]);
 
+  const locale = await getLocale();
+  const t = await getTranslations("pro.summary");
+  const tb = await getTranslations("pro.bucket");
+  type Product = { name_fr: string; name_ar: string | null };
   const sub = subRes.data as
     | { starts_at: string; ends_at: string; grace_ends_at: string; status: string; reason: string | null;
-        product: { name_fr: string } | { name_fr: string }[] | null }
+        product: Product | Product[] | null }
     | null;
-  const planName = sub ? (Array.isArray(sub.product) ? sub.product[0]?.name_fr : sub.product?.name_fr) ?? "—" : null;
+  const product = sub ? (Array.isArray(sub.product) ? sub.product[0] : sub.product) : null;
+  const planName = sub ? (locale === "ar" && product?.name_ar ? product.name_ar : product?.name_fr) ?? "—" : null;
   const now = Date.now();
   const daysLeft = sub ? Math.ceil((new Date(sub.ends_at).getTime() - now) / 86_400_000) : null;
   const current = sub != null && daysLeft != null && daysLeft > 0;
@@ -46,36 +53,41 @@ export default async function ProSummaryPage() {
 
   const counts: Record<string, number> = {};
   for (const r of countRes.data ?? []) counts[r.status as string] = (counts[r.status as string] ?? 0) + 1;
-  const bucketWord = quota.bucket === "parts" ? "pièces" : "véhicules";
+  const bucketWord = tb(quota.bucket === "parts" ? "parts" : "vehicles");
   const pct = quota.limit > 0 ? Math.min(100, Math.round((quota.used / quota.limit) * 100)) : 0;
-  const date = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+  const date = (iso: string) => formatDate(iso, locale);
 
   // What needs doing, most urgent first.
   const alerts: { tone: "bad" | "warn"; text: string; href?: string; cta?: string }[] = [];
   if (shop.status === "suspended") {
-    alerts.push({ tone: "bad", text: `Boutique suspendue${shop.rejection_reason ? ` : ${shop.rejection_reason}` : "."} Ses annonces ne peuvent pas être mises en ligne.` });
+    // The reason is the admin's own words, shown as written.
+    alerts.push({ tone: "bad", text: shop.rejection_reason ? t("alerts.suspendedBecause", { reason: shop.rejection_reason }) : t("alerts.suspended") });
   } else if (shop.status === "draft") {
-    alerts.push({ tone: "warn", text: "Choisissez une formule pour ouvrir votre boutique : elle sera en ligne dès le paiement confirmé.", href: "/pro/dashboard/abonnement", cta: "Choisir" });
+    alerts.push({ tone: "warn", text: t("alerts.draft"), href: "/pro/dashboard/abonnement", cta: t("cta.choose") });
   } else if (shop.status !== "active") {
-    alerts.push({ tone: "warn", text: "Boutique en attente de validation par notre équipe." });
+    alerts.push({ tone: "warn", text: t("alerts.pending") });
   }
   // A draft has never had a period; the line above already says what to do.
   if (!current && !inGrace && shop.status !== "draft") {
-    alerts.push({ tone: "bad", text: "Aucun abonnement en cours : vos annonces ne peuvent pas être mises en ligne.", href: "/pro/dashboard/abonnement", cta: "Choisir une formule" });
+    alerts.push({ tone: "bad", text: t("alerts.noSubscription"), href: "/pro/dashboard/abonnement", cta: t("cta.choosePlan") });
   } else if (inGrace) {
-    alerts.push({ tone: "bad", text: `Abonnement terminé le ${date(sub!.ends_at)}. Vos annonces restent en ligne jusqu'au ${date(sub!.grace_ends_at)}, mais rien de nouveau ne part.`, href: "/pro/dashboard/abonnement", cta: "Renouveler" });
+    alerts.push({ tone: "bad", text: t("alerts.grace", { ended: date(sub!.ends_at), grace: date(sub!.grace_ends_at) }), href: "/pro/dashboard/abonnement", cta: t("cta.renew") });
   } else if (daysLeft != null && daysLeft <= 14) {
-    alerts.push({ tone: "warn", text: `Votre abonnement se termine dans ${daysLeft} jour${daysLeft > 1 ? "s" : ""}, le ${date(sub!.ends_at)}.`, href: "/pro/dashboard/abonnement", cta: "Renouveler" });
+    alerts.push({ tone: "warn", text: t("alerts.endsSoon", { days: daysLeft, date: date(sub!.ends_at) }), href: "/pro/dashboard/abonnement", cta: t("cta.renew") });
   }
   if (quota.limit > 0 && quota.remaining === 0) {
-    alerts.push({ tone: "warn", text: `Les ${quota.limit} ${bucketWord} de votre formule sont en ligne : retirez-en une pour en publier une autre.`, href: "/pro/dashboard/annonces", cta: "Gérer" });
+    alerts.push({ tone: "warn", text: t("alerts.quotaFull", { count: quota.limit, bucket: bucketWord }), href: "/pro/dashboard/annonces", cta: t("cta.manage") });
   }
-  const missing = [!shop.logo_path && "un logo", !shop.description && "une description", !shop.phone && !shop.whatsapp && "un numéro"].filter(Boolean);
+  const missing = [
+    !shop.logo_path && t("alerts.missingLogo"),
+    !shop.description && t("alerts.missingDescription"),
+    !shop.phone && !shop.whatsapp && t("alerts.missingPhone"),
+  ].filter(Boolean);
   if (missing.length > 0) {
-    alerts.push({ tone: "warn", text: `Votre page n'a pas encore ${missing.join(", ")}.`, href: "/pro/dashboard/boutique", cta: "Compléter" });
+    alerts.push({ tone: "warn", text: t("alerts.missing", { items: missing.join(locale === "ar" ? "، " : ", ") }), href: "/pro/dashboard/boutique", cta: t("cta.complete") });
   }
   if (counts.rejected) {
-    alerts.push({ tone: "warn", text: `${counts.rejected} annonce${counts.rejected > 1 ? "s" : ""} à corriger.`, href: "/pro/dashboard/annonces", cta: "Voir" });
+    alerts.push({ tone: "warn", text: t("alerts.rejected", { count: counts.rejected }), href: "/pro/dashboard/annonces", cta: t("cta.see") });
   }
 
   return (
@@ -104,7 +116,7 @@ export default async function ProSummaryPage() {
       <div className="grid gap-3 sm:grid-cols-2">
         <section className="rounded-2xl border border-border bg-surface p-4">
           <h2 className="inline-flex items-center gap-1.5 text-[12px] font-extrabold uppercase tracking-[0.12em] text-muted">
-            <Megaphone className="size-3.5" /> Annonces en ligne
+            <Megaphone className="size-3.5" /> {t("online")}
           </h2>
           <p className="batta-tabular mt-2 text-[28px] font-black">
             {quota.used}
@@ -114,84 +126,81 @@ export default async function ProSummaryPage() {
             <div className="h-full rounded-full bg-gold" style={{ width: `${pct}%` }} />
           </div>
           <p className="mt-2 text-[11.5px] text-muted">
-            En vérification ou publiées. Les brouillons et les annonces retirées ne comptent pas.
+            {t("onlineHint")}
           </p>
           <Link href={"/annonces/nouvelle" as never} className="batta-btn-luxe tap-target mt-3 inline-flex px-3.5 py-2 text-[12.5px]">
-            <Plus className="size-4" /> Nouvelle annonce
+            <Plus className="size-4" /> {t("newListing")}
           </Link>
         </section>
 
         <section className="rounded-2xl border border-border bg-surface p-4">
           <h2 className="inline-flex items-center gap-1.5 text-[12px] font-extrabold uppercase tracking-[0.12em] text-muted">
-            <CalendarClock className="size-3.5" /> Abonnement
+            <CalendarClock className="size-3.5" /> {t("subscription")}
           </h2>
           {sub ? (
             <>
               <p className="mt-2 text-[20px] font-black">{planName}</p>
               <p className="mt-1 text-[12.5px] text-muted">
                 {current
-                  ? `Jusqu'au ${date(sub.ends_at)} — ${daysLeft} jour${daysLeft! > 1 ? "s" : ""} restant${daysLeft! > 1 ? "s" : ""}.`
-                  : `Terminé le ${date(sub.ends_at)}.`}
+                  ? t("until", { days: daysLeft!, date: date(sub.ends_at) })
+                  : t("ended", { date: date(sub.ends_at) })}
               </p>
               {sub.reason === "migration" && (
-                <p className="mt-1 text-[11.5px] text-muted">Offert à l&apos;ouverture des boutiques.</p>
+                <p className="mt-1 text-[11.5px] text-muted">{t("gift")}</p>
               )}
             </>
           ) : (
-            <p className="mt-2 text-[13px] text-muted">Aucun abonnement.</p>
+            <p className="mt-2 text-[13px] text-muted">{t("noSubscription")}</p>
           )}
           <Link href={"/pro/dashboard/abonnement" as never} className="mt-2 inline-block text-[12px] font-bold text-gold hover:underline">
-            Gérer l&apos;abonnement
+            {t("manageSubscription")}
           </Link>
         </section>
 
         <section className="rounded-2xl border border-border bg-surface p-4">
           <h2 className="inline-flex items-center gap-1.5 text-[12px] font-extrabold uppercase tracking-[0.12em] text-muted">
-            <BadgeCheck className="size-3.5" /> Vérification
+            <BadgeCheck className="size-3.5" /> {t("verification")}
           </h2>
           <p className="mt-2 text-[14px] font-bold">
             {isShopVerified(shop)
-              ? "Boutique vérifiée"
+              ? t("verified")
               : shop.verification_status === "pending"
-                ? "Justificatifs en cours d'examen"
+                ? t("verificationPending")
                 : shop.verification_status === "rejected"
-                  ? "Vérification refusée"
-                  : "Non vérifiée"}
+                  ? t("verificationRejected")
+                  : t("notVerified")}
           </p>
           <p className="mt-1 text-[11.5px] leading-relaxed text-muted">
-            Le badge « Boutique vérifiée » est accordé par Mazed après contrôle de vos justificatifs.
-            Il ne s&apos;achète pas.
+            {t("verificationHint")}
           </p>
           {!isShopVerified(shop) && shop.verification_status !== "pending" && (
             <Link href={"/pro/dashboard/boutique#justificatifs" as never} className="mt-2 inline-block text-[12.5px] font-bold text-gold hover:underline">
-              Envoyer mes justificatifs
+              {t("sendDocuments")}
             </Link>
           )}
         </section>
 
         <section className="rounded-2xl border border-border bg-surface p-4">
           <h2 className="inline-flex items-center gap-1.5 text-[12px] font-extrabold uppercase tracking-[0.12em] text-muted">
-            <Eye className="size-3.5" /> Votre page
+            <Eye className="size-3.5" /> {t("yourPage")}
           </h2>
           <p className="mt-2 text-[14px] font-bold">
-            {gate.enabled ? "Publique" : "Pas encore publique"}
+            {gate.enabled ? t("public") : t("notPublic")}
           </p>
           <p className="mt-1 text-[11.5px] leading-relaxed text-muted">
-            {gate.enabled
-              ? "Les acheteurs trouvent votre boutique dans l'annuaire et depuis chacune de vos annonces."
-              : "Les pages boutiques ouvrent bientôt. Vous pouvez déjà voir la vôtre et la préparer."}
+            {gate.enabled ? t("publicHint") : t("notPublicHint")}
           </p>
           {shop.status === "active" && (
             <Link href={`/boutiques/${shop.slug}` as never} className="mt-2 inline-block text-[12.5px] font-bold text-gold hover:underline">
-              Voir ma page
+              {t("viewPage")}
             </Link>
           )}
         </section>
       </div>
 
       <p className="text-[11.5px] text-muted">
-        {counts.published ?? 0} publiée{(counts.published ?? 0) > 1 ? "s" : ""} · {counts.pending_review ?? 0} en vérification ·{" "}
-        {counts.draft ?? 0} brouillon{(counts.draft ?? 0) > 1 ? "s" : ""} · {counts.expired ?? 0} expirée{(counts.expired ?? 0) > 1 ? "s" : ""}
+        {t("countPublished", { count: counts.published ?? 0 })} · {t("countReview", { count: counts.pending_review ?? 0 })} ·{" "}
+        {t("countDrafts", { count: counts.draft ?? 0 })} · {t("countExpired", { count: counts.expired ?? 0 })}
       </p>
     </div>
   );

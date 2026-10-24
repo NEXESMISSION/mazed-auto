@@ -24,6 +24,9 @@ export type ShopProfileInput = {
   banner_path?: unknown;
 };
 
+/** What is wrong with a submitted profile — a key under `pro.profileErrors`. */
+export type ShopProfileError = "nameMissing" | "nameShort" | "phone" | "whatsapp" | "governorate" | "hours" | "image";
+
 export type ShopProfilePatch = Partial<{
   name: string;
   description: string | null;
@@ -57,25 +60,25 @@ export function normalizePhone(v: unknown): string | null | undefined {
 export function sanitizeShopProfile(
   body: ShopProfileInput,
   shopId: string,
-): { patch: ShopProfilePatch; errors: string[] } {
+): { patch: ShopProfilePatch; errors: ShopProfileError[] } {
   const patch: ShopProfilePatch = {};
-  const errors: string[] = [];
+  const errors: ShopProfileError[] = [];
 
   if ("name" in body) {
     const name = text(body.name, 80);
-    if (!name || name.length < 2) errors.push("Le nom doit faire au moins 2 caractères.");
+    if (!name || name.length < 2) errors.push("nameShort");
     else patch.name = name;
   }
   if ("description" in body) patch.description = text(body.description, 2000);
   for (const key of ["phone", "whatsapp"] as const) {
     if (!(key in body)) continue;
     const p = normalizePhone(body[key]);
-    if (p === undefined) errors.push(key === "phone" ? "Numéro de téléphone invalide." : "Numéro WhatsApp invalide.");
+    if (p === undefined) errors.push(key);
     else patch[key] = p;
   }
   if ("governorate" in body) {
     const g = text(body.governorate, 60);
-    if (!g || !(GOVERNORATES as readonly string[]).includes(g)) errors.push("Choisissez un gouvernorat.");
+    if (!g || !(GOVERNORATES as readonly string[]).includes(g)) errors.push("governorate");
     else patch.governorate = g;
   }
   if ("city" in body) patch.city = text(body.city, 60);
@@ -91,7 +94,7 @@ export function sanitizeShopProfile(
       }
       patch.opening_hours = out;
     } else {
-      errors.push("Horaires illisibles.");
+      errors.push("hours");
     }
   }
 
@@ -107,7 +110,7 @@ export function sanitizeShopProfile(
       && path.startsWith(`shops/${shopId}/`)
       && !path.includes("..")
       && /^[A-Za-z0-9/_.-]+$/.test(path);
-    if (!inFolder) errors.push("Image refusée : elle n'appartient pas à cette boutique.");
+    if (!inFolder) errors.push("image");
     else patch[key] = path;
   }
 

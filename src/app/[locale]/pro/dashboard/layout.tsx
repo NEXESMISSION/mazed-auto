@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
+import { governorateLabel } from "@/lib/labels";
 import { Link } from "@/i18n/navigation";
 import { getProContext } from "@/lib/shops/proContext";
 import { activityLabel, isShopVerified, shopInitials } from "@/lib/shops/format";
@@ -10,10 +11,11 @@ import { ProTabs } from "./ProTabs";
 import { socialGate } from "@/lib/social/gate";
 import { ArrowUpRight, BadgeCheck, Store } from "lucide-react";
 
-export const metadata: Metadata = {
-  title: "Espace pro — Mazed Auto",
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "pro.layout" });
+  return { title: t("metaTitle"), robots: { index: false, follow: false } };
+}
 
 export const dynamic = "force-dynamic";
 
@@ -26,10 +28,11 @@ export const dynamic = "force-dynamic";
  */
 export default async function ProDashboardLayout({ children }: { children: React.ReactNode }) {
   const ctx = await getProContext();
+  const locale = await getLocale();
   if (ctx.kind === "anonymous") {
-    const locale = await getLocale();
     redirect(`/${locale}/login?next=${encodeURIComponent(`/${locale}/pro/dashboard`)}`);
   }
+  const t = await getTranslations("pro.layout");
 
   if (ctx.kind === "no_shop") {
     const admin = getServiceSupabase();
@@ -39,25 +42,23 @@ export default async function ProDashboardLayout({ children }: { children: React
         <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-surface-2 text-muted ring-1 ring-border">
           <Store className="size-6" />
         </span>
-        <h1 className="mt-4 text-[22px] font-extrabold tracking-tight">Vous n&apos;avez pas de boutique</h1>
+        <h1 className="mt-4 text-[22px] font-extrabold tracking-tight">{t("noShopTitle")}</h1>
         <p className="mt-2 text-[13.5px] leading-relaxed text-muted">
-          L&apos;espace pro sert aux concessionnaires, loueurs et vendeurs de pièces.{" "}
-          {canOpen
-            ? "Ouvrez la vôtre en quelques minutes : elle est en ligne dès le paiement de la formule."
-            : "L'ouverture d'une boutique en ligne arrive bientôt ; en attendant, notre équipe peut l'ouvrir pour vous."}
+          {t("noShopBody")}{" "}
+          {canOpen ? t("noShopCanOpen") : t("noShopSoon")}
         </p>
         <div className="mt-5 flex flex-wrap justify-center gap-2">
           <Link
             href={(canOpen ? "/pro/creer" : "/contact") as never}
             className="batta-btn-luxe tap-target px-4 py-2.5 text-[13px]"
           >
-            {canOpen ? "Ouvrir ma boutique" : "Nous contacter"}
+            {canOpen ? t("open") : t("contact")}
           </Link>
           <Link
             href={"/account/listings" as never}
             className="tap-target rounded-full border border-border px-4 py-2.5 text-[13px] font-bold hover:border-gold-soft"
           >
-            Mes annonces personnelles
+            {t("personal")}
           </Link>
         </div>
       </main>
@@ -80,19 +81,19 @@ export default async function ProDashboardLayout({ children }: { children: React
           )}
         </span>
         <div className="min-w-0 flex-1">
-          <span className="batta-eyebrow">Espace pro</span>
+          <span className="batta-eyebrow">{t("eyebrow")}</span>
           <h1 className="flex items-center gap-1.5 truncate text-[20px] font-extrabold tracking-tight lg:text-[26px]">
             {shop.name}
-            {isShopVerified(shop) && <BadgeCheck className="size-5 shrink-0 text-gold" aria-label="Boutique vérifiée" />}
+            {isShopVerified(shop) && <BadgeCheck className="size-5 shrink-0 text-gold" aria-label={t("verified")} />}
           </h1>
-          <p className="text-[12px] text-muted">{activityLabel(shop.activity_type)} · {shop.governorate}</p>
+          <p className="text-[12px] text-muted">{activityLabel(shop.activity_type, locale)} · {governorateLabel(shop.governorate, locale)}</p>
         </div>
         {shop.status === "active" && (
           <Link
             href={`/boutiques/${shop.slug}` as never}
             className="hidden shrink-0 items-center gap-1 text-[12.5px] font-bold text-gold hover:underline sm:inline-flex"
           >
-            Voir ma page <ArrowUpRight className="size-3.5" />
+            {t("viewPage")} <ArrowUpRight className="size-3.5 rtl:-scale-x-100" />
           </Link>
         )}
       </header>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useToast } from "@/components/ui/Toast";
 import { Loader2 } from "lucide-react";
@@ -25,6 +26,7 @@ export function PostButton({
   confirm?: string;
   success?: string;
 }) {
+  const t = useTranslations("pro.post");
   const router = useRouter();
   const { toast } = useToast();
   const [busy, setBusy] = useState(false);
@@ -40,7 +42,7 @@ export function PostButton({
       });
       const j = (await res.json().catch(() => ({}))) as { redirect?: string; detail?: string; error?: string };
       if (!res.ok) {
-        toast(j.detail ?? "Action impossible pour le moment.", "error");
+        toast(j.detail ?? t("failed"), "error");
         return;
       }
       if (j.redirect) {
@@ -51,7 +53,7 @@ export function PostButton({
       if (success) toast(success, "success");
       router.refresh();
     } catch {
-      toast("Erreur réseau.", "error");
+      toast(t("network"), "error");
     } finally {
       setBusy(false);
     }

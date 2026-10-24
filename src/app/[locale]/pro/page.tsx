@@ -1,18 +1,17 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { shopsGate } from "@/lib/shops/public";
 import { getProContext } from "@/lib/shops/proContext";
-import { plansForSale } from "@/lib/shops/plans";
+import { planName, plansForSale } from "@/lib/shops/plans";
+import { currencyLabel, formatTND } from "@/lib/utils";
 import { ShopsPreviewBanner } from "../boutiques/ShopsPreviewBanner";
 import { BadgeCheck, Car, KeyRound, Wrench, Check, ArrowRight } from "lucide-react";
 import { OG_IMAGE } from "@/lib/ogImage";
 import { localeAlternates } from "@/i18n/alternates";
 import { ogLocale } from "@/i18n/routing";
-
-const DESCRIPTION =
-  "Concessionnaires, loueurs et vendeurs de pièces : votre boutique sur Mazed Auto, vos annonces dans le catalogue, vos clients vous appellent directement.";
 
 export async function generateMetadata({
   params,
@@ -20,11 +19,14 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "pro.landing" });
+  const title = t("metaTitle");
+  const description = t("metaDescription");
   return {
-    title: "Boutiques professionnelles — Mazed Auto",
-    description: DESCRIPTION,
+    title,
+    description,
     alternates: localeAlternates(locale, "/pro"),
-    openGraph: { type: "website", url: `/${locale}/pro`, title: "Boutiques professionnelles — Mazed Auto", description: DESCRIPTION, siteName: "Mazed Auto", locale: ogLocale(locale), images: [OG_IMAGE] },
+    openGraph: { type: "website", url: `/${locale}/pro`, title, description, siteName: "Mazed Auto", locale: ogLocale(locale), images: [OG_IMAGE] },
   };
 }
 
@@ -46,81 +48,80 @@ export default async function ProLandingPage() {
 
   const [plans, ctx] = await Promise.all([plansForSale(admin), getProContext()]);
   const hasShop = ctx.kind === "shop";
+  const locale = await getLocale();
+  const t = await getTranslations("pro.landing");
 
   return (
     <main className="mx-auto max-w-4xl px-4 pb-16 pt-6 lg:px-8 lg:pt-10">
       {gate.preview && <ShopsPreviewBanner />}
 
       <header className="text-center">
-        <span className="batta-eyebrow">Professionnels</span>
+        <span className="batta-eyebrow">{t("eyebrow")}</span>
         <h1 className="mt-1 text-[28px] font-black leading-tight tracking-tight lg:text-[42px]">
-          Votre boutique sur Mazed Auto
+          {t("title")}
         </h1>
         <p className="mx-auto mt-3 max-w-2xl text-[13.5px] leading-relaxed text-muted lg:text-base">
-          Une page à votre nom, toutes vos annonces dans le catalogue, et vos clients qui vous
-          appellent directement. Mazed ne prend aucune commission sur vos ventes ni vos locations.
+          {t("intro")}
         </p>
         <Link
           href={(hasShop ? "/pro/dashboard" : "/pro/creer") as never}
           className="batta-btn-luxe tap-target mt-5 inline-flex h-12 items-center gap-2 px-6 text-[14px]"
         >
-          {hasShop ? "Mon espace pro" : "Ouvrir ma boutique"} <ArrowRight className="size-4 rtl:rotate-180" />
+          {hasShop ? t("mySpace") : t("open")} <ArrowRight className="size-4 rtl:rotate-180" />
         </Link>
       </header>
 
       <section className="mt-10 grid gap-3 sm:grid-cols-3">
-        {[
-          { Icon: Car, title: "Vente de véhicules", body: "Concessionnaires et revendeurs : voitures, utilitaires, motos." },
-          { Icon: KeyRound, title: "Location", body: "Prix par jour, conditions et disponibilité, sans calendrier à tenir." },
-          { Icon: Wrench, title: "Pièces auto", body: "Votre stock en ligne, avec la compatibilité marque / modèle / année." },
-        ].map(({ Icon, title, body }) => (
-          <div key={title} className="rounded-2xl border border-border bg-surface p-4">
+        {([
+          { Icon: Car, key: "sale" },
+          { Icon: KeyRound, key: "rental" },
+          { Icon: Wrench, key: "parts" },
+        ] as const).map(({ Icon, key }) => (
+          <div key={key} className="rounded-2xl border border-border bg-surface p-4">
             <Icon className="size-5 text-gold" />
-            <h2 className="mt-2 text-[14.5px] font-extrabold">{title}</h2>
-            <p className="mt-1 text-[12.5px] leading-relaxed text-muted">{body}</p>
+            <h2 className="mt-2 text-[14.5px] font-extrabold">{t(`kinds.${key}.title`)}</h2>
+            <p className="mt-1 text-[12.5px] leading-relaxed text-muted">{t(`kinds.${key}.body`)}</p>
           </div>
         ))}
       </section>
 
       <section className="mt-10">
-        <h2 className="text-center text-[20px] font-extrabold tracking-tight">Les formules</h2>
+        <h2 className="text-center text-[20px] font-extrabold tracking-tight">{t("plansTitle")}</h2>
         {plans.length === 0 ? (
           <p className="mx-auto mt-3 max-w-xl rounded-2xl border border-border bg-surface p-5 text-center text-[13px] text-muted">
-            Les formules seront en vente très bientôt.{" "}
-            <Link href={"/contact" as never} className="font-bold text-gold hover:underline">Contactez-nous</Link>{" "}
-            pour ouvrir votre boutique dès maintenant.
+            {t.rich("plansSoon", {
+              link: (chunks) => <Link href={"/contact" as never} className="font-bold text-gold hover:underline">{chunks}</Link>,
+            })}
           </p>
         ) : (
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
             {plans.map((p) => (
               <div key={p.code} className="flex flex-col rounded-2xl border border-border bg-surface p-5">
-                <h3 className="text-[16px] font-extrabold">{p.name}</h3>
+                <h3 className="text-[16px] font-extrabold">{planName(p, locale)}</h3>
                 <p className="batta-tabular mt-2 text-[30px] font-black">
-                  {p.price.toLocaleString("fr-FR")} <span className="text-[14px] font-bold text-muted">TND / {p.durationDays} j</span>
+                  {formatTND(p.price, locale)}{" "}
+                  <span className="text-[14px] font-bold text-muted">{currencyLabel(locale)} {t("perDays", { days: p.durationDays })}</span>
                 </p>
                 <ul className="mt-3 space-y-1.5 text-[12.5px] text-foreground/85">
-                  <li className="flex gap-2"><Check className="mt-0.5 size-3.5 shrink-0 text-gold" /> {p.limits.vehicles} véhicules en ligne (vente ou location)</li>
-                  <li className="flex gap-2"><Check className="mt-0.5 size-3.5 shrink-0 text-gold" /> ou {p.limits.parts.toLocaleString("fr-FR")} pièces en ligne</li>
-                  <li className="flex gap-2"><Check className="mt-0.5 size-3.5 shrink-0 text-gold" /> Brouillons illimités</li>
+                  <li className="flex gap-2"><Check className="mt-0.5 size-3.5 shrink-0 text-gold" /> {t("vehicles", { count: p.limits.vehicles })}</li>
+                  <li className="flex gap-2"><Check className="mt-0.5 size-3.5 shrink-0 text-gold" /> {t("parts", { count: formatTND(p.limits.parts, locale) })}</li>
+                  <li className="flex gap-2"><Check className="mt-0.5 size-3.5 shrink-0 text-gold" /> {t("drafts")}</li>
                 </ul>
               </div>
             ))}
           </div>
         )}
         <ul className="mx-auto mt-5 max-w-2xl space-y-1.5 text-[12px] leading-relaxed text-muted">
-          <li>• Le nombre d&apos;annonces s&apos;entend pour votre activité : véhicules pour la vente et la location, pièces pour les pièces.</li>
-          <li>• Les brouillons et les annonces retirées ne comptent pas.</li>
-          <li>• Renouvellement à votre initiative : aucun prélèvement automatique.</li>
-          <li>• À la fin d&apos;un abonnement, vos annonces sont mises en pause, jamais supprimées.</li>
+          {(["bucket", "drafts", "renewal", "end"] as const).map((k) => (
+            <li key={k}>• {t(`rules.${k}`)}</li>
+          ))}
         </ul>
       </section>
 
       <section className="mt-10 flex items-start gap-3 rounded-2xl border border-border bg-surface p-5">
         <BadgeCheck className="mt-0.5 size-5 shrink-0 text-gold" />
         <p className="text-[13px] leading-relaxed text-muted">
-          <strong className="text-foreground">Le badge « Boutique vérifiée » ne s&apos;achète pas.</strong> Il est
-          accordé par notre équipe après contrôle de vos justificatifs (RNE, patente), que vous déposez
-          depuis votre espace pro. Les particuliers, eux, publient gratuitement une voiture et cinq pièces.
+          {t.rich("badge", { b: (chunks) => <strong className="text-foreground">{chunks}</strong> })}
         </p>
       </section>
     </main>

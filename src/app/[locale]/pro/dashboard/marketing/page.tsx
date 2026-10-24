@@ -1,4 +1,5 @@
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
+import { formatDate } from "@/lib/dates";
 import { getProContext } from "@/lib/shops/proContext";
 import { CAN_EDIT_SHOP } from "@/lib/shops/server";
 import { socialGate, shopMayUseAi } from "@/lib/social/gate";
@@ -34,6 +35,7 @@ export default async function MarketingPage({
   if (ctx.kind !== "shop") return null;
   const { admin, shop, role } = ctx;
   const t = await getTranslations("social");
+  const locale = await getLocale();
   const gate = await socialGate(admin);
   if (!gate.visible) return <p className="rounded-2xl border border-border bg-surface p-6 text-center text-[13px] text-muted">{t("soon")}</p>;
   const sp = await searchParams;
@@ -62,7 +64,7 @@ export default async function MarketingPage({
     account: { name: string } | { name: string }[] | null;
   };
   const jobs = (jobsRes.data ?? []) as unknown as Job[];
-  const when = (iso: string) => new Date(iso).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  const when = (iso: string) => formatDate(iso, locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
   const errorKey = sp.social_error && ["denied", "state", "forbidden", "meta", "no_pages", "not_configured"].includes(sp.social_error) ? sp.social_error : null;
   const Icon = ({ network }: { network: string }) => (network === "instagram" ? <Instagram className="size-4" /> : <Facebook className="size-4" />);
 
@@ -147,7 +149,12 @@ export default async function MarketingPage({
                       </a>
                     )}
                   </div>
-                  {j.last_error && j.status !== "published" && <p className="mt-0.5 text-[11.5px] text-muted">{j.last_error}</p>}
+                  {j.last_error && j.status !== "published" && (
+                    <p className="mt-0.5 text-[11.5px] text-muted">
+                      {/* The cancel route stores its own French line; Meta's errors are shown as Meta wrote them. */}
+                      {j.last_error === "Annulée par la boutique." ? t("api.cancelledByShop") : j.last_error}
+                    </p>
+                  )}
                   {canManage && <JobActions id={j.id} status={j.status} needsCheck={j.needs_remote_check} />}
                 </li>
               );

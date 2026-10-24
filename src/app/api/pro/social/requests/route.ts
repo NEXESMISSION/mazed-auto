@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiTranslations } from "@/i18n/api";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireShopRole } from "@/lib/shops/routeGuard";
 import { CAN_EDIT_SHOP } from "@/lib/shops/server";
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
     .filter((n): n is SocialNetwork => n === "facebook" || n === "instagram");
   const language: Language = body.language === "tn" ? "tn" : "fr";
   if (!/^[0-9a-f-]{36}$/i.test(listingId) || networks.length === 0) {
-    return NextResponse.json({ error: "bad_request", detail: "Choisissez une annonce et au moins un réseau." }, { status: 400 });
+    return NextResponse.json({ error: "bad_request", detail: (await apiTranslations(req, "social.api"))("pickListing") }, { status: 400 });
   }
 
   const admin0 = getServiceSupabase();
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest) {
   const { admin, user } = gate;
   if (!(await socialGate(admin)).visible) return NextResponse.json({ error: "not_available" }, { status: 404 });
   if (listing.status !== "published") {
-    return NextResponse.json({ error: "listing_not_published", detail: "Seule une annonce en ligne peut être diffusée." }, { status: 409 });
+    return NextResponse.json({ error: "listing_not_published", detail: (await apiTranslations(req, "social.api"))("listingNotPublished") }, { status: 409 });
   }
   // Each request may call the model twice per network.
   if (await overLimit(admin, `social_generate:${user.id}`, 30, 3600)) return tooMany();

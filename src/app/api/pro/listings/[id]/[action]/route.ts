@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiTranslations, localeFromRequest } from "@/i18n/api";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireShopRole } from "@/lib/shops/routeGuard";
 import { CAN_EDIT_SHOP } from "@/lib/shops/server";
-import { publicationErrorFromDb } from "@/lib/publication";
+import { localizeRefusal, publicationErrorFromDb } from "@/lib/publication";
 import { refusalResponse } from "@/lib/http/refusal";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
@@ -44,10 +45,12 @@ export async function POST(
   });
   if (error) {
     const refusal = publicationErrorFromDb(error);
-    return refusal ? refusalResponse(refusal) : fail(`listing_${action}_failed`, 500, error);
+    return refusal
+      ? refusalResponse(localizeRefusal(refusal, localeFromRequest(req)))
+      : fail(`listing_${action}_failed`, 500, error);
   }
   if (data !== "paused" && data !== "resumed") {
-    return NextResponse.json({ error: data, detail: "Cette annonce ne peut pas changer d'état ainsi." }, { status: 409 });
+    return NextResponse.json({ error: data, detail: (await apiTranslations(req, "pro.api"))("badTransition") }, { status: 409 });
   }
   logAction(req, gate.user, `listing.${action}`, { id, shopId: listing.shop_id });
   return NextResponse.json({ ok: true, status: data });

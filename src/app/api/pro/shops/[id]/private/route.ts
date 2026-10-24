@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiTranslations } from "@/i18n/api";
 import { requireShopRole } from "@/lib/shops/routeGuard";
 import { CAN_EDIT_SHOP } from "@/lib/shops/server";
 import { logAction } from "@/lib/activity";
@@ -37,7 +38,7 @@ export async function POST(
     row[key] = typeof v === "string" && v.trim() ? v.trim().slice(0, max) : null;
   }
   if (row.contact_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.contact_email)) {
-    return NextResponse.json({ error: "invalid", detail: "Adresse e-mail invalide." }, { status: 400 });
+    return NextResponse.json({ error: "invalid", detail: (await apiTranslations(req, "pro.api"))("badEmail") }, { status: 400 });
   }
   if (Object.keys(row).length === 0) return NextResponse.json({ ok: true, updated: 0 });
 

@@ -6,6 +6,7 @@ import { isSameOrigin } from "@/lib/sameOrigin";
 import { fail } from "@/lib/http/errors";
 import { refuseIfSuspended } from "@/lib/http/suspended";
 import { memberRole, type MemberRole } from "@/lib/shops/server";
+import { apiTranslations } from "@/i18n/api";
 
 /**
  * The gate in front of every /api/pro/shops/[id]/** route: same origin, signed
@@ -37,7 +38,7 @@ export async function requireShopRole(
   const role = /^[0-9a-f-]{36}$/i.test(shopId) ? await memberRole(admin, user.id, shopId) : null;
   if (!role || !roles.includes(role)) {
     return NextResponse.json(
-      { error: "not_shop_member", detail: "Vous ne pouvez pas modifier cette boutique." },
+      { error: "not_shop_member", detail: (await apiTranslations(req, "pro.api"))("cannotEdit") },
       { status: 403 },
     );
   }

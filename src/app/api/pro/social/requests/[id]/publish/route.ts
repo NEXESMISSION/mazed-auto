@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiTranslations } from "@/i18n/api";
 import { createHash } from "node:crypto";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireShopRole } from "@/lib/shops/routeGuard";
@@ -42,12 +43,12 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
 
   const body = (await req.json().catch(() => ({}))) as { consent?: unknown; accounts?: Record<string, unknown> };
   if (body.consent !== true) {
-    return NextResponse.json({ error: "consent_required", detail: "Cochez l'autorisation de publication pour continuer." }, { status: 400 });
+    return NextResponse.json({ error: "consent_required", detail: (await apiTranslations(req, "social.api"))("consentRequired") }, { status: 400 });
   }
   if (await overLimit(admin, `social_publish:${user.id}`, 20, 3600)) return tooMany();
 
   const wanted = (["facebook", "instagram"] as const).filter((n) => typeof body.accounts?.[n] === "string");
-  if (wanted.length === 0) return NextResponse.json({ error: "bad_request", detail: "Choisissez au moins un compte." }, { status: 400 });
+  if (wanted.length === 0) return NextResponse.json({ error: "bad_request", detail: (await apiTranslations(req, "social.api"))("pickAccount") }, { status: 400 });
 
   const { data: variants } = await admin
     .from("social_content_variants")
@@ -57,7 +58,9 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   const byNetwork = new Map((variants ?? []).map((v) => [v.network as string, v]));
   const missing = wanted.filter((n) => !byNetwork.get(n)?.validated_at);
   if (missing.length) {
-    return NextResponse.json({ error: "variant_not_validated", detail: `Validez d'abord le texte ${missing.join(" et ")}.` }, { status: 400 });
+    const t = await apiTranslations(req, "social.api");
+    const names = missing.map((n) => t(`network.${n === "instagram" ? "instagram" : "facebook"}`));
+    return NextResponse.json({ error: "variant_not_validated", detail: t("validateFirst", { networks: names.join(t("and")) }) }, { status: 400 });
   }
 
   const { data: consent, error: cErr } = await admin
@@ -84,11 +87,11 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
       jobId = (existing?.id as string | undefined) ?? null;
     } else {
       // The database said why: an account of another shop, an inactive account, an annonce gone offline…
-      const reason = error?.message ?? "refusé";
+      const reason = error?.message ?? (await apiTranslations(req, "social.api"))("refused");
       outcomes.push({ network, job_id: null, outcome: { status: "refused", error: reason } });
       continue;
     }
-    outcomes.push({ network, job_id: jobId, outcome: jobId ? await runJob(admin, jobId) : { status: "refused", error: "job introuvable" } });
+    outcomes.push({ network, job_id: jobId, outcome: jobId ? await runJob(admin, jobId) : { status: "refused", error: (await apiTranslations(req, "social.api"))("jobMissing") } });
   }
 
   await admin.from("social_publication_requests").update({ status: "submitted", updated_at: new Date().toISOString() }).eq("id", id).eq("status", "draft");

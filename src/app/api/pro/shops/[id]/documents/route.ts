@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiTranslations } from "@/i18n/api";
 import { requireShopRole } from "@/lib/shops/routeGuard";
 import { CAN_EDIT_SHOP } from "@/lib/shops/server";
 import { logAction } from "@/lib/activity";
@@ -39,7 +40,7 @@ export async function POST(
   if (body.action === "upload_url") {
     const ext = typeof body.ext === "string" && EXTS.has(body.ext.toLowerCase()) ? body.ext.toLowerCase() : null;
     if (!ext) {
-      return NextResponse.json({ error: "bad_type", detail: "PDF, JPEG ou PNG uniquement." }, { status: 400 });
+      return NextResponse.json({ error: "bad_type", detail: (await apiTranslations(req, "pro.api"))("badType") }, { status: 400 });
     }
     const path = `shops/${id}/doc-${Date.now()}-${Math.round(Math.random() * 1e6)}.${ext}`;
     const { data, error } = await admin.storage.from("shop-documents").createSignedUploadUrl(path);
@@ -58,7 +59,7 @@ export async function POST(
       .select("id", { count: "exact", head: true })
       .eq("shop_id", id);
     if ((count ?? 0) >= MAX_DOCUMENTS) {
-      return NextResponse.json({ error: "too_many", detail: "Dix justificatifs au plus." }, { status: 400 });
+      return NextResponse.json({ error: "too_many", detail: (await apiTranslations(req, "pro.api"))("tooMany") }, { status: 400 });
     }
 
     // The file must really be there: a recorded document that points at
@@ -67,7 +68,7 @@ export async function POST(
     const name = path.slice(folder.length + 1);
     const { data: found } = await admin.storage.from("shop-documents").list(folder, { search: name, limit: 1 });
     if (!found || found.length === 0) {
-      return NextResponse.json({ error: "file_missing", detail: "Le fichier n'a pas été reçu." }, { status: 400 });
+      return NextResponse.json({ error: "file_missing", detail: (await apiTranslations(req, "pro.api"))("fileMissing") }, { status: 400 });
     }
 
     const { error } = await admin.from("shop_documents").insert({ shop_id: id, kind, storage_path: path });

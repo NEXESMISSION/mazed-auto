@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { GOVERNORATES } from "@/lib/governorates";
@@ -12,9 +13,7 @@ import { siteUrl } from "@/lib/siteUrl";
 import { OG_IMAGE } from "@/lib/ogImage";
 import { localeAlternates } from "@/i18n/alternates";
 import { ogLocale } from "@/i18n/routing";
-
-const DESCRIPTION =
-  "Concessionnaires, loueurs et vendeurs de pièces auto en Tunisie : leurs annonces et leurs coordonnées.";
+import { governorateLabel } from "@/lib/labels";
 
 // Filters (?activite, ?gov, ?verifie) are views of one page: they all point
 // search engines at the unfiltered directory, in the page's language.
@@ -24,11 +23,14 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "shops.meta" });
+  const title = t("directoryTitle");
+  const description = t("directoryDescription");
   return {
-    title: "Boutiques — Mazed Auto",
-    description: DESCRIPTION,
+    title,
+    description,
     alternates: localeAlternates(locale, "/boutiques"),
-    openGraph: { type: "website", url: `/${locale}/boutiques`, title: "Boutiques — Mazed Auto", description: DESCRIPTION, siteName: "Mazed Auto", locale: ogLocale(locale), images: [OG_IMAGE] },
+    openGraph: { type: "website", url: `/${locale}/boutiques`, title, description, siteName: "Mazed Auto", locale: ogLocale(locale), images: [OG_IMAGE] },
   };
 }
 
@@ -55,6 +57,8 @@ export default async function BoutiquesPage({
   const gate = await shopsGate(admin);
   if (!gate.visible) notFound();
 
+  const locale = await getLocale();
+  const t = await getTranslations("shops");
   const sp = await searchParams;
   const activity = sp.activite ? ACTIVITY_SLUG[sp.activite] ?? null : null;
   const gov = sp.gov && (GOVERNORATES as readonly string[]).includes(sp.gov) ? sp.gov : null;
@@ -104,11 +108,11 @@ export default async function BoutiquesPage({
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "ItemList",
-    name: "Boutiques professionnelles",
+    name: t("meta.listName"),
     itemListElement: shops.slice(0, 50).map((s, i) => ({
       "@type": "ListItem",
       position: i + 1,
-      url: `${site}/fr/boutiques/${s.slug}`,
+      url: `${site}/${locale}/boutiques/${s.slug}`,
       name: s.name,
     })),
   };
@@ -119,41 +123,39 @@ export default async function BoutiquesPage({
       {gate.preview && <ShopsPreviewBanner />}
 
       <header>
-        <span className="batta-eyebrow">Professionnels</span>
-        <h1 className="mt-1 text-[26px] font-black tracking-tight lg:text-[34px]">Boutiques</h1>
+        <span className="batta-eyebrow">{t("directory.eyebrow")}</span>
+        <h1 className="mt-1 text-[26px] font-black tracking-tight lg:text-[34px]">{t("directory.title")}</h1>
         <p className="mt-1.5 max-w-2xl text-[13px] leading-relaxed text-muted">
-          Concessionnaires, loueurs et vendeurs de pièces. Leurs annonces sont aussi dans le
-          catalogue ; ici, vous voyez tout ce qu&apos;une boutique propose, et vous l&apos;appelez
-          directement.
+          {t("directory.intro")}
         </p>
       </header>
 
-      <nav className="mt-5 flex flex-wrap gap-2" aria-label="Activité">
-        <Link href={href({ activite: undefined })} className={chip(!activity)}>Toutes</Link>
-        <Link href={href({ activite: "vente" })} className={chip(activity === "vente_auto")}>Vente de véhicules</Link>
-        <Link href={href({ activite: "location" })} className={chip(activity === "location_auto")}>Location</Link>
-        <Link href={href({ activite: "pieces" })} className={chip(activity === "pieces_auto")}>Pièces auto</Link>
+      <nav className="mt-5 flex flex-wrap gap-2" aria-label={t("directory.activityNav")}>
+        <Link href={href({ activite: undefined })} className={chip(!activity)}>{t("directory.all")}</Link>
+        <Link href={href({ activite: "vente" })} className={chip(activity === "vente_auto")}>{t("directory.sale")}</Link>
+        <Link href={href({ activite: "location" })} className={chip(activity === "location_auto")}>{t("directory.rental")}</Link>
+        <Link href={href({ activite: "pieces" })} className={chip(activity === "pieces_auto")}>{t("directory.parts")}</Link>
         <Link
           href={href({ verifie: verifiedOnly ? undefined : "1" })}
           className={chip(verifiedOnly)}
         >
-          <BadgeCheck className="me-1 size-3.5" /> Vérifiées
+          <BadgeCheck className="me-1 size-3.5" /> {t("directory.verified")}
         </Link>
       </nav>
 
-      <nav className="mt-2 flex items-center gap-1.5 overflow-x-auto whitespace-nowrap pb-1 text-[12px]" aria-label="Gouvernorat">
-        <Link href={href({ gov: undefined })} className={`${chip(!gov)} shrink-0`}>Toute la Tunisie</Link>
+      <nav className="mt-2 flex items-center gap-1.5 overflow-x-auto whitespace-nowrap pb-1 text-[12px]" aria-label={t("directory.governorateNav")}>
+        <Link href={href({ gov: undefined })} className={`${chip(!gov)} shrink-0`}>{t("directory.allTunisia")}</Link>
         {GOVERNORATES.map((g) => (
-          <Link key={g} href={href({ gov: g })} className={`${chip(gov === g)} shrink-0`}>{g}</Link>
+          <Link key={g} href={href({ gov: g })} className={`${chip(gov === g)} shrink-0`}>{governorateLabel(g, locale)}</Link>
         ))}
       </nav>
 
       {shops.length === 0 ? (
         <div className="mt-10 rounded-2xl border border-border bg-surface p-8 text-center">
           <Store className="mx-auto size-7 text-muted" />
-          <p className="mt-2 text-[13.5px] font-bold">Aucune boutique ne correspond.</p>
+          <p className="mt-2 text-[13.5px] font-bold">{t("directory.none")}</p>
           <Link href={"/boutiques" as never} className="mt-1 inline-block text-[12.5px] font-bold text-gold hover:underline">
-            Voir toutes les boutiques
+            {t("directory.seeAll")}
           </Link>
         </div>
       ) : (
@@ -179,17 +181,17 @@ export default async function BoutiquesPage({
                     <span className="flex items-center gap-1.5">
                       <span className="truncate text-[14.5px] font-extrabold text-foreground">{s.name}</span>
                       {isShopVerified(s) && (
-                        <BadgeCheck className="size-4 shrink-0 text-gold" aria-label="Boutique vérifiée" />
+                        <BadgeCheck className="size-4 shrink-0 text-gold" aria-label={t("directory.verifiedShop")} />
                       )}
                     </span>
                     <span className="mt-0.5 block text-[11.5px] font-bold text-muted">
-                      {activityLabel(s.activity_type)}
+                      {activityLabel(s.activity_type, locale)}
                     </span>
                     <span className="mt-1 flex items-center gap-3 text-[11.5px] text-muted">
                       <span className="inline-flex items-center gap-1">
-                        <MapPin className="size-3" /> {s.city ? `${s.city}, ${s.governorate}` : s.governorate}
+                        <MapPin className="size-3" /> {[s.city, governorateLabel(s.governorate, locale)].filter(Boolean).join(locale === "ar" ? "، " : ", ")}
                       </span>
-                      <span>{n} annonce{n > 1 ? "s" : ""}</span>
+                      <span>{t("directory.listings", { count: n })}</span>
                     </span>
                   </span>
                 </Link>

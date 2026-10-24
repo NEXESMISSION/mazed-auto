@@ -11,6 +11,12 @@ export const ACTIVITY_LABEL: Record<ShopActivity, string> = {
   pieces_auto: "Pièces auto",
 };
 
+const ACTIVITY_LABEL_AR: Record<ShopActivity, string> = {
+  vente_auto: "بيع المركبات",
+  location_auto: "كراء المركبات",
+  pieces_auto: "قطع غيار السيارات",
+};
+
 /** The `?activite=` values of the directory, readable in a URL. */
 export const ACTIVITY_SLUG: Record<string, ShopActivity> = {
   vente: "vente_auto",
@@ -18,7 +24,9 @@ export const ACTIVITY_SLUG: Record<string, ShopActivity> = {
   pieces: "pieces_auto",
 };
 
-export function activityLabel(a: string | null | undefined): string {
+/** The activity in `locale` (French by default — the admin console's language). */
+export function activityLabel(a: string | null | undefined, locale: string = "fr"): string {
+  if (locale === "ar") return ACTIVITY_LABEL_AR[a as ShopActivity] ?? "متجر";
   return ACTIVITY_LABEL[a as ShopActivity] ?? "Boutique";
 }
 
@@ -41,8 +49,8 @@ export function shopInitials(name: string): string {
 /**
  * Opening hours as stored in `shops.opening_hours`: one free-text entry per
  * day — `{ "mon": "8h30 – 18h", "sun": "Fermé" }`. Returned in week order with
- * French day names; days the shop did not fill in are left out rather than
- * guessed at.
+ * the day names of `locale`; days the shop did not fill in are left out rather
+ * than guessed at. The hours themselves are the owner's words, shown as typed.
  */
 export const SHOP_DAYS = [
   ["mon", "Lundi"],
@@ -54,13 +62,23 @@ export const SHOP_DAYS = [
   ["sun", "Dimanche"],
 ] as const;
 
-export function openingHoursRows(raw: unknown): { day: string; hours: string }[] {
+const DAY_AR: Record<string, string> = {
+  mon: "الاثنين", tue: "الثلاثاء", wed: "الأربعاء", thu: "الخميس", fri: "الجمعة", sat: "السبت", sun: "الأحد",
+};
+
+/** A `SHOP_DAYS` key's name in `locale`. */
+export function dayLabel(key: string, locale: string = "fr"): string {
+  if (locale === "ar") return DAY_AR[key] ?? key;
+  return SHOP_DAYS.find(([k]) => k === key)?.[1] ?? key;
+}
+
+export function openingHoursRows(raw: unknown, locale: string = "fr"): { day: string; hours: string }[] {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return [];
   const o = raw as Record<string, unknown>;
   const rows: { day: string; hours: string }[] = [];
-  for (const [key, label] of SHOP_DAYS) {
+  for (const [key] of SHOP_DAYS) {
     const v = o[key];
-    if (typeof v === "string" && v.trim()) rows.push({ day: label, hours: v.trim().slice(0, 60) });
+    if (typeof v === "string" && v.trim()) rows.push({ day: dayLabel(key, locale), hours: v.trim().slice(0, 60) });
   }
   return rows;
 }
