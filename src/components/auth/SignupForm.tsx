@@ -4,8 +4,10 @@ import { useEffect, useState, useTransition } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { PhoneInput } from "./PhoneInput";
 import { PasswordInput } from "./PasswordInput";
-import { Loader2, Smartphone } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { normalizeE164, validatePhone } from "@/lib/tunisia";
+import { usePhoneProblem } from "./usePhoneProblem";
+import { OtpStep, otpErrorKey } from "./OtpStep";
 import { Modal } from "@/components/ui/Modal";
 import { TermsContent, PrivacyContent } from "@/components/legal/LegalContent";
 
@@ -29,6 +31,9 @@ import { TermsContent, PrivacyContent } from "@/components/legal/LegalContent";
 // when the auth.users row is inserted.
 export function SignupForm() {
   const t = useTranslations();
+  const ts = useTranslations("auth.signup");
+  const to = useTranslations("auth.otp");
+  const phoneProblem = usePhoneProblem();
   const locale = useLocale();
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -69,19 +74,13 @@ export function SignupForm() {
       });
       const j = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
       if (!res.ok || !j.ok) {
-        const map: Record<string, string> = {
-          phone_taken: "Ce numéro est déjà associé à un compte. Connectez-vous.",
-          weak_password: "Mot de passe trop court (8 caractères minimum).",
-          invalid_phone: "Numéro de téléphone invalide.",
-          rate_limited: "Trop de tentatives. Réessayez dans un instant.",
-          phone_not_verified: "Vérification du numéro requise. Réessayez.",
-        };
-        setError(map[j.error ?? ""] ?? "Impossible de créer le compte. Réessayez.");
+        const known = ["phone_taken", "weak_password", "invalid_phone", "rate_limited", "phone_not_verified"];
+        setError(ts(`errors.${known.includes(j.error ?? "") ? j.error : "generic"}`));
         setOtpPhase(false);
         return;
       }
     } catch {
-      setError("Impossible de joindre le serveur. Réessayez.");
+      setError(t("auth.errors.network"));
       setOtpPhase(false);
       return;
     }
@@ -99,7 +98,7 @@ export function SignupForm() {
     setError(null);
     const check = validatePhone(dialCode, phoneNumber);
     if (!check.ok) {
-      setError(check.reason);
+      setError(phoneProblem(check, dialCode));
       return;
     }
     const normalizedPhone = normalizeE164(dialCode, phoneNumber);
@@ -107,11 +106,11 @@ export function SignupForm() {
       // normalizeE164 only returns null on degenerate input that
       // validatePhone already caught. Defensive fallback so a future
       // schema change in one helper can't ship a confusing form error.
-      setError("Numéro invalide.");
+      setError(t("phone.invalid"));
       return;
     }
     if (!accepted) {
-      setError("Veuillez accepter les conditions d'utilisation et la politique de confidentialité.");
+      setError(ts("mustAccept"));
       return;
     }
     startTransition(async () => {
@@ -157,7 +156,7 @@ export function SignupForm() {
         }
         // Bad phone number → the only case the user must fix before continuing.
         if (res.status === 400 && j.error === "invalid_phone") {
-          setError("Numéro de téléphone invalide.");
+          setError(ts("errors.invalid_phone"));
           return;
         }
         // SMS IS configured (we didn't get configured:false) but the send
@@ -166,11 +165,11 @@ export function SignupForm() {
         // (phone_not_verified) so the account can't be created without a code,
         // and the user would just see the confusing generic error. Surface the
         // real problem and let them retry.
-        setError("Impossible d'envoyer le code SMS. Réessayez dans un instant.");
+        setError(to("errors.sendFailed"));
       } catch {
         // Couldn't even reach our API — surface it. performSignup would also
         // fail to reach it, and with SMS on it couldn't create the account.
-        setError("Impossible de joindre le serveur. Vérifiez votre connexion et réessayez.");
+        setError(t("auth.errors.network"));
       }
     });
   }
@@ -180,7 +179,7 @@ export function SignupForm() {
     setOtpError(null);
     const clean = otpCode.replace(/\D/g, "");
     if (clean.length !== 6) {
-      setOtpError("Entrez le code à 6 chiffres.");
+      setOtpError(to("enterCode"));
       return;
     }
     if (!verifiedPhone) return;
@@ -196,15 +195,9 @@ export function SignupForm() {
           await performSignup(verifiedPhone);
           return;
         }
-        const map: Record<string, string> = {
-          wrong_code: "Code incorrect.",
-          expired: "Code expiré. Redemandez-en un.",
-          no_code: "Aucun code en cours. Redemandez-en un.",
-          too_many_attempts: "Trop de tentatives. Redemandez un code.",
-        };
-        setOtpError(map[j.error ?? ""] ?? "Échec de la vérification.");
+        setOtpError(to(otpErrorKey(j.error)));
       } catch {
-        setOtpError("Erreur réseau. Réessayez.");
+        setOtpError(to("errors.network"));
       }
     });
   }
@@ -225,17 +218,17 @@ export function SignupForm() {
         } else if (res.status === 429 && j.error === "cooldown") {
           setOtpCooldown(j.retryAfter ?? 60);
         } else {
-          setOtpError("Échec du renvoi. Réessayez.");
+          setOtpError(to("errors.resendFailed"));
         }
       } catch {
-        setOtpError("Erreur réseau. Réessayez.");
+        setOtpError(to("errors.network"));
       }
     });
   }
 
   if (otpPhase) {
     return (
-      <PhoneVerify
+      <OtpStep
         phone={verifiedPhone ?? ""}
         code={otpCode}
         onCodeChange={setOtpCode}
@@ -249,16 +242,18 @@ export function SignupForm() {
         cooldown={otpCooldown}
         error={otpError}
         pending={isPending}
+        submitLabel={to("verifyAndCreate")}
+        backLabel={to("editInfo")}
       />
     );
   }
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <Field label="Nom complet" value={fullName} onChange={setFullName} required autoComplete="name" />
+      <Field label={ts("fullName")} value={fullName} onChange={setFullName} required autoComplete="name" />
 
       <label className="block">
-        <span className="batta-eyebrow text-[10px]">Téléphone</span>
+        <span className="batta-eyebrow text-[10px]">{t("phone.label")}</span>
         <PhoneInput
           dialCode={dialCode}
           onDialCodeChange={setDialCode}
@@ -269,7 +264,7 @@ export function SignupForm() {
       </label>
 
       <PasswordInput
-        label="Mot de passe (min 8)"
+        label={ts("password")}
         value={password}
         onChange={setPassword}
         required
@@ -289,23 +284,27 @@ export function SignupForm() {
           className="mt-0.5 size-4 shrink-0 accent-[var(--gold)]"
         />
         <span>
-          <label htmlFor="signup-accept" className="cursor-pointer">J&apos;accepte les</label>{" "}
-          <button
-            type="button"
-            onClick={(e) => { e.preventDefault(); setLegalModal("terms"); }}
-            className="font-bold text-batta-cream underline transition hover:text-gold-bright"
-          >
-            conditions d&apos;utilisation
-          </button>{" "}
-          <label htmlFor="signup-accept" className="cursor-pointer">et la</label>{" "}
-          <button
-            type="button"
-            onClick={(e) => { e.preventDefault(); setLegalModal("privacy"); }}
-            className="font-bold text-batta-cream underline transition hover:text-gold-bright"
-          >
-            politique de confidentialité
-          </button>
-          .
+          {ts.rich("accept", {
+            l: (chunks) => <label htmlFor="signup-accept" className="cursor-pointer">{chunks}</label>,
+            terms: (chunks) => (
+              <button
+                type="button"
+                onClick={(e) => { e.preventDefault(); setLegalModal("terms"); }}
+                className="font-bold text-batta-cream underline transition hover:text-gold-bright"
+              >
+                {chunks}
+              </button>
+            ),
+            privacy: (chunks) => (
+              <button
+                type="button"
+                onClick={(e) => { e.preventDefault(); setLegalModal("privacy"); }}
+                className="font-bold text-batta-cream underline transition hover:text-gold-bright"
+              >
+                {chunks}
+              </button>
+            ),
+          })}
         </span>
       </div>
 
@@ -315,11 +314,11 @@ export function SignupForm() {
       <button
         type="submit"
         disabled={isPending || !accepted}
-        title={!accepted && !isPending ? "Acceptez les conditions d'utilisation" : undefined}
+        title={!accepted && !isPending ? ts("acceptFirst") : undefined}
         className="batta-btn-luxe tap-target w-full px-5 py-3 text-[13.5px] disabled:opacity-50"
       >
         {isPending ? (
-          <><Loader2 className="inline size-4 animate-spin" /> Création du compte…</>
+          <><Loader2 className="inline size-4 animate-spin" /> {ts("submitting")}</>
         ) : (
           t("nav.signup")
         )}
@@ -329,93 +328,13 @@ export function SignupForm() {
         open={legalModal !== null}
         onClose={() => setLegalModal(null)}
         size="lg"
-        title={legalModal === "privacy" ? "Politique de confidentialité" : "Conditions d'utilisation"}
+        title={legalModal === "privacy" ? ts("privacy") : ts("terms")}
       >
         {legalModal === "privacy" ? <PrivacyContent /> : <TermsContent />}
       </Modal>
       <p className="text-center text-[11px] text-batta-muted">
-        Compte partenaire (agence, expert, banque) ? Créez un compte ici puis
-        candidatez depuis <span className="text-batta-cream">Compte</span>.
+        {ts.rich("partnerNote", { b: (chunks) => <span className="text-batta-cream">{chunks}</span> })}
       </p>
-    </form>
-  );
-}
-
-/**
- * SMS code-entry step shown between the signup form and account creation,
- * only when WinSMS is configured server-side. Mirrors the "check your email"
- * card's visual language.
- */
-function PhoneVerify({
-  phone, code, onCodeChange, onVerify, onResend, onBack, cooldown, error, pending,
-}: {
-  phone: string;
-  code: string;
-  onCodeChange: (v: string) => void;
-  onVerify: (e: React.FormEvent) => void;
-  onResend: () => void;
-  onBack: () => void;
-  cooldown: number;
-  error: string | null;
-  pending: boolean;
-}) {
-  return (
-    <form onSubmit={onVerify} className="batta-frame-gold relative p-6 text-center">
-      <span className="batta-monogram batta-monogram-filled mx-auto mb-3 size-12 text-[18px]">
-        <Smartphone className="size-5" strokeWidth={1.75} />
-      </span>
-      <h2 className="batta-serif text-[18px] font-semibold text-batta-cream">
-        Vérifiez votre numéro
-      </h2>
-      <p className="mt-2 text-sm text-batta-cream/75">
-        Entrez le code à 6 chiffres envoyé par SMS au{" "}
-        <span className="font-bold text-batta-cream">{phone}</span>.
-      </p>
-
-      <input
-        type="text"
-        inputMode="numeric"
-        autoComplete="one-time-code"
-        maxLength={6}
-        value={code}
-        onChange={(e) => onCodeChange(e.target.value.replace(/\D/g, ""))}
-        placeholder="••••••"
-        aria-label="Code de vérification à 6 chiffres"
-        className="mt-5 w-full rounded-xl border border-batta-gold/25 bg-batta-surface-2 px-4 py-3 text-center text-[22px] font-bold tracking-[0.4em] text-batta-cream placeholder:text-batta-muted focus:border-batta-gold focus:outline-none focus:ring-1 focus:ring-batta-gold/40"
-      />
-
-      {error && (
-        <p role="alert" aria-live="assertive" className="batta-tone-bad mt-3 rounded-lg px-3 py-2 text-xs">{error}</p>
-      )}
-
-      <div className="mt-5 flex flex-col gap-2">
-        <button
-          type="submit"
-          disabled={pending || code.replace(/\D/g, "").length !== 6}
-          className="batta-btn-luxe tap-target w-full px-5 py-3 text-[13px] disabled:opacity-50"
-        >
-          {pending ? (
-            <><Loader2 className="inline size-4 animate-spin" /> Vérification…</>
-          ) : (
-            "Vérifier et créer le compte"
-          )}
-        </button>
-        <button
-          type="button"
-          onClick={onResend}
-          disabled={cooldown > 0 || pending}
-          className="batta-btn-ghost-gold tap-target w-full px-5 py-3 text-[13px] disabled:opacity-50"
-        >
-          {cooldown > 0 ? `Renvoyer le code (${cooldown}s)` : "Renvoyer le code"}
-        </button>
-        <button
-          type="button"
-          onClick={onBack}
-          className="text-[12px] text-batta-cream/70 hover:text-gold-bright"
-        >
-          Modifier mes informations
-        </button>
-      </div>
     </form>
   );
 }

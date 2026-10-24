@@ -8,6 +8,7 @@ import { stripLocalePrefix } from "@/i18n/routing";
 import { PhoneInput } from "./PhoneInput";
 import { PasswordInput } from "./PasswordInput";
 import { normalizeE164, validatePhone } from "@/lib/tunisia";
+import { usePhoneProblem } from "./usePhoneProblem";
 
 /**
  * Reject anything that, despite starting with "/", could be parsed by
@@ -45,6 +46,8 @@ function safeNextPath(raw: string | null): string {
  */
 export function LoginForm() {
   const t = useTranslations();
+  const ta = useTranslations("auth.login");
+  const phoneProblem = usePhoneProblem();
   const locale = useLocale();
   const searchParams = useSearchParams();
   const rawNext = searchParams.get("next");
@@ -64,12 +67,12 @@ export function LoginForm() {
     // pending spinner (audit #26).
     const check = validatePhone(dialCode, phoneNumber);
     if (!check.ok) {
-      setError(check.reason);
+      setError(phoneProblem(check, dialCode));
       return;
     }
     const phone = normalizeE164(dialCode, phoneNumber);
     if (!phone) {
-      setError("Numéro invalide.");
+      setError(t("phone.invalid"));
       return;
     }
     startTransition(async () => {
@@ -98,17 +101,15 @@ export function LoginForm() {
           // along. Name the failures that are not about the credentials.
           setError(
             data.error === "rate_limited"
-              ? "Trop de tentatives. Patientez quelques minutes avant de réessayer — vos identifiants ne sont peut-être pas en cause."
+              ? ta("errors.rateLimited")
               : res.status >= 500
-                ? "Service indisponible pour le moment. Réessayez dans un instant."
-                : "Identifiants invalides. Vérifiez le numéro et le mot de passe.",
+                ? ta("errors.unavailable")
+                : ta("errors.invalid"),
           );
           return;
         }
       } catch {
-        setError(
-          "Impossible de joindre le serveur. Vérifiez votre connexion et réessayez.",
-        );
+        setError(t("auth.errors.network"));
         return;
       }
       window.location.assign(destination);
@@ -118,7 +119,7 @@ export function LoginForm() {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <label className="block">
-        <span className="batta-eyebrow text-[10px]">Téléphone</span>
+        <span className="batta-eyebrow text-[10px]">{t("phone.label")}</span>
         <PhoneInput
           dialCode={dialCode}
           onDialCodeChange={setDialCode}
@@ -129,7 +130,7 @@ export function LoginForm() {
       </label>
 
       <PasswordInput
-        label="Mot de passe"
+        label={t("auth.password.label")}
         value={password}
         onChange={setPassword}
         required
@@ -144,7 +145,7 @@ export function LoginForm() {
         className="batta-btn-luxe tap-target w-full px-5 py-3 text-[13.5px] disabled:opacity-50"
       >
         {isPending ? (
-          <><Loader2 className="inline size-4 animate-spin" /> Connexion…</>
+          <><Loader2 className="inline size-4 animate-spin" /> {ta("submitting")}</>
         ) : (
           t("nav.login")
         )}

@@ -3,7 +3,7 @@
 import { Link } from "@/i18n/navigation";
 
 import { useEffect, useState, useTransition } from "react";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { CheckCircle2 } from "lucide-react";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import { PasswordInput } from "./PasswordInput";
@@ -20,6 +20,7 @@ import { PasswordInput } from "./PasswordInput";
  * back to /forgot-password.
  */
 export function ResetPasswordForm() {
+  const t = useTranslations("auth");
   const locale = useLocale();
   const [ready, setReady] = useState<"loading" | "ok" | "invalid">("loading");
   const [password, setPassword] = useState("");
@@ -65,11 +66,11 @@ export function ResetPasswordForm() {
     e.preventDefault();
     setError(null);
     if (password.length < 8) {
-      setError("Le mot de passe doit comporter au moins 8 caractères.");
+      setError(t("password.tooShort"));
       return;
     }
     if (password !== confirm) {
-      setError("Les deux mots de passe ne correspondent pas.");
+      setError(t("password.mismatch"));
       return;
     }
     startTransition(async () => {
@@ -91,7 +92,7 @@ export function ResetPasswordForm() {
   if (ready === "loading") {
     return (
       <div className="text-center text-[12.5px] text-muted">
-        Vérification du lien…
+        {t("reset.checking")}
       </div>
     );
   }
@@ -99,14 +100,16 @@ export function ResetPasswordForm() {
   if (ready === "invalid") {
     return (
       <div className="batta-tone-bad rounded-lg px-3 py-3 text-center text-xs">
-        Lien invalide ou expiré.{" "}
         {/* i18n Link, not a bare href: `/fr/forgot-password` hardcoded the
             locale, so an Arabic visitor whose reset link had expired was sent
             to the French page. */}
-        <Link href="/forgot-password" className="font-bold underline">
-          Demander un nouveau lien
-        </Link>
-        .
+        {t.rich("reset.invalid", {
+          link: (chunks) => (
+            <Link href="/forgot-password" className="font-bold underline">
+              {chunks}
+            </Link>
+          ),
+        })}
       </div>
     );
   }
@@ -118,10 +121,10 @@ export function ResetPasswordForm() {
           <CheckCircle2 className="size-5" strokeWidth={1.75} />
         </span>
         <h2 className="batta-serif text-[16px] font-semibold text-batta-cream">
-          Mot de passe mis à jour
+          {t("forgot.updated")}
         </h2>
         <p className="mt-2 text-[12.5px] text-batta-cream/75">
-          Vous êtes connecté. Redirection…
+          {t("reset.signedIn")}
         </p>
       </div>
     );
@@ -130,7 +133,7 @@ export function ResetPasswordForm() {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <PasswordInput
-        label="Nouveau mot de passe (min 8)"
+        label={t("password.new")}
         value={password}
         onChange={setPassword}
         required
@@ -139,7 +142,7 @@ export function ResetPasswordForm() {
         autoComplete="new-password"
       />
       <PasswordInput
-        label="Confirmer"
+        label={t("password.confirm")}
         value={confirm}
         onChange={setConfirm}
         required
@@ -154,7 +157,7 @@ export function ResetPasswordForm() {
         disabled={isPending}
         className="batta-btn-luxe tap-target w-full px-5 py-3 text-[13.5px] disabled:opacity-50"
       >
-        {isPending ? "Mise à jour…" : "Mettre à jour le mot de passe"}
+        {isPending ? t("password.updating") : t("password.update")}
       </button>
     </form>
   );

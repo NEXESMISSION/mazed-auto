@@ -43,30 +43,33 @@ export type TunisianGovernorate = (typeof TUNISIAN_GOVERNORATES)[number];
  * The list is intentionally short — there's no point shipping a
  * 200-country dropdown for an audience that's overwhelmingly
  * Tunisia-resident or Tunisia-diaspora.
+ *
+ * The country names are in the messages, under `phone.countries.<code
+ * digits>` ("216" → Tunisie / تونس).
  */
-export const DIAL_CODES: { code: string; label: string }[] = [
-  { code: "+216", label: "+216 Tunisie" },
-  { code: "+33",  label: "+33 France" },
-  { code: "+39",  label: "+39 Italie" },
-  { code: "+49",  label: "+49 Allemagne" },
-  { code: "+32",  label: "+32 Belgique" },
-  { code: "+41",  label: "+41 Suisse" },
-  { code: "+34",  label: "+34 Espagne" },
-  { code: "+31",  label: "+31 Pays-Bas" },
-  { code: "+44",  label: "+44 Royaume-Uni" },
-  { code: "+1",   label: "+1 USA / Canada" },
-  { code: "+971", label: "+971 Émirats" },
-  { code: "+966", label: "+966 Arabie saoudite" },
-  { code: "+974", label: "+974 Qatar" },
-  { code: "+965", label: "+965 Koweït" },
-  { code: "+973", label: "+973 Bahreïn" },
-  { code: "+968", label: "+968 Oman" },
-  { code: "+961", label: "+961 Liban" },
-  { code: "+962", label: "+962 Jordanie" },
-  { code: "+20",  label: "+20 Égypte" },
-  { code: "+212", label: "+212 Maroc" },
-  { code: "+213", label: "+213 Algérie" },
-  { code: "+90",  label: "+90 Turquie" },
+export const DIAL_CODES: { code: string }[] = [
+  { code: "+216" },
+  { code: "+33" },
+  { code: "+39" },
+  { code: "+49" },
+  { code: "+32" },
+  { code: "+41" },
+  { code: "+34" },
+  { code: "+31" },
+  { code: "+44" },
+  { code: "+1" },
+  { code: "+971" },
+  { code: "+966" },
+  { code: "+974" },
+  { code: "+965" },
+  { code: "+973" },
+  { code: "+968" },
+  { code: "+961" },
+  { code: "+962" },
+  { code: "+20" },
+  { code: "+212" },
+  { code: "+213" },
+  { code: "+90" },
 ];
 
 /**
@@ -96,12 +99,17 @@ export function normalizeE164(
   return `${dialCode}${digits}`;
 }
 
+/** What is wrong with a typed phone number — a key under `phone.errors`. */
+export type PhoneProblem = "empty" | "tunisianLength" | "tooShort" | "tooLong";
+
 /**
- * Phone validator that returns a specific French reason on failure,
- * for surfacing in the signup/login forms. Mirrors normalizeE164's
- * rules but says "what's wrong" instead of just null.
+ * Phone validator that says what is wrong, for surfacing in the
+ * signup/login forms. Mirrors normalizeE164's rules but returns a
+ * reason instead of just null. The reason is a message key; the form
+ * words it in the reader's language with `digits` and the dial code
+ * ("vous en avez tapé 6").
  *
- *   "+216" → exactly 8 digits required ("vous en avez N")
+ *   "+216" → exactly 8 digits required
  *   other  → 6–15 digits required (E.164 spec)
  *
  * Used by the forms before normalizeE164. The forms still call
@@ -111,32 +119,15 @@ export function normalizeE164(
 export function validatePhone(
   dialCode: string,
   rawNumber: string,
-): { ok: true } | { ok: false; reason: string } {
+): { ok: true } | { ok: false; reason: PhoneProblem; digits: number } {
   const digits = rawNumber.replace(/\D/g, "").replace(/^0+/, "");
-  if (!digits) {
-    return { ok: false, reason: "Tapez votre numéro de téléphone." };
-  }
+  const fail = (reason: PhoneProblem) => ({ ok: false as const, reason, digits: digits.length });
+  if (!digits) return fail("empty");
   if (dialCode === "+216") {
-    if (digits.length !== 8) {
-      return {
-        ok: false,
-        reason: `Un numéro tunisien doit faire 8 chiffres — vous en avez tapé ${digits.length}.`,
-      };
-    }
-    return { ok: true };
+    return digits.length === 8 ? { ok: true } : fail("tunisianLength");
   }
-  if (digits.length < 6) {
-    return {
-      ok: false,
-      reason: `Numéro trop court — il faut au moins 6 chiffres après l'indicatif ${dialCode}.`,
-    };
-  }
-  if (digits.length > 15) {
-    return {
-      ok: false,
-      reason: `Numéro trop long — maximum 15 chiffres après l'indicatif.`,
-    };
-  }
+  if (digits.length < 6) return fail("tooShort");
+  if (digits.length > 15) return fail("tooLong");
   return { ok: true };
 }
 

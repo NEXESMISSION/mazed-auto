@@ -4,19 +4,25 @@ import { join, relative } from "node:path";
 import { localeDirection } from "@/i18n/routing";
 
 /**
- * Arabic preparation (brief, recette 15): the shop pages are written with
- * logical properties, so they mirror by themselves once a right-to-left locale
- * is switched on. This keeps it that way — a physical left/right class in these
- * folders fails here, with its file and line. `rtl:` / `ltr:` variants are
- * allowed: they exist precisely to say « on this side in that direction ».
+ * Arabic is on (/ar), and pages are written with logical properties, so they
+ * mirror by themselves in a right-to-left locale. This keeps it that way — a
+ * physical left/right class in these folders fails here, with its file and
+ * line. `rtl:` / `ltr:` variants are allowed: they exist precisely to say « on
+ * this side in that direction ».
  *
- * The rest of the site predates this rule and is not checked; translating and
- * mirroring it is outside the shops brief.
+ * A folder joins the list when its pages are translated and mirrored; the rest
+ * of the site predates the rule and is not checked yet.
  */
 const ROOTS = [
   "src/app/[locale]/pro",
   "src/app/[locale]/boutiques",
   "src/app/[locale]/admin/boutiques",
+  "src/app/[locale]/login",
+  "src/app/[locale]/signup",
+  "src/app/[locale]/forgot-password",
+  "src/app/[locale]/reset-password",
+  "src/components/auth",
+  "src/components/layout",
   "src/components/shops",
   "src/components/i18n",
 ];
@@ -42,7 +48,7 @@ describe("RTL preparation", () => {
     expect(localeDirection("ar")).toBe("rtl");
   });
 
-  it("keeps physical left/right classes out of the shop pages", () => {
+  it("keeps physical left/right classes out of the converted pages", () => {
     const offenders: string[] = [];
     for (const file of ROOTS.flatMap((r) => files(join(process.cwd(), r)))) {
       readFileSync(file, "utf8").split("\n").forEach((line, i) => {

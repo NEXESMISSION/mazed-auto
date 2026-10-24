@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { ChevronDown, Check } from "lucide-react";
 import { DIAL_CODES } from "@/lib/tunisia";
 
@@ -19,6 +20,9 @@ import { DIAL_CODES } from "@/lib/tunisia";
  *     wide) while still showing the country name in the open list.
  *   - Escape + outside-click close handlers ship with the popover so
  *     the keyboard / touch flow matches the rest of the app.
+ *
+ * Left-to-right in Arabic too: a number is written "+216 98 120 622"
+ * whatever the language around it, so the code stays left of the digits.
  */
 export function PhoneInput({
   dialCode,
@@ -37,6 +41,8 @@ export function PhoneInput({
   placeholder?: string;
   ariaLabel?: string;
 }) {
+  const t = useTranslations("phone");
+  const countryOf = (code: string) => t(`countries.${code.slice(1)}`);
   const [open, setOpen] = useState(false);
   const [activeIdx, setActiveIdx] = useState(0);
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -100,13 +106,10 @@ export function PhoneInput({
     }
   }
 
-  const selectedCountry =
-    DIAL_CODES.find((c) => c.code === dialCode)?.label
-      .replace(`${dialCode} `, "")
-      .trim() ?? "";
+  const selectedCountry = DIAL_CODES.some((c) => c.code === dialCode) ? countryOf(dialCode) : "";
 
   return (
-    <div ref={rootRef} className="relative mt-1.5">
+    <div ref={rootRef} dir="ltr" className="relative mt-1.5">
       <div className="flex items-stretch overflow-hidden rounded-xl border border-batta-gold/25 bg-batta-surface-2 transition focus-within:border-batta-gold focus-within:ring-1 focus-within:ring-batta-gold/40">
         {/* Compact dial-code chip — code + chevron, no country label */}
         <button
@@ -118,7 +121,7 @@ export function PhoneInput({
           aria-expanded={open}
           aria-controls={open ? listboxId : undefined}
           aria-activedescendant={open ? optionId(activeIdx) : undefined}
-          aria-label={`Indicatif pays — actuellement ${selectedCountry || dialCode}`}
+          aria-label={t("dialCode", { country: selectedCountry || dialCode })}
           className="flex shrink-0 items-center gap-1 border-e border-batta-gold/15 px-3 py-2.5 text-sm font-bold text-batta-cream transition hover:bg-black/15 focus:outline-none"
         >
           <span className="batta-tabular">{dialCode}</span>
@@ -136,7 +139,7 @@ export function PhoneInput({
           value={number}
           required={required}
           placeholder={placeholder}
-          aria-label={ariaLabel ?? "Numéro de téléphone"}
+          aria-label={ariaLabel ?? t("number")}
           onChange={(e) =>
             onNumberChange(e.target.value.replace(/\D/g, ""))
           }
@@ -151,13 +154,13 @@ export function PhoneInput({
         <ul
           role="listbox"
           id={listboxId}
-          aria-label="Liste des indicatifs"
+          aria-label={t("dialCodes")}
           className="absolute z-30 mt-1.5 max-h-72 w-full overflow-y-auto rounded-xl border border-batta-gold/25 bg-batta-surface-2 py-1 shadow-2xl shadow-black/40"
         >
           {DIAL_CODES.map((c, i) => {
             const active = c.code === dialCode;
             const isActive = i === activeIdx;
-            const country = c.label.replace(`${c.code} `, "").trim();
+            const country = countryOf(c.code);
             return (
               <li key={c.code}>
                 <button

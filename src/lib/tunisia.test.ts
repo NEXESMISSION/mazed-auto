@@ -26,13 +26,12 @@ describe("validatePhone", () => {
   });
   it("explains the Tunisian 8-digit rule on failure", () => {
     const r = validatePhone("+216", "201234");
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.reason).toContain("8 chiffres");
+    expect(r).toEqual({ ok: false, reason: "tunisianLength", digits: 6 });
   });
   it("flags empty, too-short and too-long for foreign codes", () => {
-    expect(validatePhone("+216", "").ok).toBe(false);
-    expect(validatePhone("+1", "123").ok).toBe(false);
-    expect(validatePhone("+1", "1234567890123456").ok).toBe(false);
+    expect(validatePhone("+216", "")).toMatchObject({ ok: false, reason: "empty" });
+    expect(validatePhone("+1", "123")).toMatchObject({ ok: false, reason: "tooShort" });
+    expect(validatePhone("+1", "1234567890123456")).toMatchObject({ ok: false, reason: "tooLong" });
   });
 });
 

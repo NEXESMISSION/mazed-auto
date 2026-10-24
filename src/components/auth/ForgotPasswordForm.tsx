@@ -2,10 +2,12 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "@/i18n/navigation";
-import { useLocale } from "next-intl";
-import { Loader2, Smartphone, CheckCircle2 } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import { Loader2, CheckCircle2 } from "lucide-react";
 import { PhoneInput } from "./PhoneInput";
 import { PasswordInput } from "./PasswordInput";
+import { OtpStep, otpErrorKey } from "./OtpStep";
+import { usePhoneProblem } from "./usePhoneProblem";
 import { normalizeE164, validatePhone } from "@/lib/tunisia";
 
 /**
@@ -25,6 +27,10 @@ import { normalizeE164, validatePhone } from "@/lib/tunisia";
 type Phase = "phone" | "otp" | "password" | "done";
 
 export function ForgotPasswordForm() {
+  const t = useTranslations();
+  const tf = useTranslations("auth.forgot");
+  const to = useTranslations("auth.otp");
+  const phoneProblem = usePhoneProblem();
   const router = useRouter();
   const locale = useLocale();
   const [phase, setPhase] = useState<Phase>("phone");
@@ -52,12 +58,12 @@ export function ForgotPasswordForm() {
     setError(null);
     const check = validatePhone(dialCode, phoneNumber);
     if (!check.ok) {
-      setError(check.reason);
+      setError(phoneProblem(check, dialCode));
       return;
     }
     const normalized = normalizeE164(dialCode, phoneNumber);
     if (!normalized) {
-      setError("Numéro invalide.");
+      setError(t("phone.invalid"));
       return;
     }
     startTransition(async () => {
@@ -75,9 +81,7 @@ export function ForgotPasswordForm() {
         };
         // SMS off → there is no recovery channel for phone-only accounts.
         if (res.ok && j.configured === false) {
-          setError(
-            "La réinitialisation par SMS n'est pas disponible pour le moment. Contactez le support.",
-          );
+          setError(tf("smsUnavailable"));
           return;
         }
         if (res.ok && j.ok) {
@@ -95,12 +99,12 @@ export function ForgotPasswordForm() {
           return;
         }
         if (res.status === 400 && j.error === "invalid_phone") {
-          setError("Numéro de téléphone invalide.");
+          setError(t("auth.signup.errors.invalid_phone"));
           return;
         }
-        setError("Impossible d'envoyer le code SMS. Réessayez dans un instant.");
+        setError(to("errors.sendFailed"));
       } catch {
-        setError("Impossible de joindre le serveur. Réessayez.");
+        setError(t("auth.errors.network"));
       }
     });
   }
@@ -111,7 +115,7 @@ export function ForgotPasswordForm() {
     setError(null);
     const clean = otpCode.replace(/\D/g, "");
     if (clean.length !== 6) {
-      setError("Entrez le code à 6 chiffres.");
+      setError(to("enterCode"));
       return;
     }
     if (!phone) return;
@@ -127,15 +131,9 @@ export function ForgotPasswordForm() {
           setPhase("password");
           return;
         }
-        const map: Record<string, string> = {
-          wrong_code: "Code incorrect.",
-          expired: "Code expiré. Redemandez-en un.",
-          no_code: "Aucun code en cours. Redemandez-en un.",
-          too_many_attempts: "Trop de tentatives. Redemandez un code.",
-        };
-        setError(map[j.error ?? ""] ?? "Échec de la vérification.");
+        setError(to(otpErrorKey(j.error)));
       } catch {
-        setError("Erreur réseau. Réessayez.");
+        setError(to("errors.network"));
       }
     });
   }
@@ -153,9 +151,9 @@ export function ForgotPasswordForm() {
         const j = (await res.json().catch(() => ({}))) as { ok?: boolean; retryAfter?: number; error?: string };
         if (res.ok && j.ok) setCooldown(60);
         else if (res.status === 429 && j.error === "cooldown") setCooldown(j.retryAfter ?? 60);
-        else setError("Échec du renvoi. Réessayez.");
+        else setError(to("errors.resendFailed"));
       } catch {
-        setError("Erreur réseau. Réessayez.");
+        setError(to("errors.network"));
       }
     });
   }
@@ -165,11 +163,11 @@ export function ForgotPasswordForm() {
     e.preventDefault();
     setError(null);
     if (password.length < 8) {
-      setError("Le mot de passe doit comporter au moins 8 caractères.");
+      setError(t("auth.password.tooShort"));
       return;
     }
     if (password !== confirm) {
-      setError("Les deux mots de passe ne correspondent pas.");
+      setError(t("auth.password.mismatch"));
       return;
     }
     if (!phone) return;
@@ -207,21 +205,17 @@ export function ForgotPasswordForm() {
           }, 1200);
           return;
         }
-        const map: Record<string, string> = {
-          weak_password: "Mot de passe trop court (8 caractères minimum).",
-          no_account: "Aucun compte n'est associé à ce numéro.",
-          rate_limited: "Trop de tentatives. Réessayez dans un instant.",
-        };
         if (j.error === "phone_not_verified") {
           // Proof expired between verify and submit — restart from the top.
-          setError("Vérification expirée. Recommencez la procédure.");
+          setError(tf("errors.expired"));
           setPhase("phone");
           setOtpCode("");
           return;
         }
-        setError(map[j.error ?? ""] ?? "Impossible de réinitialiser le mot de passe. Réessayez.");
+        const known = ["weak_password", "no_account", "rate_limited"];
+        setError(tf(`errors.${known.includes(j.error ?? "") ? j.error : "generic"}`));
       } catch {
-        setError("Impossible de joindre le serveur. Réessayez.");
+        setError(t("auth.errors.network"));
       }
     });
   }
@@ -233,12 +227,10 @@ export function ForgotPasswordForm() {
           <CheckCircle2 className="size-5" strokeWidth={1.75} />
         </span>
         <h2 className="batta-serif text-[16px] font-semibold text-batta-cream">
-          Mot de passe mis à jour
+          {tf("updated")}
         </h2>
         <p className="mt-2 text-[12.5px] text-batta-cream/75">
-          {autoLoggedIn
-            ? "Connexion à votre compte…"
-            : "Redirection vers la page de connexion…"}
+          {autoLoggedIn ? tf("signingIn") : tf("toLogin")}
         </p>
       </div>
     );
@@ -246,63 +238,19 @@ export function ForgotPasswordForm() {
 
   if (phase === "otp") {
     return (
-      <form onSubmit={onVerify} className="batta-frame-gold relative p-6 text-center">
-        <span className="batta-monogram batta-monogram-filled mx-auto mb-3 size-12 text-[18px]">
-          <Smartphone className="size-5" strokeWidth={1.75} />
-        </span>
-        <h2 className="batta-serif text-[18px] font-semibold text-batta-cream">
-          Vérifiez votre numéro
-        </h2>
-        <p className="mt-2 text-sm text-batta-cream/75">
-          Entrez le code à 6 chiffres envoyé par SMS au{" "}
-          <span className="font-bold text-batta-cream">{phone}</span>.
-        </p>
-
-        <input
-          type="text"
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          maxLength={6}
-          value={otpCode}
-          onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
-          placeholder="••••••"
-          aria-label="Code de vérification à 6 chiffres"
-          className="mt-5 w-full rounded-xl border border-batta-gold/25 bg-batta-surface-2 px-4 py-3 text-center text-[22px] font-bold tracking-[0.4em] text-batta-cream placeholder:text-batta-muted focus:border-batta-gold focus:outline-none focus:ring-1 focus:ring-batta-gold/40"
-        />
-
-        {error && (
-          <p role="alert" aria-live="assertive" className="batta-tone-bad mt-3 rounded-lg px-3 py-2 text-xs">{error}</p>
-        )}
-
-        <div className="mt-5 flex flex-col gap-2">
-          <button
-            type="submit"
-            disabled={isPending || otpCode.replace(/\D/g, "").length !== 6}
-            className="batta-btn-luxe tap-target w-full px-5 py-3 text-[13px] disabled:opacity-50"
-          >
-            {isPending ? (
-              <><Loader2 className="inline size-4 animate-spin" /> Vérification…</>
-            ) : (
-              "Vérifier le code"
-            )}
-          </button>
-          <button
-            type="button"
-            onClick={resend}
-            disabled={cooldown > 0 || isPending}
-            className="batta-btn-ghost-gold tap-target w-full px-5 py-3 text-[13px] disabled:opacity-50"
-          >
-            {cooldown > 0 ? `Renvoyer le code (${cooldown}s)` : "Renvoyer le code"}
-          </button>
-          <button
-            type="button"
-            onClick={() => { setPhase("phone"); setError(null); setOtpCode(""); }}
-            className="text-[12px] text-batta-cream/70 hover:text-gold-bright"
-          >
-            Changer de numéro
-          </button>
-        </div>
-      </form>
+      <OtpStep
+        phone={phone ?? ""}
+        code={otpCode}
+        onCodeChange={setOtpCode}
+        onVerify={onVerify}
+        onResend={resend}
+        onBack={() => { setPhase("phone"); setError(null); setOtpCode(""); }}
+        cooldown={cooldown}
+        error={error}
+        pending={isPending}
+        submitLabel={to("verify")}
+        backLabel={to("changeNumber")}
+      />
     );
   }
 
@@ -310,7 +258,7 @@ export function ForgotPasswordForm() {
     return (
       <form onSubmit={onSetPassword} className="space-y-4">
         <PasswordInput
-          label="Nouveau mot de passe (min 8)"
+          label={t("auth.password.new")}
           value={password}
           onChange={setPassword}
           required
@@ -319,7 +267,7 @@ export function ForgotPasswordForm() {
           autoComplete="new-password"
         />
         <PasswordInput
-          label="Confirmer"
+          label={t("auth.password.confirm")}
           value={confirm}
           onChange={setConfirm}
           required
@@ -335,9 +283,9 @@ export function ForgotPasswordForm() {
           className="batta-btn-luxe tap-target w-full px-5 py-3 text-[13.5px] disabled:opacity-50"
         >
           {isPending ? (
-            <><Loader2 className="inline size-4 animate-spin" /> Mise à jour…</>
+            <><Loader2 className="inline size-4 animate-spin" /> {t("auth.password.updating")}</>
           ) : (
-            "Mettre à jour le mot de passe"
+            t("auth.password.update")
           )}
         </button>
       </form>
@@ -348,7 +296,7 @@ export function ForgotPasswordForm() {
   return (
     <form onSubmit={onSendCode} className="space-y-4">
       <label className="block">
-        <span className="batta-eyebrow text-[10px]">Téléphone</span>
+        <span className="batta-eyebrow text-[10px]">{t("phone.label")}</span>
         <PhoneInput
           dialCode={dialCode}
           onDialCodeChange={setDialCode}
@@ -366,9 +314,9 @@ export function ForgotPasswordForm() {
         className="batta-btn-luxe tap-target w-full px-5 py-3 text-[13.5px] disabled:opacity-50"
       >
         {isPending ? (
-          <><Loader2 className="inline size-4 animate-spin" /> Envoi…</>
+          <><Loader2 className="inline size-4 animate-spin" /> {tf("sending")}</>
         ) : (
-          "Envoyer le code SMS"
+          tf("sendCode")
         )}
       </button>
     </form>

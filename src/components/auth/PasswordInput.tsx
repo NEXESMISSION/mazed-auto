@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Eye, EyeOff } from "lucide-react";
 
 /**
@@ -36,6 +37,7 @@ export function PasswordInput({
   describedBy?: string;
   placeholder?: string;
 }) {
+  const t = useTranslations("auth.password");
   const [visible, setVisible] = useState(false);
   const inputId = useId();
 
@@ -61,7 +63,7 @@ export function PasswordInput({
           type="button"
           onClick={() => setVisible((v) => !v)}
           onMouseDown={(e) => e.preventDefault()}
-          aria-label={visible ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+          aria-label={visible ? t("hide") : t("show")}
           aria-pressed={visible}
           className="tap-target absolute inset-y-0 end-0 flex items-center px-3.5 text-batta-muted transition-colors hover:text-batta-cream"
         >

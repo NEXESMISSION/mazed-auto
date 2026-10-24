@@ -2,33 +2,37 @@ import { getTranslations, getLocale } from "next-intl/server";
 import { SignupForm } from "@/components/auth/SignupForm";
 import { AuthHeroPanel } from "@/components/auth/AuthHeroPanel";
 import { AuthBrand } from "@/components/auth/AuthBrand";
+import { LocaleSwitch } from "@/components/i18n/LocaleSwitch";
 import { Link } from "@/i18n/navigation";
 
 /**
  * Signup surface.
- *   - Mobile (< lg): the logo small at top left, where the site's top bar
- *     puts it, over a centered card.
- *   - Desktop (lg+): a split screen — the brand hero on the left (logo top
- *     left), the create-account card on the right.
+ *   - Mobile (< lg): the logo small at the top start (left, right in
+ *     Arabic), where the site's top bar puts it, over a centered card.
+ *   - Desktop (lg+): a split screen — the brand hero at the start (logo at
+ *     its top start), the create-account card at the end.
  * The cards carry no logo of their own: one per screen, in its usual place.
  */
 export default async function SignupPage() {
   const t = await getTranslations();
+  const ts = await getTranslations("auth.signup");
   const locale = await getLocale();
   const isRTL = locale === "ar";
 
   return (
     <>
-      {/* ── MOBILE / tablet (< lg) — logo top left, centered card ── */}
+      {/* ── MOBILE / tablet (< lg) — logo top start, centered card ── */}
       <div className="lg:hidden mx-auto flex min-h-dvh max-w-[var(--max-w)] flex-col px-6 pt-safe">
-        <div className="-mx-2 flex h-14 items-center">
+        {/* No site bar on the auth pages, so the language switch sits here. */}
+        <div className="-mx-2 flex h-14 items-center justify-between">
           <AuthBrand />
+          <LocaleSwitch />
         </div>
         <div className="flex flex-1 flex-col items-center justify-center pb-14">
           <div className="relative w-full max-w-sm">
             <div
               aria-hidden
-              className="batta-gradient-blob batta-gradient-blob-lg absolute -left-1/3 -top-1/4 -z-10 opacity-20"
+              className="batta-gradient-blob batta-gradient-blob-lg absolute -start-1/3 -top-1/4 -z-10 opacity-20"
             />
 
             <div className="relative overflow-hidden rounded-3xl bg-surface ring-1 ring-border shadow-[var(--shadow-md)]">
@@ -41,10 +45,10 @@ export default async function SignupPage() {
                       isRTL ? "font-arabic" : ""
                     }`}
                   >
-                    Rejoignez <span className="gradient-gold-text">{t("brand.name")}</span>
+                    {ts.rich("title", { brand: t("brand.name"), gold: (chunks) => <span className="gradient-gold-text">{chunks}</span> })}
                   </h1>
                   <p className="mt-2 text-[12.5px] text-muted">
-                    Créez votre compte pour publier une annonce et enregistrer vos favoris
+                    {ts("subtitle")}
                   </p>
                 </div>
 
@@ -55,7 +59,7 @@ export default async function SignupPage() {
 
               <div className="border-t border-border bg-surface-2 px-7 py-4 text-center sm:px-8">
                 <p className="text-[12.5px] text-muted">
-                  Déjà inscrit ?{" "}
+                  {ts("haveAccount")}{" "}
                   <Link
                     href="/login"
                     className="font-bold text-foreground transition hover:text-gold-bright"
@@ -74,6 +78,7 @@ export default async function SignupPage() {
         <AuthHeroPanel />
 
         <div className="relative flex h-[100dvh] items-center justify-center overflow-y-auto bg-surface-2 px-8 py-10">
+          <LocaleSwitch className="absolute end-8 top-6" />
           <div className="relative w-full max-w-md overflow-hidden rounded-3xl bg-surface p-8 shadow-[0_36px_90px_-34px_rgba(15,23,42,0.4)] ring-1 ring-border">
             <div aria-hidden className="batta-gradient-gold absolute inset-x-0 top-0 h-[3px]" />
 
@@ -83,10 +88,10 @@ export default async function SignupPage() {
                   isRTL ? "font-arabic" : ""
                 }`}
               >
-                Rejoignez <span className="gradient-gold-text">{t("brand.name")}</span>
+                {ts.rich("title", { brand: t("brand.name"), gold: (chunks) => <span className="gradient-gold-text">{chunks}</span> })}
               </h1>
               <p className="mt-2 text-[13px] text-muted">
-                Créez votre compte pour publier une annonce et enregistrer vos favoris
+                {ts("subtitle")}
               </p>
             </div>
 
@@ -95,7 +100,7 @@ export default async function SignupPage() {
             </div>
 
             <p className="mt-6 text-center text-[13px] text-muted">
-              Déjà inscrit ?{" "}
+              {ts("haveAccount")}{" "}
               <Link
                 href="/login"
                 className="font-bold text-foreground transition hover:text-gold-bright"
