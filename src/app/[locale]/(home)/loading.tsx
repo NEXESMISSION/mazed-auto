@@ -1,3 +1,12 @@
+"use client";
+
+// A client component on purpose: a loading fallback renders before the
+// [locale] layout has set the request's locale, so next-intl on the server
+// would read the request headers to find it — which turns every page under
+// the layout, the cached home and info pages included, into a dynamic one.
+// The client reads the words from the provider the layout already sent.
+import { useTranslations } from "next-intl";
+
 /**
  * Home loading state.
  *
@@ -26,6 +35,7 @@
  */
 
 export default function HomeLoading() {
+  const t = useTranslations("common");
   return (
     <div role="status" aria-live="polite" aria-busy="true">
       {/* ── Mobile: cover carousel, then the rails ── */}
@@ -126,7 +136,7 @@ export default function HomeLoading() {
         </div>
       </section>
 
-      <span className="sr-only">Chargement…</span>
+      <span className="sr-only">{t("loading")}</span>
     </div>
   );
 }

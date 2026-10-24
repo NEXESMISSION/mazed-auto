@@ -1,14 +1,23 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { Check, ArrowRight } from "lucide-react";
 import { Link } from "@/i18n/navigation";
+import { localeAlternates } from "@/i18n/alternates";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { PRODUCT_SELECT, toProduct, type Product } from "@/lib/products";
+import { currencyLabel } from "@/lib/utils";
 
-export const metadata: Metadata = {
-  title: "Tarifs — Mazed Auto",
-  description:
-    "Ce que coûte une annonce sur Mazed Auto, pour un particulier et pour un professionnel.",
-};
+type Props = { params: Promise<{ locale: string }> };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "info.pricing" });
+  return {
+    title: t("metaTitle"),
+    description: t("metaDescription"),
+    alternates: localeAlternates(locale, "/pricing"),
+  };
+}
 
 // Prices come from the database, so this cannot be prerendered at build.
 export const dynamic = "force-dynamic";
@@ -31,7 +40,9 @@ export const dynamic = "force-dynamic";
  * Shop plans are not listed until an admin switches them on: a plan nobody can
  * buy yet is the same mistake as the old cards.
  */
-export default async function PricingPage() {
+export default async function PricingPage({ params }: Props) {
+  const { locale } = await params;
+  const t = await getTranslations("info.pricing");
   const admin = getServiceSupabase();
   let products: Product[] = [];
   let personal = { vehicles: 1, parts: 5, free: true };
@@ -60,64 +71,60 @@ export default async function PricingPage() {
   const shopsForSale = shopsOpen && products.some((p) => p.kind === "subscription");
 
   const price = (p: Product | null) =>
-    p == null ? "—" : p.price <= 0 ? "Gratuit" : `${p.price} TND`;
-  const plural = (n: number, one: string, many: string) => `${n} ${n > 1 ? many : one}`;
+    p == null ? "—" : p.price <= 0 ? t("free") : `${p.price} ${currencyLabel(locale)}`;
+  const vehicles = t("vehicles", { count: personal.vehicles });
+  const parts = t("parts", { count: personal.parts });
+  // A product's name in the page's language. French is the admin's own name;
+  // in Arabic, the table's `name_ar` when an admin filled it, else the name
+  // the messages give the slug, else the French one.
+  const productName = (p: Product) =>
+    locale !== "ar"
+      ? p.nameFr
+      : p.nameAr || (t.has(`products.${p.slug}`) ? t(`products.${p.slug}`) : p.nameFr);
 
   return (
     <div className="mx-auto max-w-[var(--max-w)] px-4 pb-16 pt-6 lg:max-w-3xl lg:px-8 lg:pb-24 lg:pt-12">
       <header className="text-center">
         <h1 className="text-3xl font-black leading-tight tracking-tight lg:text-5xl">
-          {personal.free ? "Publier est gratuit" : "Vous payez à l'annonce"}
+          {personal.free ? t("titleFree") : t("titlePaid")}
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-[13px] leading-relaxed text-muted lg:text-base">
-          {personal.free
-            ? `Pour un particulier : ${plural(personal.vehicles, "véhicule", "véhicules")} et ${plural(personal.parts, "pièce", "pièces")} en ligne à la fois, sans rien payer. L'acheteur vous contacte directement, sans commission.`
-            : "Pas d'abonnement, pas d'engagement. Une annonce, un prix — réglé après vérification, par virement ou D17."}
+          {personal.free ? t("introFree", { vehicles, parts }) : t("introPaid")}
         </p>
       </header>
 
       {/* The two prices that matter */}
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:mt-12">
         <PriceCard
-          title="Voiture, moto, utilitaire"
-          price={personal.free ? "Gratuit" : price(standard)}
-          note={
-            personal.free
-              ? `${plural(personal.vehicles, "véhicule", "véhicules")} en ligne à la fois, 30 jours après validation, renouvelable gratuitement.`
-              : "Par annonce, en ligne 30 jours après validation."
-          }
+          title={t("vehicleCard.title")}
+          price={personal.free ? t("free") : price(standard)}
+          note={personal.free ? t("vehicleCard.noteFree", { vehicles }) : t("vehicleCard.notePaid")}
           highlight
         />
         <PriceCard
-          title="Pièce de rechange"
-          price={personal.free ? "Gratuit" : price(part)}
-          note={
-            personal.free
-              ? `Jusqu'à ${plural(personal.parts, "pièce", "pièces")} en ligne à la fois, dans toutes les sous-catégories.`
-              : "Publier une pièce ne coûte rien, dans toutes les sous-catégories."
-          }
+          title={t("partCard.title")}
+          price={personal.free ? t("free") : price(part)}
+          note={personal.free ? t("partCard.noteFree", { parts }) : t("partCard.notePaid")}
         />
       </div>
 
       {personal.free && (
         <p className="mt-4 text-center text-[12.5px] text-muted">
-          {shopsForSale ? (
-            <>
-              Plus d&apos;annonces ?{" "}
-              <Link href={"/pro" as never} className="font-semibold text-gold hover:underline">
-                Ouvrez une boutique professionnelle
-              </Link>
-              .
-            </>
-          ) : (
-            <>
-              Plus d&apos;annonces ? Les boutiques professionnelles arrivent bientôt.{" "}
-              <Link href="/contact" className="font-semibold text-gold hover:underline">
-                Parlons-en
-              </Link>
-              .
-            </>
-          )}
+          {shopsForSale
+            ? t.rich("moreShopsOpen", {
+                link: (c) => (
+                  <Link href={"/pro" as never} className="font-semibold text-gold hover:underline">
+                    {c}
+                  </Link>
+                ),
+              })
+            : t.rich("moreSoon", {
+                link: (c) => (
+                  <Link href="/contact" className="font-semibold text-gold hover:underline">
+                    {c}
+                  </Link>
+                ),
+              })}
         </p>
       )}
 
@@ -126,29 +133,24 @@ export default async function PricingPage() {
         <section className="mt-10">
           <h2 className="batta-eyebrow flex items-center gap-2">
             <span aria-hidden className="batta-gold-rule-short" />
-            En option
+            {t("options")}
           </h2>
           <ul className="mt-3 divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface">
-            {renewal && <OptionRow name="Renouveler une annonce expirée" price={price(renewal)} />}
+            {renewal && <OptionRow name={t("renew")} price={price(renewal)} />}
             {promos.map((p) => (
-              <OptionRow key={p.slug} name={p.nameFr} price={price(p)} />
+              <OptionRow key={p.slug} name={productName(p)} price={price(p)} />
             ))}
           </ul>
         </section>
       )}
 
       <section className="mt-10 rounded-2xl border border-border bg-surface p-5 lg:p-6">
-        <h2 className="text-[15px] font-extrabold">Ce qui est compris</h2>
+        <h2 className="text-[15px] font-extrabold">{t("includedTitle")}</h2>
         <ul className="mt-3 space-y-2">
-          {[
-            "Jusqu'à 12 photos par annonce",
-            "Vos coordonnées visibles par les acheteurs vérifiés",
-            "Vérification de chaque annonce avant sa mise en ligne",
-            "Modification et retrait à tout moment",
-          ].map((line) => (
+          {(["photos", "contact", "review", "edit"] as const).map((line) => (
             <li key={line} className="flex items-start gap-2 text-[13px] text-foreground/85">
               <Check className="mt-0.5 size-4 shrink-0 text-gold" strokeWidth={2.4} />
-              {line}
+              {t(`included.${line}`)}
             </li>
           ))}
         </ul>
@@ -159,14 +161,16 @@ export default async function PricingPage() {
           href="/annonces/nouvelle"
           className="batta-btn-luxe tap-target inline-flex h-12 items-center gap-2 px-6 text-[14px]"
         >
-          Publier une annonce <ArrowRight className="size-4" />
+          {t("publish")} <ArrowRight className="size-4 rtl:-scale-x-100" />
         </Link>
         <p className="mt-3 text-[12px] text-muted">
-          Une question sur la facturation ?{" "}
-          <Link href="/contact" className="font-semibold text-gold hover:underline">
-            Contactez-nous
-          </Link>
-          .
+          {t.rich("billing", {
+            link: (c) => (
+              <Link href="/contact" className="font-semibold text-gold hover:underline">
+                {c}
+              </Link>
+            ),
+          })}
         </p>
       </div>
     </div>

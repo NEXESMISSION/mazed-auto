@@ -345,7 +345,7 @@ function PhotoSlide({
 
       <div
         className={`absolute inset-0 z-[1] flex flex-col justify-end p-5 lg:p-8 ${
-          isRTL ? "items-end text-right" : "items-start text-left"
+          isRTL ? "items-end text-start" : "items-start text-start"
         }`}
       >
         {slide.eyebrow && (

@@ -18,19 +18,33 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
  *
  * The slides are rendered on the SERVER and passed in as children — this
  * component only moves them. That keeps the photographs, prices and links out
- * of the client bundle.
+ * of the client bundle. Its few words come the same way, already translated,
+ * so the home page needs no messages in the browser.
+ *
+ * In Arabic the track runs right to left, and the browser counts its
+ * scrollLeft from 0 down to negative values: positions are read as absolute
+ * values and written back with the direction's sign.
  */
+export type CarouselLabels = {
+  region: string;
+  roleDescription: string;
+  prev: string;
+  next: string;
+  /** « Aller à l'annonce n sur N », one per slide. */
+  goTo: string[];
+};
+
 export function FeaturedCarousel({
   children,
   /** Milliseconds between automatic advances. 0 disables autoplay. */
   interval = 6000,
   className = "",
-  label = "Annonces à la une",
+  labels,
 }: {
   children: React.ReactNode;
   interval?: number;
   className?: string;
-  label?: string;
+  labels: CarouselLabels;
 }) {
   const track = useRef<HTMLDivElement | null>(null);
   const goToRef = useRef<(i: number) => void>(() => {});
@@ -54,7 +68,7 @@ export function FeaturedCarousel({
   const syncIndex = useCallback(() => {
     const el = track.current;
     if (!el || el.clientWidth === 0) return;
-    setIndex(Math.round(el.scrollLeft / el.clientWidth));
+    setIndex(Math.round(Math.abs(el.scrollLeft) / el.clientWidth));
   }, []);
 
   useEffect(() => {
@@ -84,8 +98,9 @@ export function FeaturedCarousel({
     const n = el.children.length;
     if (n === 0) return;
     const target = ((i % n) + n) % n; // wraps both ways
+    const sign = getComputedStyle(el).direction === "rtl" ? -1 : 1;
     el.scrollTo({
-      left: target * el.clientWidth,
+      left: sign * target * el.clientWidth,
       behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
         ? "auto"
         : "smooth",
@@ -117,8 +132,8 @@ export function FeaturedCarousel({
     <div
       className={`relative ${className}`}
       role="region"
-      aria-roledescription="carrousel"
-      aria-label={label}
+      aria-roledescription={labels.roleDescription}
+      aria-label={labels.region}
       onPointerEnter={() => setPaused(true)}
       onPointerLeave={() => setPaused(false)}
       onFocusCapture={() => setPaused(true)}
@@ -144,18 +159,18 @@ export function FeaturedCarousel({
           <button
             type="button"
             onClick={() => takeOver(index - 1)}
-            aria-label="Annonce précédente"
+            aria-label={labels.prev}
             className="absolute start-3 top-1/2 hidden -translate-y-1/2 place-items-center rounded-full bg-black/55 p-2 text-white ring-1 ring-white/20 backdrop-blur-md transition hover:bg-black/75 lg:grid"
           >
-            <ChevronLeft className="size-5" strokeWidth={2.4} />
+            <ChevronLeft className="size-5 rtl:-scale-x-100" strokeWidth={2.4} />
           </button>
           <button
             type="button"
             onClick={() => takeOver(index + 1)}
-            aria-label="Annonce suivante"
+            aria-label={labels.next}
             className="absolute end-3 top-1/2 hidden -translate-y-1/2 place-items-center rounded-full bg-black/55 p-2 text-white ring-1 ring-white/20 backdrop-blur-md transition hover:bg-black/75 lg:grid"
           >
-            <ChevronRight className="size-5" strokeWidth={2.4} />
+            <ChevronRight className="size-5 rtl:-scale-x-100" strokeWidth={2.4} />
           </button>
 
           {/* Dots. Also the position readout — with a snap carousel there is
@@ -166,7 +181,7 @@ export function FeaturedCarousel({
                 key={i}
                 type="button"
                 onClick={() => takeOver(i)}
-                aria-label={`Aller à l'annonce ${i + 1} sur ${count}`}
+                aria-label={labels.goTo[i]}
                 aria-current={i === index ? "true" : undefined}
                 className={`pointer-events-auto h-1.5 rounded-full transition-all duration-300 ${
                   i === index

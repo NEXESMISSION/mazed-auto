@@ -25,8 +25,8 @@ export function PartnersMarquee() {
     <section>
       <div className="relative overflow-hidden py-2">
         {/* Edge fades shared across both rows. */}
-        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-10 bg-gradient-to-r from-batta-paper to-transparent" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-10 bg-gradient-to-l from-batta-paper to-transparent" />
+        <div className="pointer-events-none absolute inset-y-0 start-0 z-10 w-10 bg-gradient-to-r rtl:bg-gradient-to-l from-batta-paper to-transparent" />
+        <div className="pointer-events-none absolute inset-y-0 end-0 z-10 w-10 bg-gradient-to-l rtl:bg-gradient-to-r from-batta-paper to-transparent" />
 
         <ul className="batta-marquee">
           {top.map((s, i) => (

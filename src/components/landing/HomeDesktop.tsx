@@ -36,6 +36,7 @@ export async function HomeDesktop({
   alwaysVisible?: boolean;
 }) {
   const t = await getTranslations();
+  const th = await getTranslations("homePage");
   const locale = await getLocale();
 
   // Five arrays were derived here from the auction feed: `hotNow` (by bid
@@ -78,26 +79,14 @@ export async function HomeDesktop({
         <div className="mx-auto max-w-[var(--max-w-wide)] px-8 pb-24">
         {/* The v3 catalog on desktop. The home page's own rails live inside its
             lg:hidden tree, so they never reach this breakpoint. */}
-        <AnnonceRail
-          kind="vehicle"
-          eyebrow="À vendre"
-          title="Voitures à prix fixe"
-          subtitle="Vous contactez le vendeur directement"
-          locale={locale}
-        />
-        <AnnonceRail
-          kind="part"
-          eyebrow="Pièces de rechange"
-          title="Pièces disponibles"
-          subtitle="Trouvez la pièce compatible avec votre véhicule"
-          locale={locale}
-        />
+        <AnnonceRail kind="vehicle" locale={locale} />
+        <AnnonceRail kind="part" locale={locale} />
 
         
 
       {/* PARCOURIR PAR MARQUE — make chips */}
       {topMakes.length > 0 && (
-        <BrandRail makes={topMakes} title="Parcourir par marque" />
+        <BrandRail makes={topMakes} />
       )}
 
         {/* ─── CLOSING CTA — twin pillars (buyers / sellers) ─── */}
@@ -106,19 +95,19 @@ export async function HomeDesktop({
             <CtaPillar
               href="/properties"
               Icon={Gavel}
-              eyebrow="Acheteurs"
-              title="Trouvez votre prochaine voiture"
-              text="Des annonces vérifiées chaque jour, partout en Tunisie — voitures et pièces de rechange."
-              cta="Parcourir tout"
+              eyebrow={th("pillars.buyers.eyebrow")}
+              title={th("pillars.buyers.title")}
+              text={th("pillars.buyers.text")}
+              cta={th("pillars.buyers.cta")}
               tone="gold"
             />
             <CtaPillar
               href="/sell"
               Icon={Tag}
-              eyebrow="Vendeurs"
-              title="Vendez votre voiture en toute confiance"
-              text="Votre annonce vérifiée et publiée rapidement. Paiement sécurisé à la vente."
-              cta="Commencer à vendre"
+              eyebrow={th("pillars.sellers.eyebrow")}
+              title={th("pillars.sellers.title")}
+              text={th("pillars.sellers.text")}
+              cta={th("pillars.sellers.cta")}
               tone="dark"
             />
           </div>
@@ -128,15 +117,15 @@ export async function HomeDesktop({
         <section className="mt-12">
           <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] text-muted">
             <Link href={"/how-it-works" as never} className="hover:text-gold-bright">
-              Comment ça marche
+              {th("footer.howItWorks")}
             </Link>
             <span className="text-subtle">·</span>
             <Link href={"/help" as never} className="hover:text-gold-bright">
-              Aide
+              {th("footer.help")}
             </Link>
             <span className="text-subtle">·</span>
             <Link href={"/about" as never} className="hover:text-gold-bright">
-              À propos
+              {th("footer.about")}
             </Link>
             <span className="text-subtle">·</span>
             <Link href="/terms" className="hover:text-gold-bright">
@@ -222,7 +211,7 @@ function CtaPillar({
           }`}
         >
           {cta}
-          <ArrowUpRight className="h-4 w-4" />
+          <ArrowUpRight className="h-4 w-4 rtl:-scale-x-100" />
         </span>
       </div>
     </Link>

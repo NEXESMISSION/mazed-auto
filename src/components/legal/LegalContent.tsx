@@ -1,11 +1,18 @@
+import { useTranslations } from "next-intl";
+
 /**
  * Shared legal copy — rendered on the standalone /terms and /privacy pages
  * AND inside the signup modal, so there's a single source of truth. Plain
- * presentational components (no client hooks) usable from server or client.
+ * presentational components usable from server or client: the text lives in
+ * the `legal` messages, which the signup route sends to the browser for the
+ * modal (src/app/[locale]/signup/layout.tsx).
  *
  * This is general informational copy for the Mazed Auto marketplace, not a
  * substitute for legal review before launch.
  */
+
+const TERMS = ["s1", "s2", "s3", "s4", "s5", "s6", "s7"] as const;
+const PRIVACY = ["s1", "s2", "s3", "s4", "s5", "s6"] as const;
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -19,110 +26,27 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 export function TermsContent() {
+  const t = useTranslations("legal.terms");
   return (
     <div>
-      <Section title="1. Objet">
-        <p>
-          Les présentes conditions générales régissent l&apos;utilisation de la
-          plateforme Mazed Auto, place de marché d&apos;enchères et de ventes
-          automobiles en Tunisie. En créant un compte, vous acceptez ces
-          conditions dans leur intégralité.
-        </p>
-      </Section>
-      <Section title="2. Compte et vérification">
-        <p>
-          Vous devez fournir des informations exactes lors de l&apos;inscription.
-          Une vérification d&apos;identité (KYC) est requise avant de pouvoir
-          enchérir ou acheter. Vous êtes responsable de la confidentialité de
-          vos identifiants.
-        </p>
-      </Section>
-      <Section title="3. Enchères et achats">
-        <p>
-          Toute enchère constitue un engagement ferme. Une caution peut être
-          exigée pour participer ; elle est remboursée si vous ne remportez pas
-          l&apos;enchère, et peut être retenue en cas de non-respect de vos
-          engagements. Le gagnant s&apos;engage à régler le solde dans les délais
-          indiqués.
-        </p>
-      </Section>
-      <Section title="4. Frais">
-        <p>
-          La publication d&apos;une annonce, les options de mise en avant et les
-          commissions applicables sont affichées avant toute transaction. Les
-          montants sont indiqués en dinars tunisiens (TND).
-        </p>
-      </Section>
-      <Section title="5. Responsabilités">
-        <p>
-          Mazed Auto agit en tant qu&apos;intermédiaire. La conformité juridique des
-          biens, l&apos;exactitude des informations fournies par les vendeurs et
-          le bon déroulement des transactions relèvent de la responsabilité des
-          parties. Nous recommandons une expertise indépendante avant
-          d&apos;enchérir.
-        </p>
-      </Section>
-      <Section title="6. Résiliation">
-        <p>
-          Nous pouvons suspendre ou clôturer un compte en cas de fraude,
-          d&apos;abus ou de violation des présentes conditions.
-        </p>
-      </Section>
-      <Section title="7. Modifications">
-        <p>
-          Ces conditions peuvent évoluer. La version en vigueur est celle
-          publiée sur cette page.
-        </p>
-      </Section>
+      {TERMS.map((s) => (
+        <Section key={s} title={t(`${s}.title`)}>
+          <p>{t(`${s}.body`)}</p>
+        </Section>
+      ))}
     </div>
   );
 }
 
 export function PrivacyContent() {
+  const t = useTranslations("legal.privacy");
   return (
     <div>
-      <Section title="1. Données collectées">
-        <p>
-          Nous collectons les informations que vous fournissez (nom, e-mail,
-          téléphone, gouvernorat, pièces d&apos;identité pour la vérification)
-          ainsi que les données d&apos;usage nécessaires au fonctionnement du
-          service.
-        </p>
-      </Section>
-      <Section title="2. Utilisation">
-        <p>
-          Vos données servent à créer et sécuriser votre compte, vérifier votre
-          identité, traiter les enchères et paiements, et vous envoyer des
-          notifications liées à votre activité.
-        </p>
-      </Section>
-      <Section title="3. Partage">
-        <p>
-          Vos données ne sont pas vendues. Elles peuvent être partagées avec des
-          prestataires strictement nécessaires (paiement, hébergement) et avec
-          les autorités lorsque la loi l&apos;exige.
-        </p>
-      </Section>
-      <Section title="4. Conservation et sécurité">
-        <p>
-          Les documents d&apos;identité sont stockés de manière sécurisée et
-          accessibles uniquement aux fins de vérification. Nous appliquons des
-          mesures techniques pour protéger vos données.
-        </p>
-      </Section>
-      <Section title="5. Vos droits">
-        <p>
-          Vous pouvez demander l&apos;accès, la rectification ou la suppression
-          de vos données en nous contactant à l&apos;adresse indiquée sur la
-          page Contact.
-        </p>
-      </Section>
-      <Section title="6. Cookies">
-        <p>
-          Nous utilisons des cookies essentiels au fonctionnement du site et,
-          le cas échéant, des cookies de mesure d&apos;audience.
-        </p>
-      </Section>
+      {PRIVACY.map((s) => (
+        <Section key={s} title={t(`${s}.title`)}>
+          <p>{t(`${s}.body`)}</p>
+        </Section>
+      ))}
     </div>
   );
 }

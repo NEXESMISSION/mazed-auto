@@ -1,11 +1,13 @@
 import { cache } from "react";
 import { coverPhoto } from "@/lib/listingCover";
-import { getLocale } from "next-intl/server";
+import { useTranslations } from "next-intl";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { ListingImage } from "@/components/media/ListingImage";
-import { formatTND } from "@/lib/utils";
+import { currencyLabel, formatTND } from "@/lib/utils";
+import { categoryLabel, governorateLabel, unitLabel, type CategoryNames } from "@/lib/labels";
 import { HeroMarquee, type MarqueeCard } from "./HeroMarquee";
 import { FeaturedCarousel, CarouselSlide } from "./FeaturedCarousel";
 import { allocate, rankListings } from "@/lib/home/ranking";
@@ -34,7 +36,7 @@ type Row = {
   price_on_request: boolean;
   governorate: string;
   attributes: Record<string, unknown> | null;
-  category: { label_fr: string; kind: string } | { label_fr: string; kind: string }[] | null;
+  category: (CategoryNames & { kind: string }) | (CategoryNames & { kind: string })[] | null;
   photos: { storage_path: string; sort_order: number; is_cover?: boolean | null }[] | null;
   published_at?: string | null;
   boost?: number | null;
@@ -63,10 +65,24 @@ function spec(r: Row) {
   };
 }
 
-function priceLabel(r: Row, locale: string): string {
+type T = (key: string, values?: Record<string, string | number>) => string;
+
+function priceLabel(r: Row, locale: string, t: T): string {
   return r.price_on_request || r.price == null
-    ? "Prix sur demande"
-    : `${formatTND(Number(r.price), locale)} TND`;
+    ? t("priceOnRequest")
+    : `${formatTND(Number(r.price), locale)} ${currencyLabel(locale)}`;
+}
+
+/** The pieces of the cover the client carousel needs, already in the page's language. */
+async function carouselLabels(count: number) {
+  const t = await getTranslations("homePage.carousel");
+  return {
+    region: t("label"),
+    roleDescription: t("roleDescription"),
+    prev: t("prev"),
+    next: t("next"),
+    goTo: Array.from({ length: count }, (_, i) => t("goTo", { n: i + 1, count })),
+  };
 }
 
 /**
@@ -80,7 +96,7 @@ const featuredAnnonces = cache(async (): Promise<Row[]> => {
   const SELECT = `id, title, price, price_on_request, governorate, attributes,
        featured_rank, featured_until, published_at, boost, boost_until,
        view_count, contact_reveal_count,
-       category:categories (label_fr, kind),
+       category:categories (slug, label_fr, label_ar, kind),
        photos:listing_photos (storage_path, sort_order, is_cover)`;
 
   // What the admin put à la une, in the order they chose. This used to be
@@ -213,6 +229,7 @@ export const heroUsedIds = cache(async (): Promise<string[]> => {
  */
 export async function AnnonceCoverMobile() {
   const locale = await getLocale();
+  const t = await getTranslations("homePage.cover");
   const rows = await featuredAnnonces();
   if (rows.length === 0) return null;
 
@@ -224,11 +241,12 @@ export async function AnnonceCoverMobile() {
       id: r.id,
       title: r.title,
       imagePath: p.storage_path,
-      categoryLabel: one(r.category)?.label_fr ?? "À vendre",
-      priceLabel: priceLabel(r, locale),
-      governorate: r.governorate,
+      categoryLabel: categoryLabel(one(r.category), locale) || t("forSale"),
+      priceLabel: priceLabel(r, locale, t),
+      governorate: governorateLabel(r.governorate, locale),
     };
   });
+  const labels = await carouselLabels(covers.length);
 
   return (
     <section className="lg:hidden">
@@ -251,11 +269,10 @@ export async function AnnonceCoverMobile() {
             billboard, so the eye lands on the first car instead. The gold half
             is the only part that carries emphasis, which is enough. */}
         <h1 className="text-[19px] font-semibold leading-[1.3] tracking-[-0.01em] text-foreground">
-          Voitures et pièces{" "}
-          <span className="gradient-gold-text">partout en Tunisie</span>
+          {t.rich("headline", { gold: (c) => <span className="gradient-gold-text">{c}</span> })}
         </h1>
         <p className="mt-1.5 text-[12.5px] leading-relaxed text-subtle">
-          Le prix est sur l&apos;annonce. Vous appelez le vendeur.
+          {t("leadMobile")}
         </p>
 
         {/* Two destinations, one control. The catalogue splits in exactly two
@@ -270,28 +287,28 @@ export async function AnnonceCoverMobile() {
             href={"/annonces" as never}
             className="batta-btn-luxe tap-target h-11 flex-1 text-[13.5px]"
           >
-            Annonces
-            <ArrowUpRight className="size-4" />
+            {t("annonces")}
+            <ArrowUpRight className="size-4 rtl:-scale-x-100" />
           </Link>
           <Link
             href={"/annonces?kind=part" as never}
             className="batta-btn-quiet tap-target h-11 shrink-0 px-4 text-[13px]"
           >
             <Wrench className="size-3.5" />
-            Pièces de rechange
+            {t("parts")}
           </Link>
         </div>
       </div>
 
       <div className="mt-5 px-4">
         <span className="batta-eyebrow inline-flex items-center gap-1.5">
-          <Sparkles className="size-3" /> À la une
+          <Sparkles className="size-3" /> {t("featured")}
         </span>
         {/* Slides through everything the admin put à la une. The cards are
             server-rendered and handed to the carousel as children, so only the
             few lines that move them ship to the browser. */}
         <div className="mt-2.5">
-          <FeaturedCarousel className="overflow-hidden rounded-2xl">
+          <FeaturedCarousel className="overflow-hidden rounded-2xl" labels={labels}>
             {covers.map((r) => (
               <CarouselSlide key={r.id}>
                 <FeaturedCard row={r} locale={locale} compact />
@@ -327,6 +344,7 @@ export async function AnnonceCoverMobile() {
  * marketplace settled on, for this reason.
  */
 function MobileRow({ row, locale }: { row: Row; locale: string }) {
+  const t = useTranslations("homePage.cover");
   const cat = one(row.category);
   const img = cover(row)!;
   return (
@@ -343,16 +361,16 @@ function MobileRow({ row, locale }: { row: Row; locale: string }) {
         </span>
         <span className="flex min-w-0 flex-1 flex-col justify-center py-2.5 pe-3">
           <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-muted">
-            {cat?.label_fr ?? ""}
+            {categoryLabel(cat, locale)}
           </span>
           <span className="mt-0.5 line-clamp-2 text-[13.5px] font-bold leading-snug text-foreground">
             {row.title}
           </span>
           <span className="batta-tabular mt-1 text-[14px] font-extrabold text-gold">
-            {priceLabel(row, locale)}
+            {priceLabel(row, locale, t)}
           </span>
           <span className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-muted">
-            <MapPin className="size-3" /> {row.governorate}
+            <MapPin className="size-3" /> {governorateLabel(row.governorate, locale)}
           </span>
         </span>
       </Link>
@@ -363,6 +381,7 @@ function MobileRow({ row, locale }: { row: Row; locale: string }) {
 /** The desktop magazine spread. */
 export async function AnnonceHero() {
   const locale = await getLocale();
+  const t = await getTranslations("homePage.cover");
   const withPhoto = await featuredAnnonces();
   if (withPhoto.length === 0) return null;
 
@@ -379,11 +398,12 @@ export async function AnnonceHero() {
       id: r.id,
       title: r.title,
       imagePath: p.storage_path,
-      categoryLabel: one(r.category)?.label_fr ?? "À vendre",
-      priceLabel: priceLabel(r, locale),
-      governorate: r.governorate,
+      categoryLabel: categoryLabel(one(r.category), locale) || t("forSale"),
+      priceLabel: priceLabel(r, locale, t),
+      governorate: governorateLabel(r.governorate, locale),
     };
   });
+  const labels = await carouselLabels(covers.length);
 
   return (
       <section className="hidden lg:block relative isolate overflow-hidden">
@@ -413,15 +433,15 @@ export async function AnnonceHero() {
               className="batta-btn-quiet h-11 px-5 text-sm"
             >
               <Wrench className="h-4 w-4" />
-              Pièces de rechange
+              {t("parts")}
             </Link>
 
             <Link
               href={"/annonces" as never}
               className="batta-btn-luxe h-11 px-5 text-sm"
             >
-              Annonces
-              <ArrowUpRight className="h-4 w-4" />
+              {t("annonces")}
+              <ArrowUpRight className="h-4 w-4 rtl:-scale-x-100" />
             </Link>
           </div>
 
@@ -440,22 +460,16 @@ export async function AnnonceHero() {
               prose. */}
           <div className="mb-8">
             <h1 className="max-w-[16ch] text-[44px] font-black leading-[1.02] tracking-tight xl:text-[56px]">
-              Voitures et pièces{" "}
-              <span className="gradient-gold-text">partout en Tunisie</span>
+              {t.rich("headline", { gold: (c) => <span className="gradient-gold-text">{c}</span> })}
             </h1>
             <p className="mt-4 max-w-xl text-[17px] leading-relaxed text-white/75 xl:text-lg">
-              Le prix est sur l&apos;annonce. Vous appelez le vendeur, vous
-              convenez entre vous.
+              {t("leadDesktop")}
             </p>
             <ul className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-[13.5px] font-semibold text-white/70">
-              {[
-                "Annonces vérifiées avant publication",
-                "Aucune commission sur la vente",
-                "Pièces de rechange gratuites à publier",
-              ].map((f) => (
+              {(["verified", "noCommission", "freeParts"] as const).map((f) => (
                 <li key={f} className="inline-flex items-center gap-1.5">
                   <Check className="size-4 shrink-0 text-[var(--gold)]" strokeWidth={3} />
-                  {f}
+                  {t(`facts.${f}`)}
                 </li>
               ))}
             </ul>
@@ -464,7 +478,7 @@ export async function AnnonceHero() {
           {/* Featured + runners. With no runners the featured card spans the
               full width instead of leaving a gap on thin inventory. */}
           <div className={runners.length > 0 ? "grid grid-cols-[1.7fr_1fr] gap-6 xl:gap-7" : ""}>
-            <FeaturedCarousel className="overflow-hidden rounded-[28px]">
+            <FeaturedCarousel className="overflow-hidden rounded-[28px]" labels={labels}>
               {covers.map((r) => (
                 <CarouselSlide key={r.id}>
                   <FeaturedCard row={r} locale={locale} />
@@ -501,6 +515,7 @@ export async function AnnonceHero() {
 function FeaturedCard({
   row, locale, compact = false,
 }: { row: Row; locale: string; compact?: boolean }) {
+  const t = useTranslations("homePage.cover");
   const { headline, year, color, mileage } = spec(row);
   const cat = one(row.category);
   const img = cover(row)!;
@@ -544,14 +559,14 @@ function FeaturedCard({
           (compact ? "h-7 px-2.5 text-[10px]" : "h-8 px-3 text-[11px]")
         }>
           <Sparkles className={compact ? "size-3" : "h-3.5 w-3.5"} />
-          À la une
+          {t("featured")}
         </span>
         {cat && (
           <span className={
             "inline-flex items-center rounded-full bg-black/60 font-bold text-white ring-1 ring-white/15 backdrop-blur-md " +
             (compact ? "h-7 px-2.5 text-[10.5px]" : "h-9 px-3.5 text-[12px]")
           }>
-            {cat.label_fr}
+            {categoryLabel(cat, locale)}
           </span>
         )}
       </div>
@@ -580,7 +595,7 @@ function FeaturedCard({
                 <span className="h-1 w-1 rounded-full bg-white/40" />
                 <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
                   <Gauge className={compact ? "size-3.5" : "h-4 w-4"} />
-                  {Intl.NumberFormat("fr-FR").format(mileage)} km
+                  {formatTND(mileage, locale)} {unitLabel("km", locale)}
                 </span>
               </>
             )}
@@ -589,7 +604,7 @@ function FeaturedCard({
                 <span className="h-1 w-1 rounded-full bg-white/40" />
                 <span className="inline-flex items-center gap-1 whitespace-nowrap">
                   <MapPin className="size-3.5 text-[var(--gold)]" />
-                  {row.governorate}
+                  {governorateLabel(row.governorate, locale)}
                 </span>
               </>
             )}
@@ -601,19 +616,19 @@ function FeaturedCard({
                 "font-bold uppercase tracking-[0.18em] text-white/60 " +
                 (compact ? "text-[9px]" : "text-[10px]")
               }>
-                Prix
+                {t("price")}
               </div>
               <div className={
                 "gradient-gold-text mt-1 font-black leading-none tabular-nums " +
                 (compact ? "text-[26px]" : "text-4xl xl:text-[44px]")
               }>
                 {row.price_on_request || row.price == null ? (
-                  <span className={compact ? "text-[20px]" : "text-3xl xl:text-4xl"}>Sur demande</span>
+                  <span className={compact ? "text-[20px]" : "text-3xl xl:text-4xl"}>{t("onRequest")}</span>
                 ) : (
                   <>
                     {formatTND(Number(row.price), locale)}
                     <span className="ms-2 align-middle text-[0.5em] font-extrabold uppercase tracking-[0.1em]">
-                      TND
+                      {currencyLabel(locale)}
                     </span>
                   </>
                 )}
@@ -625,7 +640,7 @@ function FeaturedCard({
             }>
               <span className="inline-flex items-center gap-1.5">
                 <MapPin className={compact ? "size-3.5 text-[var(--gold)]" : "h-4 w-4 text-[var(--gold)]"} />
-                {row.governorate}
+                {governorateLabel(row.governorate, locale)}
               </span>
             </div>
           </div>
@@ -640,8 +655,8 @@ function FeaturedCard({
           "batta-btn-luxe shrink-0 rounded-full transition-transform group-hover:scale-[1.04] " +
           (compact ? "h-10 px-4 text-[12.5px]" : "h-12 gap-2 px-6 text-sm")
         }>
-          Voir l&apos;annonce
-          <ArrowUpRight className={compact ? "size-3.5" : "h-4 w-4"} />
+          {t("see")}
+          <ArrowUpRight className={(compact ? "size-3.5" : "h-4 w-4") + " rtl:-scale-x-100"} />
         </span>
       </div>
     </Link>
@@ -649,8 +664,12 @@ function FeaturedCard({
 }
 
 function RunnerCard({ row, locale }: { row: Row; locale: string }) {
+  const t = useTranslations("homePage.cover");
   const img = cover(row)!;
   const cat = one(row.category);
+  // The words sit at the start edge, so the shade runs from there: from the
+  // left in French, from the right in Arabic.
+  const from = locale === "ar" ? "left" : "right";
 
   return (
     <Link
@@ -667,7 +686,7 @@ function RunnerCard({ row, locale }: { row: Row; locale: string }) {
         fit="cover"
         className="transition-transform duration-700 ease-out group-hover:scale-[1.05]"
       />
-      {/* Darkened from the LEFT, not from the bottom.
+      {/* Darkened from the START (the left in French), not from the bottom.
 
           These cards are wide and short — about 480 by 150 — so a bottom-up
           ramp has to cover most of the card to reach the text, which buries the
@@ -680,14 +699,14 @@ function RunnerCard({ row, locale }: { row: Row; locale: string }) {
         className="absolute inset-0"
         style={{
           backgroundImage:
-            "linear-gradient(to right, rgba(0,0,0,0.94) 0%, rgba(0,0,0,0.9) 26%, rgba(0,0,0,0.72) 44%, rgba(0,0,0,0.42) 62%, rgba(0,0,0,0.16) 80%, transparent 100%)",
+            `linear-gradient(to ${from}, rgba(0,0,0,0.94) 0%, rgba(0,0,0,0.9) 26%, rgba(0,0,0,0.72) 44%, rgba(0,0,0,0.42) 62%, rgba(0,0,0,0.16) 80%, transparent 100%)`,
         }}
       />
 
       <div className="relative flex h-full min-h-[132px] max-w-[68%] flex-col justify-center p-5">
         {cat && (
           <span className="mb-1 text-[9.5px] font-bold uppercase tracking-[0.18em] text-[var(--gold)]">
-            {cat.label_fr}
+            {categoryLabel(cat, locale)}
           </span>
         )}
         <h3 className="line-clamp-1 text-[17px] font-extrabold leading-tight text-white">
@@ -695,11 +714,11 @@ function RunnerCard({ row, locale }: { row: Row; locale: string }) {
         </h3>
         <div className="mt-1.5 flex items-center justify-between gap-3">
           <span className="batta-tabular text-[15px] font-black text-[var(--gold)]">
-            {priceLabel(row, locale)}
+            {priceLabel(row, locale, t)}
           </span>
           <span className="inline-flex items-center gap-1 text-[11.5px] text-white/70">
             <MapPin className="h-3 w-3" />
-            {row.governorate}
+            {governorateLabel(row.governorate, locale)}
           </span>
         </div>
       </div>

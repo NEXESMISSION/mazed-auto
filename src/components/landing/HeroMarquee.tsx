@@ -71,8 +71,8 @@ export function HeroMarquee({ cards }: { cards: MarqueeCard[] }) {
           card be sliced off mid-air at the boundary. Wider than one card, so a
           card fades out over its whole width instead of being half-dimmed and
           half-bright — which read as a broken card rather than as a fade. */}
-      <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-14 bg-gradient-to-r from-[#0a0a0a] to-transparent sm:w-[280px] sm:via-[#0a0a0a]/85" />
-      <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-14 bg-gradient-to-l from-[#0a0a0a] to-transparent sm:w-[280px] sm:via-[#0a0a0a]/85" />
+      <div className="pointer-events-none absolute inset-y-0 start-0 z-10 w-14 bg-gradient-to-r from-[#0a0a0a] to-transparent sm:w-[280px] sm:via-[#0a0a0a]/85 rtl:bg-gradient-to-l" />
+      <div className="pointer-events-none absolute inset-y-0 end-0 z-10 w-14 bg-gradient-to-l from-[#0a0a0a] to-transparent sm:w-[280px] sm:via-[#0a0a0a]/85 rtl:bg-gradient-to-r" />
 
       {/* The shared marquee runs at 40s, which was written for a strip of text
           chips. Across a ~3 000px track of photographs that is about 75px a

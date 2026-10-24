@@ -14,18 +14,20 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
  * scrollLeft — no markup of its own.
  *
  * `arrows` opts the rail into desktop prev/next buttons (gated `lg:flex`,
- * so phones never see them — the mobile rail render stays untouched).
+ * so phones never see them — the mobile rail render stays untouched). It
+ * carries their labels, in the page's language, so the rail needs no
+ * messages of its own in the browser.
  */
 export function TrendingRail({
   children,
   intervalMs = 4000,
   resumeAfterMs = 6000,
-  arrows = false,
+  arrows,
 }: {
   children: React.ReactNode;
   intervalMs?: number;
   resumeAfterMs?: number;
-  arrows?: boolean;
+  arrows?: { prev: string; next: string };
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const lastInteractionAt = useRef<number>(0);
@@ -115,18 +117,18 @@ export function TrendingRail({
       {rail}
       <button
         type="button"
-        aria-label="Précédent"
+        aria-label={arrows.prev}
         onClick={() => scrollByDir(-1)}
-        className="absolute top-1/2 hidden size-10 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-surface/80 text-foreground shadow-[0_8px_24px_-10px_rgba(15,23,42,0.4)] backdrop-blur transition hover:border-gold-soft hover:text-gold active:scale-95 lg:flex ltr:left-1 rtl:right-1"
+        className="absolute start-1 top-1/2 hidden size-10 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-surface/80 text-foreground shadow-[0_8px_24px_-10px_rgba(15,23,42,0.4)] backdrop-blur transition hover:border-gold-soft hover:text-gold active:scale-95 lg:flex"
       >
         <ChevronLeft className="size-5 rtl:hidden" strokeWidth={2.4} />
         <ChevronRight className="hidden size-5 rtl:block" strokeWidth={2.4} />
       </button>
       <button
         type="button"
-        aria-label="Suivant"
+        aria-label={arrows.next}
         onClick={() => scrollByDir(1)}
-        className="absolute top-1/2 hidden size-10 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-surface/80 text-foreground shadow-[0_8px_24px_-10px_rgba(15,23,42,0.4)] backdrop-blur transition hover:border-gold-soft hover:text-gold active:scale-95 lg:flex ltr:right-1 rtl:left-1"
+        className="absolute end-1 top-1/2 hidden size-10 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-surface/80 text-foreground shadow-[0_8px_24px_-10px_rgba(15,23,42,0.4)] backdrop-blur transition hover:border-gold-soft hover:text-gold active:scale-95 lg:flex"
       >
         <ChevronRight className="size-5 rtl:hidden" strokeWidth={2.4} />
         <ChevronLeft className="hidden size-5 rtl:block" strokeWidth={2.4} />

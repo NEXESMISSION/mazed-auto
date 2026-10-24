@@ -192,7 +192,7 @@ function SlideBody({
       </div>
 
       {/* Info panel — title, location, price + action. */}
-      <div className={`absolute inset-x-0 bottom-0 z-10 p-5 ${isRTL ? "text-right" : "text-left"}`}>
+      <div className={`absolute inset-x-0 bottom-0 z-10 p-5 text-start`}>
         <h3
           className={`text-balance text-[20px] font-extrabold leading-[1.15] tracking-tight text-white drop-shadow ${
             isRTL ? "font-arabic" : ""

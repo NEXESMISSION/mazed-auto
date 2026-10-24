@@ -4,13 +4,16 @@
  * This module is an async Server Component — it runs once, per request, on the
  * server, and reading the clock is the correct way to answer "what is overdue"
  * or "which badge has lapsed". There is no render to replay. */
+import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { rankListings } from "@/lib/home/ranking";
 import { heroUsedIds } from "./AnnonceHero";
 import { coverPhoto } from "@/lib/listingCover";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { ListingImage } from "@/components/media/ListingImage";
-import { formatTND } from "@/lib/utils";
+import { currencyLabel, formatTND } from "@/lib/utils";
+import { categoryLabel, governorateLabel, type CategoryNames } from "@/lib/labels";
 import { TrendingRail } from "@/components/landing/TrendingRail";
 import { ArrowRight, BadgeCheck, ImageOff, MapPin } from "lucide-react";
 import { LinkBusy } from "@/components/ui/LinkBusy";
@@ -35,7 +38,7 @@ type Row = {
   price_on_request: boolean;
   governorate: string;
   seller_id: string;
-  category: { label_fr: string } | { label_fr: string }[] | null;
+  category: CategoryNames | CategoryNames[] | null;
   photos: { storage_path: string; sort_order: number; is_cover?: boolean | null }[] | null;
   published_at?: string | null;
   boost?: number | null;
@@ -44,21 +47,18 @@ type Row = {
   contact_reveal_count?: number | null;
 };
 
+/** The rail's heading comes from `homePage.rails.<vehicles|parts>`. */
 export async function AnnonceRail({
   kind,
-  eyebrow,
-  title,
-  subtitle,
   limit = 10,
   locale,
 }: {
   kind: "vehicle" | "part";
-  eyebrow: string;
-  title: string;
-  subtitle?: string;
   limit?: number;
   locale: string;
 }) {
+  const t = await getTranslations("homePage.rails");
+  const heading = kind === "vehicle" ? "vehicles" : "parts";
   const admin = getServiceSupabase();
   if (!admin) return null;
 
@@ -79,7 +79,7 @@ export async function AnnonceRail({
     .select(
       `id, title, price, price_on_request, governorate, seller_id,
        published_at, boost, boost_until, view_count, contact_reveal_count,
-       category:categories (label_fr),
+       category:categories (slug, label_fr, label_ar),
        photos:listing_photos (storage_path, sort_order, is_cover)`,
     )
     .eq("status", "published")
@@ -123,17 +123,17 @@ export async function AnnonceRail({
     <section className="mt-8">
       <div className="flex items-end justify-between gap-3 px-4 lg:px-6">
         <div>
-          <span className="batta-eyebrow">{eyebrow}</span>
+          <span className="batta-eyebrow">{t(`${heading}.eyebrow`)}</span>
           <h2 className="mt-1 text-[19px] font-extrabold tracking-tight text-foreground lg:text-[22px]">
-            {title}
+            {t(`${heading}.title`)}
           </h2>
-          {subtitle && <p className="mt-0.5 text-[12px] text-muted">{subtitle}</p>}
+          <p className="mt-0.5 text-[12px] text-muted">{t(`${heading}.subtitle`)}</p>
         </div>
         <Link
           href={href as never}
           className="inline-flex shrink-0 items-center gap-1 text-[12.5px] font-bold text-gold hover:underline"
         >
-          Tout voir <ArrowRight className="size-3.5" />
+          {t("seeAll")} <ArrowRight className="size-3.5 rtl:-scale-x-100" />
         </Link>
       </div>
 
@@ -166,6 +166,7 @@ function Card({
   badged: boolean;
   locale: string;
 }) {
+  const t = useTranslations("homePage.rails");
   const cat = Array.isArray(listing.category) ? listing.category[0] : listing.category;
   const cover = coverPhoto(listing.photos);
 
@@ -189,25 +190,25 @@ function Card({
           </span>
         )}
         {badged && (
-          <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/70 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-[0.1em] text-white backdrop-blur-sm">
-            <BadgeCheck className="size-3 text-gold" /> vérifié
+          <span className="absolute start-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/70 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-[0.1em] text-white backdrop-blur-sm">
+            <BadgeCheck className="size-3 text-gold" /> {t("verified")}
           </span>
         )}
       </div>
       <div className="p-3">
         <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted">
-          {cat?.label_fr ?? ""}
+          {categoryLabel(cat, locale)}
         </span>
         <h3 className="mt-0.5 line-clamp-2 text-[13px] font-bold leading-snug text-foreground">
           {listing.title}
         </h3>
         <p className="batta-tabular mt-1 text-[14px] font-extrabold text-foreground">
           {listing.price_on_request || listing.price == null
-            ? "Sur demande"
-            : `${formatTND(Number(listing.price), locale)} TND`}
+            ? t("onRequest")
+            : `${formatTND(Number(listing.price), locale)} ${currencyLabel(locale)}`}
         </p>
         <p className="mt-0.5 inline-flex items-center gap-1 text-[10.5px] text-muted">
-          <MapPin className="size-3" /> {listing.governorate}
+          <MapPin className="size-3" /> {governorateLabel(listing.governorate, locale)}
         </p>
       </div>
     </Link>

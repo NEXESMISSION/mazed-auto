@@ -132,6 +132,7 @@ export default async function LandingPage({
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations();
+  const th = await getTranslations("homePage");
   const isRTL = locale === "ar";
   // Both device trees are rendered and CSS picks one (lg breakpoint). The
   // page is static, so saved-hearts + login state stay false here and the
@@ -201,20 +202,8 @@ export default async function LandingPage({
           still running and retire with them (PIVOT-PLAN.md Phase 6). Each rail
           renders nothing when its side of the catalog is empty, so this section
           grows in as sellers publish rather than showing an empty shelf. */}
-      <AnnonceRail
-        kind="vehicle"
-        eyebrow="À vendre"
-        title="Voitures à prix fixe"
-        subtitle="Vous contactez le vendeur directement"
-        locale={locale}
-      />
-      <AnnonceRail
-        kind="part"
-        eyebrow="Pièces de rechange"
-        title="Pièces disponibles"
-        subtitle="Trouvez la pièce compatible avec votre véhicule"
-        locale={locale}
-      />
+      <AnnonceRail kind="vehicle" locale={locale} />
+      <AnnonceRail kind="part" locale={locale} />
 
       {/* ── v2 AUCTION BLOCKS ──
           Hidden with AUCTIONS_VISIBLE (see src/lib/features.ts): the live
@@ -240,7 +229,7 @@ export default async function LandingPage({
 
       {/* Brand wall — full logo grid of every make, each tile deep-linking into
           Explore filtered by that brand (see BrandRail + src/lib/brands.ts). */}
-      <BrandRail makes={makeCounts} title="Parcourir par marque" />
+      <BrandRail makes={makeCounts} />
 
       <section className="mt-10">
         <div className="px-4">
@@ -362,13 +351,13 @@ export default async function LandingPage({
         >
           <span className="min-w-0">
             <span className={`block text-[15px] font-bold text-foreground ${isRTL ? "font-arabic" : ""}`}>
-              Parcourir le catalogue
+              {th("browse.title")}
             </span>
             <span className="mt-0.5 block text-[12.5px] text-subtle">
-              Toutes les voitures et pi&egrave;ces en ligne
+              {th("browse.body")}
             </span>
           </span>
-          <ArrowUpRight className="size-5 shrink-0 text-muted" strokeWidth={2.2} />
+          <ArrowUpRight className="size-5 shrink-0 text-muted rtl:-scale-x-100" strokeWidth={2.2} />
         </Link>
 
         {/* Desktop spread. Not a duplicate of the mobile band — different
@@ -394,13 +383,13 @@ export default async function LandingPage({
                     className="batta-btn-luxe h-11 rounded-full px-6 text-[13px]"
                   >
                     {t("home.heroBrowseCta")}
-                    <ArrowUpRight className="size-4" strokeWidth={2.5} />
+                    <ArrowUpRight className="size-4 rtl:-scale-x-100" strokeWidth={2.5} />
                   </Link>
                   <Link
                     href={"/annonces/nouvelle" as never}
                     className="batta-btn-quiet h-11 rounded-full px-6 text-[13px]"
                   >
-                    Vendre
+                    {th("sell")}
                   </Link>
                 </div>
               </div>
@@ -413,7 +402,7 @@ export default async function LandingPage({
                   // Two steps, not three: "vérifiez votre identité" is gone with
                   // KYC. The full home rebuild lands in Phase 4 of the pivot.
                   { num: "01", href: "/properties" as const, title: t("nav.properties"), body: t("home.step1Body") },
-                  { num: "02", href: "/annonces/nouvelle" as const, title: "Vendre",   body: t("home.step3Body") },
+                  { num: "02", href: "/annonces/nouvelle" as const, title: th("sell"), body: t("home.step3Body") },
                 ].map((s) => (
                   <Link
                     key={s.num}
@@ -431,7 +420,7 @@ export default async function LandingPage({
                         {s.body}
                       </span>
                     </span>
-                    <ArrowUpRight className="mt-1 size-4 shrink-0 text-muted transition group-hover:text-gold-bright" strokeWidth={2.2} />
+                    <ArrowUpRight className="mt-1 size-4 shrink-0 text-muted transition group-hover:text-gold-bright rtl:-scale-x-100" strokeWidth={2.2} />
                   </Link>
                 ))}
               </div>
@@ -446,15 +435,15 @@ export default async function LandingPage({
       <section className="mt-10 px-4 pb-6">
         <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[10.5px] text-muted">
           <Link href={"/how-it-works" as never} className="hover:text-gold-bright">
-            Comment ça marche
+            {th("footer.howItWorks")}
           </Link>
           <span className="text-subtle">·</span>
           <Link href={"/help" as never} className="hover:text-gold-bright">
-            Aide
+            {th("footer.help")}
           </Link>
           <span className="text-subtle">·</span>
           <Link href={"/about" as never} className="hover:text-gold-bright">
-            À propos
+            {th("footer.about")}
           </Link>
           <span className="text-subtle">·</span>
           <Link href="/terms" className="hover:text-gold-bright">

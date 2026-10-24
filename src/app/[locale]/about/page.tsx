@@ -1,36 +1,49 @@
 import type { Metadata } from "next";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
+import { localeAlternates } from "@/i18n/alternates";
 import { ChevronLeft, Target, Heart, Award, ArrowRight } from "lucide-react";
 
-export const metadata: Metadata = {
-  title: "À propos — Mazed Auto",
-  description:
-    "Mazed Auto est une place de marché tunisienne pour les voitures et les pièces de rechange : prix affichés, contact direct avec le vendeur, chaque annonce vérifiée avant publication.",
-};
+type Props = { params: Promise<{ locale: string }> };
 
-// Pure static content — prerender at build and serve from the edge CDN.
-export const dynamic = "force-static";
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "info.about" });
+  return {
+    title: t("metaTitle"),
+    description: t("metaDescription"),
+    alternates: localeAlternates(locale, "/about"),
+  };
+}
 
-export default function AboutPage() {
+// Static: prerendered at build for each locale (generateStaticParams in the
+// [locale] layout) and served from the edge CDN, because nothing here reads a
+// request. NOT `dynamic = "force-static"`: under it next-intl lost the locale
+// that setRequestLocale sets, and /ar rendered this page — and the site's bars
+// around it — in French.
+
+export default async function AboutPage({ params }: Props) {
+  const { locale } = await params;
+  // Static page: next-intl must be told the locale, it cannot read a header.
+  setRequestLocale(locale);
+  const t = await getTranslations("info");
   return (
     <div className="mx-auto max-w-[var(--max-w)] px-5 py-6 lg:max-w-[var(--max-w-content)] lg:py-10">
       <Link
         href="/"
         className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-muted transition hover:text-gold-bright"
       >
-        <ChevronLeft className="size-4" /> Accueil
+        <ChevronLeft className="size-4 rtl:-scale-x-100" /> {t("home")}
       </Link>
 
       {/* Editorial header */}
       <header className="mt-6 space-y-3 text-center">
         <span className="batta-eyebrow block">Mazed Auto</span>
         <h1 className="text-[28px] font-extrabold leading-tight tracking-tight lg:text-[34px]">
-          À <span className="gradient-gold-text">propos</span>
+          {t.rich("about.title", { gold: (c) => <span className="gradient-gold-text">{c}</span> })}
         </h1>
         <p className="mx-auto max-w-xl text-[13.5px] leading-relaxed text-muted lg:text-[14.5px]">
-          Mazed Auto est une place de marché tunisienne pour les voitures et
-          les pièces de rechange. Le prix est affiché, vous parlez directement
-          au vendeur, et nous vérifions chaque annonce avant sa publication.
+          {t("about.intro")}
         </p>
       </header>
 
@@ -38,47 +51,30 @@ export default function AboutPage() {
       <section className="mt-10 grid grid-cols-1 gap-3 md:grid-cols-3">
         <ValueCard
           icon={<Target className="size-5" />}
-          title="Notre vision"
-          text="Devenir la référence de la voiture d'occasion et de la pièce détachée en Tunisie."
+          title={t("about.vision.title")}
+          text={t("about.vision.text")}
         />
         <ValueCard
           icon={<Heart className="size-5" />}
-          title="Notre mission"
-          text="Bâtir la confiance entre vendeurs et acheteurs : des annonces vérifiées, et un vendeur que vous pouvez appeler."
+          title={t("about.mission.title")}
+          text={t("about.mission.text")}
         />
         <ValueCard
           icon={<Award className="size-5" />}
-          title="Nos valeurs"
-          text="Transparence, sécurité, simplicité."
+          title={t("about.values.title")}
+          text={t("about.values.text")}
         />
       </section>
 
       {/* Story */}
       <section className="mt-10 rounded-2xl bg-surface p-5 ring-1 ring-border lg:p-7">
         <h2 className="text-xl font-extrabold tracking-tight lg:text-2xl">
-          Notre histoire
+          {t("about.storyTitle")}
         </h2>
         <div className="mt-3 space-y-4 text-[13.5px] leading-relaxed text-foreground/80">
-          <p>
-            L&apos;idée est née d&apos;un constat simple : le marché tunisien
-            des voitures d&apos;occasion souffrait de comptes fictifs, de
-            photos volées et d&apos;informations trompeuses. Nous voulions une
-            solution qui place la confiance au cœur de tout.
-          </p>
-          <p>
-            C&apos;est ainsi qu&apos;est née Mazed Auto : chaque annonce est
-            relue par notre équipe avant d&apos;être publiée, le vendeur signe
-            une attestation sur l&apos;exactitude de ce qu&apos;il déclare, et
-            les voitures que nous inspectons nous-mêmes portent le badge
-            « Vérifié et approuvé » avec la fiche de diagnostic qui va avec.
-          </p>
-          <p>
-            Nous sommes l&apos;intermédiaire, pas le vendeur. L&apos;annonce
-            porte les coordonnées de son propriétaire : vous l&apos;appelez,
-            vous voyez la voiture, vous convenez du prix entre vous. Nous ne
-            prenons rien sur la vente — seule la publication est payante, et
-            elle est gratuite pour les pièces de rechange.
-          </p>
+          <p>{t("about.story1")}</p>
+          <p>{t("about.story2")}</p>
+          <p>{t("about.story3")}</p>
         </div>
       </section>
 
@@ -88,8 +84,8 @@ export default function AboutPage() {
           href="/annonces"
           className="batta-btn-luxe h-11 rounded-xl px-6 text-[13px] lg:text-sm"
         >
-          Parcourir les annonces
-          <ArrowRight className="size-4" />
+          {t("about.cta")}
+          <ArrowRight className="size-4 rtl:-scale-x-100" />
         </Link>
       </div>
     </div>

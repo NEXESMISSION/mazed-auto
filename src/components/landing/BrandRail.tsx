@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { CAR_BRANDS, brandCounts } from "@/lib/brands";
 
@@ -11,17 +12,16 @@ import { CAR_BRANDS, brandCounts } from "@/lib/brands";
  */
 export function BrandRail({
   makes,
-  title,
 }: {
   makes: { name: string; count: number }[];
-  title: string;
 }) {
+  const t = useTranslations("homePage.brands");
   const counts = brandCounts(makes);
 
   return (
     <section className="mt-10 px-4 lg:px-8">
       <h3 className="text-[15px] font-bold leading-tight lg:text-[19px] lg:font-extrabold lg:tracking-tight">
-        {title}
+        {t("title")}
       </h3>
 
       <div className="mt-3 grid grid-cols-4 gap-2.5 sm:grid-cols-6 md:grid-cols-7 lg:grid-cols-9 lg:gap-3 xl:grid-cols-10">
@@ -31,11 +31,7 @@ export function BrandRail({
             <Link
               key={brand.name}
               href={`/annonces?q=${encodeURIComponent(brand.query)}` as `/annonces`}
-              aria-label={
-                count > 0
-                  ? `Voir les ${count} voiture${count > 1 ? "s" : ""} ${brand.name}`
-                  : `Voir les voitures ${brand.name}`
-              }
+              aria-label={t("see", { count, brand: brand.name })}
               className="group relative flex aspect-square items-center justify-center rounded-xl bg-white ring-1 ring-border transition active:scale-[0.97] hover:shadow-[0_4px_20px_-4px_rgba(212,175,55,0.35)] hover:ring-gold-soft/60"
             >
               {/* Logo IS the tile — alt + aria-label carry the name for a11y.
@@ -57,7 +53,7 @@ export function BrandRail({
                    sitting ON the logo rather than clipped into it. */
                 <span
                   aria-hidden
-                  className="absolute -right-1 -top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-[var(--gold)] px-1 text-[10px] font-extrabold leading-none text-black ring-2 ring-white"
+                  className="absolute -end-1 -top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-[var(--gold)] px-1 text-[10px] font-extrabold leading-none text-black ring-2 ring-white"
                 >
                   {count > 99 ? "99+" : count}
                 </span>
