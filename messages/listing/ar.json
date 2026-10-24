@@ -1,0 +1,75 @@
+{
+  "metaTitle": "إعلان",
+  "metaDescription": "{title} في {place}.",
+  "priceOnRequest": "السعر عند الطلب",
+  "currencyPerDay": "{currency} / اليوم",
+  "negotiable": "السعر قابل للتفاوض",
+  "annonce": "إعلان",
+  "seller": "البائع",
+  "private": "خاصّ",
+  "verifiedSeller": "بائع موثّق",
+  "byShop": "منشور من طرف المتجر",
+  "verifiedShop": "متجر موثّق",
+  "seeShop": "زيارة المتجر",
+  "safety": "تنشر Mazed الإعلانات وتراجعها، لكنها لا تتدخّل في المعاملة: الدفع والتسليم يتمّان مباشرة بينك وبين البائع. لا تدفع أي عربون قبل معاينة المركبة أو القطعة ووثائقها.",
+  "publishedOn": "نُشر في {date}",
+  "reference": "مرجع الإعلان",
+  "specs": "المواصفات",
+  "yes": "نعم",
+  "fitments": "متوافقة مع",
+  "description": "الوصف",
+  "back": "→ كل الإعلانات",
+  "rental": {
+    "title": "شروط الكراء",
+    "note": "الحجز يتمّ مباشرة مع الوكالة: اتصل بها للتأكّد من التواريخ.",
+    "availability": "التوفّر",
+    "available": "متوفّرة",
+    "onRequest": "عند الطلب",
+    "deposit": "الضمان",
+    "noDeposit": "دون ضمان",
+    "depositAmount": "{amount} د.ت",
+    "minAge": "السنّ الدنيا",
+    "ageValue": "{age} سنة",
+    "license": "رخصة السياقة منذ",
+    "noSeniority": "لا تُشترط أقدمية",
+    "licenseYears": "{years, plural, zero {أقلّ من سنة} one {سنة واحدة} two {سنتان} few {{years} سنوات} many {{years} سنة} other {{years} سنة}}",
+    "km": "الكيلومترات المشمولة",
+    "unlimited": "غير محدودة",
+    "kmPerDay": "{km} كم / اليوم"
+  },
+  "related": {
+    "eyebrow": "قد يهمّك أيضًا",
+    "title": "إعلانات مشابهة",
+    "seeAll": "عرض الكل"
+  },
+  "diagnostic": {
+    "title": "فحص Mazed",
+    "verdict": {
+      "approved": "مفحوصة ومقبولة",
+      "reserves": "مفحوصة — مع تحفّظات",
+      "failed": "مفحوصة — غير مقبولة"
+    },
+    "blurb": {
+      "approved": "فحصها فريقنا. لم نجد أي نقطة مانعة.",
+      "reserves": "فحصها فريقنا. هناك نقاط يجب معرفتها قبل اتخاذ قرارك.",
+      "failed": "فحصها فريقنا. وُجدت عيوب مهمّة."
+    },
+    "notDeclaration": "فحصنا هذه المركبة بأنفسنا — هذا ليس تصريحًا من البائع.",
+    "by": "بواسطة {name}",
+    "on": "بتاريخ {date}",
+    "checked": "{count, plural, zero {لا نقاط مفحوصة} one {نقطة واحدة مفحوصة} two {نقطتان مفحوصتان} few {{count} نقاط مفحوصة} many {{count} نقطة مفحوصة} other {{count} نقطة مفحوصة}}",
+    "findings": " · {count} للتنبيه",
+    "noFindings": "لم تُسجَّل أي ملاحظة.",
+    "state": {
+      "ok": "سليم",
+      "warn": "يُراقَب",
+      "bad": "عيب"
+    },
+    "photos": "صور التُقطت أثناء الفحص",
+    "photoAlt": "صورة الفحص {n}"
+  },
+  "api": {
+    "noPhone": "هذا البائع لا يشارك رقمه.",
+    "rateLimited": "طلبت أرقامًا كثيرة من هذا الجهاز. أعد المحاولة لاحقًا."
+  }
+}

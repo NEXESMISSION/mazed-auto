@@ -1,0 +1,70 @@
+{
+  "cover": {
+    "headline": "Voitures et pièces <gold>partout en Tunisie</gold>",
+    "leadMobile": "Le prix est sur l'annonce. Vous appelez le vendeur.",
+    "leadDesktop": "Le prix est sur l'annonce. Vous appelez le vendeur, vous convenez entre vous.",
+    "annonces": "Annonces",
+    "parts": "Pièces de rechange",
+    "featured": "À la une",
+    "facts": {
+      "verified": "Annonces vérifiées avant publication",
+      "noCommission": "Aucune commission sur la vente",
+      "freeParts": "Pièces de rechange gratuites à publier"
+    },
+    "price": "Prix",
+    "onRequest": "Sur demande",
+    "priceOnRequest": "Prix sur demande",
+    "see": "Voir l'annonce",
+    "forSale": "À vendre"
+  },
+  "carousel": {
+    "label": "Annonces à la une",
+    "roleDescription": "carrousel",
+    "prev": "Annonce précédente",
+    "next": "Annonce suivante",
+    "goTo": "Aller à l'annonce {n} sur {count}"
+  },
+  "rails": {
+    "vehicles": {
+      "eyebrow": "À vendre",
+      "title": "Voitures à prix fixe",
+      "subtitle": "Vous contactez le vendeur directement"
+    },
+    "parts": {
+      "eyebrow": "Pièces de rechange",
+      "title": "Pièces disponibles",
+      "subtitle": "Trouvez la pièce compatible avec votre véhicule"
+    },
+    "seeAll": "Tout voir",
+    "verified": "vérifié",
+    "onRequest": "Sur demande"
+  },
+  "brands": {
+    "title": "Parcourir par marque",
+    "see": "{count, plural, =0 {Voir les voitures {brand}} one {Voir les # voiture {brand}} other {Voir les # voitures {brand}}}"
+  },
+  "browse": {
+    "title": "Parcourir le catalogue",
+    "body": "Toutes les voitures et pièces en ligne"
+  },
+  "sell": "Vendre",
+  "footer": {
+    "howItWorks": "Comment ça marche",
+    "help": "Aide",
+    "about": "À propos"
+  },
+  "pillars": {
+    "buyers": {
+      "eyebrow": "Acheteurs",
+      "title": "Trouvez votre prochaine voiture",
+      "text": "Des annonces vérifiées chaque jour, partout en Tunisie — voitures et pièces de rechange.",
+      "cta": "Parcourir tout"
+    },
+    "sellers": {
+      "eyebrow": "Vendeurs",
+      "title": "Vendez votre voiture en toute confiance",
+      "text": "Votre annonce vérifiée et publiée rapidement. Paiement sécurisé à la vente.",
+      "cta": "Commencer à vendre"
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "errors": {
+    "refused": "Le serveur a refusé l'envoi.",
+    "unexpected": "Réponse inattendue du serveur.",
+    "putRefused": "Envoi refusé ({status}).",
+    "slow": "Connexion trop lente.",
+    "failed": "Échec de l'envoi."
+  },
+  "max": "Maximum {max} photos.",
+  "tooBig": "« {name} » dépasse {mb} Mo.",
+  "add": "Ajoutez vos photos",
+  "addMore": "Ajouter d'autres photos",
+  "room": "Jusqu'à {max} photos · {room, plural, one {# restante} other {# restantes}}",
+  "full": "Maximum {max} photos atteint",
+  "sending": "Envoi de {count, plural, one {# photo} other {# photos}}… restez sur cette page.",
+  "failedCount": "{count, plural, one {# photo n'a pas pu être envoyée.} other {# photos n'ont pas pu être envoyées.}} Réessayez ci-dessous.",
+  "sent": "{count, plural, one {# photo envoyée} other {# photos envoyées}} · la première est la couverture de votre annonce.",
+  "orderHint": "La première photo est la couverture. Utilisez les flèches pour changer l'ordre, ou l'étoile pour choisir la couverture directement.",
+  "cover": "Couverture",
+  "moveBefore": "Déplacer avant",
+  "makeCover": "Définir comme couverture",
+  "delete": "Supprimer la photo",
+  "moveAfter": "Déplacer après",
+  "retry": "Réessayer",
+  "remove": "Retirer",
+  "preparing": "Préparation",
+  "uploading": "Envoi",
+  "cancel": "Annuler l'envoi de cette photo",
+  "cancelShort": "Annuler"
+}

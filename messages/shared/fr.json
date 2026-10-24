@@ -1,0 +1,49 @@
+{
+  "close": "Fermer",
+  "loading": "Chargement…",
+  "loadingLabel": "Chargement",
+  "searching": "Recherche en cours…",
+  "verified": "vérifié",
+  "price": {
+    "onRequest": "Sur demande",
+    "amount": "{amount} {currency}",
+    "perDay": "{amount} {currency} / jour"
+  },
+  "favorite": {
+    "add": "Ajouter aux favoris",
+    "remove": "Retirer des favoris",
+    "sessionExpired": "Votre session a expiré. Reconnectez-vous pour enregistrer vos favoris.",
+    "failed": "Impossible d'enregistrer ce favori. Réessayez.",
+    "offline": "Pas de connexion. Réessayez."
+  },
+  "share": {
+    "label": "Partager cette annonce",
+    "button": "Partager",
+    "copied": "Lien copié",
+    "copiedToast": "Lien copié.",
+    "copyPrompt": "Copiez le lien de cette annonce :"
+  },
+  "contact": {
+    "show": "Afficher le numéro",
+    "unavailable": "Numéro indisponible.",
+    "network": "Erreur réseau.",
+    "disclaimer": "Mazed met en relation, sans intervenir dans la vente. Vérifiez le véhicule et les papiers avant tout paiement."
+  },
+  "lightbox": {
+    "label": "Image en plein écran",
+    "zoomOut": "Dézoomer",
+    "zoomIn": "Zoomer",
+    "reset": "Réinitialiser",
+    "hint": "Molette / pincer pour zoomer · glisser pour déplacer"
+  },
+  "pagination": {
+    "label": "Pagination",
+    "previous": "Page précédente",
+    "next": "Page suivante",
+    "page": "Page {page}",
+    "goTo": "Aller à la page {page}"
+  },
+  "alert": {
+    "understood": "J'ai compris"
+  }
+}

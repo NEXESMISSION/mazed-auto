@@ -199,11 +199,11 @@ export default async function AccountPage() {
             {fullName ?? userEmail ?? ""}
           </div>
           {fullName && userEmail && (
-            <div className="mt-0.5 truncate text-[11px] text-muted">{userEmail}</div>
+            <div className="mt-0.5 truncate text-[11px] text-muted"><span className="ltr-island">{userEmail}</span></div>
           )}
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
             <KycPill status={kycStatus} label={kycLabel} />
-            {role !== "individual" && <span className="batta-pill-gold">{role}</span>}
+            {role !== "individual" && <span className="batta-pill-gold">{t.has(`roles.${role}`) ? t(`roles.${role}`) : role}</span>}
           </div>
         </div>
       </div>
@@ -264,10 +264,10 @@ export default async function AccountPage() {
                 {fullName ?? userEmail ?? ""}
               </h1>
               <KycPill status={kycStatus} label={kycLabel} />
-              {role !== "individual" && <span className="batta-pill-gold">{role}</span>}
+              {role !== "individual" && <span className="batta-pill-gold">{t.has(`roles.${role}`) ? t(`roles.${role}`) : role}</span>}
             </div>
             {fullName && userEmail && (
-              <p className="mt-1 text-[13.5px] text-muted">{userEmail}</p>
+              <p className="mt-1 text-[13.5px] text-muted"><span className="ltr-island">{userEmail}</span></p>
             )}
           </div>
           <div className="flex shrink-0 items-center gap-2.5">

@@ -1,0 +1,67 @@
+{
+  "page": {
+    "home": "Accueil",
+    "eyebrow": "Légal",
+    "updated": "Dernière mise à jour : {date}"
+  },
+  "termsTitle": "Conditions d'utilisation",
+  "privacyTitle": "Politique de confidentialité",
+  "termsMetaTitle": "Conditions d'utilisation — Mazed Auto",
+  "privacyMetaTitle": "Politique de confidentialité — Mazed Auto",
+  "terms": {
+    "s1": {
+      "title": "1. Objet",
+      "body": "Les présentes conditions générales régissent l'utilisation de la plateforme Mazed Auto, place de marché d'enchères et de ventes automobiles en Tunisie. En créant un compte, vous acceptez ces conditions dans leur intégralité."
+    },
+    "s2": {
+      "title": "2. Compte et vérification",
+      "body": "Vous devez fournir des informations exactes lors de l'inscription. Une vérification d'identité (KYC) est requise avant de pouvoir enchérir ou acheter. Vous êtes responsable de la confidentialité de vos identifiants."
+    },
+    "s3": {
+      "title": "3. Enchères et achats",
+      "body": "Toute enchère constitue un engagement ferme. Une caution peut être exigée pour participer ; elle est remboursée si vous ne remportez pas l'enchère, et peut être retenue en cas de non-respect de vos engagements. Le gagnant s'engage à régler le solde dans les délais indiqués."
+    },
+    "s4": {
+      "title": "4. Frais",
+      "body": "La publication d'une annonce, les options de mise en avant et les commissions applicables sont affichées avant toute transaction. Les montants sont indiqués en dinars tunisiens (TND)."
+    },
+    "s5": {
+      "title": "5. Responsabilités",
+      "body": "Mazed Auto agit en tant qu'intermédiaire. La conformité juridique des biens, l'exactitude des informations fournies par les vendeurs et le bon déroulement des transactions relèvent de la responsabilité des parties. Nous recommandons une expertise indépendante avant d'enchérir."
+    },
+    "s6": {
+      "title": "6. Résiliation",
+      "body": "Nous pouvons suspendre ou clôturer un compte en cas de fraude, d'abus ou de violation des présentes conditions."
+    },
+    "s7": {
+      "title": "7. Modifications",
+      "body": "Ces conditions peuvent évoluer. La version en vigueur est celle publiée sur cette page."
+    }
+  },
+  "privacy": {
+    "s1": {
+      "title": "1. Données collectées",
+      "body": "Nous collectons les informations que vous fournissez (nom, e-mail, téléphone, gouvernorat, pièces d'identité pour la vérification) ainsi que les données d'usage nécessaires au fonctionnement du service."
+    },
+    "s2": {
+      "title": "2. Utilisation",
+      "body": "Vos données servent à créer et sécuriser votre compte, vérifier votre identité, traiter les enchères et paiements, et vous envoyer des notifications liées à votre activité."
+    },
+    "s3": {
+      "title": "3. Partage",
+      "body": "Vos données ne sont pas vendues. Elles peuvent être partagées avec des prestataires strictement nécessaires (paiement, hébergement) et avec les autorités lorsque la loi l'exige."
+    },
+    "s4": {
+      "title": "4. Conservation et sécurité",
+      "body": "Les documents d'identité sont stockés de manière sécurisée et accessibles uniquement aux fins de vérification. Nous appliquons des mesures techniques pour protéger vos données."
+    },
+    "s5": {
+      "title": "5. Vos droits",
+      "body": "Vous pouvez demander l'accès, la rectification ou la suppression de vos données en nous contactant à l'adresse indiquée sur la page Contact."
+    },
+    "s6": {
+      "title": "6. Cookies",
+      "body": "Nous utilisons des cookies essentiels au fonctionnement du site et, le cas échéant, des cookies de mesure d'audience."
+    }
+  }
+}

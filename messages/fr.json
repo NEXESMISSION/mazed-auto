@@ -106,6 +106,13 @@
       "pending": "Vérification en attente",
       "rejected": "Vérification refusée",
       "none": "Vérification requise"
+    },
+    "roles": {
+      "admin": "Admin",
+      "agency": "Agence",
+      "bank": "Banque",
+      "bailiff": "Huissier",
+      "inspector": "Expert"
     }
   },
   "landing": {

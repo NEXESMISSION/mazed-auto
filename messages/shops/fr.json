@@ -1,0 +1,46 @@
+{
+  "meta": {
+    "directoryTitle": "Boutiques — Mazed Auto",
+    "directoryDescription": "Concessionnaires, loueurs et vendeurs de pièces auto en Tunisie : leurs annonces et leurs coordonnées.",
+    "shopFallbackTitle": "Boutique",
+    "shopTitle": "{name} — {activity} · Mazed Auto",
+    "shopDescription": "{name}, {activity} à {governorate}. Annonces et contact.",
+    "listName": "Boutiques professionnelles",
+    "catalogName": "Annonces de {name}"
+  },
+  "directory": {
+    "eyebrow": "Professionnels",
+    "title": "Boutiques",
+    "intro": "Concessionnaires, loueurs et vendeurs de pièces. Leurs annonces sont aussi dans le catalogue ; ici, vous voyez tout ce qu'une boutique propose, et vous l'appelez directement.",
+    "activityNav": "Activité",
+    "all": "Toutes",
+    "sale": "Vente de véhicules",
+    "rental": "Location",
+    "parts": "Pièces auto",
+    "verified": "Vérifiées",
+    "governorateNav": "Gouvernorat",
+    "allTunisia": "Toute la Tunisie",
+    "none": "Aucune boutique ne correspond.",
+    "seeAll": "Voir toutes les boutiques",
+    "verifiedShop": "Boutique vérifiée",
+    "listings": "{count, plural, one {# annonce} other {# annonces}}"
+  },
+  "store": {
+    "verified": "Boutique vérifiée",
+    "online": "{count, plural, one {# annonce en ligne} other {# annonces en ligne}}",
+    "empty": "Cette boutique n'a pas d'annonce en ligne pour le moment.",
+    "contactTitle": "Contacter la boutique",
+    "contactBody": "Vous traitez directement avec la boutique : Mazed n'intervient pas dans la vente ni dans la location.",
+    "hours": "Horaires",
+    "allShops": "Toutes les boutiques"
+  },
+  "preview": {
+    "ownerTitle": "Aperçu de votre page.",
+    "ownerBody": "Les pages boutiques ne sont pas encore ouvertes au public : vous seul la voyez. Profitez-en pour la compléter depuis l'espace pro.",
+    "adminTitle": "Aperçu administrateur.",
+    "adminBody": "Les pages boutiques ne sont pas encore publiques : un visiteur obtient une page introuvable. Elles s'ouvrent à tous dès que « Boutiques professionnelles » est activé dans Admin → Site → Réglages."
+  },
+  "api": {
+    "hidden": "Cette boutique n'a pas encore indiqué de numéro."
+  }
+}

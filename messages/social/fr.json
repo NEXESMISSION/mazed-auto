@@ -79,5 +79,26 @@
       "manual_action_required": "Action requise",
       "cancelled": "Annulée"
     }
+  },
+  "api": {
+    "notRetryable": "Cette publication ne peut pas être relancée.",
+    "notCancellable": "Déjà publiée ou en cours.",
+    "pickListing": "Choisissez une annonce et au moins un réseau.",
+    "listingNotPublished": "Seule une annonce en ligne peut être diffusée.",
+    "consentRequired": "Cochez l'autorisation de publication pour continuer.",
+    "pickAccount": "Choisissez au moins un compte.",
+    "validateFirst": "Validez d'abord le texte {networks}.",
+    "and": " et ",
+    "network": {
+      "facebook": "facebook",
+      "instagram": "instagram"
+    },
+    "locked": "Cette publication est déjà envoyée.",
+    "textLength": "Le texte doit faire entre 1 et 2 000 caractères.",
+    "listingGone": "L'annonce n'est plus en ligne.",
+    "refused": "refusé",
+    "jobMissing": "job introuvable",
+    "cancelledByShop": "Annulée par la boutique.",
+    "facts": "Ces chiffres ne figurent pas dans l'annonce : {numbers}. Corrigez le texte ou l'annonce."
   }
 }

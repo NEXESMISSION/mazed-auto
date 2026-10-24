@@ -1,0 +1,369 @@
+{
+  "bucket": {
+    "vehicles": "véhicules",
+    "parts": "pièces"
+  },
+  "landing": {
+    "metaTitle": "Boutiques professionnelles — Mazed Auto",
+    "metaDescription": "Concessionnaires, loueurs et vendeurs de pièces : votre boutique sur Mazed Auto, vos annonces dans le catalogue, vos clients vous appellent directement.",
+    "eyebrow": "Professionnels",
+    "title": "Votre boutique sur Mazed Auto",
+    "intro": "Une page à votre nom, toutes vos annonces dans le catalogue, et vos clients qui vous appellent directement. Mazed ne prend aucune commission sur vos ventes ni vos locations.",
+    "mySpace": "Mon espace pro",
+    "open": "Ouvrir ma boutique",
+    "kinds": {
+      "sale": {
+        "title": "Vente de véhicules",
+        "body": "Concessionnaires et revendeurs : voitures, utilitaires, motos."
+      },
+      "rental": {
+        "title": "Location",
+        "body": "Prix par jour, conditions et disponibilité, sans calendrier à tenir."
+      },
+      "parts": {
+        "title": "Pièces auto",
+        "body": "Votre stock en ligne, avec la compatibilité marque / modèle / année."
+      }
+    },
+    "plansTitle": "Les formules",
+    "plansSoon": "Les formules seront en vente très bientôt. <link>Contactez-nous</link> pour ouvrir votre boutique dès maintenant.",
+    "perDays": "/ {days} j",
+    "vehicles": "{count} véhicules en ligne (vente ou location)",
+    "parts": "ou {count} pièces en ligne",
+    "drafts": "Brouillons illimités",
+    "rules": {
+      "bucket": "Le nombre d'annonces s'entend pour votre activité : véhicules pour la vente et la location, pièces pour les pièces.",
+      "drafts": "Les brouillons et les annonces retirées ne comptent pas.",
+      "renewal": "Renouvellement à votre initiative : aucun prélèvement automatique.",
+      "end": "À la fin d'un abonnement, vos annonces sont mises en pause, jamais supprimées."
+    },
+    "badge": "<b>Le badge « Boutique vérifiée » ne s'achète pas.</b> Il est accordé par notre équipe après contrôle de vos justificatifs (RNE, patente), que vous déposez depuis votre espace pro. Les particuliers, eux, publient gratuitement une voiture et cinq pièces."
+  },
+  "create": {
+    "metaTitle": "Ouvrir ma boutique — Mazed Auto",
+    "eyebrow": "Professionnels",
+    "title": "Ouvrir ma boutique",
+    "intro": "Votre compte reste le même : vos annonces personnelles restent les vôtres.",
+    "steps": {
+      "activity": "Activité",
+      "info": "Informations",
+      "plan": "Formule"
+    },
+    "activities": {
+      "vente_auto": {
+        "label": "Vente de véhicules",
+        "body": "Voitures, utilitaires, motos."
+      },
+      "location_auto": {
+        "label": "Location de véhicules",
+        "body": "Prix par jour et conditions."
+      },
+      "pieces_auto": {
+        "label": "Pièces auto",
+        "body": "Pièces neuves ou d'occasion."
+      }
+    },
+    "activityHint": "Une boutique a une activité. Elle détermine le nombre d'annonces de votre formule.",
+    "name": "Nom de la boutique",
+    "governorate": "Gouvernorat",
+    "city": "Ville",
+    "phone": "Téléphone de la boutique",
+    "back": "Retour",
+    "continue": "Continuer",
+    "noPlans": "Les formules ne sont pas encore en vente. Votre boutique sera enregistrée et notre équipe vous contactera pour l'ouvrir.",
+    "planLine": "{count} {bucket} en ligne · {days} jours",
+    "renewHint": "Vous payez une période ; le renouvellement se fait à votre initiative, sans prélèvement automatique.",
+    "save": "Enregistrer ma boutique",
+    "payAndOpen": "Payer et ouvrir ma boutique",
+    "failed": "Création impossible.",
+    "savedNoPlan": "Boutique enregistrée. Nous vous contactons pour l'ouvrir.",
+    "payUnavailable": "Paiement indisponible pour le moment. Votre boutique est enregistrée.",
+    "network": "Erreur réseau."
+  },
+  "layout": {
+    "metaTitle": "Espace pro — Mazed Auto",
+    "noShopTitle": "Vous n'avez pas de boutique",
+    "noShopBody": "L'espace pro sert aux concessionnaires, loueurs et vendeurs de pièces.",
+    "noShopCanOpen": "Ouvrez la vôtre en quelques minutes : elle est en ligne dès le paiement de la formule.",
+    "noShopSoon": "L'ouverture d'une boutique en ligne arrive bientôt ; en attendant, notre équipe peut l'ouvrir pour vous.",
+    "open": "Ouvrir ma boutique",
+    "contact": "Nous contacter",
+    "personal": "Mes annonces personnelles",
+    "eyebrow": "Espace pro",
+    "verified": "Boutique vérifiée",
+    "viewPage": "Voir ma page"
+  },
+  "tabs": {
+    "nav": "Espace pro",
+    "summary": "Résumé",
+    "listings": "Annonces",
+    "stats": "Statistiques",
+    "marketing": "Marketing",
+    "subscription": "Abonnement",
+    "shop": "Ma boutique"
+  },
+  "post": {
+    "failed": "Action impossible pour le moment.",
+    "network": "Erreur réseau."
+  },
+  "summary": {
+    "alerts": {
+      "suspended": "Boutique suspendue. Ses annonces ne peuvent pas être mises en ligne.",
+      "suspendedBecause": "Boutique suspendue : {reason} Ses annonces ne peuvent pas être mises en ligne.",
+      "draft": "Choisissez une formule pour ouvrir votre boutique : elle sera en ligne dès le paiement confirmé.",
+      "pending": "Boutique en attente de validation par notre équipe.",
+      "noSubscription": "Aucun abonnement en cours : vos annonces ne peuvent pas être mises en ligne.",
+      "grace": "Abonnement terminé le {ended}. Vos annonces restent en ligne jusqu'au {grace}, mais rien de nouveau ne part.",
+      "endsSoon": "{days, plural, one {Votre abonnement se termine dans # jour, le {date}.} other {Votre abonnement se termine dans # jours, le {date}.}}",
+      "quotaFull": "Les {count} {bucket} de votre formule sont en ligne : retirez-en une pour en publier une autre.",
+      "missing": "Votre page n'a pas encore {items}.",
+      "missingLogo": "un logo",
+      "missingDescription": "une description",
+      "missingPhone": "un numéro",
+      "rejected": "{count, plural, one {# annonce à corriger.} other {# annonces à corriger.}}"
+    },
+    "cta": {
+      "choose": "Choisir",
+      "choosePlan": "Choisir une formule",
+      "renew": "Renouveler",
+      "manage": "Gérer",
+      "complete": "Compléter",
+      "see": "Voir"
+    },
+    "online": "Annonces en ligne",
+    "onlineHint": "En vérification ou publiées. Les brouillons et les annonces retirées ne comptent pas.",
+    "newListing": "Nouvelle annonce",
+    "subscription": "Abonnement",
+    "until": "{days, plural, one {Jusqu'au {date} — # jour restant.} other {Jusqu'au {date} — # jours restants.}}",
+    "ended": "Terminé le {date}.",
+    "gift": "Offert à l'ouverture des boutiques.",
+    "noSubscription": "Aucun abonnement.",
+    "manageSubscription": "Gérer l'abonnement",
+    "verification": "Vérification",
+    "verified": "Boutique vérifiée",
+    "verificationPending": "Justificatifs en cours d'examen",
+    "verificationRejected": "Vérification refusée",
+    "notVerified": "Non vérifiée",
+    "verificationHint": "Le badge « Boutique vérifiée » est accordé par Mazed après contrôle de vos justificatifs. Il ne s'achète pas.",
+    "sendDocuments": "Envoyer mes justificatifs",
+    "yourPage": "Votre page",
+    "public": "Publique",
+    "notPublic": "Pas encore publique",
+    "publicHint": "Les acheteurs trouvent votre boutique dans l'annuaire et depuis chacune de vos annonces.",
+    "notPublicHint": "Les pages boutiques ouvrent bientôt. Vous pouvez déjà voir la vôtre et la préparer.",
+    "viewPage": "Voir ma page",
+    "countPublished": "{count, plural, one {# publiée} other {# publiées}}",
+    "countReview": "{count} en vérification",
+    "countDrafts": "{count, plural, one {# brouillon} other {# brouillons}}",
+    "countExpired": "{count, plural, one {# expirée} other {# expirées}}"
+  },
+  "listings": {
+    "status": {
+      "draft": "Brouillon",
+      "pending_payment": "À payer",
+      "pending_review": "Vérification",
+      "published": "En ligne",
+      "rejected": "À corriger",
+      "expired": "Expirée",
+      "archived": "Retirée",
+      "sold": "Vendue",
+      "paused": "En pause"
+    },
+    "pausedBecause": {
+      "owner": "mise en pause par vous",
+      "subscription_expired": "abonnement terminé — elle revient dès le prochain paiement",
+      "over_limit": "au-delà de la limite de la formule"
+    },
+    "online": "{bucket} en ligne",
+    "total": "{count, plural, one {# annonce au total} other {# annonces au total}}",
+    "newListing": "Nouvelle annonce",
+    "empty": "Aucune annonce pour l'instant. Les annonces que vous publiez sont rattachées à la boutique.",
+    "sponsoredUntil": "Sponsorisée jusqu'au {date}",
+    "expiresIn": "expire dans {days} j",
+    "onRequest": "Sur demande",
+    "perDay": "/ jour",
+    "paused": "En pause : {reason}",
+    "rejected": "Refusée : {reason}",
+    "boost": "Booster {days} j · {price}",
+    "pause": "Pause",
+    "paused_done": "Annonce mise en pause.",
+    "resume": "Réactiver",
+    "resumed": "Annonce réactivée.",
+    "renewIncluded": "incluse dans l'abonnement",
+    "resumeDraft": "Reprendre",
+    "legend": "<views></views> vues · <phone></phone> numéros demandés. Nous ne suivons pas les ventes : elles se concluent directement entre vous et l'acheteur."
+  },
+  "subscription": {
+    "payStatus": {
+      "pending": "À régler",
+      "pending_review": "Reçu en vérification",
+      "captured": "Payé",
+      "failed": "Non abouti",
+      "refunded": "Remboursé"
+    },
+    "provider": {
+      "konnect": "Paiement en ligne",
+      "bank_transfer": "Virement / D17",
+      "manual": "Virement / D17"
+    },
+    "periods": "Périodes",
+    "noPeriods": "Aucun abonnement pour l'instant.",
+    "state": {
+      "upcoming": "À venir",
+      "current": "En cours",
+      "grace": "Grâce",
+      "ended": "Terminée"
+    },
+    "gifted": "offerte",
+    "renewOrChange": "Renouveler ou changer de formule",
+    "choose": "Choisir une formule",
+    "renewHint": "Une nouvelle période commence à la fin de celle en cours : vous ne perdez aucun jour. Si la formule choisie permet moins d'annonces, les plus anciennes passent en pause et vous choisissez ensuite lesquelles garder.",
+    "draftHint": "Votre boutique ouvre dès que le paiement est confirmé.",
+    "startHint": "La période commence dès que le paiement est confirmé ; vos annonces mises en pause reviennent en ligne.",
+    "noDebit": "Aucun prélèvement automatique.",
+    "notForSale": "Les formules ne sont pas encore en vente. <link>Contactez-nous</link>.",
+    "currentPlan": "· actuelle",
+    "planLine": "{count} {bucket} · {days} jours",
+    "renew": "Renouveler",
+    "pick": "Choisir",
+    "payments": "Paiements",
+    "noPayments": "Aucun paiement.",
+    "kindSubscription": "Abonnement",
+    "kindBoost": "Boost 7 jours",
+    "receipt": "Reçu {number}",
+    "settle": "Régler"
+  },
+  "paymentStatus": {
+    "checking": "Vérification de votre paiement…",
+    "confirmed": "Paiement confirmé.",
+    "sponsored": "Votre annonce est sponsorisée.",
+    "active": "Votre abonnement est actif.",
+    "pending": "Paiement en cours de vérification. Rien n'est activé tant qu'il n'est pas confirmé ; cette page se met à jour toute seule.",
+    "failed": "Ce paiement n'a pas abouti. Vous pouvez recommencer ci-dessous."
+  },
+  "receipt": {
+    "title": "Reçu de paiement",
+    "print": "Imprimer",
+    "receivedBy": "Reçu par",
+    "from": "De",
+    "taxId": "MF <tax>{id}</tax>",
+    "subscription": "Abonnement {plan}",
+    "subscriptionPeriod": "Abonnement {plan} — du {from} au {to}",
+    "boost": "Boost 7 jours",
+    "boostListing": "Boost 7 jours — annonce {reference} « {title} »",
+    "paidOnline": "Réglé par paiement en ligne (Konnect).",
+    "paidTransfer": "Réglé par virement / D17.",
+    "notInvoice": "Ce reçu atteste le paiement. Il ne vaut pas facture."
+  },
+  "profile": {
+    "readOnly": "Seuls le propriétaire et les gérants peuvent modifier la boutique.",
+    "images": "Logo et bannière",
+    "logoAlt": "Logo",
+    "bannerAlt": "Bannière",
+    "addBanner": "Ajouter une bannière",
+    "imagesHint": "JPEG, PNG ou WebP. Le logo est recadré en carré, la bannière en large.",
+    "publicTitle": "Ce que voient les acheteurs",
+    "name": "Nom de la boutique",
+    "description": "Présentation",
+    "descriptionPlaceholder": "Ce que vous vendez ou louez, depuis quand, vos services (reprise, garantie, livraison…).",
+    "phone": "Téléphone",
+    "whatsapp": "WhatsApp",
+    "phonesHint": "Vos numéros ne figurent jamais dans le code de la page : ils s'affichent quand un acheteur les demande.",
+    "governorate": "Gouvernorat",
+    "city": "Ville",
+    "address": "Adresse",
+    "hours": "Horaires",
+    "closed": "Fermé",
+    "save": "Enregistrer",
+    "legalTitle": "Informations légales",
+    "legalHint": "Jamais affichées publiquement. Elles servent à vos factures.",
+    "legalName": "Raison sociale",
+    "taxId": "Matricule fiscal",
+    "rne": "Numéro RNE",
+    "billingEmail": "E-mail de facturation",
+    "legalAddress": "Adresse du siège",
+    "documentsTitle": "Justificatifs",
+    "documentsHint": "Extrait RNE, patente, CIN du gérant. Stockés en privé : seule l'équipe Mazed les consulte, pour accorder le badge « Boutique vérifiée ».",
+    "docKind": {
+      "rne": "Extrait RNE",
+      "patente": "Patente",
+      "cin_gerant": "CIN du gérant",
+      "autre": "Autre document"
+    },
+    "docStatus": {
+      "submitted": "Envoyé — en attente d'examen",
+      "accepted": "Accepté",
+      "rejected": "Refusé"
+    },
+    "sendFile": "Envoyer un fichier",
+    "pending": "Vos justificatifs sont en cours d'examen.",
+    "toast": {
+      "saveFailed": "Enregistrement impossible.",
+      "saved": "Votre page est à jour.",
+      "legalSaved": "Informations légales enregistrées.",
+      "refused": "Le serveur a refusé l'envoi.",
+      "badImage": "Image refusée : JPEG, PNG ou WebP de moins de 5 Mo.",
+      "logoSaved": "Logo mis à jour.",
+      "bannerSaved": "Bannière mise à jour.",
+      "badFile": "Fichier refusé : PDF, JPEG ou PNG de moins de 10 Mo.",
+      "documentSent": "Justificatif envoyé. Notre équipe l'examine.",
+      "network": "Erreur réseau."
+    }
+  },
+  "stats": {
+    "tiles": {
+      "shopViews": "Visites de la boutique",
+      "listingViews": "Annonces consultées",
+      "reveals": "Numéros demandés",
+      "whatsapp": "WhatsApp"
+    },
+    "hint": "Une visite = une personne, une fois par jour. Vos propres visites ne comptent pas.",
+    "period": "Période",
+    "days": "{days} jours",
+    "visitsChart": "Visites par jour (boutique et annonces)",
+    "contactsChart": "Contacts par jour (numéro et WhatsApp)",
+    "byDay": "Les chiffres jour par jour",
+    "col": {
+      "day": "Jour",
+      "shop": "Boutique",
+      "listings": "Annonces",
+      "reveals": "Numéros",
+      "whatsapp": "WhatsApp",
+      "listing": "Annonce",
+      "visits": "Visites",
+      "favourites": "Favoris",
+      "sincePublished": "Depuis la publication"
+    },
+    "byListing": "Par annonce, sur {days} jours",
+    "noListings": "Aucune annonce publiée pour l'instant.",
+    "totals": "{views} vues · {reveals} numéros",
+    "noSales": "Nous ne suivons pas les ventes : elles se concluent directement entre vous et l'acheteur.",
+    "chartTotal": "{total} au total",
+    "chartEmpty": "Rien sur la période.",
+    "chartLabel": "{title} : {total} sur {days} jours, au plus {max} le {date}"
+  },
+  "profileErrors": {
+    "nameMissing": "Indiquez le nom de la boutique.",
+    "nameShort": "Le nom doit faire au moins 2 caractères.",
+    "phone": "Numéro de téléphone invalide.",
+    "whatsapp": "Numéro WhatsApp invalide.",
+    "governorate": "Choisissez un gouvernorat.",
+    "hours": "Horaires illisibles.",
+    "image": "Image refusée : elle n'appartient pas à cette boutique."
+  },
+  "api": {
+    "notShopMember": "Vous ne gérez pas cette boutique.",
+    "cannotEdit": "Vous ne pouvez pas modifier cette boutique.",
+    "shopNotAllowed": "Cette boutique ne peut pas souscrire d'abonnement.",
+    "notPublished": "Seule une annonce en ligne peut être boostée.",
+    "noCurrentPeriod": "Renouvelez l'abonnement de la boutique pour booster ses annonces.",
+    "notForSale": "Cette offre n'est pas encore en vente.",
+    "chooseActivity": "Choisissez votre activité.",
+    "alreadyHasShop": "Vous avez déjà une boutique.",
+    "badType": "PDF, JPEG ou PNG uniquement.",
+    "tooMany": "Dix justificatifs au plus.",
+    "fileMissing": "Le fichier n'a pas été reçu.",
+    "badEmail": "Adresse e-mail invalide.",
+    "badTransition": "Cette annonce ne peut pas changer d'état ainsi."
+  }
+}

@@ -220,7 +220,7 @@ export function AccountMenu() {
                   </span>
                 )}
                 {user.label && (
-                  <span className="block truncate text-[11.5px] text-muted">{user.label}</span>
+                  <span className="block truncate text-[11.5px] text-muted"><span className="ltr-island">{user.label}</span></span>
                 )}
               </span>
             </div>

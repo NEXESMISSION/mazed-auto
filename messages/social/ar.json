@@ -4,7 +4,7 @@
   "soon": "Social Publisher قريبًا.",
   "preview": "معاينة المشرف: البوتيكات لا ترى هذه الخدمة بعد.",
   "notConfigured": "الربط مع Meta غير مُفعّل بعد على هذا الموقع.",
-  "connectedBanner": "{count, plural, one {تم ربط حساب واحد.} other {تم ربط # حسابات.}}",
+  "connectedBanner": "{count, plural, one {تم ربط حساب واحد.} other {تم ربط {count} حسابات.}}",
   "errors": {
     "denied": "أُلغي الربط.",
     "state": "انتهت صلاحية الربط أو بدأ في متصفح آخر. أعد المحاولة.",
@@ -20,8 +20,15 @@
     "disconnect": "فصل",
     "confirmDisconnect": "فصل هذا الحساب؟ المنشورات السابقة تبقى منشورة.",
     "disconnected": "تم فصل الحساب.",
-    "status": { "active": "نشط", "expired": "يجب إعادة الربط", "revoked": "مفصول" },
-    "network": { "facebook": "صفحة فيسبوك", "instagram": "إنستغرام" }
+    "status": {
+      "active": "نشط",
+      "expired": "يجب إعادة الربط",
+      "revoked": "مفصول"
+    },
+    "network": {
+      "facebook": "صفحة فيسبوك",
+      "instagram": "إنستغرام"
+    }
   },
   "composer": {
     "title": "منشور جديد",
@@ -30,7 +37,10 @@
     "noListings": "لا يوجد إعلان منشور للنشر.",
     "networks": "الشبكات",
     "language": "لغة النص",
-    "lang": { "fr": "الفرنسية", "tn": "التونسية" },
+    "lang": {
+      "fr": "الفرنسية",
+      "tn": "التونسية"
+    },
     "prepare": "تحضير النصوص",
     "ai": "نصوص مكتوبة آليًا من الإعلان ثم مراجَعة: لا يُقبل أي رقم غير موجود في الإعلان.",
     "noAi": "نصوص جاهزة من معطيات الإعلان (الكتابة الآلية متوفرة بداية من خطة Starter).",
@@ -39,15 +49,22 @@
     "validate": "اعتماد هذا النص",
     "validated": "النص معتمد",
     "editedAgain": "تم التعديل: اعتمده من جديد.",
-    "photos": "{count, plural, =0 {لا توجد صور} one {صورة واحدة من الإعلان} other {# صور من الإعلان}}",
+    "photos": "{count, plural, =0 {لا توجد صور} one {صورة واحدة من الإعلان} other {{count} صور من الإعلان}}",
     "account": "النشر على",
     "noAccount": "اربط أولًا حساب {network}.",
     "consent": "أسمح لـ Mazed Auto بنشر هذا النص وهذه الصور من إعلاني على الحسابات المختارة، باسمي، الآن. راجعت المحتوى وهو مطابق لإعلاني.",
     "publish": "انشر الآن",
     "restart": "منشور جديد",
     "needs": "اعتمد كل نص، واختر الحسابات، وأشّر على الموافقة.",
-    "source": { "ai": "مكتوب آليًا", "template": "نص جاهز", "edited": "عدّلته أنت" },
-    "networkName": { "facebook": "فيسبوك", "instagram": "إنستغرام" },
+    "source": {
+      "ai": "مكتوب آليًا",
+      "template": "نص جاهز",
+      "edited": "عدّلته أنت"
+    },
+    "networkName": {
+      "facebook": "فيسبوك",
+      "instagram": "إنستغرام"
+    },
     "error": "العملية غير ممكنة حاليًا."
   },
   "results": {
@@ -68,7 +85,7 @@
     "retry": "إعادة المحاولة",
     "cancel": "إلغاء",
     "confirmCancel": "إلغاء هذا المنشور؟",
-    "attempts": "{count, plural, one {محاولة واحدة} other {# محاولات}}",
+    "attempts": "{count, plural, one {محاولة واحدة} other {{count} محاولات}}",
     "status": {
       "draft": "مسودة",
       "pending_approval": "في انتظار الموافقة",
@@ -79,5 +96,26 @@
       "manual_action_required": "يتطلب تدخلًا",
       "cancelled": "ملغى"
     }
+  },
+  "api": {
+    "notRetryable": "لا يمكن إعادة إطلاق هذا المنشور.",
+    "notCancellable": "نُشر بالفعل أو قيد النشر.",
+    "pickListing": "اختر إعلانًا وشبكة واحدة على الأقل.",
+    "listingNotPublished": "لا يمكن نشر إلا إعلان منشور على الموقع.",
+    "consentRequired": "اختر الموافقة على النشر للمتابعة.",
+    "pickAccount": "اختر حسابًا واحدًا على الأقل.",
+    "validateFirst": "صادق أولًا على نصّ {networks}.",
+    "and": " و",
+    "network": {
+      "facebook": "فيسبوك",
+      "instagram": "إنستغرام"
+    },
+    "locked": "هذا المنشور أُرسل بالفعل.",
+    "textLength": "يجب أن يتراوح النص بين حرف واحد و2000 حرف.",
+    "listingGone": "الإعلان لم يعد منشورًا.",
+    "refused": "مرفوض",
+    "jobMissing": "المنشور غير موجود",
+    "cancelledByShop": "ألغاه المتجر.",
+    "facts": "هذه الأرقام غير موجودة في الإعلان: {numbers}. صحّح النص أو الإعلان."
   }
 }

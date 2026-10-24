@@ -1,0 +1,247 @@
+{
+  "unavailable": "Service indisponible.",
+  "otherGroup": "Autres",
+  "rules": {
+    "count": {
+      "vehicles": "{n, plural, one {# véhicule} other {# véhicules}}",
+      "parts": "{n, plural, one {# pièce} other {# pièces}}"
+    },
+    "quotaShop": "Votre abonnement permet {count} en ligne à la fois, et la limite est atteinte. Retirez une annonce ou passez à une formule supérieure.",
+    "quotaPersonalOne": "Vous avez déjà un véhicule en ligne : c'est la limite pour un particulier. Retirez une annonce, ou ouvrez une boutique professionnelle pour en publier davantage.",
+    "quotaPersonal": "Vous avez déjà {count} en ligne : c'est la limite pour un particulier. Retirez une annonce, ou ouvrez une boutique professionnelle pour en publier davantage.",
+    "rentalRequiresShop": "La location de véhicules se publie depuis une boutique de location.",
+    "notShopMember": "Vous ne faites pas partie de cette boutique.",
+    "activityMismatch": {
+      "pieces_auto": "« {shop} » publie des pièces : cette catégorie n'y correspond pas.",
+      "location_auto": "« {shop} » publie des véhicules en location : cette catégorie n'y correspond pas.",
+      "vente_auto": "« {shop} » publie des véhicules à vendre : cette catégorie n'y correspond pas."
+    },
+    "shopNotActive": "Votre boutique n'est pas active : ses annonces ne peuvent pas être mises en ligne pour l'instant.",
+    "subscriptionRequired": "Votre boutique n'a pas d'abonnement en cours. Renouvelez-le pour mettre des annonces en ligne.",
+    "noteNoSubscription": "« {shop} » n'a pas d'abonnement en cours : l'annonce sera enregistrée mais ne pourra pas être mise en ligne.",
+    "noteIncluded": "Inclus dans l'abonnement de « {shop} » — {used} / {count} en ligne.",
+    "noteFreeOne": "Gratuit pour un particulier : 1 véhicule en ligne à la fois.",
+    "noteFree": "Gratuit pour un particulier : jusqu'à {count} en ligne à la fois.",
+    "noteFreeLeft": "Gratuit pour un particulier : jusqu'à {count} en ligne à la fois (encore {left}).",
+    "dbQuota": "La limite d'annonces en ligne est atteinte.",
+    "accountSuspended": "Votre compte est suspendu : vous ne pouvez pas publier d'annonce.",
+    "categoryMismatch": "Cette catégorie ne correspond pas à l'activité de votre boutique."
+  },
+  "wizard": {
+    "title": "Publier une annonce",
+    "subtitle": "Quelques informations, des photos, votre numéro — c'est tout.",
+    "saving": "Enregistrement…",
+    "saved": "Brouillon enregistré",
+    "resumed": "Nous avons repris votre brouillon.",
+    "resumedOn": "Nous avons repris votre brouillon du {date}.",
+    "startOver": "Recommencer à zéro",
+    "missing": {
+      "category": "Choisissez ce que vous vendez.",
+      "photosUploading": "{count, plural, one {Encore # photo en cours d'envoi…} other {Encore # photos en cours d'envoi…}}",
+      "photo": "Ajoutez au moins une photo.",
+      "partName": "Indiquez de quelle pièce il s'agit.",
+      "make": "Choisissez la marque.",
+      "model": "Choisissez le modèle.",
+      "year": "Indiquez l'année.",
+      "title": "Donnez un titre à votre annonce.",
+      "price": "Indiquez un prix, ou cochez « prix sur demande ».",
+      "phone": "Un numéro joignable est obligatoire.",
+      "attestation": "Cochez l'attestation pour publier."
+    },
+    "errors": {
+      "save": "Enregistrement impossible.",
+      "submit": "Envoi impossible."
+    },
+    "alert": {
+      "title": "{count, plural, one {Il manque une chose} other {Il manque # choses}}",
+      "body": "Touchez une ligne pour aller directement au champ concerné.",
+      "confirm": "Corriger"
+    },
+    "done": {
+      "title": "Annonce envoyée",
+      "body": "Notre équipe la vérifie avant publication — généralement en moins de 24 h. Vous serez prévenu dès qu'elle est en ligne.",
+      "credit": "{count, plural, one {Il vous reste # publication.} other {Il vous reste # publications.}}",
+      "free": "La publication était gratuite dans cette catégorie.",
+      "personalFree": "La publication est gratuite.",
+      "subscription": "Elle est incluse dans l'abonnement de votre boutique.",
+      "welcome": "Cette publication vous a été offerte.",
+      "welcomeLeft": "Cette publication vous a été offerte, il vous en reste {count}.",
+      "cta": "Voir mes annonces"
+    },
+    "category": {
+      "title": "Que vendez-vous ?",
+      "hint": "Cela décide des informations qui vous seront demandées.",
+      "welcome": "{count, plural, one {Offerte — # publication gratuite restante} other {Offerte — # publications gratuites restantes}}",
+      "credits": "{count, plural, one {# publication dans votre forfait} other {# publications dans votre forfait}}",
+      "kindGroup": "Type d'annonce",
+      "vehicle": "Un véhicule",
+      "part": "Une pièce",
+      "group": "Catégorie",
+      "free": "Publication gratuite dans cette catégorie.",
+      "fee": "Publication : {price} {currency}"
+    },
+    "photos": {
+      "title": "Vos photos",
+      "hint": "Elles décident si un acheteur clique. Montrez l'avant, l'arrière, les côtés, l'intérieur et le compteur."
+    },
+    "details": {
+      "partTitle": "La pièce",
+      "vehicleTitle": "Le véhicule",
+      "partHint": "Plus c'est précis, moins vous recevrez d'appels pour rien.",
+      "vehicleHint": "Ces informations servent aux filtres de recherche.",
+      "partName": "De quelle pièce s'agit-il ?",
+      "partNamePlaceholder": "Plaquettes de frein avant",
+      "partBrand": "Marque de la pièce",
+      "partBrandPlaceholder": "Bosch, Valeo…",
+      "reference": "Référence",
+      "quantity": "Quantité",
+      "condition": "État",
+      "make": "Marque",
+      "model": "Modèle",
+      "modelPlaceholder": "Clio",
+      "pickMakeFirst": "Choisissez la marque",
+      "year": "Année",
+      "mileage": "Kilométrage",
+      "km": "km",
+      "fuel": "Carburant",
+      "transmission": "Boîte",
+      "color": "Couleur",
+      "colorPlaceholder": "Blanc"
+    },
+    "fitment": {
+      "title": "Compatible avec",
+      "hint": "C'est ainsi qu'un acheteur trouve votre pièce en cherchant « pour ma Clio 5 de 2020 ».",
+      "make": "Marque",
+      "model": "Modèle",
+      "remove": "Retirer",
+      "yearFrom": "De (année)",
+      "yearTo": "À (année)",
+      "add": "Ajouter un véhicule compatible"
+    },
+    "options": {
+      "fuel": {
+        "gasoline": "Essence",
+        "diesel": "Diesel",
+        "hybrid": "Hybride",
+        "electric": "Électrique",
+        "lpg": "GPL"
+      },
+      "transmission": {
+        "manual": "Manuelle",
+        "automatic": "Automatique"
+      },
+      "condition": {
+        "used": "Occasion",
+        "new": "Neuf",
+        "refurbished": "Reconditionné"
+      }
+    },
+    "rental": {
+      "title": "Conditions de location",
+      "hint": "Pas de calendrier : indiquez si le véhicule est disponible, le client vous appelle pour réserver.",
+      "availability": "Disponibilité",
+      "available": "Disponible",
+      "onRequest": "Sur demande",
+      "deposit": "Caution",
+      "kmIncluded": "Kilométrage inclus (0 = illimité)",
+      "kmPerDay": "km/j",
+      "minAge": "Âge minimum du conducteur",
+      "years": "ans",
+      "licenseYears": "Permis depuis",
+      "otherTerms": "Autres conditions",
+      "otherTermsPlaceholder": "Carburant rendu plein, livraison possible à l'aéroport…"
+    },
+    "price": {
+      "title": "Titre et prix",
+      "hint": "Le titre est proposé d'après ce que vous avez saisi — modifiez-le si vous voulez.",
+      "titleLabel": "Titre de l'annonce",
+      "titlePlaceholderPart": "Plaquettes de frein avant · Bosch",
+      "titlePlaceholderVehicle": "Renault Clio 2019",
+      "perDay": "Prix par jour",
+      "price": "Prix",
+      "unitPerDay": "{currency} / jour",
+      "negotiable": "Négociable",
+      "onRequest": "Prix sur demande",
+      "description": "Description",
+      "descriptionPlaceholderPart": "État, provenance, garantie, ce qui est inclus…",
+      "descriptionPlaceholderVehicle": "Entretien, équipements, ce qu'il y a à refaire. Soyez honnête : c'est ce qui évite les visites pour rien."
+    },
+    "contact": {
+      "title": "Contact et publication",
+      "hint": "Les acheteurs vous appellent directement sur ce numéro.",
+      "name": "Nom affiché",
+      "namePlaceholder": "Karim B.",
+      "phone": "Téléphone",
+      "governorate": "Gouvernorat"
+    },
+    "preview": {
+      "label": "Aperçu",
+      "noPhoto": "Aucune photo",
+      "onRequest": "Sur demande",
+      "perDay": "/ jour"
+    },
+    "attestation": "J'atteste sur l'honneur que toutes les informations, photos et documents fournis sont exacts, complets et concernent bien cet article. Je suis seul responsable de toute information fausse, inexacte ou trompeuse. En cas de fausse déclaration, Mazed Auto peut refuser ou retirer l'annonce et conserver les frais déjà réglés.",
+    "fee": {
+      "fromPack": "Publication depuis votre forfait",
+      "publication": "Publication",
+      "fees": "Frais de publication",
+      "free": "Gratuit",
+      "packNote": "Aucun paiement : une publication est décomptée de votre forfait.",
+      "freeDefault": "Gratuit dans cette catégorie.",
+      "straightToReview": "Votre annonce part directement en vérification.",
+      "payNote": "Vous serez redirigé vers le paiement. L'annonce part en vérification dès la réception du reçu."
+    },
+    "footer": {
+      "before": "Avant de publier",
+      "ready": "Tout est prêt.",
+      "toComplete": "{count, plural, one {# élément à compléter} other {# éléments à compléter}}"
+    },
+    "cta": {
+      "busy": "Un instant…",
+      "sendingPhotos": "Envoi des photos…",
+      "publish": "Publier mon annonce"
+    },
+    "bar": {
+      "blocked": "Limite atteinte : l'annonce sera enregistrée, mais pas mise en ligne.",
+      "credit": "Utilise 1 de vos {count} publications.",
+      "welcome": "Offerte — aucune somme à régler.",
+      "fee": "{price} {currency} — à régler après vérification.",
+      "noCategory": "Le prix de publication s'affiche dès que la catégorie est choisie."
+    }
+  },
+  "status": {
+    "draft": "brouillon",
+    "pending_payment": "en attente de paiement",
+    "pending_review": "en vérification",
+    "published": "en ligne",
+    "rejected": "refusée",
+    "expired": "expirée",
+    "archived": "retirée",
+    "sold": "vendue"
+  },
+  "api": {
+    "incomplete": "Catégorie, titre et gouvernorat sont requis.",
+    "categoryNotLeaf": "Choisissez une sous-catégorie.",
+    "priceRequired": "Indiquez un prix, ou cochez « prix sur demande ».",
+    "notEditable": "Cette annonce est déjà en cours de traitement.",
+    "notSubmittable": "Cette annonce est déjà « {status} ».",
+    "contactRequired": "Ajoutez un numéro de téléphone joignable.",
+    "attestationRequired": "Cochez l'attestation sur l'honneur.",
+    "photoRequired": "Ajoutez au moins une photo.",
+    "paymentUnderReview": "Votre reçu est en cours de vérification : l'annonce partira en vérification dès sa validation.",
+    "notRenewable": "Cette annonce est encore en ligne ou en cours de traitement.",
+    "contactRequiredRenew": "Ajoutez un numéro joignable avant de renouveler.",
+    "notWithdrawable": "Cette annonce n'est ni en ligne ni en vérification.",
+    "changed": "L'annonce a changé d'état entre-temps.",
+    "notif": {
+      "submittedTitle": "Annonce envoyée à la vérification",
+      "subscription": "« {title} » est en cours de vérification. Elle est incluse dans l'abonnement de {shop}.",
+      "yourShop": "votre boutique",
+      "personalFree": "« {title} » est en cours de vérification. La publication est gratuite.",
+      "credit": "« {title} » est en cours de vérification. Il vous reste {count} publication(s).",
+      "freeCategory": "« {title} » est en cours de vérification. La publication est gratuite dans cette catégorie.",
+      "welcomeLeft": "« {title} » est en cours de vérification. Cette publication vous est offerte, il vous en reste {count}.",
+      "welcomeLast": "« {title} » est en cours de vérification. Cette publication vous est offerte — c'était la dernière de votre allocation de bienvenue."
+    }
+  }
+}

@@ -1,0 +1,152 @@
+{
+  "common": {
+    "problem": "Vous rencontrez un problème ?",
+    "support": "Contacter le support",
+    "back": "Retour",
+    "reference": "Référence",
+    "networkError": "Erreur réseau."
+  },
+  "checkout": {
+    "label": "Frais d'annonce",
+    "body": "Frais de publication + options choisies. Votre annonce part en vérification dès validation du reçu.",
+    "copyFailed": "Impossible de copier.",
+    "maxFiles": "Maximum {max} images.",
+    "maxFilesIgnored": "Maximum {max} images — fichiers en trop ignorés.",
+    "badFormat": "{name} : format non accepté (JPG, PNG, WebP, HEIC, PDF).",
+    "tooBig": "{name} : trop volumineux (max {mb} Mo).",
+    "sessionExpired": "Session expirée — reconnectez-vous.",
+    "alreadyResolved": "Ce paiement a déjà été traité.",
+    "prepareFailed": "Impossible de préparer l'envoi. Réessayez.",
+    "unexpected": "Réponse inattendue du serveur. Réessayez.",
+    "uploadFailed": "Échec du téléversement : {error}",
+    "submitFailed": "Échec de la soumission.",
+    "sendCancelled": "Envoi annulé — vos fichiers sont toujours là.",
+    "tooSlow": "Connexion trop lente ({step}) — le reçu n'a pas été envoyé. Réessayez.",
+    "slowConnection": "connexion trop lente",
+    "networkError": "erreur réseau",
+    "phase": {
+      "preparing": "Préparation…",
+      "compressingN": "Compression {i}/{n}…",
+      "compressing": "Compression de l'image…",
+      "preparingUpload": "Préparation de l'envoi…",
+      "sendingN": "Envoi {i}/{n}…",
+      "sending": "Envoi du reçu…",
+      "retryN": "Nouvelle tentative {i}/{n}…",
+      "retry": "Nouvelle tentative…",
+      "finishing": "Finalisation…",
+      "cancelling": "Annulation…",
+      "sendingShort": "Envoi…"
+    },
+    "step": {
+      "preparing": "préparation",
+      "preparingUpload": "préparation de l'envoi",
+      "uploadN": "envoi du reçu {i}/{n}",
+      "upload": "envoi du reçu",
+      "validation": "validation"
+    },
+    "done": {
+      "title": "Reçu transmis",
+      "received": "Justificatif de <b>{amount}</b> bien reçu.",
+      "receivedFor": "Justificatif de <b>{amount}</b> pour <b>{title}</b> bien reçu.",
+      "step1": "Notre équipe vérifie votre reçu (moins de 24 h).",
+      "step2": "Vous recevez une notification : validé ou correction demandée.",
+      "step3": "Votre annonce part en vérification, puis passe en ligne.",
+      "subscription": "Mon abonnement",
+      "listings": "Mes annonces",
+      "viewListing": "Voir l'annonce"
+    },
+    "editListing": "← Modifier l'annonce",
+    "previousRejected": "Reçu précédent refusé — vérifiez les coordonnées et renvoyez un nouveau justificatif.",
+    "stepMethod": "Choisissez le mode de paiement",
+    "stepPay": "Payez avec ces coordonnées",
+    "stepUpload": "Téléversez le reçu du virement",
+    "bankTransfer": "Virement (RIB)",
+    "d17": "D17 mobile",
+    "copied": "Copié",
+    "copy": "Copier",
+    "kb": "{kb} Ko",
+    "removeFile": "Retirer {name}",
+    "pickFirst": "Choisir une photo ou un PDF",
+    "pickAnother": "Ajouter une autre image",
+    "fileHint": "JPG · PNG · HEIC · PDF · max {mb} Mo · jusqu'à {max} images ({count}/{max})",
+    "submit": "{count, plural, one {Envoyer le reçu} other {Envoyer les # reçus}}",
+    "cancelSend": "Annuler l'envoi",
+    "validationHint": "Validation sous 24 h — vous serez notifié(e).",
+    "uploadFirst": "Téléversez d'abord le reçu pour activer le bouton."
+  },
+  "instructions": {
+    "beneficiary": "Bénéficiaire",
+    "bank": "Banque",
+    "rib": "RIB",
+    "iban": "IBAN",
+    "amount": "Montant",
+    "referenceBank": "Référence (à indiquer dans le motif)",
+    "d17Number": "Numéro D17",
+    "referenceD17": "Référence (libellé du transfert)"
+  },
+  "success": {
+    "kinds": {
+      "listing_fee": { "done": "Annonce payée", "next": "Votre annonce part en vérification — moins de 24 h.", "noun": "Publication d'annonce" },
+      "listing_pack": { "done": "Pack d'annonces", "next": "Vos publications sont créditées sur votre compte.", "noun": "Pack d'annonces" },
+      "renewal": { "done": "Renouvellement payé", "next": "Votre annonce est de nouveau en ligne.", "noun": "Renouvellement" },
+      "promo": { "done": "Mise en avant payée", "next": "Votre annonce est mise en avant.", "noun": "Mise en avant" },
+      "badge": { "done": "Badge vérifié", "next": "Votre badge vérifié est actif.", "noun": "Badge vérifié" },
+      "subscription": { "done": "Abonnement activé", "next": "Votre abonnement est actif.", "noun": "Abonnement" }
+    },
+    "received": "Paiement reçu",
+    "recorded": "Nous avons enregistré votre paiement.",
+    "payment": "Paiement",
+    "views": {
+      "captured": { "eyebrow": "Paiement confirmé" },
+      "failed": { "eyebrow": "Paiement refusé", "title": "Ce paiement n'a pas abouti", "body": "Rien n'a été confirmé et votre annonce n'a pas été publiée. Reprenez le paiement depuis « Mes annonces », ou contactez-nous si vous pensez qu'il s'agit d'une erreur." },
+      "refunded": { "eyebrow": "Paiement remboursé", "title": "Ce paiement a été remboursé", "body": "La somme vous a été rendue. Rien n'est dû pour cette opération." },
+      "pending_review": { "eyebrow": "Reçu en cours de vérification", "title": "Nous vérifions votre reçu", "body": "Votre virement est entre nos mains. Nous confirmons sous 24 h en général, et vous recevez un message dès que c'est validé — vous n'avez rien d'autre à faire." },
+      "authorized": { "eyebrow": "En attente de confirmation", "title": "Paiement autorisé", "body": "Le montant est réservé. La confirmation définitive arrive sous peu." },
+      "pending": { "eyebrow": "En attente de paiement", "title": "Ce paiement n'est pas encore réglé", "body": "Nous n'avons pas encore reçu votre règlement. Reprenez-le depuis « Mes annonces » pour téléverser votre reçu." }
+    },
+    "status": {
+      "captured": "Validé",
+      "pending": "En attente",
+      "pending_review": "En vérification",
+      "authorized": "Autorisé",
+      "refunded": "Remboursé",
+      "failed": "Refusé"
+    },
+    "noIdBody": "Nous avons enregistré votre paiement. Vous serez notifié dès que tout est confirmé.",
+    "notFoundTitle": "Reçu introuvable",
+    "notFoundBody": "Nous n'avons pas trouvé ce paiement. Si la somme a été débitée, contactez le support avec le numéro de référence ci-dessous.",
+    "cta": {
+      "subscription": "Mon abonnement",
+      "resume": "Reprendre depuis mes annonces",
+      "continue": "Continuer"
+    },
+    "rows": {
+      "amount": "Montant",
+      "object": "Objet",
+      "date": "Date",
+      "status": "Statut"
+    },
+    "redirecting": "Redirection automatique…",
+    "ref": "Réf · {id}"
+  },
+  "failed": {
+    "reasons": {
+      "insufficient_funds": "Solde insuffisant sur le compte ou la carte.",
+      "card_declined": "Votre banque a refusé la transaction.",
+      "expired": "Le délai de paiement a expiré.",
+      "cancelled": "Vous avez annulé le paiement.",
+      "network": "Problème de connexion avec la passerelle.",
+      "unknown": "La passerelle a refusé la transaction sans détail."
+    },
+    "eyebrow": "Paiement refusé",
+    "title": "La transaction n'a pas abouti",
+    "amount": "Montant tenté",
+    "noDebit": "Aucun débit n'a été effectué sur votre compte. Vous pouvez réessayer immédiatement.",
+    "retry": "Réessayer"
+  },
+  "api": {
+    "underReview": "Le reçu est déjà en revue. Contactez l'administration pour annuler.",
+    "notCancellable": "Le paiement n'est plus annulable.",
+    "changed": "Le paiement a changé d'état entre-temps."
+  }
+}

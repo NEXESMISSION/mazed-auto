@@ -14,7 +14,7 @@
 // pages while leaving this alone hands returning visitors the previous app.
 // That is exactly what happened with the v3 catalog: the bytes of this file
 // never changed, so no update event ever fired.
-const VERSION = "mazed-v3-2";
+const VERSION = "mazed-v3-3";
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 const ASSET_CACHE = `${VERSION}-assets`;
 const IMAGE_CACHE = `${VERSION}-images`;
@@ -29,6 +29,7 @@ const MAX_RUNTIME_ENTRIES = 80;
 
 const PRECACHE = [
   "/fr/offline",
+  "/ar/offline",
   // The logo on the offline page, which is useless if it needs the network.
   "/brand/lockup.webp",
   "/manifest.webmanifest",
@@ -107,8 +108,9 @@ self.addEventListener("fetch", (event) => {
           const cached = await caches.match(request);
           if (cached) return cached;
           // Branded offline page (precached at install) before the generic
-          // shell fallback.
-          const offline = await caches.match("/fr/offline");
+          // shell fallback, in the language of the page asked for.
+          const lang = new URL(request.url).pathname.startsWith("/ar") ? "ar" : "fr";
+          const offline = await caches.match(`/${lang}/offline`);
           if (offline) return offline;
           // Last resort: any cached page so the shell still renders.
           const fallback = await caches.match("/");

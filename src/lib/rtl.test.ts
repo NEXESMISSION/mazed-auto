@@ -10,22 +10,12 @@ import { localeDirection } from "@/i18n/routing";
  * line. `rtl:` / `ltr:` variants are allowed: they exist precisely to say « on
  * this side in that direction ».
  *
- * A folder joins the list when its pages are translated and mirrored; the rest
- * of the site predates the rule and is not checked yet.
+ * Every page and component is covered, the admin console included. Comment
+ * lines are skipped: « right-hand column » is prose, not a class.
  */
-const ROOTS = [
-  "src/app/[locale]/pro",
-  "src/app/[locale]/boutiques",
-  "src/app/[locale]/admin/boutiques",
-  "src/app/[locale]/login",
-  "src/app/[locale]/signup",
-  "src/app/[locale]/forgot-password",
-  "src/app/[locale]/reset-password",
-  "src/components/auth",
-  "src/components/layout",
-  "src/components/shops",
-  "src/components/i18n",
-];
+const ROOTS = ["src/app/[locale]", "src/components"];
+
+const COMMENT_LINE = /^\s*(?:\/\/|\*|\/\*|\{\/\*)/;
 
 const PHYSICAL = [
   /^-?(?:ml|mr|pl|pr|left|right|scroll-ml|scroll-mr|scroll-pl|scroll-pr)-/,
@@ -48,10 +38,16 @@ describe("RTL preparation", () => {
     expect(localeDirection("ar")).toBe("rtl");
   });
 
-  it("keeps physical left/right classes out of the converted pages", () => {
+  it("keeps physical left/right classes out of every page and component", () => {
     const offenders: string[] = [];
     for (const file of ROOTS.flatMap((r) => files(join(process.cwd(), r)))) {
+      let inBlock = false;
       readFileSync(file, "utf8").split("\n").forEach((line, i) => {
+        const opens = line.lastIndexOf("/*") > line.lastIndexOf("*/");
+        const skip = inBlock || COMMENT_LINE.test(line);
+        if (inBlock && line.includes("*/")) inBlock = false;
+        if (opens) inBlock = true;
+        if (skip) return;
         for (const token of line.split(/[\s"'`{}()<>,;]+/)) {
           if (!token || /(?:^|:)(?:rtl|ltr):/.test(token)) continue;
           const utility = token.split(":").pop() ?? "";

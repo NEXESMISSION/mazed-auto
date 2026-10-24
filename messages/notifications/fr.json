@@ -1,0 +1,156 @@
+{
+  "bell": {
+    "label": "Notifications",
+    "unreadCount": "{count} non lues",
+    "close": "Fermer",
+    "all": "Toutes",
+    "unread": "Non lues",
+    "emptyTitle": "Aucune notification",
+    "emptyBody": "Tout est calme. Allez jeter un œil aux enchères.",
+    "emptyCta": "Explorer les enchères",
+    "noUnreadTitle": "Aucune non lue",
+    "upToDate": "Vous êtes à jour.",
+    "more": "Afficher plus",
+    "urgent": "Urgent",
+    "delete": "Supprimer la notification",
+    "markFailed": "Impossible de marquer les notifications comme lues. Vérifiez la connexion.",
+    "deleteRefused": "Suppression refusée par le serveur.",
+    "deleteFailed": "Échec de la suppression. Vérifiez la connexion."
+  },
+  "time": {
+    "now": "à l'instant",
+    "minutes": "il y a {count} min",
+    "hours": "il y a {count} h",
+    "days": "il y a {count} j"
+  },
+  "popup": {
+    "close": "Fermer"
+  },
+  "kinds": {
+    "listing_submitted": {
+      "title": "Annonce envoyée à la vérification",
+      "body": "« {listing} » est en cours de vérification."
+    },
+    "listing_payment_received": {
+      "title": "Paiement enregistré",
+      "body": "« {listing} » passe en vérification."
+    },
+    "listing_published": {
+      "title": "Votre annonce est en ligne",
+      "body": "« {listing} » est visible sur Mazed Auto."
+    },
+    "listing_approved": {
+      "title": "Annonce validée",
+      "body": "« {listing} » a été validée."
+    },
+    "listing_rejected": {
+      "title": "Annonce à corriger",
+      "body": "« {listing} » n'a pas été publiée. Motif : {reason}",
+      "returned": "Votre publication vous a été rendue."
+    },
+    "listing_expiring": {
+      "title": "Votre annonce expire bientôt",
+      "body": "« {listing} » sera bientôt retirée. Renouvelez-la pour qu'elle reste en ligne."
+    },
+    "listing_expired": {
+      "title": "Votre annonce a expiré",
+      "body": "« {listing} » n'est plus visible. Renouvelez-la depuis « Mes annonces »."
+    },
+    "payment_accepted": {
+      "title": "Paiement accepté",
+      "body": "Votre paiement a été validé."
+    },
+    "payment_rejected": {
+      "title": "Reçu refusé",
+      "body": "Motif : {reason}. Vous pouvez en envoyer un nouveau."
+    },
+    "payment_receipt_received": {
+      "title": "Reçu reçu",
+      "body": "Votre reçu a bien été reçu. Notre équipe le vérifiera sous 24-48h."
+    },
+    "pack_purchased": {
+      "title": "Forfait crédité",
+      "body": "Des publications ont été ajoutées à votre compte."
+    },
+    "credits_expired": {
+      "title": "Forfait expiré",
+      "body": "Vos publications restantes ont expiré."
+    },
+    "badge_granted": {
+      "title": "Badge vendeur vérifié",
+      "body": "Votre badge est actif. Il apparaît sur toutes vos annonces."
+    },
+    "badge_expiring": {
+      "title": "Votre badge expire bientôt",
+      "body": "Le badge « Vendeur vérifié » expire bientôt. Renouvelez-le pour le garder."
+    },
+    "shop_verified": {
+      "title": "Boutique vérifiée",
+      "body": "Votre boutique porte désormais le badge « Boutique vérifiée »."
+    },
+    "shop_verification_rejected": {
+      "title": "Vérification refusée",
+      "body": "Motif : {reason}. Vous pouvez envoyer de nouveaux justificatifs."
+    },
+    "shop_suspended": {
+      "title": "Boutique suspendue",
+      "body": "Motif : {reason}. Contactez-nous pour en parler."
+    },
+    "shop_active": {
+      "title": "Boutique en ligne",
+      "body": "Votre boutique est de nouveau visible."
+    },
+    "shop_document_rejected": {
+      "title": "Justificatif refusé",
+      "body": "Motif : {reason}. Envoyez-en un nouveau depuis « Ma boutique »."
+    },
+    "subscription_active": {
+      "title": "Abonnement activé",
+      "body": "Votre formule est active."
+    },
+    "subscription_ending": {
+      "title": "Votre abonnement se termine bientôt",
+      "body": "Renouvelez-le depuis votre espace pro pour que vos annonces restent en ligne."
+    },
+    "subscription_expired": {
+      "title": "Abonnement expiré",
+      "body": "Les annonces de votre boutique sont en pause. Rien n'est supprimé : elles reviennent dès le renouvellement."
+    },
+    "social_account_expired": {
+      "title": "Compte social à reconnecter",
+      "body": "Meta n'accepte plus l'accès à votre Page. Reconnectez-la depuis Marketing pour reprendre les publications."
+    },
+    "welcome": {
+      "title": "Bienvenue sur Mazed Auto",
+      "body": "Publiez votre première annonce — voiture ou pièce de rechange."
+    },
+    "contact_revealed": {
+      "title": "Nouveau contact",
+      "body": "Un acheteur a affiché votre numéro."
+    },
+    "admin_listing_pending": {
+      "title": "Annonce à valider",
+      "body": "Une annonce attend votre validation."
+    },
+    "admin_receipt_pending": {
+      "title": "Nouveau reçu à vérifier",
+      "body": "Un reçu attend votre validation."
+    },
+    "admin_sms_deadletter": {
+      "title": "SMS non délivrés",
+      "body": "Des SMS importants n'ont pas pu être envoyés. Vérifiez le crédit et le fournisseur WinSMS."
+    },
+    "admin_email_deadletter": {
+      "title": "E-mails non délivrés",
+      "body": "Des e-mails importants n'ont pas pu être envoyés. Vérifiez le fournisseur d'e-mail et contactez les utilisateurs concernés."
+    }
+  },
+  "email": {
+    "cta": "Voir sur Mazed Auto",
+    "footer": "Vous recevez cet e-mail car vous avez un compte sur Mazed Auto.",
+    "fallbackSubject": "Notification Mazed Auto"
+  },
+  "sms": {
+    "otp": "Votre code de vérification Mazed Auto est : {code}. Valable 10 minutes."
+  }
+}

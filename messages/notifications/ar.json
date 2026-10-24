@@ -1,0 +1,156 @@
+{
+  "bell": {
+    "label": "الإشعارات",
+    "unreadCount": "{count} غير مقروءة",
+    "close": "إغلاق",
+    "all": "الكل",
+    "unread": "غير المقروءة",
+    "emptyTitle": "لا توجد إشعارات",
+    "emptyBody": "كل شيء هادئ. ألقِ نظرة على المزادات.",
+    "emptyCta": "استكشف المزادات",
+    "noUnreadTitle": "لا توجد إشعارات غير مقروءة",
+    "upToDate": "أنت على اطّلاع بكل جديد.",
+    "more": "عرض المزيد",
+    "urgent": "عاجل",
+    "delete": "حذف الإشعار",
+    "markFailed": "تعذّر تعليم الإشعارات كمقروءة. تحقّق من الاتصال.",
+    "deleteRefused": "رفض الخادم الحذف.",
+    "deleteFailed": "فشل الحذف. تحقّق من الاتصال."
+  },
+  "time": {
+    "now": "الآن",
+    "minutes": "منذ {count} د",
+    "hours": "منذ {count} س",
+    "days": "منذ {count} ي"
+  },
+  "popup": {
+    "close": "إغلاق"
+  },
+  "kinds": {
+    "listing_submitted": {
+      "title": "أُرسل إعلانك للمراجعة",
+      "body": "«{listing}» قيد المراجعة."
+    },
+    "listing_payment_received": {
+      "title": "تمّ تسجيل الدفع",
+      "body": "ينتقل «{listing}» إلى المراجعة."
+    },
+    "listing_published": {
+      "title": "إعلانك منشور",
+      "body": "«{listing}» ظاهر الآن على Mazed Auto."
+    },
+    "listing_approved": {
+      "title": "تمّت الموافقة على إعلانك",
+      "body": "تمّت الموافقة على «{listing}»."
+    },
+    "listing_rejected": {
+      "title": "إعلان يحتاج إلى تصحيح",
+      "body": "لم يُنشر «{listing}». السبب: {reason}",
+      "returned": "استُرجعت لك عملية النشر."
+    },
+    "listing_expiring": {
+      "title": "إعلانك سينتهي قريبًا",
+      "body": "سيُسحب «{listing}» قريبًا. جدّده ليبقى ظاهرًا."
+    },
+    "listing_expired": {
+      "title": "انتهت صلاحية إعلانك",
+      "body": "لم يعد «{listing}» ظاهرًا. جدّده من «إعلاناتي»."
+    },
+    "payment_accepted": {
+      "title": "تمّ قبول الدفع",
+      "body": "تمّت الموافقة على دفعتك."
+    },
+    "payment_rejected": {
+      "title": "رُفض الوصل",
+      "body": "السبب: {reason}. يمكنك إرسال وصل جديد."
+    },
+    "payment_receipt_received": {
+      "title": "استلمنا الوصل",
+      "body": "وصلنا وصلك. سيتحقّق منه فريقنا خلال 24 إلى 48 ساعة."
+    },
+    "pack_purchased": {
+      "title": "أُضيفت الباقة",
+      "body": "أُضيفت منشورات إلى حسابك."
+    },
+    "credits_expired": {
+      "title": "انتهت صلاحية الباقة",
+      "body": "انتهت صلاحية المنشورات المتبقية في باقتك."
+    },
+    "badge_granted": {
+      "title": "شارة البائع الموثّق",
+      "body": "شارتك مفعّلة وتظهر على كل إعلاناتك."
+    },
+    "badge_expiring": {
+      "title": "شارتك ستنتهي قريبًا",
+      "body": "تنتهي شارة «بائع موثّق» قريبًا. جدّدها للاحتفاظ بها."
+    },
+    "shop_verified": {
+      "title": "تمّ توثيق متجرك",
+      "body": "يحمل متجرك الآن شارة «متجر موثّق»."
+    },
+    "shop_verification_rejected": {
+      "title": "رُفض التوثيق",
+      "body": "السبب: {reason}. يمكنك إرسال وثائق جديدة."
+    },
+    "shop_suspended": {
+      "title": "عُلّق متجرك",
+      "body": "السبب: {reason}. اتصل بنا للحديث في الأمر."
+    },
+    "shop_active": {
+      "title": "متجرك منشور",
+      "body": "متجرك ظاهر من جديد."
+    },
+    "shop_document_rejected": {
+      "title": "رُفضت الوثيقة",
+      "body": "السبب: {reason}. أرسل وثيقة جديدة من «متجري»."
+    },
+    "subscription_active": {
+      "title": "تمّ تفعيل الاشتراك",
+      "body": "باقتك مفعّلة."
+    },
+    "subscription_ending": {
+      "title": "اشتراكك ينتهي قريبًا",
+      "body": "جدّده من فضائك المهني لتبقى إعلاناتك منشورة."
+    },
+    "subscription_expired": {
+      "title": "انتهى الاشتراك",
+      "body": "إعلانات متجرك متوقّفة مؤقّتًا. لم يُحذف شيء: تعود فور التجديد."
+    },
+    "social_account_expired": {
+      "title": "حساب التواصل يحتاج إلى إعادة الربط",
+      "body": "لم تعد Meta تقبل الوصول إلى صفحتك. أعد ربطها من قسم التسويق لاستئناف النشر."
+    },
+    "welcome": {
+      "title": "مرحبًا بك في Mazed Auto",
+      "body": "انشر إعلانك الأول — سيارة أو قطعة غيار."
+    },
+    "contact_revealed": {
+      "title": "تواصل جديد",
+      "body": "اطّلع مشترٍ على رقمك."
+    },
+    "admin_listing_pending": {
+      "title": "إعلان في انتظار المراجعة",
+      "body": "إعلان ينتظر موافقتك."
+    },
+    "admin_receipt_pending": {
+      "title": "وصل جديد للتحقّق",
+      "body": "وصل ينتظر موافقتك."
+    },
+    "admin_sms_deadletter": {
+      "title": "رسائل SMS لم تُسلَّم",
+      "body": "تعذّر إرسال رسائل SMS مهمّة. تحقّق من الرصيد ومن مزوّد WinSMS."
+    },
+    "admin_email_deadletter": {
+      "title": "رسائل بريد إلكتروني لم تُسلَّم",
+      "body": "تعذّر إرسال رسائل بريد إلكتروني مهمّة. تحقّق من مزوّد البريد واتصل بالمستخدمين المعنيين."
+    }
+  },
+  "email": {
+    "cta": "عرض على Mazed Auto",
+    "footer": "تتلقّى هذه الرسالة لأن لديك حسابًا على Mazed Auto.",
+    "fallbackSubject": "إشعار من Mazed Auto"
+  },
+  "sms": {
+    "otp": "رمز التحقق في Mazed Auto: {code}. صالح لمدة 10 دقائق."
+  }
+}

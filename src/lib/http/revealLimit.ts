@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import type { NextRequest } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { clientIp } from "@/lib/clientIp";
+import { localeFromRequest } from "@/i18n/api";
 
 /**
  * The one throttle on revealing a phone number, whoever's number it is.
@@ -33,5 +34,9 @@ export async function overRevealLimit(admin: SupabaseClient, ipHash: string): Pr
   return data === true;
 }
 
-export const REVEAL_LIMITED_DETAIL =
-  "Trop de numéros consultés depuis cet appareil. Réessayez plus tard.";
+/** The 429's sentence, in the language of the page that asked. */
+export function revealLimitedDetail(req: Request): string {
+  return localeFromRequest(req) === "ar"
+    ? "تمّ الاطلاع على أرقام كثيرة من هذا الجهاز. أعد المحاولة لاحقًا."
+    : "Trop de numéros consultés depuis cet appareil. Réessayez plus tard.";
+}

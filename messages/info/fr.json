@@ -1,0 +1,274 @@
+{
+  "home": "Accueil",
+  "about": {
+    "metaTitle": "À propos — Mazed Auto",
+    "metaDescription": "Mazed Auto est une place de marché tunisienne pour les voitures et les pièces de rechange : prix affichés, contact direct avec le vendeur, chaque annonce vérifiée avant publication.",
+    "title": "À <gold>propos</gold>",
+    "intro": "Mazed Auto est une place de marché tunisienne pour les voitures et les pièces de rechange. Le prix est affiché, vous parlez directement au vendeur, et nous vérifions chaque annonce avant sa publication.",
+    "vision": {
+      "title": "Notre vision",
+      "text": "Devenir la référence de la voiture d'occasion et de la pièce détachée en Tunisie."
+    },
+    "mission": {
+      "title": "Notre mission",
+      "text": "Bâtir la confiance entre vendeurs et acheteurs : des annonces vérifiées, et un vendeur que vous pouvez appeler."
+    },
+    "values": {
+      "title": "Nos valeurs",
+      "text": "Transparence, sécurité, simplicité."
+    },
+    "storyTitle": "Notre histoire",
+    "story1": "L'idée est née d'un constat simple : le marché tunisien des voitures d'occasion souffrait de comptes fictifs, de photos volées et d'informations trompeuses. Nous voulions une solution qui place la confiance au cœur de tout.",
+    "story2": "C'est ainsi qu'est née Mazed Auto : chaque annonce est relue par notre équipe avant d'être publiée, le vendeur signe une attestation sur l'exactitude de ce qu'il déclare, et les voitures que nous inspectons nous-mêmes portent le badge « Vérifié et approuvé » avec la fiche de diagnostic qui va avec.",
+    "story3": "Nous sommes l'intermédiaire, pas le vendeur. L'annonce porte les coordonnées de son propriétaire : vous l'appelez, vous voyez la voiture, vous convenez du prix entre vous. Nous ne prenons rien sur la vente — seule la publication est payante, et elle est gratuite pour les pièces de rechange.",
+    "cta": "Parcourir les annonces"
+  },
+  "contact": {
+    "metaTitle": "Contact — Mazed Auto",
+    "eyebrow": "Aide",
+    "title": "Contactez-nous",
+    "intro": "Une question sur une annonce, un paiement ou votre compte ? Notre équipe est là pour vous aider.",
+    "email": "E-mail",
+    "phone": "Téléphone",
+    "address": "Adresse",
+    "hours": "Horaires",
+    "addressValue": "Sfax, Tunisie",
+    "hoursValue": "Lun – Ven, 9h – 17h"
+  },
+  "offline": {
+    "metaTitle": "Vous êtes hors ligne — Mazed Auto",
+    "metaDescription": "Aucune connexion Internet. Vérifiez votre réseau et réessayez pour retrouver les enchères Mazed Auto.",
+    "badge": "Hors ligne",
+    "title": "Vous êtes hors ligne",
+    "body": "Impossible de joindre Mazed Auto pour le moment. Vérifiez votre connexion Internet et réessayez — les pages déjà visitées restent consultables hors ligne.",
+    "retry": "Réessayer",
+    "home": "Retour à l'accueil"
+  },
+  "help": {
+    "metaTitle": "Centre d'aide — Mazed Auto",
+    "metaDescription": "Questions fréquentes sur Mazed Auto : acheter au prix affiché, contacter le vendeur, publier une annonce, frais de publication, pièces de rechange et support.",
+    "eyebrow": "Aide",
+    "title": "Centre d'aide",
+    "intro": "Tout ce que vous devez savoir sur Mazed Auto : compte, achat, publication d'annonces, paiements et remise du véhicule.",
+    "groups": {
+      "compte": "Compte",
+      "acheter": "Acheter",
+      "vendre": "Vendre",
+      "paiements": "Paiements",
+      "remise": "Rendez-vous & remise",
+      "litiges": "Litiges & support"
+    },
+    "faq": {
+      "compte": {
+        "create": {
+          "q": "Comment créer un compte ?",
+          "a": "Avec votre numéro de téléphone : vous recevez un code par SMS et votre compte est créé. Un compte est nécessaire pour publier une annonce ou enregistrer des favoris — pas pour parcourir le catalogue ni pour appeler un vendeur."
+        },
+        "identity": {
+          "q": "Dois-je vérifier mon identité pour utiliser Mazed Auto ?",
+          "a": "Non. Il n'y a plus de vérification d'identité à passer : ce que nous vérifions, c'est <b>l'annonce</b>, avant qu'elle soit publiée. Les vendeurs professionnels peuvent en plus obtenir le badge <b>Vendeur vérifié</b>, que nous accordons à la main après contrôle."
+        },
+        "where": {
+          "q": "Où retrouver mes annonces et mes favoris ?",
+          "a": "Vos annonces sont dans <listings>Mes annonces</listings> (statut, date d'expiration, renouvellement) et les annonces que vous avez enregistrées dans <favoris>Favoris</favoris>."
+        }
+      },
+      "acheter": {
+        "how": {
+          "q": "Comment se passe un achat ?",
+          "a": "Le prix est affiché sur l'annonce : il n'y a ni enchère ni délai. Vous affichez le numéro du vendeur, vous l'appelez, vous voyez le véhicule et vous convenez du prix entre vous. <b>Mazed Auto n'intervient pas dans la transaction</b> et ne touche rien sur la vente."
+        },
+        "pay": {
+          "q": "Dois-je payer quelque chose pour acheter ?",
+          "a": "Non. Parcourir les annonces, afficher un numéro et contacter un vendeur sont gratuits. Le seul paiement sur la plateforme est celui de la <b>publication</b>, réglé par le vendeur."
+        },
+        "badge": {
+          "q": "Que veut dire le badge « Vérifié et approuvé » ?",
+          "a": "Que <b>nous avons inspecté ce véhicule nous-mêmes</b>. La fiche de diagnostic publiée sur l'annonce détaille ce que nous avons constaté, point par point, photos à l'appui. Une annonce sans ce badge n'a pas été inspectée par nos équipes — elle a seulement été relue avant publication."
+        },
+        "part": {
+          "q": "Comment trouver une pièce compatible avec ma voiture ?",
+          "a": "Dans <parts>Pièces de rechange</parts>, indiquez votre marque, votre modèle et votre année : seules les pièces déclarées compatibles avec ce véhicule s'affichent. Vérifiez tout de même la référence avec le vendeur avant de vous déplacer."
+        },
+        "noAnswer": {
+          "q": "Le vendeur ne répond pas, que faire ?",
+          "a": "Réessayez à un autre moment, puis signalez-nous l'annonce via la page <contact>Contact</contact>. Un numéro qui ne répond jamais est un motif de retrait."
+        }
+      },
+      "vendre": {
+        "publish": {
+          "q": "Comment publier une annonce ?",
+          "a": "Depuis <publish>Publier une annonce</publish> : catégorie, photos, caractéristiques, prix et vos coordonnées. Vous signez une attestation sur l'exactitude des informations, vous réglez la publication, puis notre équipe vérifie l'annonce avant de la mettre en ligne."
+        },
+        "cost": {
+          "q": "Combien coûte une publication ?",
+          "a": "Un montant fixe par annonce, affiché au moment de publier — le prix peut différer selon la catégorie. Les <b>pièces de rechange sont gratuites</b>. Si vous publiez beaucoup, des forfaits permettent d'acheter plusieurs publications d'avance ; écrivez-nous pour en obtenir un."
+        },
+        "contactShown": {
+          "q": "Pourquoi mes coordonnées apparaissent-elles sur l'annonce ?",
+          "a": "Parce que nous sommes l'intermédiaire, pas le vendeur : les acheteurs vous appellent directement et vous traitez avec qui vous voulez. Le numéro n'est affiché qu'après une action de l'acheteur, pour limiter la collecte automatisée."
+        },
+        "duration": {
+          "q": "Combien de temps mon annonce reste-t-elle en ligne ?",
+          "a": "<b>30 jours.</b> Nous vous prévenons avant l'expiration, et une annonce expirée se renouvelle depuis <listings>Mes annonces</listings>. Une durée limitée évite que le catalogue se remplisse de voitures vendues depuis longtemps."
+        },
+        "refused": {
+          "q": "Mon annonce a été refusée, pourquoi ?",
+          "a": "Le motif vous est envoyé et s'affiche sur l'annonce : photos inexploitables, informations contradictoires, numéro injoignable, doublon. Corrigez et renvoyez-la — <b>un refus ne consomme pas votre publication</b>, elle vous est rendue."
+        },
+        "false": {
+          "q": "Que se passe-t-il si je déclare quelque chose de faux ?",
+          "a": "En publiant, vous attestez que les informations sont exactes. Une fausse déclaration nous autorise à retirer l'annonce et à conserver les frais déjà réglés — et l'acheteur reste en droit de se retourner contre vous."
+        }
+      },
+      "paiements": {
+        "methods": {
+          "q": "Quels moyens de paiement acceptez-vous ?",
+          "a": "Pour les frais de publication : virement bancaire et D17. Vous téléversez le reçu, et l'annonce part en vérification dès que notre équipe l'a validé."
+        },
+        "carPrice": {
+          "q": "Le prix de la voiture passe-t-il par Mazed Auto ?",
+          "a": "<b>Non, jamais.</b> Le paiement du véhicule se règle directement entre l'acheteur et le vendeur. Nous ne détenons aucun fonds et ne prenons aucune commission sur la vente."
+        },
+        "invoice": {
+          "q": "Puis-je obtenir une facture ?",
+          "a": "Oui, pour les frais de publication. Vos paiements sont listés dans <payments>Mes paiements</payments> ; demandez la facture via la page <contact>Contact</contact>."
+        }
+      },
+      "remise": {
+        "handover": {
+          "q": "Comment se passe la remise du véhicule ?",
+          "a": "En main propre, entre le vendeur et l'acheteur, aux conditions qu'ils fixent ensemble. Voyez le véhicule avant de payer quoi que ce soit, et privilégiez un lieu public en journée."
+        },
+        "documents": {
+          "q": "Quels documents prévoir ?",
+          "a": "Le vendeur apporte la carte grise et les documents du véhicule (vignette, assurance, visite technique le cas échéant) ; chaque partie se munit de sa CIN. Le transfert administratif (mutation) s'effectue ensuite selon la réglementation en vigueur."
+        },
+        "delivery": {
+          "q": "Proposez-vous la livraison ?",
+          "a": "Non. Si l'acheteur et le vendeur sont éloignés, le transport se convient entre eux."
+        }
+      },
+      "litiges": {
+        "problem": {
+          "q": "J'ai un problème avec une annonce ou un vendeur, que faire ?",
+          "a": "Contactez-nous via la page <contact>Contact</contact> avec le lien de l'annonce. Nous examinons chaque signalement et retirons ce qui doit l'être."
+        },
+        "mismatch": {
+          "q": "L'annonce ne correspond pas au véhicule que j'ai vu.",
+          "a": "Signalez-la : le vendeur a attesté de l'exactitude de sa description, et un écart avéré entraîne le retrait de l'annonce. Comme la vente se règle directement entre vous, n'engagez aucun paiement tant que le véhicule ne correspond pas à ce qui est annoncé."
+        },
+        "report": {
+          "q": "Comment signaler une annonce suspecte ?",
+          "a": "Envoyez-nous son lien via la page <contact>Contact</contact>. Toutes les annonces sont relues avant publication, mais chaque signalement est vérifié en priorité."
+        }
+      }
+    },
+    "supportAria": "Contacter le support",
+    "notFound": "Vous n'avez pas trouvé de réponse ?",
+    "hours": "Notre équipe répond du lundi au vendredi, de 9h à 17h.",
+    "contactCta": "Contactez-nous"
+  },
+  "howItWorks": {
+    "metaTitle": "Comment ça marche — Mazed Auto",
+    "metaDescription": "Le parcours acheteur et vendeur sur Mazed Auto : prix affichés, contact direct avec le vendeur, diagnostic Mazed et vérification de chaque annonce avant publication.",
+    "eyebrow": "Le guide",
+    "title": "Comment fonctionne <gold>Mazed Auto</gold> ?",
+    "intro": "Des voitures et des pièces à prix affiché. Vous parlez directement au vendeur ; nous vérifions chaque annonce avant qu'elle soit en ligne.",
+    "buyerEyebrow": "Parcours acheteur",
+    "buyerTitle": "De la recherche à l'appel, en 4 étapes",
+    "buyer": {
+      "s1": {
+        "title": "Cherchez la voiture ou la pièce",
+        "text": "Filtrez par gouvernorat, budget, marque ou état. Pour une pièce de rechange, indiquez votre marque, votre modèle et votre année : seules les pièces compatibles s'affichent."
+      },
+      "s2": {
+        "title": "Le prix est affiché",
+        "text": "Pas d'enchère et pas d'attente : le prix demandé est sur l'annonce, avec les photos, les caractéristiques et le gouvernorat du vendeur."
+      },
+      "s3": {
+        "title": "Appelez le vendeur",
+        "text": "Affichez son numéro et contactez-le directement. Mazed Auto n'intervient ni dans la négociation ni dans le paiement : vous traitez avec le vendeur."
+      },
+      "s4": {
+        "title": "Voyez le véhicule, puis concluez",
+        "text": "Fixez un rendez-vous, examinez la voiture et convenez du prix entre vous. Quand une annonce porte le badge « Vérifié et approuvé », notre fiche de diagnostic vous dit ce que nous avons constaté."
+      }
+    },
+    "sellerEyebrow": "Parcours vendeur",
+    "sellerTitle": "Publiez votre annonce en 5 étapes",
+    "seller": {
+      "s1": {
+        "title": "Photographiez et décrivez",
+        "text": "Jusqu'à 12 photos nettes, puis les caractéristiques : marque, modèle, année, kilométrage, état. Pour une pièce, indiquez les véhicules sur lesquels elle se monte."
+      },
+      "s2": {
+        "title": "Mettez vos coordonnées",
+        "text": "Votre numéro figure sur l'annonce : les acheteurs vous appellent directement, et vous décidez avec qui vous traitez."
+      },
+      "s3": {
+        "title": "Signez l'attestation",
+        "text": "Vous confirmez que les informations sont exactes. Une fausse déclaration nous autorise à refuser ou à retirer l'annonce."
+      },
+      "s4": {
+        "title": "Réglez la publication",
+        "text": "Un montant fixe par annonce, ou une publication décomptée de votre forfait. Les pièces de rechange sont publiées gratuitement."
+      },
+      "s5": {
+        "title": "Nous vérifions, puis c'est en ligne",
+        "text": "Notre équipe contrôle l'annonce avant sa publication. Elle reste visible 30 jours, et vous pouvez la renouveler ensuite."
+      }
+    },
+    "trustTitle": "Un <gold>système de confiance</gold> à chaque étape",
+    "trustBody": "Nous ne touchons pas à l'argent de la vente. Ce que nous garantissons, c'est que l'annonce que vous lisez a été contrôlée avant d'être publiée.",
+    "trust": {
+      "review": "Revue avant publication",
+      "diagnostic": "Diagnostic Mazed",
+      "badge": "Badge vendeur vérifié",
+      "attestation": "Attestation du vendeur",
+      "contact": "Contact direct",
+      "limited": "Annonces à durée limitée"
+    },
+    "cta": "Commencer maintenant"
+  },
+  "pricing": {
+    "metaTitle": "Tarifs — Mazed Auto",
+    "metaDescription": "Ce que coûte une annonce sur Mazed Auto, pour un particulier et pour un professionnel.",
+    "titleFree": "Publier est gratuit",
+    "titlePaid": "Vous payez à l'annonce",
+    "vehicles": "{count, plural, one {# véhicule} other {# véhicules}}",
+    "parts": "{count, plural, one {# pièce} other {# pièces}}",
+    "introFree": "Pour un particulier : {vehicles} et {parts} en ligne à la fois, sans rien payer. L'acheteur vous contacte directement, sans commission.",
+    "introPaid": "Pas d'abonnement, pas d'engagement. Une annonce, un prix — réglé après vérification, par virement ou D17.",
+    "free": "Gratuit",
+    "vehicleCard": {
+      "title": "Voiture, moto, utilitaire",
+      "noteFree": "{vehicles} en ligne à la fois, 30 jours après validation, renouvelable gratuitement.",
+      "notePaid": "Par annonce, en ligne 30 jours après validation."
+    },
+    "partCard": {
+      "title": "Pièce de rechange",
+      "noteFree": "Jusqu'à {parts} en ligne à la fois, dans toutes les sous-catégories.",
+      "notePaid": "Publier une pièce ne coûte rien, dans toutes les sous-catégories."
+    },
+    "moreShopsOpen": "Plus d'annonces ? <link>Ouvrez une boutique professionnelle</link>.",
+    "moreSoon": "Plus d'annonces ? Les boutiques professionnelles arrivent bientôt. <link>Parlons-en</link>.",
+    "options": "En option",
+    "renew": "Renouveler une annonce expirée",
+    "includedTitle": "Ce qui est compris",
+    "included": {
+      "photos": "Jusqu'à 12 photos par annonce",
+      "contact": "Vos coordonnées visibles par les acheteurs vérifiés",
+      "review": "Vérification de chaque annonce avant sa mise en ligne",
+      "edit": "Modification et retrait à tout moment"
+    },
+    "publish": "Publier une annonce",
+    "billing": "Une question sur la facturation ? <link>Contactez-nous</link>.",
+    "products": {
+      "promo-accueil": "Mise en avant · accueil",
+      "promo-top-recherche": "Top de la recherche",
+      "promo-banniere": "Bannière d'accueil",
+      "boost-7j": "Boost 7 jours"
+    }
+  }
+}

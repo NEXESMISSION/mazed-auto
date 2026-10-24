@@ -1,0 +1,835 @@
+{
+  "shell": {
+    "console": "Console",
+    "exit": "Quitter l'admin",
+    "openMenu": "Ouvrir le menu",
+    "closeMenu": "Fermer le menu",
+    "navLabel": "Navigation admin",
+    "nav": {
+      "dashboard": {
+        "label": "Tableau de bord",
+        "hint": "Ce qui attend une décision"
+      },
+      "annonces": {
+        "label": "Annonces",
+        "hint": "Modérer, créer, mettre en avant"
+      },
+      "paiements": {
+        "label": "Paiements",
+        "hint": "Reçus à valider"
+      },
+      "offres": {
+        "label": "Offres & prix",
+        "hint": "Annonces, packs, mises en avant, badge"
+      },
+      "boutiques": {
+        "label": "Boutiques",
+        "hint": "Vérifications, justificatifs, abonnements"
+      },
+      "vendeurs": {
+        "label": "Vendeurs",
+        "hint": "Comptes, rôles, badges"
+      },
+      "catalogue": {
+        "label": "Catalogue",
+        "hint": "Catégories et caractéristiques"
+      },
+      "site": {
+        "label": "Site",
+        "hint": "Accueil, popups, documents, diffusions, réglages, journal"
+      }
+    }
+  },
+  "kit": {
+    "previous": "Précédent",
+    "next": "Suivant",
+    "page": "Page {page} / {total}",
+    "search": "Rechercher…",
+    "clearSearch": "Effacer la recherche",
+    "results": "{count, plural, one {# résultat} other {# résultats}}",
+    "ranges": {
+      "all": "Tout",
+      "today": "Aujourd'hui",
+      "days7": "7 j",
+      "days30": "30 j"
+    },
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "reasonRequired": "Renseignez le motif.",
+    "detail": "Détail",
+    "close": "Fermer",
+    "loading": "Chargement",
+    "receipt": {
+      "label": "Reçu",
+      "open": "Ouvrir le {label} ({what})",
+      "unreadable": "non affichable",
+      "file": "fichier"
+    },
+    "siteTabs": {
+      "label": "Sections du site",
+      "site": "Site",
+      "home": "Accueil",
+      "popups": "Popups",
+      "documents": "Documents",
+      "broadcasts": "Diffusions",
+      "settings": "Réglages",
+      "journal": "Journal"
+    }
+  },
+  "action": {
+    "failed": "L'action a échoué.",
+    "done": "C'est fait.",
+    "network": "Connexion perdue. Vérifiez le réseau et rechargez.",
+    "errors": {
+      "auth": "Session expirée. Reconnectez-vous.",
+      "forbidden": "Vous n'avez pas les droits pour cette action.",
+      "cross_origin_blocked": "Requête bloquée. Rechargez la page et réessayez.",
+      "already_claimed": "Un autre admin traite déjà cette ligne.",
+      "not_found": "Cette ligne n'existe plus — elle a peut-être été supprimée.",
+      "conflict": "L'état a changé depuis le chargement. Rechargez la page.",
+      "invalid": "Données invalides.",
+      "rate_limited": "Trop de requêtes. Patientez un instant."
+    }
+  },
+  "relative": {
+    "now": "à l'instant",
+    "minutes": "il y a {n} min",
+    "hours": "il y a {n} h",
+    "days": "il y a {n} j",
+    "weeks": "il y a {n} sem",
+    "months": "il y a {n} mois",
+    "years": "{n, plural, one {il y a # an} other {il y a # ans}}"
+  },
+  "dashboard": {
+    "eyebrow": "Console",
+    "title": "Tableau de bord",
+    "figures": {
+      "pending": "En attente",
+      "overdue": "En retard > 48 h",
+      "publishedToday": "Publiées aujourd'hui"
+    },
+    "queuesTitle": "Files",
+    "overdue": "{count} en retard",
+    "queues": {
+      "listings": {
+        "label": "Annonces à valider",
+        "sub": "Soumises par un vendeur"
+      },
+      "receipts": {
+        "label": "Reçus à valider",
+        "sub": "Publication, packs, mises en avant"
+      },
+      "expiring": {
+        "label": "Expirent sous 7 jours",
+        "sub": "À relancer pour un renouvellement"
+      },
+      "expired": {
+        "label": "Expirées",
+        "sub": "Hors ligne, renouvelables"
+      }
+    },
+    "recentTitle": "Derniers gestes",
+    "fullJournal": "Tout le journal →",
+    "noActions": "Aucune action enregistrée pour l'instant."
+  },
+  "activity": {
+    "eyebrow": "Site",
+    "title": "Journal",
+    "tabs": {
+      "actions": "Décisions",
+      "errors": "Erreurs",
+      "views": "Pages visitées"
+    },
+    "searchPlaceholder": "Compte, action, chemin…",
+    "noMatch": "Aucune ligne ne correspond",
+    "emptyTab": "Rien dans « {tab} »"
+  },
+  "site": {
+    "eyebrow": "Console",
+    "title": "Site",
+    "description": "Le contenu et la configuration du site public. Ce que l'on règle une fois, puis rarement.",
+    "cards": {
+      "home": {
+        "label": "Accueil",
+        "description": "Choisir les annonces mises en avant sur la page d'accueil.",
+        "unit": "en vedette"
+      },
+      "popups": {
+        "label": "Popups",
+        "description": "Messages affichés aux visiteurs, avec ciblage et planning.",
+        "unit": "configurés"
+      },
+      "legal": {
+        "label": "Documents légaux",
+        "description": "CGU, confidentialité, mentions — le texte publié sur le site.",
+        "unit": "documents"
+      },
+      "broadcasts": {
+        "label": "Diffusions",
+        "description": "Notifications envoyées aux vendeurs et aux acheteurs.",
+        "unit": "envoyées"
+      },
+      "settings": {
+        "label": "Réglages",
+        "description": "Coordonnées bancaires, durée de vie des annonces, contact."
+      },
+      "activity": {
+        "label": "Journal d'activité",
+        "description": "Qui a fait quoi, et quand. La trace d'audit de la console."
+      }
+    }
+  },
+  "home": {
+    "eyebrow": "Accueil",
+    "title": "Mise en avant",
+    "unavailable": "Service indisponible.",
+    "description": "Choisissez les annonces à la une, l'image de chaque annonce, et la composition de la page d'accueil.",
+    "curator": {
+      "failedTitle": "Action impossible",
+      "retry": "Réessayez.",
+      "layoutTitle": "Composition de l'accueil",
+      "layoutBody": "Combien de places, et ce qui remplit celles que vous n'avez pas choisies.",
+      "heroSlots": "Grande place",
+      "sideSlots": "Petites cartes",
+      "fallback": "Le reste",
+      "fallbackRecent": "Les plus récentes",
+      "fallbackViewed": "Les plus vues",
+      "layoutSaved": "Composition enregistrée.",
+      "save": "Enregistrer",
+      "featuredTitle": "À la une ({count})",
+      "featuredBody": "Rang 1 en premier. Les places restantes se remplissent automatiquement.",
+      "featuredEmpty": "Aucune annonce mise en avant — l'accueil affiche les plus récentes.",
+      "remove": "Retirer",
+      "publishedTitle": "Annonces publiées",
+      "publishedBody": "Cliquez une photo pour en faire l'image de l'annonce — celle qui s'affiche partout sur le site.",
+      "weight": "Poids",
+      "weightHint": "-100 enterre, 0 neutre, +100 remonte partout",
+      "weightSaved": "Poids enregistré.",
+      "rankHint": "Position sur la couverture",
+      "featuredDone": "Mise à la une.",
+      "feature": "À la une",
+      "noPhoto": "Aucune photo",
+      "coverSaved": "Image de l'annonce mise à jour.",
+      "coverCurrent": "Image actuelle",
+      "coverUse": "Utiliser cette photo",
+      "coverBadge": "Image",
+      "updating": "Mise à jour…"
+    }
+  },
+  "settings": {
+    "eyebrow": "Site",
+    "title": "Réglages",
+    "description": "Les coordonnées que le vendeur voit au moment de payer. Les prix ne sont pas ici — ils vivent dans Offres & prix, et nulle part ailleurs.",
+    "form": {
+      "save": "Enregistrer",
+      "saved": "Enregistré",
+      "unchanged": "Rien n'a changé.",
+      "unsaved": "Modifications non enregistrées.",
+      "payee": {
+        "title": "Bénéficiaire du virement",
+        "body": "Affiché au vendeur sur la page de paiement.",
+        "foreign": "Ce nom appartient au projet immobilier jumeau, pas à Mazed Auto. C'est celui que le vendeur recopie dans son application bancaire.",
+        "name": "Raison sociale",
+        "bank": "Banque",
+        "d17": "D17 / téléphone",
+        "success": "Coordonnées enregistrées."
+      },
+      "welcome": {
+        "title": "Allocation de bienvenue",
+        "body": "Les premières publications payantes d'un vendeur lui sont offertes. Les catégories déjà gratuites — les pièces — ne consomment rien : l'allocation ne sert que là où il y aurait eu un prix.",
+        "enable": "Activer",
+        "count": "Publications offertes",
+        "on": "{count, plural, one {Un nouveau vendeur publie # annonce sans payer, puis au tarif normal.} other {Un nouveau vendeur publie # annonces sans payer, puis au tarif normal.}}",
+        "off": "Désactivée : chaque publication est facturée dès la première.",
+        "success": "Allocation enregistrée."
+      },
+      "personal": {
+        "title": "Annonces des particuliers",
+        "body": "Combien d'annonces un particulier peut avoir en ligne à la fois (en vérification ou publiées). La base de données applique ces nombres à chaque publication ; ce qui est déjà en ligne n'est jamais retiré.",
+        "vehicles": "Véhicules",
+        "parts": "Pièces",
+        "free": "Gratuites",
+        "on": "Un particulier publie gratuitement jusqu'à {vehicles, plural, one {# véhicule} other {# véhicules}} et {parts, plural, one {# pièce} other {# pièces}} à la fois.",
+        "off": "Payantes : chaque annonce au prix fixé dans Offres & prix — réactivez-y « annonce-standard » et « renouvellement », désactivés tant que la publication est gratuite. Les limites s'appliquent toujours.",
+        "success": "Limites enregistrées."
+      },
+      "shops": {
+        "title": "Boutiques professionnelles",
+        "body": "L'annuaire, les pages de chaque boutique et le lien « Publiée par la boutique » sur les annonces. Désactivées, seuls les administrateurs les voient — un visiteur obtient une page introuvable.",
+        "open": "Ouvrir les pages boutiques au public",
+        "public": "Publiques : tout le monde voit /boutiques.",
+        "preview": "Aperçu : visibles par les administrateurs seulement.",
+        "see": "Voir /boutiques",
+        "successPublic": "Boutiques ouvertes au public.",
+        "successPreview": "Boutiques en aperçu."
+      },
+      "prices": {
+        "title": "Prix et forfaits",
+        "body": "Le prix d'une publication, les packs, les mises en avant et le badge ne se règlent plus ici. Une seule table décide, et c'est celle que le vendeur paie.",
+        "open": "Ouvrir Offres & prix"
+      }
+    }
+  },
+  "legalDocs": {
+    "eyebrow": "Documents légaux",
+    "title": "Catalogue par type de bien",
+    "description": "Définissez la liste des documents que chaque vendeur doit téléverser selon le type de bien. Les documents marqués <b>requis</b> bloquent l'envoi du formulaire tant qu'ils ne sont pas fournis.",
+    "editor": {
+      "titleRequired": "Ligne {line} : le titre est requis.",
+      "duplicate": "Doublon : \"{label}\".",
+      "saveFailed": "Échec de l'enregistrement.",
+      "saved": "Catalogue {type} enregistré.",
+      "unsaved": "non enregistré",
+      "none": "Aucun document configuré — le vendeur n'aura rien à téléverser.",
+      "configured": "{count, plural, one {# document configuré.} other {# documents configurés.}}",
+      "add": "Ajouter",
+      "emptyHint": "Cliquez sur <b>Ajouter</b> pour créer un document à fournir.",
+      "moveUp": "Monter",
+      "moveDown": "Descendre",
+      "titlePlaceholder": "Titre du document (ex. Carte grise)",
+      "helpPlaceholder": "Aide affichée au vendeur (optionnel)",
+      "required": "Requis",
+      "requiredHint": "bloque la soumission",
+      "delete": "Supprimer",
+      "saving": "Enregistrement…",
+      "savedShort": "Enregistré",
+      "saveType": "Enregistrer ({type})"
+    }
+  },
+  "catalogue": {
+    "unconfigured": "Service non configuré.",
+    "title": "Catalogue",
+    "summary": "{categories} catégories · {attributes} caractéristiques",
+    "noCategories": "Aucune catégorie",
+    "attributesCount": "{count, plural, one {# caractéristique} other {# caractéristiques}}",
+    "listingsCount": "{count, plural, one {# annonce} other {# annonces}}",
+    "pick": "Choisissez une catégorie à gauche.",
+    "pickHint": "Ce que vous définissez ici est ce que le vendeur remplit, et ce sur quoi l'acheteur filtre.",
+    "editor": {
+      "addAttribute": "Caractéristique",
+      "empty": "Aucune caractéristique. Une annonce de cette catégorie n'aura que titre, prix, description et photos.",
+      "requiredTag": "requis",
+      "filterTag": "filtre",
+      "types": {
+        "text": "Texte",
+        "number": "Nombre",
+        "boolean": "Oui / non",
+        "select": "Liste de choix"
+      },
+      "optionsCount": "{count} options",
+      "usedBy": "{count, plural, one {# annonce} other {# annonces}}",
+      "added": "Caractéristique ajoutée.",
+      "saved": "Caractéristique enregistrée.",
+      "newTitle": "Nouvelle caractéristique",
+      "close": "Fermer",
+      "label": "Libellé",
+      "type": "Type",
+      "typeLocked": "Le type ne change pas : des annonces ont déjà des valeurs.",
+      "unit": "Unité",
+      "unitHint": "Affichée après la valeur. Facultatif.",
+      "order": "Ordre",
+      "orderHint": "Petit d'abord.",
+      "options": "Options",
+      "optionPlaceholder": "Automatique",
+      "removeOption": "Retirer l'option",
+      "addOption": "Ajouter une option",
+      "required": "Obligatoire",
+      "requiredHint": "Le vendeur ne peut pas publier sans.",
+      "filterable": "Filtrable",
+      "filterableHint": "Devient un filtre dans le catalogue.",
+      "labelRequired": "Donnez un libellé.",
+      "add": "Ajouter",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "delete": "Supprimer",
+      "deleteTitle": "Supprimer cette caractéristique ?",
+      "deleteBody": "Refusé si des annonces l'utilisent déjà : leurs valeurs deviendraient illisibles.",
+      "deleted": "Caractéristique supprimée."
+    }
+  },
+  "offres": {
+    "unconfigured": "Service non configuré.",
+    "title": "Offres & prix",
+    "summary": "{active} en vente · {total} au total",
+    "new": "Nouvelle offre",
+    "empty": "Aucune offre",
+    "emptyHint": "Créez ce qu'un vendeur peut acheter : une publication, un pack, une mise en avant, le badge.",
+    "misconfigured": "{count, plural, one {# offre en vente sans prix configuré — le vendeur ne peut pas payer.} other {# offres en vente sans prix configuré — le vendeur ne peut pas payer.}}",
+    "allCategories": "toutes catégories",
+    "quota": "{count} annonces",
+    "days": "{count} j",
+    "noPrice": "sans prix",
+    "free": "gratuit",
+    "pick": "Choisissez une offre à gauche, ou créez-en une.",
+    "pickHint": "Tout ce qu'un vendeur peut acheter vit ici — jamais dans le code.",
+    "kinds": {
+      "listing_single": {
+        "label": "Annonce à l'unité",
+        "hint": "Une publication. Le prix peut différer par catégorie."
+      },
+      "listing_pack": {
+        "label": "Pack d'annonces",
+        "hint": "N publications prépayées, à utiliser quand le vendeur veut."
+      },
+      "subscription": {
+        "label": "Abonnement",
+        "hint": "Publications sur une période, pour les professionnels."
+      },
+      "promo": {
+        "label": "Mise en avant",
+        "hint": "Accueil, top de la recherche, bannière."
+      },
+      "badge_verified": {
+        "label": "Badge vérifié",
+        "hint": "Vendu au vendeur, accordé à la main après vérification."
+      },
+      "renewal": {
+        "label": "Renouvellement",
+        "hint": "Remet une annonce expirée en ligne."
+      }
+    },
+    "editor": {
+      "created": "Offre créée.",
+      "saved": "Offre enregistrée.",
+      "back": "Offres",
+      "type": "Type",
+      "typeLocked": "Le type ne change pas après création — des paiements y font référence.",
+      "name": "Nom affiché",
+      "description": "Description",
+      "descriptionHint": "Visible par le vendeur sur la page Tarifs.",
+      "price": "Prix",
+      "priceHint": "0 = gratuit. Vide = non configuré, et rien ne peut être vendu.",
+      "order": "Ordre d'affichage",
+      "orderHint": "Petit d'abord.",
+      "category": "Catégorie",
+      "allCategories": "Toutes les catégories",
+      "categoryHint": "Un prix par catégorie l'emporte sur le prix global. Une seule annonce à l'unité active par catégorie.",
+      "quota": "Publications accordées",
+      "quotaSuffix": "annonces",
+      "quotaHint": "Ce que le vendeur peut publier avec ce forfait.",
+      "badgeValidity": "Validité du badge",
+      "duration": "Durée de publication",
+      "daysSuffix": "jours",
+      "badgeHint": "Renouvelable, et révocable à tout moment.",
+      "durationHint": "Combien de temps l'annonce reste en ligne. Vide = 30 jours.",
+      "availability": "Disponibilité",
+      "onSale": "En vente",
+      "onSaleHint": "Désactivée, l'offre disparaît de la page Tarifs mais reste liée aux paiements déjà faits.",
+      "noPriceWarning": "En vente sans prix configuré : le vendeur ne pourra pas payer.",
+      "nameRequired": "Donnez un nom à l'offre.",
+      "create": "Créer",
+      "save": "Enregistrer",
+      "withdraw": "Retirer de la vente",
+      "withdrawTitle": "Retirer cette offre de la vente ?",
+      "withdrawBody": "Elle disparaît de la page Tarifs. Elle n'est jamais supprimée : des paiements et des forfaits déjà vendus y font référence.",
+      "withdrawConfirm": "Retirer",
+      "withdrawn": "Offre retirée de la vente."
+    }
+  },
+  "popups": {
+    "eyebrow": "Diffusion",
+    "title": "Popups",
+    "description": "Bannières, modales et bottom-sheets affichées sur le site. Chaque popup cible un public, des pages et une fenêtre temporelle.",
+    "new": "Nouveau popup",
+    "edit": "Modifier le popup",
+    "slug": "Slug :",
+    "newBody": "Configurez ce que les utilisateurs verront, à qui, sur quelles pages et quand.",
+    "stats": {
+      "live": "En ligne",
+      "scheduled": "Programmés",
+      "drafts": "Brouillons"
+    },
+    "blocking": "Bloquant",
+    "modeRule": "Règle permanente",
+    "modeBroadcast": "Diffusion",
+    "status": {
+      "draft": "Brouillon",
+      "live": "En ligne",
+      "paused": "En pause",
+      "archived": "Archivé"
+    },
+    "variant": {
+      "banner": "Bannière",
+      "modal": "Modale",
+      "sheet": "Sheet"
+    },
+    "emptyTitle": "Aucun popup configuré.",
+    "emptyBody": "Créez votre première bannière, modale ou bottom-sheet pour accueillir, alerter ou guider vos utilisateurs.",
+    "form": {
+      "unknownError": "Erreur inconnue",
+      "updated": "Popup mis à jour",
+      "created": "Popup créé",
+      "confirmDelete": "Supprimer définitivement « {slug} » ?",
+      "deleteFailed": "Suppression échouée",
+      "deleted": "Popup supprimé",
+      "editTitle": "Modifier le popup",
+      "newTitle": "Nouveau popup",
+      "preview": "Aperçu",
+      "delete": "Supprimer",
+      "saving": "Enregistrement…",
+      "save": "Enregistrer",
+      "untitled": "Sans titre",
+      "close": "Fermer",
+      "textIn": "Texte en {lang}…",
+      "identification": {
+        "title": "Identification",
+        "subtitle": "Slug court (lettres, chiffres, tirets) — utilisé dans les logs et le localStorage anonyme.",
+        "slug": "Slug",
+        "slugPlaceholder": "ex. welcome-2026 ou kyc-nudge",
+        "status": "Statut",
+        "statuses": {
+          "draft": "Brouillon",
+          "live": "En ligne",
+          "paused": "En pause",
+          "archived": "Archivé"
+        },
+        "mode": "Mode",
+        "modeHint": "Diffusion = fenêtre temporelle. Règle = condition permanente.",
+        "modes": {
+          "broadcast": "Diffusion (one-shot)",
+          "rule": "Règle permanente"
+        },
+        "variant": "Variante",
+        "variantHint": "V1 ne rend que la modale ; bannière + sheet arrivent en phase 2.",
+        "variants": {
+          "modal": "Modale",
+          "banner": "Bannière (à venir)",
+          "sheet": "Bottom sheet (à venir)"
+        },
+        "priority": "Priorité",
+        "priorityHint": "Quand plusieurs popups correspondent, le plus haut gagne."
+      },
+      "content": {
+        "title": "Contenu",
+        "subtitle": "Titre + corps + image facultative. Le français est requis ; arabe et anglais sont optionnels.",
+        "titleField": "Titre",
+        "body": "Corps",
+        "image": "URL de l'image",
+        "imageHint": "Optionnel. Affiché en haut de la modale.",
+        "icon": "Icône (Lucide)",
+        "iconHint": "ex. Sparkles, ShieldCheck — laissé vide = pas d'icône."
+      },
+      "ctas": {
+        "title": "Boutons d'action",
+        "subtitle": "Le bouton principal est obligatoire pour que le popup soit actionnable ; le secondaire est optionnel.",
+        "primaryLabel": "Libellé principal (fr)",
+        "primaryHref": "Lien principal",
+        "secondaryLabel": "Libellé secondaire (fr) — facultatif",
+        "secondaryHref": "Lien secondaire — facultatif"
+      },
+      "audience": {
+        "title": "Audience",
+        "subtitle": "À qui le popup est-il destiné ?",
+        "scope": "Portée",
+        "scopes": {
+          "all": "Tout le monde",
+          "anon": "Visiteurs anonymes",
+          "logged_in": "Utilisateurs connectés"
+        },
+        "roles": "Rôles (optionnel)",
+        "rolesHint": "Restreindre à certains rôles. Vide = tous les rôles."
+      },
+      "roles": {
+        "individual": "Particuliers",
+        "agency": "Agences",
+        "bank": "Banques",
+        "bailiff": "Huissiers",
+        "inspector": "Inspecteurs",
+        "admin": "Admins"
+      },
+      "targeting": {
+        "title": "Ciblage",
+        "subtitle": "Les pages où le popup doit s'afficher, sa langue et le type d'appareil.",
+        "pages": "Pages",
+        "pagesHint": "Une glob par ligne ou séparées par des virgules. Vide = toutes les pages. Ex. \"/, /auctions/*\". Préfixe \"!\" pour exclure : \"!/admin/*\".",
+        "languages": "Langues",
+        "devices": "Appareils",
+        "deviceOptions": {
+          "both": "Mobile + Desktop",
+          "mobile": "Mobile uniquement",
+          "desktop": "Desktop uniquement"
+        }
+      },
+      "window": {
+        "title": "Fenêtre de diffusion",
+        "subtitle": "Dates de début et de fin (UTC).",
+        "starts": "Démarre le",
+        "ends": "Se termine le"
+      },
+      "frequency": {
+        "title": "Fréquence & comportement",
+        "subtitle": "À quelle cadence l'utilisateur revoit-il le popup ?",
+        "label": "Fréquence",
+        "options": {
+          "once_per_user": "Une fois par utilisateur",
+          "once_per_session": "Une fois par session",
+          "every_visit": "À chaque visite",
+          "every_n_days": "Tous les N jours"
+        },
+        "nDays": "N (jours)",
+        "dismissible": "Fermable par l'utilisateur",
+        "forceAction": "Bloquer la page jusqu'à action (ex. acceptation CGU)"
+      },
+      "errors": {
+        "slug_invalid": "Le slug est invalide (lettres, chiffres, tirets).",
+        "title_required": "Le titre en français est requis.",
+        "body_invalid": "Le corps est invalide.",
+        "mode_invalid": "Mode inconnu.",
+        "variant_invalid": "Variante inconnue.",
+        "audience_invalid": "Audience invalide.",
+        "forbidden": "Accès refusé.",
+        "auth": "Veuillez vous reconnecter."
+      }
+    }
+  },
+  "notifications": {
+    "eyebrow": "Outils admin",
+    "title": "Notifications",
+    "description": "Composer un message ponctuel ou inspecter la file complète des notifications envoyées.",
+    "tabs": {
+      "compose": "Composer",
+      "queue": "File"
+    },
+    "roles": {
+      "individual": "individual",
+      "agency": "agency",
+      "bank": "bank",
+      "bailiff": "bailiff",
+      "inspector": "inspector",
+      "admin": "admin"
+    },
+    "compose": {
+      "type": "Type",
+      "recipients": "Destinataires",
+      "audience": {
+        "all": "Tous",
+        "role": "Par rôle",
+        "users": "Utilisateurs"
+      },
+      "userIdsPlaceholder": "ID utilisateur, un par ligne (ou séparés par virgule)",
+      "preview": "Aperçu",
+      "sendTest": "Envoyer un test à moi",
+      "sending": "Envoi...",
+      "broadcast": "Diffuser",
+      "missingRequired": "Champs requis manquants",
+      "testSent": "Test envoyé.",
+      "broadcastSent": "Diffusion envoyée.",
+      "recipientsCount": "{count, plural, one {# destinataire} other {# destinataires}}",
+      "error": "Erreur : {error}",
+      "yes": "Oui",
+      "previewTitle": "Titre de la notification"
+    },
+    "queue": {
+      "loadFailed": "Échec du chargement",
+      "stats": {
+        "day": "24 heures",
+        "week": "7 jours",
+        "unread": "Non lues"
+      },
+      "searchTitle": "Recherche titre…",
+      "reset": "Réinitialiser",
+      "refresh": "Rafraîchir",
+      "shown": "{count, plural, one {# affichée sur {total}} other {# affichées sur {total}}}",
+      "filtered": "(filtrés)",
+      "noMatch": "Aucune notification ne correspond aux filtres.",
+      "loading": "Chargement…",
+      "loadMore": "Charger 10 de plus",
+      "end": "Fin de la liste.",
+      "read": "Lue · {when}",
+      "unread": "Non lue",
+      "filterBroadcast": "Filtrer par cette diffusion",
+      "broadcast": "Diffusion · {id}",
+      "filterRecipient": "Filtrer par destinataire",
+      "by": "par"
+    },
+    "kinds": {
+      "announcement": {
+        "label": "Annonce",
+        "description": "Nouvelle fonctionnalité, changement de politique, communication produit.",
+        "fields": {
+          "title": {
+            "label": "Titre",
+            "placeholder": "Nouvelle fonctionnalité disponible"
+          },
+          "body": {
+            "label": "Message",
+            "placeholder": "Décrivez l'annonce."
+          },
+          "link": {
+            "label": "Lien (optionnel)",
+            "placeholder": "/annonces"
+          },
+          "cta_label": {
+            "label": "Libellé du bouton",
+            "placeholder": "En savoir plus",
+            "helper": "Texte du bouton d'action affiché avec le lien."
+          }
+        }
+      },
+      "maintenance": {
+        "label": "Maintenance",
+        "description": "Indisponibilité planifiée, fenêtre de maintenance.",
+        "fields": {
+          "title": {
+            "label": "Titre",
+            "placeholder": "Maintenance programmée"
+          },
+          "body": {
+            "label": "Message",
+            "placeholder": "Détails de la maintenance."
+          },
+          "scheduled_at": {
+            "label": "Début prévu",
+            "helper": "Heure locale (Tunis)."
+          },
+          "duration_min": {
+            "label": "Durée (minutes)",
+            "placeholder": "60"
+          },
+          "affected": {
+            "label": "Services impactés",
+            "placeholder": "Publication, paiements"
+          }
+        }
+      },
+      "promo": {
+        "label": "Promo / actualité",
+        "description": "Offre limitée, événement, mise en avant d'une annonce.",
+        "fields": {
+          "title": {
+            "label": "Titre",
+            "placeholder": "Publication offerte ce week-end"
+          },
+          "body": {
+            "label": "Message",
+            "placeholder": "Détails de la promo."
+          },
+          "link": {
+            "label": "Lien"
+          },
+          "cta_label": {
+            "label": "Libellé du bouton",
+            "placeholder": "Voir l'offre"
+          },
+          "expires_at": {
+            "label": "Expire le",
+            "helper": "L'offre n'est plus valable après cette date."
+          },
+          "promo_code": {
+            "label": "Code promo",
+            "placeholder": "BATTA2026"
+          }
+        }
+      },
+      "system_alert": {
+        "label": "Alerte système",
+        "description": "Incident, problème connu, instruction d'action urgente.",
+        "fields": {
+          "title": {
+            "label": "Titre",
+            "placeholder": "Problème de paiement détecté"
+          },
+          "body": {
+            "label": "Message",
+            "placeholder": "Détails du problème et de la solution."
+          },
+          "severity": {
+            "label": "Sévérité",
+            "options": {
+              "info": "Info",
+              "warning": "Avertissement",
+              "error": "Critique"
+            }
+          },
+          "action_required": {
+            "label": "Action requise de l'utilisateur"
+          }
+        }
+      }
+    }
+  },
+  "analytics": {
+    "eyebrow": "Audience",
+    "shortTitle": "Statistiques",
+    "unavailable": "Service indisponible.",
+    "title": "Statistiques des annonces",
+    "description": "Qui a regardé chaque annonce, combien sont revenus, et combien ont demandé le numéro.",
+    "totalViews": "vues au total",
+    "metrics": {
+      "visitors": {
+        "label": "Visiteurs",
+        "hint": "personnes différentes"
+      },
+      "views": {
+        "label": "Vues",
+        "hint": "visites, retours compris"
+      },
+      "repeats": {
+        "label": "Revenus",
+        "hint": "visites répétées"
+      },
+      "favourites": {
+        "label": "Favoris",
+        "hint": "annonces enregistrées"
+      },
+      "reveals": {
+        "label": "Numéro affiché",
+        "hint": "demandes de contact"
+      }
+    },
+    "sortBy": "Trier",
+    "sorts": {
+      "views": "Vues",
+      "visitors": "Visiteurs",
+      "returns": "Retours",
+      "favourites": "Favoris",
+      "reveals": "Numéro",
+      "rate": "Taux",
+      "recent": "Vue récemment"
+    },
+    "status": {
+      "published": "En ligne",
+      "pending_review": "En attente",
+      "draft": "Brouillon",
+      "rejected": "Refusée",
+      "expired": "Expirée",
+      "archived": "Archivée",
+      "sold": "Vendue"
+    },
+    "includeUnpublished": "Inclure les non publiées",
+    "onlineOnly": "En ligne seulement",
+    "empty": "Aucune annonce à mesurer pour l'instant.",
+    "columns": {
+      "listing": "Annonce",
+      "visitors": "Visiteurs",
+      "views": "Vues",
+      "returns": "Retours",
+      "favourites": "Favoris",
+      "reveals": "Numéro",
+      "rate": "Taux",
+      "lastView": "Dernière vue"
+    },
+    "onRequest": "Sur demande",
+    "rateWithheld": "Demandes de numéro antérieures au comptage des vues",
+    "lastViewAt": "Dernière vue : {when}",
+    "footnote": "Une personne qui recharge la page compte une seule fois. Un retour n'est compté qu'après 30 minutes, et les visites du vendeur sur sa propre annonce ne sont jamais comptées. Les visiteurs non connectés sont identifiés par une empreinte de leur adresse IP — jamais l'adresse elle-même. Le taux reste vide tant que les demandes de numéro sont antérieures au comptage des vues : il n'aurait aucun sens avant que les deux couvrent la même période."
+  },
+  "api": {
+    "catalogue": {
+      "nameRequired": "Le nom est obligatoire.",
+      "categoryExists": "Une catégorie porte déjà ce nom.",
+      "categoryInUse": "{count} annonce(s) publiée(s) sont dans cette catégorie. Déplacez-les d'abord.",
+      "attributeRequired": "Catégorie et libellé sont obligatoires.",
+      "optionsRequired": "Une liste doit avoir au moins une option.",
+      "invalidKey": "Clé invalide.",
+      "attributeExists": "Cette caractéristique existe déjà dans la catégorie.",
+      "attributeInUse": "{count} annonce(s) utilisent « {label} ». Retirez-la du formulaire plutôt que de la supprimer."
+    },
+    "products": {
+      "quotaRequired": "Un pack doit accorder au moins une publication.",
+      "durationRequired": "Le badge doit avoir une durée de validité.",
+      "slugTaken": "Un produit porte déjà ce nom.",
+      "invalidProduct": "Vérifiez la cohérence : un pack a besoin d'un quota, un badge d'une durée, et une seule annonce à l'unité peut être active par catégorie."
+    }
+  }
+}

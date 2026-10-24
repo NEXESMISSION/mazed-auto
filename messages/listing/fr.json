@@ -1,0 +1,75 @@
+{
+  "metaTitle": "Annonce",
+  "metaDescription": "{title} à {place}.",
+  "priceOnRequest": "Prix sur demande",
+  "currencyPerDay": "{currency} / jour",
+  "negotiable": "Prix négociable",
+  "annonce": "Annonce",
+  "seller": "Vendeur",
+  "private": "Particulier",
+  "verifiedSeller": "Vendeur vérifié",
+  "byShop": "Publiée par la boutique",
+  "verifiedShop": "Boutique vérifiée",
+  "seeShop": "Voir la boutique",
+  "safety": "Mazed publie et vérifie les annonces, mais n'intervient pas dans la transaction : le paiement et la remise se font directement entre vous et le vendeur. Ne versez jamais d'acompte avant d'avoir vu le véhicule ou la pièce et ses papiers.",
+  "publishedOn": "publiée le {date}",
+  "reference": "Référence de l'annonce",
+  "specs": "Caractéristiques",
+  "yes": "Oui",
+  "fitments": "Compatible avec",
+  "description": "Description",
+  "back": "← Toutes les annonces",
+  "rental": {
+    "title": "Conditions de location",
+    "note": "La réservation se fait directement avec l'agence : appelez-la pour vérifier les dates.",
+    "availability": "Disponibilité",
+    "available": "Disponible",
+    "onRequest": "Sur demande",
+    "deposit": "Caution",
+    "noDeposit": "Sans caution",
+    "depositAmount": "{amount} TND",
+    "minAge": "Âge minimum",
+    "ageValue": "{age} ans",
+    "license": "Permis depuis",
+    "noSeniority": "Aucune ancienneté exigée",
+    "licenseYears": "{years, plural, one {# an} other {# ans}}",
+    "km": "Kilométrage inclus",
+    "unlimited": "Illimité",
+    "kmPerDay": "{km} km / jour"
+  },
+  "related": {
+    "eyebrow": "Ça pourrait vous intéresser",
+    "title": "Annonces similaires",
+    "seeAll": "Tout voir"
+  },
+  "diagnostic": {
+    "title": "Diagnostic Mazed",
+    "verdict": {
+      "approved": "Vérifié et approuvé",
+      "reserves": "Vérifié — avec réserves",
+      "failed": "Vérifié — non approuvé"
+    },
+    "blurb": {
+      "approved": "Contrôlé par notre équipe. Aucun point bloquant relevé.",
+      "reserves": "Contrôlé par notre équipe. Des points à connaître avant d'enchérir.",
+      "failed": "Contrôlé par notre équipe. Des défauts importants ont été relevés."
+    },
+    "notDeclaration": "Ce véhicule a été contrôlé par nous — ce n'est pas une déclaration du vendeur.",
+    "by": "Par {name}",
+    "on": "Le {date}",
+    "checked": "{count, plural, one {# point contrôlé} other {# points contrôlés}}",
+    "findings": " · {count} à signaler",
+    "noFindings": "Aucun point relevé.",
+    "state": {
+      "ok": "Conforme",
+      "warn": "À surveiller",
+      "bad": "Défaut"
+    },
+    "photos": "Photos prises lors du contrôle",
+    "photoAlt": "Photo du diagnostic {n}"
+  },
+  "api": {
+    "noPhone": "Ce vendeur ne partage pas son numéro.",
+    "rateLimited": "Trop de numéros consultés depuis cet appareil. Réessayez plus tard."
+  }
+}

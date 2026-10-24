@@ -1,0 +1,244 @@
+{
+  "common": {
+    "browse": "Parcourir les annonces",
+    "networkError": "Erreur réseau.",
+    "onRequest": "Sur demande",
+    "priceOnRequest": "Prix sur demande"
+  },
+  "listings": {
+    "title": "Mes annonces",
+    "none": "Vous n'avez pas encore publié.",
+    "count": "{count, plural, one {# annonce} other {# annonces}} · gérez-les ici.",
+    "creditsLeft": "{count, plural, one {# restante} other {# restantes}}",
+    "publish": "Publier",
+    "status": {
+      "draft": { "label": "Brouillon", "hint": "Pas encore envoyée." },
+      "pending_payment": { "label": "À payer", "hint": "Réglez les frais pour lancer la vérification." },
+      "pending_review": { "label": "Vérification", "hint": "Notre équipe la contrôle — moins de 24 h." },
+      "published": { "label": "En ligne" },
+      "rejected": { "label": "À corriger" },
+      "expired": { "label": "Expirée", "hint": "Renouvelez-la pour la remettre en ligne." },
+      "sold": { "label": "Vendue" },
+      "archived": { "label": "Retirée" },
+      "paused": { "label": "En pause", "hint": "Retirée du catalogue, rien n'est perdu : elle revient quand votre boutique est en règle." }
+    },
+    "tabs": {
+      "all": "Toutes",
+      "live": "En ligne",
+      "review": "En cours",
+      "fix": "À corriger",
+      "done": "Terminées"
+    },
+    "renewFee": {
+      "included": "incluse dans l'abonnement",
+      "free": "Gratuit"
+    },
+    "pay": "Payer",
+    "resume": "Reprendre",
+    "view": "Voir",
+    "expiresToday": "Expire aujourd'hui",
+    "daysLeft": "{count, plural, one {Encore # jour en ligne} other {Encore # jours en ligne}}",
+    "today": "aujourd'hui",
+    "inDays": "dans {count} j",
+    "columns": {
+      "listing": "Annonce",
+      "status": "Statut",
+      "price": "Prix",
+      "published": "Publiée",
+      "expires": "Expire",
+      "action": "Action"
+    },
+    "emptyTitle": "Aucune annonce pour le moment",
+    "emptyBody": "Publiez votre première annonce — voiture ou pièce de rechange.",
+    "emptyCta": "Publier une annonce",
+    "emptyTabTitle": "Rien dans « {tab} »",
+    "emptyTabBody": "Vos autres annonces sont dans les onglets voisins.",
+    "seeAll": "Voir toutes les annonces",
+    "renew": {
+      "button": "Renouveler",
+      "usesCredit": "1 publication du forfait",
+      "paid": "payante",
+      "failed": "Renouvellement impossible.",
+      "done": "Annonce renvoyée à la vérification. {count} publication(s) restante(s)."
+    },
+    "withdraw": {
+      "button": "Retirer",
+      "confirm": "Retirer « {title} » du catalogue ? Vous pourrez la renouveler plus tard.",
+      "failed": "Retrait impossible.",
+      "done": "Annonce retirée. Sa place est libre."
+    }
+  },
+  "favorites": {
+    "title": "Favoris",
+    "none": "Vous n'avez rien enregistré pour l'instant.",
+    "count": "{count, plural, one {# annonce enregistrée} other {# annonces enregistrées}}.",
+    "emptyBody": "Touchez le cœur sur une annonce pour la retrouver ici.",
+    "unavailable": "plus disponible"
+  },
+  "notifications": {
+    "metaTitle": "Notifications — Mazed Auto",
+    "metaDescription": "Centre de notifications : suivez vos annonces, vos paiements et vos alertes en temps réel.",
+    "eyebrow": "Centre de notifications",
+    "title": "Notifications",
+    "subtitle": "Annonces, paiements et alertes — tout au même endroit.",
+    "emptyTitle": "Aucune notification",
+    "emptyBody": "Tout est calme. Allez jeter un œil aux annonces.",
+    "all": "Toutes",
+    "unread": "Non lues",
+    "markAll": "Tout marquer lu",
+    "noUnreadTitle": "Aucune notification non lue",
+    "upToDate": "Vous êtes à jour.",
+    "loadMore": "Charger plus",
+    "groups": {
+      "today": "Aujourd'hui",
+      "yesterday": "Hier",
+      "week": "Cette semaine",
+      "older": "Plus ancien"
+    }
+  },
+  "payments": {
+    "eyebrow": "Historique",
+    "title": "Mes paiements",
+    "subtitle": "Frais de publication, packs et remboursements.",
+    "none": "Aucun paiement pour le moment.",
+    "kinds": {
+      "deposit_lock": "Caution de participation",
+      "buy_now": "Achat direct",
+      "final_payment": "Paiement final",
+      "commission": "Commission",
+      "inspection_fee": "Frais d'inspection",
+      "subscription": "Abonnement",
+      "deposit_release": "Remboursement de caution",
+      "listing_fee": "Frais d'annonce",
+      "listing_pack": "Pack d'annonces",
+      "renewal": "Renouvellement d'annonce",
+      "promo": "Mise en avant",
+      "badge": "Badge vérifié"
+    },
+    "status": {
+      "pending": "Reçu à téléverser",
+      "pending_review": "Reçu en vérification",
+      "captured": "Payé",
+      "refunded": "Remboursé",
+      "failed": "Refusé",
+      "cancelled": "Annulé"
+    },
+    "deposit": {
+      "locked": "Caution bloquée",
+      "to_refund": "Remb. en cours",
+      "refunded": "Remboursée",
+      "forfeited": "Caution saisie"
+    },
+    "lifecycle": {
+      "locked": "Bloquée",
+      "to_refund": "Remboursement en cours",
+      "refunded": "Remboursée",
+      "forfeited": "Saisie"
+    },
+    "providers": {
+      "bank_transfer": "Virement",
+      "manual": "Enregistré par l'admin"
+    },
+    "actions": {
+      "upload": "Téléverser le reçu",
+      "fix": "Voir / corriger le reçu",
+      "retry": "Reprendre le paiement"
+    },
+    "cancelFailed": "Annulation impossible.",
+    "cancelled": "Paiement annulé.",
+    "tabs": {
+      "all": "Tout",
+      "action": "À traiter",
+      "deposits": "Cautions",
+      "purchases": "Achats & frais",
+      "refunds": "Remboursements"
+    },
+    "stats": {
+      "action": "À traiter",
+      "locked": "Caution bloquée",
+      "spent": "Total dépensé",
+      "review": "En vérification"
+    },
+    "todo": "À traiter",
+    "toUpload": "Reçu à téléverser",
+    "refusedWith": "Refusé : {notes}",
+    "refused": "Refusé — à reprendre",
+    "emptyFilter": "Aucun paiement dans cette catégorie.",
+    "reason": "Motif du refus : {notes}",
+    "confirm": "Confirmer",
+    "no": "Non",
+    "cancel": "Annuler",
+    "receipt": "Reçu",
+    "viewListing": "Voir l'annonce"
+  },
+  "settings": {
+    "metaTitle": "Paramètres du compte — Mazed Auto",
+    "metaDescription": "Gérez votre mot de passe, votre adresse e-mail et la sécurité de votre compte Mazed Auto.",
+    "title": "Paramètres",
+    "guestBody": "Connectez-vous pour gérer la sécurité de votre compte.",
+    "login": "Se connecter",
+    "signup": "Créer un compte",
+    "back": "Mon compte",
+    "eyebrow": "Compte",
+    "subtitle": "Mot de passe, e-mail et sécurité — tout au même endroit.",
+    "sections": {
+      "password": "Mot de passe",
+      "email": "E-mail",
+      "phone": "Téléphone",
+      "profile": "Profil",
+      "notifications": "Notifications"
+    },
+    "emailLabel": "Adresse e-mail",
+    "phoneLabel": "Numéro de téléphone",
+    "verified": "Vérifiée",
+    "emailHelp": "Votre adresse e-mail sert d'identifiant de connexion. Pour la modifier, contactez notre support — chaque changement est vérifié manuellement pour protéger votre compte.",
+    "phoneHelp": "Votre numéro de téléphone est votre identifiant de connexion, et c'est lui que les acheteurs voient sur vos annonces. Pour le modifier, contactez notre support — chaque changement est vérifié manuellement pour protéger votre compte.",
+    "support": "Contacter le support"
+  },
+  "password": {
+    "tooShort": "Le nouveau mot de passe doit contenir au moins {min} caractères.",
+    "mismatch": "Les deux mots de passe ne correspondent pas.",
+    "same": "Le nouveau mot de passe doit être différent de l'actuel.",
+    "expired": "Session expirée. Reconnectez-vous puis réessayez.",
+    "wrongCurrent": "Mot de passe actuel incorrect.",
+    "updated": "Mot de passe mis à jour.",
+    "current": "Mot de passe actuel",
+    "new": "Nouveau mot de passe",
+    "confirm": "Confirmer le nouveau mot de passe",
+    "show": "Afficher les mots de passe",
+    "hide": "Masquer les mots de passe",
+    "minHint": "Au moins {min} caractères.",
+    "updating": "Mise à jour…",
+    "submit": "Mettre à jour",
+    "errors": {
+      "same": "Le nouveau mot de passe doit être différent de l'actuel.",
+      "short": "Le mot de passe choisi est trop court.",
+      "weak": "Mot de passe trop faible. Choisissez-en un plus complexe.",
+      "generic": "La mise à jour a échoué. Réessayez dans un instant."
+    }
+  },
+  "avatar": {
+    "pickImage": "Choisissez une image",
+    "formats": "JPG, PNG ou WebP.",
+    "prepareFailed": "Impossible de préparer l'envoi.",
+    "uploadFailed": "L'envoi de la photo a échoué.",
+    "saveFailed": "La photo n'a pas pu être enregistrée.",
+    "updated": "Photo de profil mise à jour.",
+    "error": "Erreur",
+    "retry": "Réessayez dans un instant.",
+    "removeFailed": "Suppression impossible",
+    "title": "Photo de profil",
+    "help": "Elle apparaît sur vos annonces. Un visage rassure un acheteur.",
+    "change": "Changer",
+    "add": "Ajouter une photo",
+    "remove": "Retirer"
+  },
+  "sms": {
+    "on": "SMS importants activés.",
+    "off": "SMS importants désactivés.",
+    "failed": "Échec de la mise à jour. Réessayez.",
+    "title": "SMS pour les alertes importantes",
+    "body": "Un SMS quand vous gagnez, êtes surenchéri ou qu'un paiement est dû. Le détail reste dans l'application et par e-mail.",
+    "toggle": "Activer les SMS pour les alertes importantes"
+  }
+}

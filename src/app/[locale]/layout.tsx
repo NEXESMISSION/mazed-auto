@@ -7,6 +7,7 @@ import { hasLocale } from "next-intl";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { localeDirection, ogLocale, routing } from "@/i18n/routing";
+import { clientMessages } from "@/i18n/areas";
 import { MobileShell } from "@/components/layout/MobileShell";
 import { NetworkStatus } from "@/components/layout/NetworkStatus";
 import { PWARegister } from "@/components/layout/PWARegister";
@@ -163,7 +164,9 @@ export default async function LocaleLayout({
         >
           {t("skipToContent")}
         </a>
-        <NextIntlClientProvider locale={locale} messages={messages}>
+        {/* The core and the global areas only — a route that needs more wraps
+            its pages in <AreaMessages> (see src/i18n/areas.ts). */}
+        <NextIntlClientProvider locale={locale} messages={clientMessages(messages)}>
           <ToastProvider>
             {/* Fires on the click, before the server has answered. See the
                 component: every page here is force-dynamic, so a navigation is a

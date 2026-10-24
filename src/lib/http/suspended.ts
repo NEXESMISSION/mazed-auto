@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { currentRequestLocale } from "@/i18n/api";
+import { phraseText } from "@/lib/publication";
 
 /**
  * A suspended account keeps read access, but it may not put an annonce in
@@ -9,7 +11,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
  * triggers, so a banned seller could still publish. The database now refuses
  * the transition itself (`_listings_block_banned`, migration 0183); this is
  * the answer the wizard can show instead of a generic failure when the trigger
- * fires.
+ * fires — in the language of the page that called.
  *
  *   const refused = await refuseIfSuspended(admin, user.id);
  *   if (refused) return refused;
@@ -27,7 +29,7 @@ export async function refuseIfSuspended(
   return NextResponse.json(
     {
       error: "account_suspended",
-      detail: "Votre compte est suspendu : vous ne pouvez pas publier d'annonce.",
+      detail: phraseText({ key: "accountSuspended" }, await currentRequestLocale()),
     },
     { status: 403 },
   );

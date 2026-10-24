@@ -6,8 +6,21 @@ import { useEffect } from "react";
  * Last-resort boundary for errors thrown in the ROOT layout itself (above
  * the [locale] error boundary). It must render its own <html>/<body> because
  * it replaces the root layout. Kept dependency-free (no intl, no design
- * tokens guaranteed) so it can't fail to render.
+ * tokens guaranteed) so it can't fail to render — hence its two languages
+ * written out here, picked from the URL.
  */
+const TEXT = {
+  fr: {
+    title: "Une erreur est survenue",
+    body: "L'application a rencontré un problème inattendu. Réessayez ; si cela persiste, signalez-le à l'équipe.",
+    retry: "Réessayer",
+  },
+  ar: {
+    title: "حدث خطأ",
+    body: "واجه التطبيق مشكلة غير متوقعة. أعد المحاولة؛ وإن استمرّت، أبلغ الفريق.",
+    retry: "أعد المحاولة",
+  },
+};
 export default function GlobalError({
   error,
   reset,
@@ -42,8 +55,11 @@ export default function GlobalError({
     }
   }, [error]);
 
+  const lang = typeof window !== "undefined" && window.location.pathname.startsWith("/ar") ? "ar" : "fr";
+  const text = TEXT[lang];
+
   return (
-    <html lang="fr">
+    <html lang={lang} dir={lang === "ar" ? "rtl" : "ltr"}>
       <body
         style={{
           margin: 0,
@@ -60,13 +76,8 @@ export default function GlobalError({
           color: "#f5f5f5",
         }}
       >
-        <h1 style={{ fontSize: 22, fontWeight: 800, margin: 0 }}>
-          Une erreur est survenue
-        </h1>
-        <p style={{ fontSize: 13, opacity: 0.7, maxWidth: 360, margin: 0 }}>
-          L&apos;application a rencontré un problème inattendu. Réessayez ; si
-          cela persiste, signalez-le à l&apos;équipe.
-        </p>
+        <h1 style={{ fontSize: 22, fontWeight: 800, margin: 0 }}>{text.title}</h1>
+        <p style={{ fontSize: 13, opacity: 0.7, maxWidth: 360, margin: 0 }}>{text.body}</p>
         {error?.digest && (
           <p style={{ fontSize: 10, opacity: 0.5, fontFamily: "monospace" }}>
             ref · {error.digest}
@@ -87,7 +98,7 @@ export default function GlobalError({
             cursor: "pointer",
           }}
         >
-          Réessayer
+          {text.retry}
         </button>
       </body>
     </html>

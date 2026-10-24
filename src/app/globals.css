@@ -246,7 +246,9 @@ html:lang(ar) :is(h1, h2, h3) { line-height: 1.35; }
 
 /* A run that must stay left-to-right inside Arabic text: a phone number, a
    price with its grouping spaces, a plate. Without the isolate, "+216 98 120
-   622" comes out as "622 120 98 216+". */
+   622" comes out as "622 120 98 216+". Its own direction is ltr, so a
+   logical margin ON the island (ms-/me-) lands on the wrong side in Arabic:
+   put the margin on a wrapper, or use ltr:mr-… rtl:ml-…. */
 .ltr-island {
   direction: ltr;
   unicode-bidi: isolate;
