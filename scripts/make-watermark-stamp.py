@@ -1,5 +1,5 @@
 """
-Build `public/brand/stamp.webp` — the mark stamped into every listing photo.
+Build `public/brand/<version>/stamp.webp` — the mark stamped into every listing photo.
 
 WHY A GENERATED ASSET AND NOT CANVAS TEXT. `watermark.ts` runs in the browser
 and could draw the caption with `ctx.fillText`. It must not: the caption would
@@ -19,7 +19,8 @@ we want; Pillow draws that instance directly. Neither has a usable Node
 equivalent here.
 
 Run it after changing the logo (`node scripts/regen-logos.mjs` first, which
-writes the `brand/mark.png` this reads), the caption or the brand colours:
+writes the `brand/<version>/mark.png` this reads and names the version in
+`src/lib/brand.ts`), the caption or the brand colours:
 
     pip install fonttools brotli pillow
     python scripts/make-watermark-stamp.py
@@ -27,6 +28,7 @@ writes the `brand/mark.png` this reads), the caption or the brand colours:
 
 import io
 import os
+import re
 import sys
 
 from fontTools.ttLib import TTFont
@@ -36,9 +38,21 @@ from PIL import Image, ImageDraw, ImageFont
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 FONT_SRC = os.path.join(ROOT, "src", "app", "fonts", "PlusJakartaSans-latin.woff2")
-MARK_SRC = os.path.join(ROOT, "public", "brand", "mark.png")
-OUT_PNG = os.path.join(ROOT, "public", "brand", "stamp.png")
-OUT_WEBP = os.path.join(ROOT, "public", "brand", "stamp.webp")
+
+
+def brand_dir() -> str:
+    """The current logo folder, as regen-logos.mjs wrote it into src/lib/brand.ts."""
+    with open(os.path.join(ROOT, "src", "lib", "brand.ts"), encoding="utf-8") as f:
+        m = re.search(r'BRAND_DIR = "/(brand/[^"]+)"', f.read())
+    if not m:
+        raise SystemExit("src/lib/brand.ts has no BRAND_DIR: run node scripts/regen-logos.mjs first")
+    return os.path.join(ROOT, "public", *m.group(1).split("/"))
+
+
+BRAND_DIR = brand_dir()
+MARK_SRC = os.path.join(BRAND_DIR, "mark.png")
+OUT_PNG = os.path.join(BRAND_DIR, "stamp.png")
+OUT_WEBP = os.path.join(BRAND_DIR, "stamp.webp")
 
 # The business, then where to find it. Both, because neither alone is enough:
 # a thief's repost carries the name to somebody who then has to search for us,
@@ -47,6 +61,11 @@ CAPTION = "MAZED AUTO · MAZED.TN"
 
 WIDTH = 1200                # the stamp is authored large and scaled down
 CAPTION_WIDTH_RATIO = 0.92  # caption spans this much of the monogram's width
+# The mark is at most this tall, as a fraction of WIDTH. A wide mark spans the
+# whole width and never reaches it; the square ring emblem is capped at half
+# the width and centred, so the stamp keeps the low, wide footprint the old
+# monogram had instead of turning into a disc over the middle of the photo.
+MARK_MAX_HEIGHT_RATIO = 0.5
 LETTER_SPACING_EM = 0.16    # caps need air; this is what stops it reading as a word
 WEIGHT = 800
 # --gold-pale. Not white (which disowns the gold above it) and not --gold-mid
@@ -111,12 +130,13 @@ def main() -> int:
     cap_w, cap_h = box[2] - box[0], box[3] - box[1]
 
     mark = Image.open(MARK_SRC).convert("RGBA")
-    mark_h = round(WIDTH * mark.height / mark.width)
-    mark = mark.resize((WIDTH, mark_h), Image.LANCZOS)
+    mark_w = min(WIDTH, round(WIDTH * MARK_MAX_HEIGHT_RATIO * mark.width / mark.height))
+    mark_h = round(mark_w * mark.height / mark.width)
+    mark = mark.resize((mark_w, mark_h), Image.LANCZOS)
 
     gap = round(size * 0.62)
     stamp = Image.new("RGBA", (WIDTH, mark_h + gap + cap_h), (0, 0, 0, 0))
-    stamp.paste(mark, (0, 0), mark)
+    stamp.paste(mark, ((WIDTH - mark_w) // 2, 0), mark)
 
     caption = Image.new("RGBA", (cap_w, cap_h), (0, 0, 0, 0))
     cd = ImageDraw.Draw(caption)

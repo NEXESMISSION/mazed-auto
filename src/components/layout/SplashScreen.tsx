@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { LOGO } from "@/lib/brand";
 
 const SHOWN_KEY = "batta:splash-shown";
 
@@ -77,15 +78,15 @@ export function SplashScreen() {
           metallic silver and gold; a `brightness(0) invert(1)` style filter
           WOULD flatten it to a white silhouette. It must not be added. */}
       <picture className="relative animate-[batta-float-up_220ms_ease-out_both]">
-        <source srcSet="/brand/lockup.avif" type="image/avif" />
+        <source srcSet={LOGO.lockupAvif.src} type="image/avif" />
         <img
-          src="/brand/lockup.webp"
+          src={LOGO.lockupWebp.src}
           alt="Mazed Auto"
-          width={480}
-          height={282}
+          width={LOGO.lockupWebp.width}
+          height={LOGO.lockupWebp.height}
           decoding="async"
           fetchPriority="high"
-          className="batta-splash-logo h-28 w-auto sm:h-32"
+          className="batta-splash-logo h-40 w-auto sm:h-44"
         />
       </picture>
 

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { WifiOff } from "lucide-react";
+import { LOGO } from "@/lib/brand";
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -37,12 +38,12 @@ export default async function OfflinePage({ params }: Props) {
       {/* `unoptimized` so the URL is exactly the one sw.js precaches — an
           optimizer URL (/_next/image?…) would not be in the cache offline. */}
       <Image
-        src="/brand/lockup.webp"
+        src={LOGO.lockupWebp.src}
         alt="Mazed Auto"
-        width={480}
-        height={282}
+        width={LOGO.lockupWebp.width}
+        height={LOGO.lockupWebp.height}
         unoptimized
-        className="h-20 w-auto"
+        className="h-32 w-auto"
       />
 
       <span className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-gold-faint px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-gold ring-1 ring-gold/30">

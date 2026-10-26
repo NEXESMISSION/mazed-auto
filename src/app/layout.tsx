@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { OG_IMAGE } from "@/lib/ogImage";
+import { LOGO } from "@/lib/brand";
 import "./globals.css";
 
 const SITE_URL =
@@ -24,12 +25,13 @@ export const metadata: Metadata = {
     capable: true,
     title: "Mazed Auto",
     statusBarStyle: "default",
-    startupImage: ["/brand/icon-512.png"],
+    startupImage: [LOGO.icon512.src],
   },
   // Browser-tab + apple-touch icons are provided by the file-based metadata
   // convention (src/app/icon.png, apple-icon.png, favicon.ico), including the
   // /favicon.ico path browsers request by default. They and everything in
-  // public/brand/ are generated from one source by scripts/regen-logos.mjs.
+  // public/brand/<version>/ are generated from one source by
+  // scripts/regen-logos.mjs, which also writes the paths into src/lib/brand.ts.
   openGraph: {
     title: "Mazed Auto — Petites annonces automobiles en Tunisie",
     description:

@@ -8,6 +8,7 @@ import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { activeTabFor, TAB_HREFS, type TabId } from "@/lib/nav/tabs";
 import { AccountMenu } from "./AccountMenu";
 import { LocaleSwitch } from "@/components/i18n/LocaleSwitch";
+import { LOGO } from "@/lib/brand";
 import { normalizeSearchQuery } from "@/lib/search";
 import { SearchIcon, SearchSweep, SearchStatus } from "@/components/ui/SearchBusy";
 
@@ -100,14 +101,14 @@ export function DesktopNav() {
             aria-label={tBrand("name")}
           >
             {/* Emblem + the logo's own wordmark as one image — see the note in
-                TopBar. `h-9` (36px) in a 72px nav: ~236px across. */}
+                TopBar. `h-9` (36px) in a 72px nav: ~170px across. */}
             <Image
-              src="/brand/lockup-wide.png"
+              src={LOGO.lockupWide.src}
               alt=""
-              width={1573}
-              height={240}
+              width={LOGO.lockupWide.width}
+              height={LOGO.lockupWide.height}
               priority
-              sizes="240px"
+              sizes="170px"
               className="h-9 w-auto shrink-0"
             />
           </Link>

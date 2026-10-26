@@ -46,8 +46,16 @@
  * exactly the property we need.
  */
 
+import { LOGO, STAMP_SRC as BRAND_STAMP_SRC } from "@/lib/brand";
+
 /** Fraction of the image's WIDTH the mark spans. */
 const MARK_WIDTH_RATIO = 0.3;
+/**
+ * Cap on the mark's HEIGHT, as a fraction of the image's width. The plain
+ * emblem is a ring, square: at 30% of the width it would cover over twice the
+ * area the old wide monogram did. The captioned stamp is wide and stays under it.
+ */
+const MARK_MAX_HEIGHT_RATIO = 0.2;
 /** A floor so the mark does not vanish entirely on a tiny upload. */
 const MIN_MARK_PX = 96;
 /** How present the mark is. Deliberately low — see the note above. */
@@ -57,10 +65,10 @@ const MARK_OPACITY = 0.18;
  * which on a low-quality upload is indistinguishable from JPEG noise.
  */
 const CAPTION_MIN_PHOTO_PX = 1000;
-/** Emblem over « MAZED AUTO · MAZED.TN », on transparent, ~1.97:1. */
-const STAMP_SRC = "/brand/stamp.webp";
+/** Emblem over « MAZED AUTO · MAZED.TN », on transparent, ~1.7:1. */
+const STAMP_SRC = BRAND_STAMP_SRC;
 /** The emblem alone, for photos too small to carry the caption. */
-const MARK_SRC = "/brand/mark.webp";
+const MARK_SRC = LOGO.markWebp.src;
 
 /**
  * The decoded mark, fetched once per page rather than per photo.
@@ -112,6 +120,11 @@ export function drawWatermark(
   // crops — a photo branded with a fragment of a logo.
   let markW = Math.min(Math.max(MIN_MARK_PX, Math.round(width * MARK_WIDTH_RATIO)), width);
   let markH = Math.round(markW * aspect);
+  const maxH = Math.round(width * MARK_MAX_HEIGHT_RATIO);
+  if (markH > maxH) {
+    markH = maxH;
+    markW = Math.round(markH / aspect);
+  }
   if (markH > height) {
     markH = height;
     markW = Math.round(markH / aspect);

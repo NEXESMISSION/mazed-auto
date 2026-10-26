@@ -6,6 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { usePathname, Link } from "@/i18n/navigation";
 import { BackButton } from "./BackButton";
 import { LocaleSwitch } from "@/components/i18n/LocaleSwitch";
+import { LOGO } from "@/lib/brand";
 
 // Lazy-loaded: the bell pulls in ~40 lucide icons, opens a realtime socket,
 // and fetches /api/notifications on mount — none of which is needed for first
@@ -105,7 +106,7 @@ function BrandMark() {
   const t = useTranslations("brand");
   // The logo's emblem and its own « MAZED AUTO » wordmark side by side, as
   // ONE image (`lockup-wide`, built by scripts/regen-logos.mjs), `h-8` (32px)
-  // in a 56px bar (`--batta-topbar-h`): ~210px across.
+  // in a 56px bar (`--batta-topbar-h`): ~150px across with the ring emblem.
   //
   // It was the emblem with the name typed beside it in the site font. The
   // metallic mark next to plain text read as two unrelated things, and at
@@ -117,12 +118,12 @@ function BrandMark() {
   return (
     <Link href="/" className="flex items-center" aria-label={t("name")}>
       <Image
-        src="/brand/lockup-wide.png"
+        src={LOGO.lockupWide.src}
         alt=""
-        width={1573}
-        height={240}
+        width={LOGO.lockupWide.width}
+        height={LOGO.lockupWide.height}
         priority
-        sizes="210px"
+        sizes="150px"
         className="h-8 w-auto shrink-0"
       />
     </Link>

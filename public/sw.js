@@ -31,7 +31,7 @@ const PRECACHE = [
   "/fr/offline",
   "/ar/offline",
   // The logo on the offline page, which is useless if it needs the network.
-  "/brand/lockup.webp",
+  "/brand/v2/lockup.webp",
   "/manifest.webmanifest",
 ];
 

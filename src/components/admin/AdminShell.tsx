@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { NavIcon } from "./kit/LinkPending";
 import { LocaleChoice } from "@/components/i18n/LocaleSwitch";
+import { LOGO } from "@/lib/brand";
 
 /**
  * Console navigation.
@@ -61,12 +62,12 @@ function BrandMark({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <Link href="/admin" onClick={onNavigate} className="flex items-center gap-2.5">
       <Image
-        src="/brand/mark.png"
+        src={LOGO.mark.src}
         alt=""
-        width={953}
-        height={406}
-        sizes="48px"
-        className="h-5 w-auto shrink-0"
+        width={LOGO.mark.width}
+        height={LOGO.mark.height}
+        sizes="24px"
+        className="h-6 w-auto shrink-0"
       />
       <span className="text-[12px] font-bold uppercase tracking-[0.16em] text-foreground">
         Mazed<span className="text-[var(--gold)]"> {t("console")}</span>

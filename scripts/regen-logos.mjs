@@ -1,9 +1,9 @@
 // Regenerate every Mazed Auto logo asset from the one source file,
-// public/brand/mazed-auto-logo.png — the metallic « M » road emblem over the
-// « MAZED AUTO » wordmark, 1254x1254 on solid black.
+// public/brand/mazed-auto-logo.png — the metallic « M » road emblem in a gold
+// ring, over the « MAZED AUTO » wordmark, 1254x1254 on solid black.
 //
 //   node scripts/regen-logos.mjs
-//   python scripts/make-watermark-stamp.py   # the photo stamp is built from brand/mark.png
+//   python scripts/make-watermark-stamp.py   # the photo stamp, built from brand/<VERSION>/mark.png
 //
 // WHY THE BLACK IS TURNED INTO ALPHA. The source is opaque. Dropped on the
 // site as-is it is a black rectangle, and every surface it sits on (#0a0a0a,
@@ -26,6 +26,18 @@ const ROOT = process.cwd();
 const BRAND = path.join(ROOT, "public", "brand");
 const APP = path.join(ROOT, "src", "app");
 const SRC = path.join(BRAND, "mazed-auto-logo.png");
+
+/**
+ * BUMP THIS ON EVERY LOGO CHANGE. Everything generated lands in
+ * public/brand/<VERSION>/, so a new logo gets new URLs. Under the old ones it
+ * would stay invisible to returning visitors: next/image responses are cached
+ * for 30 days (`minimumCacheTTL` in next.config.ts), the service worker serves
+ * images cache-first, and Facebook keeps the preview image it fetched.
+ * The script writes the paths and sizes to src/lib/brand.ts and points the
+ * manifest and sw.js at them, so nothing else needs editing.
+ */
+const VERSION = "v2";
+const OUT = path.join(BRAND, VERSION);
 
 /** --background. Every opaque tile and the social preview sit on it. */
 const BG = "#0a0a0a";
@@ -84,9 +96,12 @@ function inkBox(y0, y1) {
 }
 
 // The emblem ends where the wordmark's gap begins: the emptiest row in the
-// middle band of the image (the source has ~35 blank rows there).
+// lower-middle band of the image. The band is wide because the gap moves with
+// the artwork: ~58% down under the old bare « M », ~70% under the ring, where
+// it is only ~11 rows of glow. Inside the ring every row still crosses its two
+// sides, so no row there is as empty as the gap.
 let split = Math.round(H * 0.5);
-for (let y = Math.round(H * 0.5), best = Infinity; y < Math.round(H * 0.65); y++) {
+for (let y = Math.round(H * 0.5), best = Infinity; y < Math.round(H * 0.8); y++) {
   const ink = rowInk(y);
   if (ink < best) {
     best = ink;
@@ -130,7 +145,9 @@ async function wideLockup(height) {
 }
 
 const written = [];
-async function write(file, pipeline) {
+/** Files the app references, by key, for src/lib/brand.ts. */
+const assets = {};
+async function write(file, pipeline, key) {
   await fs.mkdir(path.dirname(file), { recursive: true });
   const buf = Buffer.isBuffer(pipeline) ? pipeline : await pipeline.toBuffer();
   await fs.writeFile(file, buf);
@@ -140,33 +157,44 @@ async function write(file, pipeline) {
     meta?.width ? `${meta.width}x${meta.height}` : "",
     `${(buf.length / 1024).toFixed(1)} KB`,
   ]);
+  if (key) {
+    const src = "/" + path.relative(path.join(ROOT, "public"), file).split(path.sep).join("/");
+    assets[key] = { src, width: meta.width, height: meta.height };
+  }
 }
 
 /** A small transparent copy for pages that load the file directly. */
 async function webCopy(name, src, width, { avif = false } = {}) {
   const base = () => sharp(src).resize({ width, kernel: "lanczos3" });
-  await write(path.join(BRAND, `${name}.webp`), base().webp({ quality: 82, alphaQuality: 85, effort: 6 }));
-  if (avif) await write(path.join(BRAND, `${name}.avif`), base().avif({ quality: 52, effort: 6 }));
+  await write(path.join(OUT, `${name}.webp`), base().webp({ quality: 82, alphaQuality: 85, effort: 6 }), `${name}Webp`);
+  if (avif) await write(path.join(OUT, `${name}.avif`), base().avif({ quality: 52, effort: 6 }), `${name}Avif`);
 }
 
 /**
- * The emblem centred on a dark square, `fill` of the side wide.
+ * The emblem centred on a dark square, fitted into `fill` of the side.
  *
  * `radius` rounds the tile and leaves the corners transparent (browser tabs,
- * where the tile is all there is). Without it the tile is full-bleed and
- * opaque, for platforms that cut their own shape (iOS, Android masks) and
- * fill transparent corners with black or white of their own choosing.
+ * where the tile is all there is); `radius: 0.5` makes it a disc, which is
+ * what the ring emblem wants: the ring becomes the icon's own edge. Without
+ * it the tile is full-bleed and opaque, for platforms that cut their own shape
+ * (iOS, Android masks) and fill transparent corners with black or white of
+ * their own choosing.
  */
 async function tile(size, { fill, radius = 0 }) {
-  const markW = Math.round(size * fill);
-  const mark = await sharp(markFull).resize({ width: markW, kernel: "lanczos3" }).toBuffer();
-  const { height: markH } = await sharp(mark).metadata();
+  const box = Math.round(size * fill);
+  const mark = await sharp(markFull)
+    .resize({ width: box, height: box, fit: "inside", kernel: "lanczos3" })
+    .toBuffer();
+  const { width: markW, height: markH } = await sharp(mark).metadata();
   const base = radius
     ? Buffer.from(
         `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">`
           + `<rect width="${size}" height="${size}" rx="${radius * size}" fill="${BG}"/></svg>`,
       )
     : { create: { width: size, height: size, channels: 4, background: BG } };
+  // Over a disc, a mark wider than the tile would be cut by the canvas: the
+  // ring's outer glow is allowed to reach the edge, never past it.
+  if (markW > size || markH > size) throw new Error(`mark ${markW}x${markH} does not fit a ${size}px tile`);
   return sharp(base)
     .composite([
       {
@@ -175,7 +203,10 @@ async function tile(size, { fill, radius = 0 }) {
         top: Math.round((size - markH) / 2),
       },
     ])
-    .png({ compressionLevel: 9 })
+    // Palette PNG: the brushed metal makes a full-colour 512px icon ~320 KB,
+    // and browsers fetch these on a first visit. Quantised at quality 90 it is
+    // ~75 KB and indistinguishable at 2x zoom.
+    .png({ palette: true, quality: 90, effort: 10, compressionLevel: 9 })
     .toBuffer();
 }
 
@@ -207,10 +238,11 @@ function ico(frames) {
 // Full resolution. What next/image is pointed at (it resizes and re-encodes
 // per device, so the source weight never reaches a browser), and the input of
 // make-watermark-stamp.py and of the photo backfill.
-await write(path.join(BRAND, "mark.png"), markFull);
-await write(path.join(BRAND, "lockup.png"), lockupFull);
+await fs.rm(OUT, { recursive: true, force: true });
+await write(path.join(OUT, "mark.png"), markFull, "mark");
+await write(path.join(OUT, "lockup.png"), lockupFull, "lockup");
 // The bars show it 32-36px tall; 240px covers that at 3x with room to spare.
-await write(path.join(BRAND, "lockup-wide.png"), await wideLockup(240));
+await write(path.join(OUT, "lockup-wide.png"), await wideLockup(240), "lockupWide");
 // Direct-load copies. The splash and the offline page use <picture>/<img>, not
 // next/image, and show the lockup ~200px wide; the watermark draws the plain
 // mark at most 300px wide. 480px covers both at 2.5x. The brushed metal
@@ -219,34 +251,76 @@ await webCopy("lockup", lockupFull, 480, { avif: true });
 await webCopy("mark", markFull, 480);
 
 // Social preview — Facebook, WhatsApp and X all crop to ~1.91:1. JPEG: the
-// PNG is ~300 KB, the size at which WhatsApp starts dropping previews.
+// PNG is ~300 KB, the size at which WhatsApp starts dropping previews. The
+// logo is fitted into a 1000x540 box, so a tall logo (the ring version is
+// nearly square) uses the height and a wide one the width.
 {
-  const lockupH = 420;
+  const scale = Math.min(540 / LOCKUP_BOX.height, 1000 / LOCKUP_BOX.width);
+  const lockupH = Math.round(LOCKUP_BOX.height * scale);
   const lockup = await sharp(lockupFull).resize({ height: lockupH, kernel: "lanczos3" }).toBuffer();
   const { width: lockupW } = await sharp(lockup).metadata();
   await write(
-    path.join(BRAND, "og.jpg"),
+    path.join(OUT, "og.jpg"),
     sharp({ create: { width: 1200, height: 630, channels: 3, background: BG } })
       .composite([{ input: lockup, left: Math.round((1200 - lockupW) / 2), top: Math.round((630 - lockupH) / 2) }])
       .jpeg({ quality: 88, mozjpeg: true }),
+    "og",
   );
 }
 
 // PWA manifest icons. Maskable keeps the emblem inside the 80% safe circle.
-await write(path.join(BRAND, "icon-192.png"), await tile(192, { fill: 0.8 }));
-await write(path.join(BRAND, "icon-512.png"), await tile(512, { fill: 0.8 }));
-await write(path.join(BRAND, "icon-maskable-512.png"), await tile(512, { fill: 0.68 }));
+await write(path.join(OUT, "icon-192.png"), await tile(192, { fill: 0.8 }), "icon192");
+await write(path.join(OUT, "icon-512.png"), await tile(512, { fill: 0.8 }), "icon512");
+await write(path.join(OUT, "icon-maskable-512.png"), await tile(512, { fill: 0.68 }), "iconMaskable");
 
 // Next.js file-based metadata (src/app/icon.png, apple-icon.png, favicon.ico).
-await write(path.join(APP, "icon.png"), await tile(512, { fill: 0.84, radius: 0.22 }));
+// Tab icons are dark discs with the ring at their edge, so the emblem gets the
+// whole tile and reads on a light tab bar as well as a dark one.
+await write(path.join(APP, "icon.png"), await tile(512, { fill: 1, radius: 0.5 }));
 await write(path.join(APP, "apple-icon.png"), await tile(180, { fill: 0.78 }));
 {
-  // Tab icons are tiny: the emblem gets nearly the whole width.
   const frames = [];
   for (const size of [16, 32, 48]) {
-    frames.push({ size, buf: await tile(size, { fill: 0.94, radius: 0.18 }) });
+    frames.push({ size, buf: await tile(size, { fill: 1, radius: 0.5 }) });
   }
   await write(path.join(APP, "favicon.ico"), ico(frames));
+}
+
+// src/lib/brand.ts — the one place the app reads logo paths and sizes from.
+{
+  const lines = Object.entries(assets).map(
+    ([key, a]) => `  ${key}: { src: "${a.src}", width: ${a.width}, height: ${a.height} },`,
+  );
+  const ts = [
+    "// GENERATED by scripts/regen-logos.mjs: do not edit, run the script.",
+    "//",
+    "// Logo files and their real pixel sizes. The folder name is the logo",
+    "// version (see VERSION in the script): a new logo gets new URLs, so no",
+    "// browser, service worker or image cache keeps showing the old one.",
+    "",
+    `export const BRAND_DIR = "/brand/${VERSION}";`,
+    "",
+    "export const LOGO = {",
+    ...lines,
+    "} as const;",
+    "",
+    "/** Built by scripts/make-watermark-stamp.py into the same folder. */",
+    `export const STAMP_SRC = "/brand/${VERSION}/stamp.webp";`,
+    "",
+  ].join("\n");
+  await fs.writeFile(path.join(ROOT, "src", "lib", "brand.ts"), ts);
+}
+
+// Point the two static files that cannot import brand.ts at the new folder.
+for (const [file, re] of [
+  ["public/manifest.webmanifest", /\/brand\/(?:v\d+\/)?(icon-192|icon-512|icon-maskable-512)\.png/g],
+  ["public/sw.js", /\/brand\/(?:v\d+\/)?(lockup)\.webp/g],
+]) {
+  const p = path.join(ROOT, file);
+  const before = await fs.readFile(p, "utf8");
+  const after = before.replace(re, (_m, name) => `/brand/${VERSION}/${name}${file.endsWith(".js") ? ".webp" : ".png"}`);
+  if (after !== before) await fs.writeFile(p, after);
+  console.log(`  ${file.padEnd(36)} ${after === before ? "unchanged" : "paths updated"}`);
 }
 
 console.log(`source ${W}x${H}, emblem/wordmark split at row ${split}`);

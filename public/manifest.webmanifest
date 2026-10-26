@@ -13,19 +13,19 @@
   "categories": ["automotive", "finance", "business", "shopping"],
   "icons": [
     {
-      "src": "/brand/icon-192.png",
+      "src": "/brand/v2/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/brand/icon-512.png",
+      "src": "/brand/v2/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/brand/icon-maskable-512.png",
+      "src": "/brand/v2/icon-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -36,13 +36,13 @@
       "name": "Parcourir les voitures",
       "short_name": "Parcourir",
       "url": "/properties",
-      "icons": [{ "src": "/brand/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+      "icons": [{ "src": "/brand/v2/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     },
     {
       "name": "Mon activité",
       "short_name": "Activité",
       "url": "/account/activity",
-      "icons": [{ "src": "/brand/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+      "icons": [{ "src": "/brand/v2/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     }
   ]
 }

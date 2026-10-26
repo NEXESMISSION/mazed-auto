@@ -44,15 +44,22 @@ import { config as loadEnv } from "dotenv";
 loadEnv({ path: ".env.local" });
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+/** The current logo folder, as scripts/regen-logos.mjs wrote it into src/lib/brand.ts. */
+const BRAND_DIR = (() => {
+  const m = fs.readFileSync(path.join(ROOT, "src", "lib", "brand.ts"), "utf8").match(/BRAND_DIR = "\/(brand\/[^"]+)"/);
+  if (!m) throw new Error("src/lib/brand.ts has no BRAND_DIR: run node scripts/regen-logos.mjs first");
+  return path.join(ROOT, "public", ...m[1].split("/"));
+})();
 /** Emblem + caption, and the emblem alone — see markSrcFor in lib/watermark. */
-const STAMP = path.join(ROOT, "public", "brand", "stamp.png");
-const PLAIN = path.join(ROOT, "public", "brand", "mark.png");
+const STAMP = path.join(BRAND_DIR, "stamp.png");
+const PLAIN = path.join(BRAND_DIR, "mark.png");
 const markFileFor = (w) => (w >= CAPTION_MIN_PHOTO_PX ? STAMP : PLAIN);
 const LOG = path.join(ROOT, "scripts", "watermark-backfill.log.json");
 
 // Must match src/lib/watermark.ts. Drift here shows up as a visible mismatch
 // between an old photo and a freshly uploaded one on the same page.
 const MARK_WIDTH_RATIO = 0.3;
+const MARK_MAX_HEIGHT_RATIO = 0.2;
 const MIN_MARK_PX = 96;
 const MARK_OPACITY = 0.18;
 const CAPTION_MIN_PHOTO_PX = 1000;
@@ -149,7 +156,11 @@ async function stampAt(file, width) {
 async function fittedWidth(file, width, height) {
   const meta = await sharp(file).metadata();
   const aspect = meta.height / meta.width;
-  const w = Math.min(Math.max(MIN_MARK_PX, Math.round(width * MARK_WIDTH_RATIO)), width);
+  let w = Math.min(Math.max(MIN_MARK_PX, Math.round(width * MARK_WIDTH_RATIO)), width);
+  // Height cap, as in drawWatermark: the square ring emblem would otherwise
+  // cover twice the area the old wide mark did.
+  const maxH = Math.round(width * MARK_MAX_HEIGHT_RATIO);
+  if (Math.round(w * aspect) > maxH) w = Math.round(maxH / aspect);
   return Math.round(w * aspect) > height ? Math.round(height / aspect) : w;
 }
 
