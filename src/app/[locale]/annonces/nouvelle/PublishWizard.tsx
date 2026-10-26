@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { useToast } from "@/components/ui/Toast";
 import { PhotoUploader, type UploadedPhoto } from "@/components/listing/PhotoUploader";
 import { ListingImage } from "@/components/media/ListingImage";
@@ -18,7 +18,7 @@ import {
 import type { PublishingNote } from "@/lib/publication";
 import {
   Car, Wrench, Check, Tag, Camera, Wallet, Phone,
-  ClipboardList, Loader2, MapPin, Plus, Trash2, Gift, Ticket, ImageOff, TriangleAlert, KeyRound,
+  ClipboardList, Loader2, MapPin, Plus, Trash2, Gift, Ticket, ImageOff, TriangleAlert, KeyRound, Store,
 } from "lucide-react";
 
 /**
@@ -125,6 +125,7 @@ export function PublishWizard({
   creditsLeft,
   freeLeft,
   publishing,
+  cheapestPlan = null,
   rentalVehicles = false,
   defaultContactName,
   defaultContactPhone,
@@ -138,6 +139,8 @@ export function PublishWizard({
   freeLeft: number;
   /** Per kind: free or not, refused as things stand, and the sentence to show. */
   publishing: Record<"vehicle" | "part", PublishingNote>;
+  /** The cheapest shop plan on sale, for the « open a shop » button at the limit. */
+  cheapestPlan?: { price: number; days: number } | null;
   /** A vehicle annonce goes to this person's RENTAL shop: priced per day, with conditions. */
   rentalVehicles?: boolean;
   defaultContactName: string;
@@ -222,6 +225,9 @@ export function PublishWizard({
   const plan = category ? publishing[category.kind] : null;
   const note = plan?.note ?? null;
   const blocked = plan?.blocked ?? false;
+  // Whose limit it is: a shop's plan (or its missing subscription), or a person's.
+  const limitScope: "shop" | "personal" =
+    plan?.phrase?.key === "quotaShop" || plan?.phrase?.key === "noteNoSubscription" ? "shop" : "personal";
 
   const makeList = isMoto ? MOTO_MAKES : CAR_MAKES;
   const models = useMemo(
@@ -668,6 +674,11 @@ export function PublishWizard({
                   <>{t("category.fee", { price: formatTND(fee ?? 0, locale), currency: cur })}</>
                 )}
               </p>
+            )}
+            {/* Said here, before the form is filled, and again under the
+                button at the end. */}
+            {category && blocked && (
+              <LimitActions scope={limitScope} cheapestPlan={cheapestPlan} locale={locale} />
             )}
           </div>
 
@@ -1207,8 +1218,57 @@ export function PublishWizard({
                 ? t("bar.fee", { price: formatTND(fee, locale), currency: cur })
                 : t("bar.noCategory")}
         </p>
+        {blocked && (
+          <div className="flex justify-center">
+            <LimitActions scope={limitScope} cheapestPlan={cheapestPlan} locale={locale} />
+          </div>
+        )}
       </div>
     </main>
+  );
+}
+
+/**
+ * What a seller at the limit can do about it: two buttons, not a sentence to
+ * act on alone. A person: open a shop (from the cheapest plan on sale), or make
+ * room by withdrawing one of their annonces. A shop: its subscription, or its
+ * annonces. The draft is kept either way, and /submit moves a personal draft
+ * into the shop once there is one (see `shopForPersonalDraft`).
+ */
+function LimitActions({
+  scope, cheapestPlan, locale,
+}: {
+  scope: "shop" | "personal";
+  cheapestPlan: { price: number; days: number } | null;
+  locale: string;
+}) {
+  const t = useTranslations("publish.wizard.limit");
+  const shopLabel = scope === "shop"
+    ? t("myPlan")
+    : cheapestPlan
+      ? t("openShopFrom", {
+          price: formatTND(cheapestPlan.price, locale),
+          currency: currencyLabel(locale),
+          days: cheapestPlan.days,
+        })
+      : t("openShop");
+  return (
+    <div className="mt-3 flex flex-wrap gap-2">
+      <Link
+        href={scope === "shop" ? "/pro/dashboard/abonnement" : "/pro"}
+        className="batta-btn-luxe tap-target inline-flex items-center gap-1.5 px-4 py-2.5 text-[12.5px]"
+      >
+        <Store className="size-4 shrink-0" strokeWidth={2.2} />
+        {shopLabel}
+      </Link>
+      <Link
+        href={scope === "shop" ? "/pro/dashboard/annonces" : "/account/listings"}
+        className="batta-btn-quiet tap-target inline-flex items-center gap-1.5 px-4 py-2.5 text-[12.5px]"
+      >
+        <ClipboardList className="size-4 shrink-0" strokeWidth={2.2} />
+        {t(scope === "shop" ? "shopListings" : "myListings")}
+      </Link>
+    </div>
   );
 }
 

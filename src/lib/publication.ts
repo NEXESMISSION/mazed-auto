@@ -172,6 +172,23 @@ export function pickScope(
   return { shopId: null, listingType: listingTypeFor(kind) };
 }
 
+/**
+ * The shop a PERSONAL draft may move into when the personal limit refuses it:
+ * one of the seller's active shops whose activity is exactly the draft's.
+ *
+ * This is the « enregistrée, mais pas mise en ligne » draft of a seller who
+ * then opened a shop from the limit screen. Without it the draft stayed
+ * personal for ever, still over the personal limit. Exactly the draft's
+ * activity, not merely one that `fits`: a sale draft must never become a
+ * rental by landing in a rental shop.
+ */
+export function shopForPersonalDraft(
+  shops: ShopSummary[],
+  listingType: ListingType,
+): ShopSummary | null {
+  return shops.find((s) => s.status === "active" && s.activityType === listingType) ?? null;
+}
+
 /** How an annonce that is ready to go out gets paid for — or why it cannot. */
 export function decidePublication(input: {
   shopId: string | null;

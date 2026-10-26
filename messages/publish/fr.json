@@ -207,6 +207,13 @@
       "welcome": "Offerte — aucune somme à régler.",
       "fee": "{price} {currency} — à régler après vérification.",
       "noCategory": "Le prix de publication s'affiche dès que la catégorie est choisie."
+    },
+    "limit": {
+      "openShop": "Ouvrir ma boutique",
+      "openShopFrom": "Ouvrir ma boutique — dès {price} {currency} / {days} jours",
+      "myListings": "Gérer mes annonces",
+      "myPlan": "Mon abonnement",
+      "shopListings": "Annonces de la boutique"
     }
   },
   "status": {

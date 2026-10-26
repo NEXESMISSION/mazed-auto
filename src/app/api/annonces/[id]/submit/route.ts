@@ -7,9 +7,12 @@ import { fail } from "@/lib/http/errors";
 import { refuseIfSuspended } from "@/lib/http/suspended";
 import { refusalResponse as sendRefusal } from "@/lib/http/refusal";
 import { PRODUCT_SELECT, resolveListingFee, toProduct } from "@/lib/products";
-import { decidePublication, localizeRefusal, publicationErrorFromDb, type ListingType, type Refusal } from "@/lib/publication";
+import {
+  decidePublication, localizeRefusal, publicationErrorFromDb, shopForPersonalDraft,
+  type ListingType, type Refusal,
+} from "@/lib/publication";
 import { apiTranslations, localeFromRequest } from "@/i18n/api";
-import { quotaStatus, shopSummary } from "@/lib/shops/server";
+import { memberShops, quotaStatus, shopSummary } from "@/lib/shops/server";
 
 /**
  * POST /api/annonces/[id]/submit — send a draft listing for publication.
@@ -114,12 +117,36 @@ export async function POST(
   }
 
   // ── Who pays: a subscription, the free personal allowance, or a fee ───────
-  const shopId = (listing.shop_id as string | null) ?? null;
-  const [shop, quota] = await Promise.all([
+  let shopId = (listing.shop_id as string | null) ?? null;
+  const listingType = listing.listing_type as ListingType;
+  let [shop, quota] = await Promise.all([
     shopId ? shopSummary(admin, shopId) : Promise.resolve(null),
-    quotaStatus(admin, user.id, shopId, listing.listing_type as ListingType, id),
+    quotaStatus(admin, user.id, shopId, listingType, id),
   ]);
-  const decision = decidePublication({ shopId, shop, quota });
+  let decision = decidePublication({ shopId, shop, quota });
+
+  // A personal draft saved at the personal limit (« enregistrée, mais pas mise
+  // en ligne »), by a seller who has opened a shop since — the limit screen
+  // sends them there. It goes out through the shop instead of staying stuck
+  // over the personal limit. Only when the shop can take it right now; if not,
+  // the personal refusal stands and says why.
+  if (!shopId && decision.kind === "refused" && decision.error === "quota_exceeded") {
+    const target = shopForPersonalDraft(await memberShops(admin, user.id), listingType);
+    if (target) {
+      const targetQuota = await quotaStatus(admin, user.id, target.id, listingType, id);
+      const viaShop = decidePublication({ shopId: target.id, shop: target, quota: targetQuota });
+      if (viaShop.kind === "subscription") {
+        const { error } = await admin.from("listings").update({ shop_id: target.id }).eq("id", id);
+        if (!error) {
+          shopId = target.id;
+          shop = target;
+          quota = targetQuota;
+          decision = viaShop;
+          logAction(req, user, "listing.rescope", { id, shopId });
+        }
+      }
+    }
+  }
   if (decision.kind === "refused") return refusalResponse(decision);
 
   if (decision.kind !== "legacy_fee") {

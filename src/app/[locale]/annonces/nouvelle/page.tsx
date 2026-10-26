@@ -24,6 +24,7 @@ import {
   type PublishingNote,
 } from "@/lib/publication";
 import { memberShops, quotaStatus } from "@/lib/shops/server";
+import { plansForSale } from "@/lib/shops/plans";
 import { categoryLabel } from "@/lib/labels";
 
 export const dynamic = "force-dynamic";
@@ -130,6 +131,18 @@ export default async function NewListingPage() {
     }),
   );
   const publishing = { vehicle: notes[0].note, part: notes[1].note } as Record<ListingKind, PublishingNote>;
+
+  // The cheapest shop plan on sale, for the « open a shop » button a seller
+  // at the limit gets. Only read when a limit is actually reached.
+  let cheapestPlan: { price: number; days: number } | null = null;
+  if (publishing.vehicle.blocked || publishing.part.blocked) {
+    const plans = await plansForSale(admin);
+    const cheapest = plans.reduce<(typeof plans)[number] | null>(
+      (min, p) => (min === null || p.price < min.price ? p : min),
+      null,
+    );
+    cheapestPlan = cheapest ? { price: cheapest.price, days: cheapest.durationDays } : null;
+  }
   // The per-annonce fee, packs and welcome allowance only exist while the
   // free switch is off (D-P1); otherwise there is nothing to spend them on.
   const legacyFee = notes[0].personal.free === false;
@@ -170,6 +183,7 @@ export default async function NewListingPage() {
       creditsLeft={creditsLeft}
       freeLeft={freeLeft}
       publishing={publishing}
+      cheapestPlan={cheapestPlan}
       rentalVehicles={(() => {
         const s = pickScope(shops, "vehicle");
         return !("kind" in s) && s.listingType === "location_auto";

@@ -207,6 +207,13 @@
       "welcome": "هدية — لا شيء للدفع.",
       "fee": "{price} {currency} — تُدفع بعد المراجعة.",
       "noCategory": "يظهر سعر النشر فور اختيار الفئة."
+    },
+    "limit": {
+      "openShop": "افتح متجرك",
+      "openShopFrom": "افتح متجرك — ابتداءً من {price} {currency} لكل {days} يومًا",
+      "myListings": "إدارة إعلاناتي",
+      "myPlan": "اشتراكي",
+      "shopListings": "إعلانات المتجر"
     }
   },
   "status": {

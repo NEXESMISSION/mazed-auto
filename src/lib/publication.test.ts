@@ -8,6 +8,7 @@ import {
   publicationErrorFromDb,
   quotaMessage,
   quotaPhrase,
+  shopForPersonalDraft,
   type QuotaStatus,
   type ShopSummary,
 } from "./publication";
@@ -135,6 +136,28 @@ describe("pickScope — which scope a new annonce is filed under", () => {
       .toMatchObject({ kind: "refused", error: "rental_requires_shop" });
     expect(pickScope([dealer], "vehicle", { as: "personal", listingType: "location_auto" }))
       .toMatchObject({ kind: "refused", error: "rental_requires_shop" });
+  });
+});
+
+describe("shopForPersonalDraft — a draft saved at the personal limit", () => {
+  it("moves a car draft into the dealer shop opened since", () => {
+    expect(shopForPersonalDraft([dealer], "vente_auto")).toBe(dealer);
+  });
+
+  it("moves a part draft into a parts shop", () => {
+    expect(shopForPersonalDraft([dealer, partsShop], "pieces_auto")).toBe(partsShop);
+  });
+
+  it("never turns a sale into a rental by landing in a rental shop", () => {
+    expect(shopForPersonalDraft([rental], "vente_auto")).toBeNull();
+  });
+
+  it("ignores a shop that is not active yet", () => {
+    expect(shopForPersonalDraft([{ ...dealer, status: "pending" }], "vente_auto")).toBeNull();
+  });
+
+  it("has nowhere to go without a shop", () => {
+    expect(shopForPersonalDraft([], "vente_auto")).toBeNull();
   });
 });
 
