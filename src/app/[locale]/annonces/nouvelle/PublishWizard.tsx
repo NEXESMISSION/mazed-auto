@@ -341,15 +341,22 @@ export function PublishWizard({
   }
 
   // ─── Persistence ──────────────────────────────────────────────────────────
-  async function saveDraft(extra: Record<string, unknown> = {}): Promise<string | null> {
+  async function saveDraft(
+    extra: Record<string, unknown> = {},
+    { quiet = false }: { quiet?: boolean } = {},
+  ): Promise<string | null> {
     setSaved("saving");
+    // The title is proposed from what is typed, so mid-word it is « pe » — and
+    // the database takes 3 to 140 characters. A draft keeps a placeholder until
+    // there is a real one, rather than fail to save.
+    const draftTitle = title.trim().length >= 3 ? title.trim() : "Brouillon";
     const res = await fetch("/api/annonces", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         id: listingId,
         category_id: categoryId,
-        title: title.trim() || "Brouillon",
+        title: draftTitle,
         description: description.trim() || null,
         price: onRequest ? null : Number(price) || 0,
         price_on_request: onRequest,
@@ -363,7 +370,10 @@ export function PublishWizard({
     });
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
-      toast(j.detail ?? j.error ?? t("errors.save"), "error");
+      // An autosave that fails says nothing: its error is a dialog, and a
+      // dialog opening mid-word takes the focus out of the field being typed
+      // in. Publishing saves again, and says why if it still fails.
+      if (!quiet) toast(j.detail ?? j.error ?? t("errors.save"), "error");
       setSaved("idle");
       return null;
     }
@@ -391,7 +401,7 @@ export function PublishWizard({
       if (d) return;
     }
     if (autosaveRef.current) clearTimeout(autosaveRef.current);
-    autosaveRef.current = setTimeout(() => { void saveDraft(); }, 1500);
+    autosaveRef.current = setTimeout(() => { void saveDraft({}, { quiet: true }); }, 1500);
     return () => { if (autosaveRef.current) clearTimeout(autosaveRef.current); };
     // saveDraft closes over all of these; listing them is what restarts the
     // timer on each edit.

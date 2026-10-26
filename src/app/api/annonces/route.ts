@@ -99,7 +99,10 @@ export async function POST(req: NextRequest) {
   const body = (await req.json().catch(() => ({}))) as Body;
 
   const categoryId = text(body.category_id, 40);
-  const title = text(body.title, 140);
+  // listings.title is 3 to 140 characters (0154). A shorter one is a title
+  // still being typed: not written, rather than a 500 from the constraint.
+  const rawTitle = text(body.title, 140);
+  const title = rawTitle && rawTitle.trim().length >= 3 ? rawTitle : null;
   const governorate = text(body.governorate, 60);
 
   const id = text(body.id, 40);
