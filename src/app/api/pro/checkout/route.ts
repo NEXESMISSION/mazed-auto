@@ -9,6 +9,7 @@ import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { CAN_EDIT_SHOP, memberRole } from "@/lib/shops/server";
 import { konnectConfig, konnectInitPayment } from "@/lib/payments/konnect";
+import { manualPaymentOpen } from "@/lib/payments";
 
 /**
  * POST /api/pro/checkout — order a plan for a shop, or a 7-day boost for an
@@ -128,6 +129,14 @@ export async function POST(req: NextRequest) {
 
   const cfg = body.provider === "manual" ? null : konnectConfig();
   const provider = cfg ? "konnect" : "bank_transfer";
+  // Without Konnect the order is paid by transfer or D17: not before the back
+  // office has opened one of them with real details (D-B1).
+  if (!cfg && !(await manualPaymentOpen(admin))) {
+    return NextResponse.json(
+      { error: "payment_closed", detail: (await apiTranslations(req, "payment.api"))("closed") },
+      { status: 409 },
+    );
+  }
   const site = (process.env.NEXT_PUBLIC_SITE_URL || req.nextUrl.origin).replace(/\/$/, "");
 
   // An order already open for the same thing is the order.

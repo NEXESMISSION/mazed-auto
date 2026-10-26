@@ -14,6 +14,7 @@ import {
   ArrowRight,
   ArrowLeft,
   AlertCircle,
+  Clock,
   FileText,
   X,
 } from "lucide-react";
@@ -581,6 +582,35 @@ export function CheckoutClient({
     );
   }
 
+  // No method open yet (D-B1): the back office has not set the details buyers
+  // pay to. Say so plainly — no numbers, no upload — and keep the order.
+  if (instructions.length === 0) {
+    return (
+      <div className="grid min-h-dvh place-items-center bg-background">
+        <main className="mx-auto w-full max-w-md px-4 py-10">
+          <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 text-center">
+            <span className="mx-auto inline-flex size-14 items-center justify-center rounded-2xl bg-[var(--surface-2)] text-[var(--gold)] ring-1 ring-[var(--border)]">
+              <Clock className="size-6" strokeWidth={2} />
+            </span>
+            <h1 className="mt-4 text-[20px] font-extrabold leading-tight">{tc("closed.title")}</h1>
+            <p className="mt-2 text-[13px] leading-relaxed text-[var(--foreground-muted)]">{tc("closed.body")}</p>
+            <div className="mt-5 flex flex-col gap-2">
+              <Link href="/contact" className="batta-btn-luxe h-11 px-5 text-[13px]">
+                {t("common.support")}
+              </Link>
+              <Link
+                href={backHref}
+                className="inline-flex h-11 items-center justify-center rounded-[var(--radius)] border border-[var(--border)] bg-[var(--surface-2)] px-5 text-[13px] font-semibold hover:border-[var(--gold-soft)]"
+              >
+                {t("common.back")}
+              </Link>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <main className="mx-auto max-w-md px-4 py-6 lg:max-w-5xl lg:py-12">
@@ -664,7 +694,7 @@ export function CheckoutClient({
         <div className="mt-4 space-y-4 lg:mt-0">
         {/* ── STEP 1: choose method (big toggles) ── */}
         <Step n={1} title={tc("stepMethod")} />
-        <div className="grid grid-cols-2 gap-2.5">
+        <div className={cn("grid gap-2.5", instructions.length > 1 ? "grid-cols-2" : "grid-cols-1")}>
           {instructions.map((p) => {
             const Icon = PROVIDER_ICONS[p.value];
             const isActive = provider === p.value;

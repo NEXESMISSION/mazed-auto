@@ -3,6 +3,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { formatDate } from "@/lib/dates";
 import { currencyLabel } from "@/lib/utils";
 import { getProContext } from "@/lib/shops/proContext";
+import { fetchPaymentMethods, receiptIssuer } from "@/lib/payments";
 import { PrintButton } from "./PrintButton";
 
 /**
@@ -27,9 +28,9 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
   if (!pay || pay.shop_id !== shop.id || pay.status !== "captured" || !pay.receipt_number) notFound();
 
   const meta = (pay.metadata ?? {}) as { product_id?: string; listing_id?: string };
-  const [{ data: priv }, { data: payee }, { data: sub }, { data: listing }] = await Promise.all([
+  const [{ data: priv }, methods, { data: sub }, { data: listing }] = await Promise.all([
     admin.from("shop_private").select("legal_name, tax_id, legal_address").eq("shop_id", shop.id).maybeSingle(),
-    admin.from("app_settings").select("value").eq("key", "payee_name").maybeSingle(),
+    fetchPaymentMethods(admin),
     admin.from("subscriptions").select("starts_at, ends_at, product:products (name_fr, name_ar)").eq("payment_id", pay.id).maybeSingle(),
     meta.listing_id
       ? admin.from("listings").select("title, reference").eq("id", meta.listing_id).maybeSingle()
@@ -50,7 +51,9 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
     : listing
       ? t("boostListing", { reference: (listing.reference as string | null) ?? "", title: listing.title as string })
       : t("boost");
-  const payeeName = typeof payee?.value === "string" && payee.value ? payee.value : "Mazed Auto";
+  // The account holder set in « Moyens de paiement », never the sample name
+  // this code shipped with (it printed « Batta Tunisia SARL » here).
+  const payeeName = receiptIssuer(methods);
 
   return (
     <article id="receipt" className="mx-auto max-w-xl rounded-2xl border border-border bg-surface p-6 print:border-0 print:bg-white print:text-black">

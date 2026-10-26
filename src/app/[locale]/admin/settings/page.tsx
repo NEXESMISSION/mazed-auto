@@ -4,7 +4,6 @@ import { AdminPage, EYEBROW } from "@/components/admin/kit";
 import { SiteTabs } from "@/components/admin/kit/SiteTabs";
 import {
   SettingsForm,
-  type PayeeSettings,
   type FreeListings,
   type PersonalLimits,
 } from "./SettingsForm";
@@ -23,17 +22,13 @@ export const revalidate = 0;
  * They disagreed — 20 TND here, 15 TND there — so changing the fee on this
  * screen changed nothing a seller would ever see.
  *
- * What remains is the payee block: the bank details a buyer is told to
- * transfer to. Getting those wrong sends real money to the wrong place.
+ * The payee block went too, to « Moyens de paiement » (D-B1): the details a
+ * buyer is told to send money to deserve a switch per method and checks a
+ * free-text field never had.
  */
-const KEYS = ["payee_name", "payee_bank", "payee_rib", "payee_iban", "payee_d17"] as const;
-
 export default async function AdminSettingsPage() {
   const t = await getTranslations("admin.settings");
   const admin = getServiceSupabase();
-  const settings: PayeeSettings = {
-    payee_name: "", payee_bank: "", payee_rib: "", payee_iban: "", payee_d17: "",
-  };
 
   // Off with an allowance of 3: the shape the migration seeds, and the shape
   // a missing row has to fall back to — reading "enabled" off undefined would
@@ -47,7 +42,7 @@ export default async function AdminSettingsPage() {
     const { data } = await admin
       .from("app_settings")
       .select("key, value")
-      .in("key", [...KEYS, "free_listings", "personal_limits", "pro_shops"]);
+      .in("key", ["free_listings", "personal_limits", "pro_shops"]);
     for (const row of data ?? []) {
       if (row.key === "free_listings") {
         const v = (row.value ?? {}) as { enabled?: boolean; count?: number };
@@ -65,13 +60,7 @@ export default async function AdminSettingsPage() {
       }
       if (row.key === "pro_shops") {
         proShops = (row.value as { enabled?: boolean } | null)?.enabled === true;
-        continue;
       }
-      const key = row.key as (typeof KEYS)[number];
-      if (!KEYS.includes(key)) continue;
-      // app_settings stores jsonb, so a plain string arrives quoted.
-      const v = row.value;
-      settings[key] = typeof v === "string" ? v : String(v ?? "");
     }
   }
 
@@ -86,7 +75,6 @@ export default async function AdminSettingsPage() {
         </p>
       </header>
       <SettingsForm
-        initial={settings}
         initialFree={freeListings}
         initialPersonal={personal}
         initialProShops={proShops}

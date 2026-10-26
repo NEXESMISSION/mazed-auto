@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
-import { paymentInstructions, fetchPayeeDetails } from "@/lib/payments";
+import { paymentInstructions, fetchPaymentMethods } from "@/lib/payments";
 import { CheckoutClient } from "./CheckoutClient";
 
 export const dynamic = "force-dynamic";
@@ -51,14 +51,12 @@ export default async function CheckoutEntry({
 
   if (!paymentParam) notFound();
 
-  // SERVICE-ROLE read. `payee_name/bank/rib/iban/d17` are NOT in the
-  // app_settings public-read policy (0043), so under the buyer's own RLS the
-  // query returns nothing and fetchPayeeDetails falls back to its TEST
-  // PLACEHOLDER account — meaning every buyer was being told to wire their
-  // money to a placeholder RIB, while an admin (who can read the table) saw the
-  // real one and assumed all was well. These are the numbers the user is asked
-  // to send money to: they must come from the admin settings, for everyone.
-  const payee = await fetchPayeeDetails(getServiceSupabase() ?? supabase);
+  // SERVICE-ROLE read. `payment_methods` is NOT in the app_settings
+  // public-read policy (0043): under the buyer's own RLS the row reads as
+  // missing, which now means « nothing offered » — not, as it once did, a
+  // placeholder account to wire money to. These are the details a buyer is
+  // asked to send money to: they come from « Moyens de paiement », for everyone.
+  const methods = await fetchPaymentMethods(getServiceSupabase() ?? supabase);
 
   // `error` is captured, not discarded. Destructuring only `data` makes a query
   // failure indistinguishable from "no such payment", and both then surface as
@@ -89,7 +87,7 @@ export default async function CheckoutEntry({
       instructions={paymentInstructions({
         paymentId: pay.id as string,
         amountTND: Number(pay.amount),
-        payee,
+        methods,
         label: (key) => tl(key),
       })}
       locale={locale}

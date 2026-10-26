@@ -16,16 +16,11 @@ import { fail } from "@/lib/http/errors";
  * different numbers — 20 TND against 15 — so an admin who changed the
  * publication fee here changed nothing a seller would ever see.
  *
- * Prices live in `products` and nowhere else (PIVOT-PLAN §2.2). What is left
- * here is the payee block: the bank details a buyer is told to transfer to.
- * Getting those wrong sends real money to the wrong place, which is why they
- * are the one thing this screen still owns.
+ * Prices live in `products` and nowhere else (PIVOT-PLAN §2.2). The payee
+ * block that was left here moved to /api/admin/payment-methods (D-B1), where
+ * the details are checked and each method has its switch: this route no
+ * longer writes `payee_*`, so there is one way in for them.
  */
-
-/** The only keys this route may write. Anything else is a price or is dead. */
-const TEXT_KEYS = ["payee_name", "payee_bank", "payee_rib", "payee_iban", "payee_d17"] as const;
-
-const MAX = 120;
 
 /**
  * The one non-payee key, and it is here rather than in Offres & prix because
@@ -48,13 +43,6 @@ export async function POST(req: NextRequest) {
 
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
   const rows: { key: string; value: unknown; updated_by: string }[] = [];
-
-  for (const key of TEXT_KEYS) {
-    if (!(key in body)) continue;
-    const raw = body[key];
-    if (typeof raw !== "string") continue;
-    rows.push({ key, value: raw.trim().slice(0, MAX), updated_by: user.id });
-  }
 
   // Welcome allowance: { enabled, count }. Clamped rather than rejected — an
   // admin typing 500 wants "lots", not a 400, and a negative count would make

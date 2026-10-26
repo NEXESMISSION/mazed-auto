@@ -9,6 +9,7 @@ import { refusalResponse as sendRefusal } from "@/lib/http/refusal";
 import { PRODUCT_SELECT, isFree, resolveListingFee, toProduct } from "@/lib/products";
 import { decidePublication, localizeRefusal, publicationErrorFromDb, type ListingType, type Refusal } from "@/lib/publication";
 import { apiTranslations, localeFromRequest } from "@/i18n/api";
+import { manualPaymentOpen } from "@/lib/payments";
 import { CAN_EDIT_SHOP, memberRole, quotaStatus, shopSummary } from "@/lib/shops/server";
 
 /**
@@ -192,6 +193,13 @@ export async function POST(
 
   let paymentId = existing?.[0]?.id as string | undefined;
   if (!paymentId) {
+    // Nowhere to pay a transfer yet (D-B1): no order, the annonce stays as it is.
+    if (!(await manualPaymentOpen(admin))) {
+      return NextResponse.json(
+        { error: "payment_closed", detail: (await apiTranslations(req, "payment.api"))("closed") },
+        { status: 409 },
+      );
+    }
     const { data: created, error } = await admin
       .from("payments")
       .insert({

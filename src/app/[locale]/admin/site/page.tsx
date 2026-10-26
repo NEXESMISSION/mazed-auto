@@ -1,9 +1,11 @@
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { getServiceSupabase } from "@/lib/supabase/admin";
+import { availableMethods, fetchPaymentMethods } from "@/lib/payments";
 import { AdminPage, EYEBROW } from "@/components/admin/kit";
 import {
-  LayoutTemplate, MessageSquare, FileText, Bell, Settings2, Activity,
+  LayoutTemplate, MessageSquare, FileText, Bell, Settings2, Activity, Wallet,
   ArrowRight, type LucideIcon,
 } from "lucide-react";
 
@@ -36,7 +38,7 @@ export default async function AdminSiteHub() {
   const sb = await getServerSupabase();
   const head = (t: string) => sb.from(t).select("*", { count: "exact", head: true });
 
-  const [featured, popups, docs, notifs] = await Promise.all([
+  const [featured, popups, docs, notifs, methods] = await Promise.all([
     // Featured placement is `featured_rank` + an optional `featured_until`
     // (migration 0171) — a lapsed placement still carries a rank, so the
     // count has to exclude it or the card overstates what is on the home page.
@@ -47,6 +49,7 @@ export default async function AdminSiteHub() {
     head("popups"),
     head("legal_doc_kinds"),
     head("notifications"),
+    fetchPaymentMethods(getServiceSupabase() ?? sb),
   ]);
 
   const n = (r: { count: number | null }) => r.count ?? 0;
@@ -89,6 +92,15 @@ export default async function AdminSiteHub() {
       href: "/admin/settings",
       Icon: Settings2,
       description: t("cards.settings.description"),
+    },
+    {
+      // How many methods a buyer can pay with right now — 0 is the state to fix.
+      label: t("cards.payments.label"),
+      href: "/admin/moyens-paiement",
+      Icon: Wallet,
+      description: t("cards.payments.description"),
+      count: availableMethods(methods).length,
+      unit: t("cards.payments.unit"),
     },
     {
       label: t("cards.activity.label"),

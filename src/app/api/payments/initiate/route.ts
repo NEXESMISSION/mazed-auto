@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase/server";
+import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
+import { manualPaymentOpen } from "@/lib/payments";
 import type { PaymentKind } from "@/lib/payments/types";
 
 /**
@@ -47,6 +49,10 @@ export async function POST(req: NextRequest) {
   const amount = Number(inspection.fee_amount);
   if (!amount || amount <= 0) {
     return NextResponse.json({ error: "invalid_fee" }, { status: 400 });
+  }
+  // Paid by transfer or D17 only once one of them is opened (D-B1).
+  if (!(await manualPaymentOpen(getServiceSupabase() ?? supabase))) {
+    return NextResponse.json({ error: "payment_closed" }, { status: 409 });
   }
 
   const { data: payment, error: insertErr } = await supabase

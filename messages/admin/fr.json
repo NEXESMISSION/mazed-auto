@@ -73,7 +73,8 @@
       "documents": "Documents",
       "broadcasts": "Diffusions",
       "settings": "Réglages",
-      "journal": "Journal"
+      "journal": "Journal",
+      "payments": "Paiement"
     }
   },
   "action": {
@@ -171,11 +172,16 @@
       },
       "settings": {
         "label": "Réglages",
-        "description": "Coordonnées bancaires, durée de vie des annonces, contact."
+        "description": "Annonces offertes, limites des particuliers, boutiques."
       },
       "activity": {
         "label": "Journal d'activité",
         "description": "Qui a fait quoi, et quand. La trace d'audit de la console."
+      },
+      "payments": {
+        "label": "Moyens de paiement",
+        "description": "Virement et D17 : les coordonnées que l'acheteur reçoit, et ce qui est proposé.",
+        "unit": "proposés"
       }
     }
   },
@@ -227,12 +233,8 @@
       "unsaved": "Modifications non enregistrées.",
       "payee": {
         "title": "Bénéficiaire du virement",
-        "body": "Affiché au vendeur sur la page de paiement.",
-        "foreign": "Ce nom appartient au projet immobilier jumeau, pas à Mazed Auto. C'est celui que le vendeur recopie dans son application bancaire.",
-        "name": "Raison sociale",
-        "bank": "Banque",
-        "d17": "D17 / téléphone",
-        "success": "Coordonnées enregistrées."
+        "moved": "Les coordonnées de virement et de D17 ont leur propre écran, avec un interrupteur par moyen de paiement : rien n'est proposé à l'acheteur avant d'y être ouvert.",
+        "open": "Ouvrir Moyens de paiement"
       },
       "welcome": {
         "title": "Allocation de bienvenue",
@@ -831,5 +833,70 @@
       "slugTaken": "Un produit porte déjà ce nom.",
       "invalidProduct": "Vérifiez la cohérence : un pack a besoin d'un quota, un badge d'une durée, et une seule annonce à l'unité peut être active par catégorie."
     }
+  },
+  "payments": {
+    "eyebrow": "Site",
+    "title": "Moyens de paiement",
+    "description": "Les coordonnées que l'acheteur reçoit pour payer, moyen par moyen. Un moyen n'est proposé qu'une fois ouvert ici avec des coordonnées complètes ; sans aucun moyen ouvert, aucune commande par virement ou D17 n'est créée.",
+    "offer": "Proposer aux acheteurs",
+    "offerHint": "Vous pouvez enregistrer les coordonnées d'abord, et ouvrir plus tard.",
+    "status": {
+      "open": "Proposé",
+      "incomplete": "Incomplet",
+      "closed": "Pas proposé"
+    },
+    "bank": {
+      "title": "Virement bancaire",
+      "body": "L'acheteur vire le montant sur ce compte, puis envoie la photo de son ordre de virement.",
+      "holder": "Titulaire du compte",
+      "bank": "Banque",
+      "ribHint": "20 chiffres.",
+      "ibanHint": "Facultatif. TN + 22 chiffres, le même compte que le RIB."
+    },
+    "d17": {
+      "title": "D17 · La Poste",
+      "body": "L'acheteur envoie le montant depuis son application D17 vers ce numéro, puis la capture de la confirmation.",
+      "number": "Numéro D17",
+      "holder": "Titulaire"
+    },
+    "konnect": {
+      "title": "Paiement en ligne (Konnect)",
+      "on": "Configuré",
+      "off": "Non configuré",
+      "body": "Carte bancaire et e-dinar par Konnect. Ses clés se saisiront ici à l'étape suivante ; pour l'instant elles sont réglées sur le serveur."
+    },
+    "preview": {
+      "title": "Ce que l'acheteur verra",
+      "beneficiary": "Bénéficiaire",
+      "bank": "Banque",
+      "d17Number": "Numéro D17"
+    },
+    "problems": {
+      "bank": {
+        "holder": "Indiquez le titulaire du compte.",
+        "bank": "Indiquez la banque.",
+        "rib": "Le RIB doit compter 20 chiffres.",
+        "iban": "Cet IBAN n'est pas valide (TN + 22 chiffres, clé de contrôle).",
+        "ibanRib": "L'IBAN et le RIB ne désignent pas le même compte.",
+        "sample": "Ce sont les coordonnées d'exemple du code d'origine : saisissez les vôtres.",
+        "number": "Numéro invalide."
+      },
+      "d17": {
+        "holder": "Indiquez le titulaire du compte D17.",
+        "bank": "Banque manquante.",
+        "rib": "RIB manquant.",
+        "iban": "IBAN invalide.",
+        "ibanRib": "IBAN et RIB différents.",
+        "number": "Le numéro D17 doit être un mobile tunisien à 8 chiffres.",
+        "sample": "C'est le numéro d'exemple du code d'origine : saisissez le vôtre."
+      }
+    },
+    "save": "Enregistrer",
+    "saved": "Enregistré",
+    "success": "Moyens de paiement enregistrés.",
+    "unchanged": "Rien n'a changé.",
+    "blocked": "Complétez les coordonnées du moyen ouvert, ou fermez-le.",
+    "summaryOpen": "Les acheteurs ne voient que les moyens proposés.",
+    "summaryClosed": "Aucun moyen proposé : les acheteurs lisent que le paiement n'est pas encore ouvert."
   }
 }

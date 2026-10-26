@@ -12,6 +12,7 @@ import {
   type ListingType, type Refusal,
 } from "@/lib/publication";
 import { apiTranslations, localeFromRequest } from "@/i18n/api";
+import { manualPaymentOpen } from "@/lib/payments";
 import { memberShops, quotaStatus, shopSummary } from "@/lib/shops/server";
 
 /**
@@ -357,6 +358,14 @@ export async function POST(
   let paymentId = existing?.[0]?.id as string | undefined;
 
   if (!paymentId) {
+    // No transfer or D17 details opened in « Moyens de paiement » (D-B1): an
+    // order now would have nowhere to be paid. The annonce stays as it is.
+    if (!(await manualPaymentOpen(admin))) {
+      return NextResponse.json(
+        { error: "payment_closed", detail: (await apiTranslations(req, "payment.api"))("closed") },
+        { status: 409 },
+      );
+    }
     const { data: created, error } = await admin
       .from("payments")
       .insert({
