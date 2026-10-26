@@ -92,7 +92,7 @@ async function allPhotos() {
   const out = [];
   for (let offset = 0; ; offset += 1000) {
     const r = await fetch(
-      `${SB_URL}/rest/v1/listing_photos?select=id,listing_id,storage_path&order=id&limit=1000&offset=${offset}`,
+      `${SB_URL}/rest/v1/listing_photos?select=id,listing_id,storage_path,created_at&order=id&limit=1000&offset=${offset}`,
       { headers: H },
     );
     if (!r.ok) throw new Error(`listing_photos read failed: ${r.status} ${await r.text()}`);
@@ -215,19 +215,58 @@ const log = fs.existsSync(LOG) ? JSON.parse(fs.readFileSync(LOG, "utf8")) : [];
  */
 const originalOf = new Map(log.map((e) => [e.id, e.from]));
 
+/**
+ * Was this row's photo stamped in the browser when it was uploaded? Every
+ * upload since lib/watermark.ts shipped (8 September 2026, the first backfill)
+ * was, and the bytes in storage are the only ones there are. Rows from before
+ * are the back catalogue, which the first run stamped from originals it kept.
+ */
+const WATERMARK_SHIPPED = Date.parse("2026-09-09T00:00:00Z");
+function wasStampedAtUpload(row) {
+  return row.storage_path.startsWith(PREFIX) || Date.parse(row.created_at) >= WATERMARK_SHIPPED;
+}
+
 const rows = await allPhotos();
-const todo = rows.filter((r) => r.storage_path && !r.storage_path.startsWith(CURRENT));
+const pending = rows.filter((r) => r.storage_path && !r.storage_path.startsWith(CURRENT));
+// Only rows whose UNSTAMPED original is known. A photo uploaded through the
+// site was stamped in the browser on its way to storage and no clean copy was
+// kept: stamping it again would put the new mark on top of the old one.
+// Those are left as they are.
+const todo = pending.filter((r) => originalOf.has(r.id) || !wasStampedAtUpload(r));
+const noOriginal = pending.length - todo.length;
 const foreign = todo.filter((r) => /^https?:\/\//.test(originalOf.get(r.id) ?? r.storage_path)).length;
 
 console.log(
-  `${rows.length} photos, ${rows.length - todo.length} already on ${VERSION}, ${todo.length} to do`,
+  `${rows.length} photos, ${rows.length - pending.length} already on ${VERSION}, ${todo.length} to do`,
 );
+if (noOriginal) {
+  console.log(`  ${noOriginal} stamped at upload with no original kept: left as they are`);
+}
 console.log(
   `  ${foreign} hosted on another Supabase project, ${todo.length - foreign} in our own bucket`,
 );
+// A host that no longer answers holds originals that are gone: the other
+// Supabase project above was deleted (its name stopped resolving in October
+// 2026). Its rows keep the photo they have rather than fail one by one.
+const deadHosts = new Set();
+for (const host of new Set(todo.map((r) => new URL(sourceUrl(originalOf.get(r.id) ?? r.storage_path)).host))) {
+  try {
+    await fetch(`https://${host}/`, { method: "HEAD" });
+  } catch {
+    deadHosts.add(host);
+  }
+}
+const reachable = todo.filter(
+  (r) => !deadHosts.has(new URL(sourceUrl(originalOf.get(r.id) ?? r.storage_path)).host),
+);
+if (deadHosts.size) {
+  console.log(
+    `  ${todo.length - reachable.length} with their original on a host that no longer answers (${[...deadHosts].join(", ")}): left as they are`,
+  );
+}
 if (!COMMIT) console.log("DRY RUN — pass --commit to write.\n");
 
-const planned = todo.slice(0, LIMIT === Infinity ? undefined : LIMIT);
+const planned = reachable.slice(0, LIMIT === Infinity ? undefined : LIMIT);
 let done = 0;
 let failed = 0;
 
