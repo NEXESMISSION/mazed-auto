@@ -50,10 +50,8 @@ const BRAND_DIR = (() => {
   if (!m) throw new Error("src/lib/brand.ts has no BRAND_DIR: run node scripts/regen-logos.mjs first");
   return path.join(ROOT, "public", ...m[1].split("/"));
 })();
-/** Emblem + caption, and the emblem alone — see markSrcFor in lib/watermark. */
-const STAMP = path.join(BRAND_DIR, "stamp.png");
-const PLAIN = path.join(BRAND_DIR, "mark.png");
-const markFileFor = (w) => (w >= CAPTION_MIN_PHOTO_PX ? STAMP : PLAIN);
+/** The logo in grey — the same mark lib/watermark stamps on new uploads. */
+const MARK = path.join(BRAND_DIR, "watermark.png");
 const LOG = path.join(ROOT, "scripts", "watermark-backfill.log.json");
 
 // Must match src/lib/watermark.ts. Drift here shows up as a visible mismatch
@@ -61,8 +59,7 @@ const LOG = path.join(ROOT, "scripts", "watermark-backfill.log.json");
 const MARK_WIDTH_RATIO = 0.3;
 const MARK_MAX_HEIGHT_RATIO = 0.2;
 const MIN_MARK_PX = 96;
-const MARK_OPACITY = 0.18;
-const CAPTION_MIN_PHOTO_PX = 1000;
+const MARK_OPACITY = 0.22;
 
 const BUCKET = "properties";
 /**
@@ -75,7 +72,8 @@ const BUCKET = "properties";
  * pointing the rows back at it.
  */
 const PREFIX = "watermarked/";
-const VERSION = "v2";
+// v3: the grey logo alone (v2 was the « MA » monogram under its caption).
+const VERSION = "v3";
 const CURRENT = `${PREFIX}${VERSION}/`;
 
 const args = process.argv.slice(2);
@@ -126,7 +124,7 @@ async function stampAt(file, width) {
     .toBuffer();
 
   // The canvas shadow, under the same globalAlpha: a blurred silhouette at 0.55
-  // alpha. Without it the gold vanishes into an overexposed sky.
+  // alpha. Without it the pale grey vanishes into an overexposed sky.
   const blur = Math.max(6, Math.round(width * 0.035));
   const shadowAlpha = await sharp(resized)
     .extractChannel(3)
@@ -166,7 +164,7 @@ async function fittedWidth(file, width, height) {
 
 async function stamp(photo) {
   const meta = await sharp(photo).metadata();
-  const file = markFileFor(meta.width);
+  const file = MARK;
   const markW = await fittedWidth(file, meta.width, meta.height);
   const { mark, shadow, height: markH } = await stampAt(file, markW);
   const x = Math.round((meta.width - markW) / 2);

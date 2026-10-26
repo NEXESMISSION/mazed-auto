@@ -3,7 +3,6 @@
 // ring, over the « MAZED AUTO » wordmark, 1254x1254 on solid black.
 //
 //   node scripts/regen-logos.mjs
-//   python scripts/make-watermark-stamp.py   # the photo stamp, built from brand/<VERSION>/mark.png
 //
 // WHY THE BLACK IS TURNED INTO ALPHA. The source is opaque. Dropped on the
 // site as-is it is a black rectangle, and every surface it sits on (#0a0a0a,
@@ -236,19 +235,37 @@ function ico(frames) {
 }
 
 // Full resolution. What next/image is pointed at (it resizes and re-encodes
-// per device, so the source weight never reaches a browser), and the input of
-// make-watermark-stamp.py and of the photo backfill.
+// per device, so the source weight never reaches a browser).
 await fs.rm(OUT, { recursive: true, force: true });
 await write(path.join(OUT, "mark.png"), markFull, "mark");
 await write(path.join(OUT, "lockup.png"), lockupFull, "lockup");
 // The bars show it 32-36px tall; 240px covers that at 3x with room to spare.
 await write(path.join(OUT, "lockup-wide.png"), await wideLockup(240), "lockupWide");
 // Direct-load copies. The splash and the offline page use <picture>/<img>, not
-// next/image, and show the lockup ~200px wide; the watermark draws the plain
-// mark at most 300px wide. 480px covers both at 2.5x. The brushed metal
-// texture is what costs bytes here, not the size.
+// next/image, and show the lockup ~200px wide: 480px covers it at 2.5x. The
+// brushed metal texture is what costs bytes here, not the size.
 await webCopy("lockup", lockupFull, 480, { avif: true });
-await webCopy("mark", markFull, 480);
+
+// The photo watermark: the emblem alone, in grey — lighter where the metal
+// catches the light, darker in its folds, so it reads as a stamp and not as a
+// second, gold logo in the middle of somebody's car. watermark.ts draws it
+// faint with a soft dark shadow; the PNG is the photo backfill's input.
+{
+  const { data, info } = await sharp(markFull).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  for (let i = 0; i < data.length; i += 4) {
+    const l = 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
+    data[i] = data[i + 1] = data[i + 2] = Math.round(140 + l * 0.45);
+  }
+  const grey = await sharp(data, { raw: info }).png({ compressionLevel: 9 }).toBuffer();
+  await write(path.join(OUT, "watermark.png"), grey, "watermarkPng");
+  // Photos are capped at 1600px before stamping (imageCompress), and the mark
+  // is at most 20% of the width: 320px. 480px covers that.
+  await write(
+    path.join(OUT, "watermark.webp"),
+    sharp(grey).resize({ width: 480, kernel: "lanczos3" }).webp({ quality: 85, alphaQuality: 90, effort: 6 }),
+    "watermark",
+  );
+}
 
 // Social preview — Facebook, WhatsApp and X all crop to ~1.91:1. JPEG: the
 // PNG is ~300 KB, the size at which WhatsApp starts dropping previews. The
@@ -303,9 +320,6 @@ await write(path.join(APP, "apple-icon.png"), await tile(180, { fill: 0.78 }));
     "export const LOGO = {",
     ...lines,
     "} as const;",
-    "",
-    "/** Built by scripts/make-watermark-stamp.py into the same folder. */",
-    `export const STAMP_SRC = "/brand/${VERSION}/stamp.webp";`,
     "",
   ].join("\n");
   await fs.writeFile(path.join(ROOT, "src", "lib", "brand.ts"), ts);

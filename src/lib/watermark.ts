@@ -9,33 +9,17 @@
  * remove it is to crop away the subject, which is exactly the trade we want to
  * force.
  *
- * WHAT IT SAYS. The emblem alone identifies us to somebody who already
- * knows us, which is the wrong audience — the person who matters is the one
- * seeing the photo on somebody else's Facebook post. So the stamp carries the
- * business name AND the domain under the mark: the name so the picture is
- * attributable at a glance, the domain so acting on it needs no search. The
- * caption is baked into `brand/stamp.webp` rather than drawn with `fillText`,
- * because drawing it here would make every stamped photo depend on the web
- * font having loaded at the instant the seller picked the file — a seller on a
- * slow phone would get the fallback system font burnt into their photo for
- * ever. See `scripts/make-watermark-stamp.py`.
+ * WHAT IT SHOWS. The logo alone, in grey (`brand/<version>/watermark.webp`,
+ * built by scripts/regen-logos.mjs): no caption, no gold. It used to carry
+ * « MAZED AUTO · MAZED.TN » under a full-colour emblem, which made a second
+ * logo, in gold, the loudest thing in a photo of somebody's car. The owner
+ * asked for just the logo, in grey, like a shadow.
  *
  * WHY IT IS FAINT. The mark has to survive being stolen, not be the first
- * thing anybody sees. It was 45% over 38% of the width, chosen so the caption
- * would be crisply legible — which got the trade backwards: it made the logo
- * the loudest object in a photograph the seller took of their own car. 18%
- * over 30% is enough. A watermark does not have to be read at a glance to
+ * thing anybody sees. A watermark does not have to be read at a glance to
  * work; it has to be impossible to remove without cropping the subject, and
- * that is a property of WHERE it sits, not how bright it is. Anyone who wants
- * to know whose photo it is can see it.
- *
- * WHY THE ASSET CHANGES WITH THE PHOTO. The caption is baked in at a fixed
- * size relative to the mark, so on a small or low-quality upload it lands at a
- * handful of pixels tall and turns to mush — a smear that reads as a
- * compression artefact rather than as our name, which is worse than no caption
- * at all. Under `CAPTION_MIN_PHOTO_PX` the plain emblem is used instead: the
- * mark stays clean at any size, and the words appear only where there is
- * enough resolution to carry them.
+ * that is a property of WHERE it sits, not how bright it is. Grey carries
+ * less than gold did, hence 22% rather than 18%.
  *
  * WHY IT IS DRAWN, NOT COMPOSITED SERVER-SIDE. Photos go straight from the
  * browser to storage on a signed URL — the bytes never pass through our
@@ -46,35 +30,28 @@
  * exactly the property we need.
  */
 
-import { LOGO, STAMP_SRC as BRAND_STAMP_SRC } from "@/lib/brand";
+import { LOGO } from "@/lib/brand";
 
 /** Fraction of the image's WIDTH the mark spans. */
 const MARK_WIDTH_RATIO = 0.3;
 /**
- * Cap on the mark's HEIGHT, as a fraction of the image's width. The plain
- * emblem is a ring, square: at 30% of the width it would cover over twice the
- * area the old wide monogram did. The captioned stamp is wide and stays under it.
+ * Cap on the mark's HEIGHT, as a fraction of the image's width. The emblem is
+ * a ring, square: at 30% of the width it would cover over twice the area the
+ * old wide monogram did.
  */
 const MARK_MAX_HEIGHT_RATIO = 0.2;
 /** A floor so the mark does not vanish entirely on a tiny upload. */
 const MIN_MARK_PX = 96;
 /** How present the mark is. Deliberately low — see the note above. */
-const MARK_OPACITY = 0.18;
-/**
- * Below this photo width the caption would be under ~14px tall once scaled,
- * which on a low-quality upload is indistinguishable from JPEG noise.
- */
-const CAPTION_MIN_PHOTO_PX = 1000;
-/** Emblem over « MAZED AUTO · MAZED.TN », on transparent, ~1.7:1. */
-const STAMP_SRC = BRAND_STAMP_SRC;
-/** The emblem alone, for photos too small to carry the caption. */
-const MARK_SRC = LOGO.markWebp.src;
+const MARK_OPACITY = 0.22;
+/** The logo in grey, on transparent. */
+const MARK_SRC = LOGO.watermark.src;
 
 /**
  * The decoded mark, fetched once per page rather than per photo.
  *
- * A seller uploads eight photos at a time; without this the same file (up to
- * ~160 KB) is fetched and decoded eight times while the phone is already busy
+ * A seller uploads eight photos at a time; without this the same file is
+ * fetched and decoded eight times while the phone is already busy
  * re-encoding images.
  */
 const marks = new Map<string, Promise<HTMLImageElement | null>>();
@@ -93,11 +70,6 @@ function loadMark(src: string): Promise<HTMLImageElement | null> {
   });
   marks.set(src, p);
   return p;
-}
-
-/** Which of the two marks a photo this wide can carry. */
-export function markSrcFor(width: number): string {
-  return width >= CAPTION_MIN_PHOTO_PX ? STAMP_SRC : MARK_SRC;
 }
 
 /**
@@ -161,7 +133,7 @@ export async function watermarkImage(file: File): Promise<File> {
 
   try {
     const bitmap = await createImageBitmap(file);
-    const mark = await loadMark(markSrcFor(bitmap.width));
+    const mark = await loadMark(MARK_SRC);
     if (!mark) {
       bitmap.close?.();
       return file;

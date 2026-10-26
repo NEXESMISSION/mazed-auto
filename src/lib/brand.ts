@@ -12,12 +12,10 @@ export const LOGO = {
   lockupWide: { src: "/brand/v2/lockup-wide.png", width: 1121, height: 240 },
   lockupWebp: { src: "/brand/v2/lockup.webp", width: 480, height: 466 },
   lockupAvif: { src: "/brand/v2/lockup.avif", width: 480, height: 466 },
-  markWebp: { src: "/brand/v2/mark.webp", width: 480, height: 482 },
+  watermarkPng: { src: "/brand/v2/watermark.png", width: 784, height: 788 },
+  watermark: { src: "/brand/v2/watermark.webp", width: 480, height: 482 },
   og: { src: "/brand/v2/og.jpg", width: 1200, height: 630 },
   icon192: { src: "/brand/v2/icon-192.png", width: 192, height: 192 },
   icon512: { src: "/brand/v2/icon-512.png", width: 512, height: 512 },
   iconMaskable: { src: "/brand/v2/icon-maskable-512.png", width: 512, height: 512 },
 } as const;
-
-/** Built by scripts/make-watermark-stamp.py into the same folder. */
-export const STAMP_SRC = "/brand/v2/stamp.webp";
