@@ -143,6 +143,18 @@
     "admin_email_deadletter": {
       "title": "E-mails non délivrés",
       "body": "Des e-mails importants n'ont pas pu être envoyés. Vérifiez le fournisseur d'e-mail et contactez les utilisateurs concernés."
+    },
+    "pro_request_approved": {
+      "title": "Demande acceptée",
+      "body": "Votre demande « {listing} » est acceptée : vous pouvez payer pour l'activer."
+    },
+    "pro_request_rejected": {
+      "title": "Demande refusée",
+      "body": "Votre demande « {listing} » n'a pas été acceptée. Motif : {reason}"
+    },
+    "pro_request_revoked": {
+      "title": "Validation retirée",
+      "body": "La validation de votre demande « {listing} » a été retirée. Motif : {reason}"
     }
   },
   "email": {

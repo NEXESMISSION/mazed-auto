@@ -7,7 +7,7 @@ import { useScrollLock } from "@/lib/scrollLock";
 import { Link, usePathname } from "@/i18n/navigation";
 import {
   LayoutDashboard, Inbox, Receipt, Tag, Users, FolderTree,
-  SlidersHorizontal, ExternalLink, Menu, X, Store,
+  SlidersHorizontal, ExternalLink, Menu, X, Store, ClipboardCheck,
   type LucideIcon,
 } from "lucide-react";
 import { NavIcon } from "./kit/LinkPending";
@@ -40,13 +40,15 @@ type Item = {
   href: string;
   Icon: LucideIcon;
   /** Key into the `counts` map — a badge for work that is waiting. */
-  countKey?: "annonces" | "paiements" | "boutiques";
+  countKey?: "annonces" | "paiements" | "demandes" | "boutiques";
 };
 
 const NAV: Item[] = [
   { key: "dashboard", href: "/admin", Icon: LayoutDashboard },
   { key: "annonces", href: "/admin/annonces", Icon: Inbox, countKey: "annonces" },
   { key: "paiements", href: "/admin/paiements", Icon: Receipt, countKey: "paiements" },
+  // What shops ask before they may pay (0196): openings, plans, boosts.
+  { key: "demandes", href: "/admin/demandes", Icon: ClipboardCheck, countKey: "demandes" },
   { key: "offres", href: "/admin/offres", Icon: Tag },
   { key: "boutiques", href: "/admin/boutiques", Icon: Store, countKey: "boutiques" },
   { key: "vendeurs", href: "/admin/vendeurs", Icon: Users },
@@ -55,7 +57,7 @@ const NAV: Item[] = [
 
 const SITE: Item = { key: "site", href: "/admin/site", Icon: SlidersHorizontal };
 
-export type AdminCounts = Partial<Record<"annonces" | "paiements" | "boutiques", number>>;
+export type AdminCounts = Partial<Record<"annonces" | "paiements" | "demandes" | "boutiques", number>>;
 
 function BrandMark({ onNavigate }: { onNavigate?: () => void }) {
   const t = useTranslations("admin.shell");

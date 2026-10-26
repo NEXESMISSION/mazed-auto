@@ -31,6 +31,7 @@ type Body = {
   category_id?: unknown;
   listing_quota?: unknown;
   duration_days?: unknown;
+  limits?: unknown;
   is_active?: unknown;
   sort_order?: unknown;
 };
@@ -64,6 +65,24 @@ function posInt(v: unknown, max: number): number | null {
   const n = Math.floor(Number(v));
   if (!Number.isFinite(n) || n <= 0) return null;
   return Math.min(max, n);
+}
+
+/**
+ * A shop plan's room — annonces live at once, vehicles and parts (0188). Both
+ * whole, 0 allowed (a parts-only plan), or nothing at all: the CHECK on
+ * `limits` refuses half an object.
+ */
+const MAX_PLAN_LIMIT = 10_000;
+function planLimits(v: unknown): { vehicles: number; parts: number } | null {
+  if (!v || typeof v !== "object") return null;
+  const raw = v as { vehicles?: unknown; parts?: unknown };
+  const whole = (x: unknown) => {
+    const n = Math.floor(Number(x));
+    return Number.isFinite(n) && n >= 0 ? Math.min(MAX_PLAN_LIMIT, n) : null;
+  };
+  const vehicles = whole(raw.vehicles);
+  const parts = whole(raw.parts);
+  return vehicles === null || parts === null ? null : { vehicles, parts };
 }
 
 export async function GET(req: NextRequest) {
@@ -133,6 +152,7 @@ export async function POST(req: NextRequest) {
       category_id: text(body.category_id, 40),
       listing_quota: quota,
       duration_days: duration,
+      ...(kind === "subscription" ? { limits: planLimits(body.limits) } : {}),
       is_active: body.is_active === true,
       sort_order: posInt(body.sort_order, 9999) ?? 100,
       created_by: user.id,
@@ -176,6 +196,16 @@ export async function PATCH(req: NextRequest) {
   if ("category_id" in body) patch.category_id = text(body.category_id, 40);
   if ("listing_quota" in body) patch.listing_quota = posInt(body.listing_quota, 1000);
   if ("duration_days" in body) patch.duration_days = posInt(body.duration_days, 3650);
+  if ("limits" in body) {
+    const limits = planLimits(body.limits);
+    if (!limits) {
+      return NextResponse.json(
+        { error: "invalid_product", detail: (await apiTranslations(req, "admin.api.products"))("invalidProduct") },
+        { status: 400 },
+      );
+    }
+    patch.limits = limits;
+  }
   if ("is_active" in body) patch.is_active = body.is_active === true;
   if ("sort_order" in body) patch.sort_order = posInt(body.sort_order, 9999) ?? 100;
 

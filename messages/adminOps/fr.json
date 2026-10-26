@@ -604,6 +604,67 @@
     "paymentConflict": "Ce paiement est déjà « {status} ».",
     "wrongKind": "« {kind} » appartient au produit enchères, qui n'existe plus.",
     "receiptReason": "Dites au vendeur ce qui ne va pas — il doit pouvoir renvoyer un reçu valable.",
-    "diagnosticEmpty": "Ajoutez au moins un contrôle, une photo ou un résumé avant de publier."
+    "diagnosticEmpty": "Ajoutez au moins un contrôle, une photo ou un résumé avant de publier.",
+    "request": {
+      "reason_required": "Indiquez un motif : la boutique le lira.",
+      "forbidden": "Réservé aux administrateurs.",
+      "request_not_found": "Demande introuvable.",
+      "request_already_decided": "Cette demande a déjà reçu une réponse.",
+      "payment_in_progress": "Un paiement est en cours pour cette demande : décidez-en d'abord dans Paiements.",
+      "bad_decision": "Décision inconnue."
+    }
+  },
+  "requests": {
+    "title": "Demandes",
+    "tabs": {
+      "pending": "À décider",
+      "approved": "Acceptées",
+      "done": "Payées",
+      "closed": "Refusées",
+      "all": "Toutes"
+    },
+    "emptyHint": "Quand une boutique demande à ouvrir ou à changer de formule, sa demande arrive ici avant tout paiement.",
+    "pick": "Choisissez une demande à gauche. La plus ancienne en attente est en haut.",
+    "back": "Demandes",
+    "kind": {
+      "opening": "Ouverture",
+      "plan_change": "Changement de formule",
+      "renewal": "Renouvellement",
+      "boost": "Boost"
+    },
+    "askedOn": "Demandée le {date}",
+    "decidedOn": "décidée le {date} par {who}",
+    "what": "La demande",
+    "offer": "Offre",
+    "gives": "Donne droit à",
+    "limit": "{count} {bucket} en ligne · {days} jours",
+    "bucket": {
+      "vehicles": "véhicules",
+      "parts": "pièces"
+    },
+    "listing": "Annonce",
+    "requester": "Demandée par",
+    "shop": "La boutique",
+    "openShop": "Fiche boutique",
+    "shopName": "Nom",
+    "activity": "Activité",
+    "shopStatus": "État",
+    "periodUntil": "{plan} jusqu'au {date}",
+    "since": "Créée le",
+    "before": "Ses demandes précédentes",
+    "firstRequest": "Première demande de cette boutique.",
+    "approve": "Accepter",
+    "reject": "Refuser",
+    "revoke": "Retirer la validation",
+    "approved": "Demande acceptée : la boutique peut payer.",
+    "rejected": "Demande refusée.",
+    "revoked": "Validation retirée.",
+    "waitingPayment": "Acceptée : en attente du paiement de la boutique.",
+    "rejectTitle": "Refuser cette demande ?",
+    "rejectBody": "La boutique lit votre motif et peut faire une autre demande.",
+    "rejectOpeningBody": "La boutique passe « refusée » avec votre motif ; son propriétaire peut corriger et redemander l'ouverture.",
+    "rejectPlaceholder": "Ce qui manque, ce qu'il faut corriger…",
+    "revokeTitle": "Retirer la validation ?",
+    "revokeBody": "La boutique ne pourra plus payer cette demande. Une commande laissée « à régler » sans reçu est annulée avec elle."
   }
 }

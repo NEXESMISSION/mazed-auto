@@ -38,6 +38,8 @@ export type EditableProduct = {
   durationDays: number | null;
   isActive: boolean;
   sortOrder: number;
+  /** A shop plan's room (0188): annonces live at once, per bucket. */
+  limits: { vehicles: number; parts: number } | null;
 };
 
 export function ProductEditor({
@@ -66,10 +68,16 @@ export function ProductEditor({
   const [duration, setDuration] = useState<number | null>(product?.durationDays ?? null);
   const [isActive, setIsActive] = useState(product?.isActive ?? false);
   const [sortOrder, setSortOrder] = useState<number | null>(product?.sortOrder ?? 100);
+  const [vehicles, setVehicles] = useState<number | null>(product?.limits?.vehicles ?? null);
+  const [parts, setParts] = useState<number | null>(product?.limits?.parts ?? null);
 
   const isNew = product === null;
   const needsQuota = kind === "listing_pack" || kind === "subscription";
-  const needsDuration = kind === "badge_verified" || kind === "listing_single" || kind === "renewal";
+  // A plan's period and a boost's days are what the capture grants (0191):
+  // left out of the form, saving the row used to send them back as null.
+  const needsDuration = kind === "badge_verified" || kind === "listing_single" || kind === "renewal"
+    || kind === "subscription" || kind === "promo";
+  const isPlan = kind === "subscription";
   const perCategory = kind === "listing_single";
 
   async function save() {
@@ -84,6 +92,7 @@ export function ProductEditor({
       duration_days: needsDuration ? duration : null,
       is_active: isActive,
       sort_order: sortOrder,
+      ...(isPlan && vehicles != null && parts != null ? { limits: { vehicles, parts } } : {}),
     };
     const ok = await run({
       url: "/api/admin/products",
@@ -184,15 +193,48 @@ export function ProductEditor({
             />
           )}
 
+          {isPlan && (
+            <FieldGrid>
+              <NumberField
+                label={te("planVehicles")}
+                value={vehicles}
+                onChange={setVehicles}
+                min={0}
+                required
+                suffix={te("quotaSuffix")}
+                hint={te("planVehiclesHint")}
+              />
+              <NumberField
+                label={te("planParts")}
+                value={parts}
+                onChange={setParts}
+                min={0}
+                required
+                suffix={te("quotaSuffix")}
+                hint={te("planPartsHint")}
+              />
+            </FieldGrid>
+          )}
+
           {needsDuration && (
             <NumberField
-              label={kind === "badge_verified" ? te("badgeValidity") : te("duration")}
+              label={
+                kind === "badge_verified" ? te("badgeValidity")
+                  : isPlan ? te("planDuration")
+                    : kind === "promo" ? te("boostDuration")
+                      : te("duration")
+              }
               value={duration}
               onChange={setDuration}
               min={1}
-              required={kind === "badge_verified"}
+              required={kind === "badge_verified" || isPlan || kind === "promo"}
               suffix={te("daysSuffix")}
-              hint={kind === "badge_verified" ? te("badgeHint") : te("durationHint")}
+              hint={
+                kind === "badge_verified" ? te("badgeHint")
+                  : isPlan ? te("planDurationHint")
+                    : kind === "promo" ? te("boostDurationHint")
+                      : te("durationHint")
+              }
             />
           )}
 

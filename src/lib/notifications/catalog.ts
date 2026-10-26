@@ -171,6 +171,29 @@ export const NOTIFICATION_KINDS: Record<string, NotificationKindDef> = {
     href: () => "/account/payments",
   },
 
+  // ── A shop's requests to the back office (0196) ─────────────────────────
+  pro_request_approved: {
+    icon: "check",
+    tone: "good",
+    audience: "seller",
+    label: "Demande acceptée",
+    href: () => "/pro/dashboard/abonnement",
+  },
+  pro_request_rejected: {
+    icon: "x",
+    tone: "bad",
+    audience: "seller",
+    label: "Demande refusée",
+    href: () => "/pro/dashboard/abonnement",
+  },
+  pro_request_revoked: {
+    icon: "x",
+    tone: "bad",
+    audience: "seller",
+    label: "Validation retirée",
+    href: () => "/pro/dashboard/abonnement",
+  },
+
   // ── From us ─────────────────────────────────────────────────────────────
   announcement: { icon: "megaphone", tone: "info", audience: "buyer", label: "Information", href: () => "/" },
   maintenance: { icon: "wrench", tone: "warn", audience: "buyer", label: "Maintenance", href: () => "/" },

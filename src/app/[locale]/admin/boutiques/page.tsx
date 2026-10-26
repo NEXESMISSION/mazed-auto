@@ -27,7 +27,8 @@ export const revalidate = 0;
 const PAGE_SIZE = 30;
 type TabKey = "todo" | "active" | "stopped" | "all";
 const TAB_ORDER: TabKey[] = ["todo", "active", "stopped", "all"];
-const TODO_FILTER = "verification_status.eq.pending,status.eq.pending_review";
+// Papers to look at. A shop asking to open is answered under Demandes (0196).
+const TODO_FILTER = "verification_status.eq.pending";
 
 type Admin = NonNullable<ReturnType<typeof getServiceSupabase>>;
 type T = Awaited<ReturnType<typeof getTranslations>>;
@@ -289,7 +290,7 @@ async function loadShop(admin: Admin, id: string, t: T, locale: string): Promise
     .maybeSingle();
   if (!s) return null;
 
-  const [ownerRes, privRes, docsRes, subsRes, paysRes, listingsRes, plansRes, auditShop, auditDocs, auditListings] = await Promise.all([
+  const [ownerRes, privRes, docsRes, subsRes, paysRes, listingsRes, plansRes, auditShop, auditDocs, auditListings, requestsRes] = await Promise.all([
     admin.from("profiles").select("full_name, phone").eq("id", s.owner_id).maybeSingle(),
     admin.from("shop_private").select("legal_name, tax_id, rne_number, legal_address, contact_email").eq("shop_id", id).maybeSingle(),
     admin.from("shop_documents").select("id, kind, status, note, created_at, reviewed_at").eq("shop_id", id).order("created_at", { ascending: false }),
@@ -300,6 +301,7 @@ async function loadShop(admin: Admin, id: string, t: T, locale: string): Promise
     admin.from("audit_logs").select("id, actor_id, entity, action, before, after, reason, created_at").eq("entity", "shop").eq("entity_id", id).order("created_at", { ascending: false }).limit(30),
     admin.from("audit_logs").select("id, actor_id, entity, action, before, after, reason, created_at").eq("entity", "shop_document").eq("after->>shop_id", id).order("created_at", { ascending: false }).limit(30),
     admin.from("audit_logs").select("id, actor_id, entity, action, before, after, reason, created_at").eq("entity", "listing").eq("after->>shop_id", id).order("created_at", { ascending: false }).limit(30),
+    admin.from("pro_requests").select("id, kind, status, created_at, product:products (name_fr, name_ar)").eq("shop_id", id).order("created_at", { ascending: false }).limit(10),
   ]);
   const subIds = (subsRes.data ?? []).map((r) => r.id as string);
   const { data: auditSubs } = subIds.length
@@ -366,6 +368,16 @@ async function loadShop(admin: Admin, id: string, t: T, locale: string): Promise
       provider: p.provider as string, createdAt: p.created_at as string, receipt: (p.receipt_number as string | null) ?? null,
     })),
     listings: counts,
+    requests: (requestsRes.data ?? []).map((q) => {
+      const prod = one(q.product as { name_fr: string; name_ar: string | null } | { name_fr: string; name_ar: string | null }[] | null);
+      return {
+        id: q.id as string,
+        kind: q.kind as string,
+        status: q.status as string,
+        createdAt: q.created_at as string,
+        product: prod ? productName({ nameFr: prod.name_fr, nameAr: prod.name_ar }, locale) : "—",
+      };
+    }),
     plans: (plansRes.data ?? []).map((p) => {
       const name = productName({ nameFr: p.name_fr as string, nameAr: (p.name_ar as string | null) ?? null }, locale);
       return { code: p.plan_code as string, label: p.is_active ? name : t("shops.notSold", { name }) };

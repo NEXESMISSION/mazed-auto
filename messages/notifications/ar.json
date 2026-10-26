@@ -143,6 +143,18 @@
     "admin_email_deadletter": {
       "title": "رسائل بريد إلكتروني لم تُسلَّم",
       "body": "تعذّر إرسال رسائل بريد إلكتروني مهمّة. تحقّق من مزوّد البريد واتصل بالمستخدمين المعنيين."
+    },
+    "pro_request_approved": {
+      "title": "قُبل طلبك",
+      "body": "قُبل طلبك «{listing}»: يمكنك الدفع لتفعيله."
+    },
+    "pro_request_rejected": {
+      "title": "رُفض طلبك",
+      "body": "لم يُقبل طلبك «{listing}». السبب: {reason}"
+    },
+    "pro_request_revoked": {
+      "title": "سُحبت الموافقة",
+      "body": "سُحبت الموافقة على طلبك «{listing}». السبب: {reason}"
     }
   },
   "email": {

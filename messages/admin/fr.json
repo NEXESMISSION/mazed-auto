@@ -37,6 +37,10 @@
       "site": {
         "label": "Site",
         "hint": "Accueil, popups, documents, diffusions, réglages, journal"
+      },
+      "demandes": {
+        "label": "Demandes",
+        "hint": "Ouvertures de boutique et formules à valider"
       }
     }
   },
@@ -127,6 +131,10 @@
       "expired": {
         "label": "Expirées",
         "sub": "Hors ligne, renouvelables"
+      },
+      "requests": {
+        "label": "Demandes des boutiques",
+        "sub": "Ouvertures et formules à valider avant paiement"
       }
     },
     "recentTitle": "Derniers gestes",
@@ -269,6 +277,34 @@
         "title": "Prix et forfaits",
         "body": "Le prix d'une publication, les packs, les mises en avant et le badge ne se règlent plus ici. Une seule table décide, et c'est celle que le vendeur paie.",
         "open": "Ouvrir Offres & prix"
+      },
+      "rules": {
+        "title": "Règles pro",
+        "body": "Ce que notre équipe valide avant qu'une boutique puisse payer. Une demande validée se paie ensuite comme d'habitude ; une demande refusée l'est avec un motif que la boutique lit. Rien ne change pour ce qui est déjà ouvert ou déjà payé.",
+        "kinds": {
+          "opening": {
+            "label": "Ouverture d'une boutique",
+            "hint": "La première formule d'une boutique : elle reste en attente de validation jusqu'à votre réponse."
+          },
+          "plan_change": {
+            "label": "Changement de formule",
+            "hint": "Une formule différente de la dernière de la boutique (Starter → Pro…)."
+          },
+          "renewal": {
+            "label": "Renouvellement",
+            "hint": "La même formule pour une nouvelle période."
+          },
+          "boost": {
+            "label": "Boost d'une annonce",
+            "hint": "Une mise en avant de 7 jours sur une annonce de boutique."
+          }
+        },
+        "grace": "Délai de grâce",
+        "graceSuffix": "jours",
+        "graceHint": "Après la fin d'un abonnement, les annonces restent en ligne pendant ce délai, puis passent en pause. S'applique aux périodes achetées ou offertes ensuite.",
+        "queue": "Les demandes à valider sont dans",
+        "openQueue": "Demandes",
+        "success": "Règles pro enregistrées."
       }
     }
   },
@@ -425,7 +461,15 @@
       "withdrawTitle": "Retirer cette offre de la vente ?",
       "withdrawBody": "Elle disparaît de la page Tarifs. Elle n'est jamais supprimée : des paiements et des forfaits déjà vendus y font référence.",
       "withdrawConfirm": "Retirer",
-      "withdrawn": "Offre retirée de la vente."
+      "withdrawn": "Offre retirée de la vente.",
+      "planVehicles": "Véhicules en ligne",
+      "planVehiclesHint": "Pour une boutique de vente ou de location.",
+      "planParts": "Pièces en ligne",
+      "planPartsHint": "Pour une boutique de pièces. S'applique aux périodes achetées ensuite ; celles en cours gardent leurs limites.",
+      "planDuration": "Durée d'une période",
+      "planDurationHint": "Ce que la boutique obtient pour un paiement.",
+      "boostDuration": "Durée du boost",
+      "boostDurationHint": "Combien de jours l'annonce reste mise en avant."
     }
   },
   "popups": {

@@ -78,7 +78,9 @@
     "failed": "Création impossible.",
     "savedNoPlan": "Boutique enregistrée. Nous vous contactons pour l'ouvrir.",
     "payUnavailable": "Paiement indisponible pour le moment. Votre boutique est enregistrée.",
-    "network": "Erreur réseau."
+    "network": "Erreur réseau.",
+    "sendRequest": "Envoyer ma demande",
+    "approvalHint": "Notre équipe valide votre demande avant tout paiement : vous payez une fois la demande acceptée."
   },
   "layout": {
     "metaTitle": "Espace pro — Mazed Auto",
@@ -120,7 +122,11 @@
       "missingLogo": "un logo",
       "missingDescription": "une description",
       "missingPhone": "un numéro",
-      "rejected": "{count, plural, one {# annonce à corriger.} other {# annonces à corriger.}}"
+      "rejected": "{count, plural, one {# annonce à corriger.} other {# annonces à corriger.}}",
+      "draftApproval": "Choisissez une formule et envoyez votre demande d'ouverture : notre équipe la valide, puis vous payez.",
+      "requestPending": "Votre demande d'ouverture ({plan}) est en cours de validation par notre équipe.",
+      "requestApproved": "Demande acceptée : payez votre formule {plan} pour ouvrir votre boutique.",
+      "shopRefused": "Demande d'ouverture refusée : {reason}"
     },
     "cta": {
       "choose": "Choisir",
@@ -128,7 +134,9 @@
       "renew": "Renouveler",
       "manage": "Gérer",
       "complete": "Compléter",
-      "see": "Voir"
+      "see": "Voir",
+      "pay": "Payer",
+      "askAgain": "Refaire une demande"
     },
     "online": "Annonces en ligne",
     "onlineHint": "En vérification ou publiées. Les brouillons et les annonces retirées ne comptent pas.",
@@ -231,7 +239,27 @@
     "kindSubscription": "Abonnement",
     "kindBoost": "Boost 7 jours",
     "receipt": "Reçu {number}",
-    "settle": "Régler"
+    "settle": "Régler",
+    "ask": "Demander",
+    "approvalHint": "Notre équipe valide votre demande avant le paiement : vous ne payez rien avant sa réponse.",
+    "draftHintApproval": "Choisissez une formule et envoyez votre demande : notre équipe la valide, puis vous payez et votre boutique ouvre.",
+    "requests": {
+      "title": "Vos demandes",
+      "kind": {
+        "opening": "Ouverture",
+        "plan_change": "Changement de formule",
+        "renewal": "Renouvellement",
+        "boost": "Boost"
+      },
+      "pending": "En attente de validation par notre équipe — envoyée le {date}.",
+      "approved": "Acceptée le {date} : payez pour l'activer.",
+      "rejected": "Refusée : {reason}",
+      "revoked": "Validation retirée : {reason}",
+      "askAgain": "Vous pouvez faire une nouvelle demande ci-dessous.",
+      "pay": "Payer {price} {currency}",
+      "cancel": "Annuler la demande",
+      "confirmCancel": "Annuler cette demande ?"
+    }
   },
   "paymentStatus": {
     "checking": "Vérification de votre paiement…",
@@ -366,6 +394,19 @@
     "tooMany": "Dix justificatifs au plus.",
     "fileMissing": "Le fichier n'a pas été reçu.",
     "badEmail": "Adresse e-mail invalide.",
-    "badTransition": "Cette annonce ne peut pas changer d'état ainsi."
+    "badTransition": "Cette annonce ne peut pas changer d'état ainsi.",
+    "requestPending": "Une demande est déjà en cours de validation pour cette boutique.",
+    "requestApprovedOther": "Votre demande acceptée porte sur une autre offre : payez-la, ou annulez-la pour en choisir une autre.",
+    "approvalRequired": "Cet achat doit d'abord être validé par notre équipe. Réessayez pour envoyer la demande.",
+    "requested": {
+      "opening": "Demande envoyée : notre équipe valide l'ouverture de votre boutique, puis vous payez.",
+      "plan_change": "Demande envoyée : notre équipe valide le changement de formule, puis vous payez.",
+      "renewal": "Demande envoyée : notre équipe valide le renouvellement, puis vous payez.",
+      "boost": "Demande envoyée : notre équipe valide le boost, puis vous payez."
+    },
+    "requestNotFound": "Demande introuvable.",
+    "requestClosed": "Cette demande est déjà traitée.",
+    "requestPaying": "Un paiement est en cours pour cette demande : attendez sa vérification.",
+    "requestCancelled": "Demande annulée."
   }
 }

@@ -9,6 +9,7 @@ import { quotaStatus } from "@/lib/shops/server";
 import { shopsGate } from "@/lib/shops/public";
 import { isShopVerified } from "@/lib/shops/format";
 import type { ListingType } from "@/lib/publication";
+import { approvalsSetting, isolated, requestProductName, shopRequests } from "@/lib/shops/approvals";
 import { AlertTriangle, BadgeCheck, CalendarClock, Eye, Megaphone, Plus } from "lucide-react";
 
 /**
@@ -22,7 +23,7 @@ export default async function ProSummaryPage() {
   if (ctx.kind !== "shop") return null; // the layout already answered
   const { admin, user, shop } = ctx;
 
-  const [quota, subRes, countRes, gate] = await Promise.all([
+  const [quota, subRes, countRes, gate, approvals, requests] = await Promise.all([
     quotaStatus(admin, user.id, shop.id, shop.activity_type as ListingType),
     admin
       .from("subscriptions")
@@ -34,6 +35,8 @@ export default async function ProSummaryPage() {
       .maybeSingle(),
     admin.from("listings").select("status").eq("shop_id", shop.id),
     shopsGate(admin),
+    approvalsSetting(admin),
+    shopRequests(admin, shop.id),
   ]);
 
   const locale = await getLocale();
@@ -57,18 +60,38 @@ export default async function ProSummaryPage() {
   const pct = quota.limit > 0 ? Math.min(100, Math.round((quota.used / quota.limit) * 100)) : 0;
   const date = (iso: string) => formatDate(iso, locale);
 
+  // The opening the back office is looking at, or has answered (0196).
+  const opening = requests.open.find((r) => r.kind === "opening") ?? null;
+  const openingPlan = opening ? requestProductName(opening, locale) : "";
+
   // What needs doing, most urgent first.
   const alerts: { tone: "bad" | "warn"; text: string; href?: string; cta?: string }[] = [];
   if (shop.status === "suspended") {
     // The reason is the admin's own words, shown as written.
     alerts.push({ tone: "bad", text: shop.rejection_reason ? t("alerts.suspendedBecause", { reason: shop.rejection_reason }) : t("alerts.suspended") });
+  } else if (opening?.status === "approved") {
+    alerts.push({ tone: "warn", text: t("alerts.requestApproved", { plan: openingPlan }), href: "/pro/dashboard/abonnement", cta: t("cta.pay") });
+  } else if (opening?.status === "pending") {
+    alerts.push({ tone: "warn", text: t("alerts.requestPending", { plan: openingPlan }) });
+  } else if (shop.status === "rejected") {
+    alerts.push({
+      tone: "bad",
+      text: shop.rejection_reason ? t("alerts.shopRefused", { reason: isolated(shop.rejection_reason) }) : t("alerts.pending"),
+      ...(approvals.opening ? { href: "/pro/dashboard/abonnement", cta: t("cta.askAgain") } : {}),
+    });
   } else if (shop.status === "draft") {
-    alerts.push({ tone: "warn", text: t("alerts.draft"), href: "/pro/dashboard/abonnement", cta: t("cta.choose") });
+    alerts.push({
+      tone: "warn",
+      text: approvals.opening ? t("alerts.draftApproval") : t("alerts.draft"),
+      href: "/pro/dashboard/abonnement",
+      cta: t("cta.choose"),
+    });
   } else if (shop.status !== "active") {
     alerts.push({ tone: "warn", text: t("alerts.pending") });
   }
-  // A draft has never had a period; the line above already says what to do.
-  if (!current && !inGrace && shop.status !== "draft") {
+  // A shop that has not opened yet never had a period; the line above already
+  // says what to do.
+  if (!current && !inGrace && !["draft", "pending_review", "rejected"].includes(shop.status)) {
     alerts.push({ tone: "bad", text: t("alerts.noSubscription"), href: "/pro/dashboard/abonnement", cta: t("cta.choosePlan") });
   } else if (inGrace) {
     alerts.push({ tone: "bad", text: t("alerts.grace", { ended: date(sub!.ends_at), grace: date(sub!.grace_ends_at) }), href: "/pro/dashboard/abonnement", cta: t("cta.renew") });

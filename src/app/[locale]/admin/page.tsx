@@ -52,6 +52,7 @@ export default async function AdminDashboard() {
   const [
     listingsPending, listingsOverdue, listingsToday,
     paymentsPending, paymentsOverdue,
+    requestsPending, requestsOverdue,
     expiringSoon, expired,
     recent,
   ] = await Promise.all([
@@ -60,6 +61,8 @@ export default async function AdminDashboard() {
     head("listings").eq("status", "published").gte("published_at", today),
     head("payments").eq("status", "pending_review"),
     head("payments").eq("status", "pending_review").lt("created_at", overdue),
+    head("pro_requests").eq("status", "pending"),
+    head("pro_requests").eq("status", "pending").lt("created_at", overdue),
     head("listings").eq("status", "published").not("expires_at", "is", null)
       .gte("expires_at", nowIso).lte("expires_at", soon),
     head("listings").eq("status", "expired"),
@@ -102,6 +105,13 @@ export default async function AdminDashboard() {
       overdue: n(paymentsOverdue),
     },
     {
+      label: t("queues.requests.label"),
+      sub: t("queues.requests.sub"),
+      href: "/admin/demandes",
+      count: n(requestsPending),
+      overdue: n(requestsOverdue),
+    },
+    {
       label: t("queues.expiring.label"),
       sub: t("queues.expiring.sub"),
       href: "/admin/annonces?status=expiring",
@@ -117,8 +127,8 @@ export default async function AdminDashboard() {
     },
   ];
 
-  const totalPending = n(listingsPending) + n(paymentsPending);
-  const totalOverdue = n(listingsOverdue) + n(paymentsOverdue);
+  const totalPending = n(listingsPending) + n(paymentsPending) + n(requestsPending);
+  const totalOverdue = n(listingsOverdue) + n(paymentsOverdue) + n(requestsOverdue);
 
   return (
     <AdminPage>

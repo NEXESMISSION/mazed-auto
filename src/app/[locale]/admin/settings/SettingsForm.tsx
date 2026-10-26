@@ -5,7 +5,8 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { AdminButton } from "@/components/admin/AdminButton";
 import { useAdminAction, EYEBROW } from "@/components/admin/kit";
-import { Save, ArrowRight, Gift, Store } from "lucide-react";
+import { REQUEST_KINDS, type Approvals } from "@/lib/shops/approvals";
+import { Save, ArrowRight, Gift, Store, ClipboardCheck } from "lucide-react";
 
 /** The welcome allowance: the first `count` paid publications are offered. */
 export type FreeListings = { enabled: boolean; count: number };
@@ -22,10 +23,16 @@ export function SettingsForm({
   initialFree,
   initialPersonal,
   initialProShops,
+  initialApprovals,
+  initialGraceDays,
 }: {
   initialFree: FreeListings;
   initialPersonal: PersonalLimits;
   initialProShops: boolean;
+  /** What a shop must have approved before it pays (0196). */
+  initialApprovals: Approvals;
+  /** Days a lapsed shop's annonces stay up (0191). */
+  initialGraceDays: number;
 }) {
   const t = useTranslations("admin.settings.form");
   const [free, setFree] = useState<FreeListings>(initialFree);
@@ -34,6 +41,11 @@ export function SettingsForm({
   const personalAction = useAdminAction();
   const [proShops, setProShops] = useState(initialProShops);
   const shopsAction = useAdminAction();
+  const [approvals, setApprovals] = useState<Approvals>(initialApprovals);
+  const [graceDays, setGraceDays] = useState(initialGraceDays);
+  const rulesAction = useAdminAction();
+  const rulesDirty =
+    REQUEST_KINDS.some((k) => approvals[k] !== initialApprovals[k]) || graceDays !== initialGraceDays;
   const personalDirty =
     personal.vehicles !== initialPersonal.vehicles
     || personal.parts !== initialPersonal.parts
@@ -232,6 +244,75 @@ export function SettingsForm({
                 method: "POST",
                 body: { pro_shops: { enabled: proShops } },
                 success: proShops ? t("shops.successPublic") : t("shops.successPreview"),
+              })
+            }
+          >
+            {t("save")}
+          </AdminButton>
+        </div>
+      </section>
+
+      <section className="mt-8 border-t border-border pt-5">
+        <h2 className={EYEBROW}>{t("rules.title")}</h2>
+        <p className="mt-1.5 max-w-xl text-[12.5px] text-subtle">
+          {t("rules.body")}
+        </p>
+
+        <div className="mt-4 space-y-3">
+          {REQUEST_KINDS.map((k) => (
+            <label key={k} className="flex max-w-xl cursor-pointer items-start gap-2.5">
+              <input
+                type="checkbox"
+                checked={approvals[k]}
+                onChange={(e) => setApprovals((a) => ({ ...a, [k]: e.target.checked }))}
+                className="mt-0.5 size-4 shrink-0 accent-[var(--gold)]"
+              />
+              <span>
+                <span className="block text-[13px] font-medium text-foreground">{t(`rules.kinds.${k}.label`)}</span>
+                <span className="block text-[12px] text-subtle">{t(`rules.kinds.${k}.hint`)}</span>
+              </span>
+            </label>
+          ))}
+        </div>
+
+        <label className="mt-5 flex flex-wrap items-center gap-2.5">
+          <span className="text-[13px] font-medium text-foreground">{t("rules.grace")}</span>
+          <input
+            type="number"
+            min={0}
+            max={30}
+            value={graceDays}
+            onChange={(e) => setGraceDays(Math.min(30, whole(e.target.value)))}
+            className="w-20 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-[13px] tabular-nums text-foreground focus:border-[var(--gold)] focus:outline-none"
+          />
+          <span className="text-[12px] text-subtle">{t("rules.graceSuffix")}</span>
+        </label>
+        <p className="mt-1.5 max-w-xl text-[12px] text-subtle">{t("rules.graceHint")}</p>
+
+        <p className="mt-3 inline-flex items-center gap-1.5 text-[12px] text-subtle">
+          <ClipboardCheck className="size-3.5 shrink-0" />
+          {t("rules.queue")}
+          <Link href={"/admin/demandes" as never} className="font-medium text-[var(--gold)] hover:underline">
+            {t("rules.openQueue")}
+          </Link>
+        </p>
+
+        <div className="mt-4 flex items-center gap-3">
+          <AdminButton
+            variant="primary"
+            size="md"
+            pending={rulesAction.pending}
+            done={rulesAction.done}
+            doneLabel={t("saved")}
+            disabled={!rulesDirty}
+            disabledReason={t("unchanged")}
+            icon={<Save className="size-3.5" strokeWidth={2.4} />}
+            onClick={() =>
+              rulesAction.run({
+                url: "/api/admin/settings",
+                method: "POST",
+                body: { pro_approvals: approvals, pro_grace_days: graceDays },
+                success: t("rules.success"),
               })
             }
           >

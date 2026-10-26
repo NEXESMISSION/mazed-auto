@@ -50,7 +50,7 @@ export default async function AdminOffresPage({
   if (!admin) return <p className="text-[13px] text-muted">{t("unconfigured")}</p>;
 
   const [prodRes, catRes] = await Promise.all([
-    admin.from("products").select(PRODUCT_SELECT).order("sort_order").order("created_at"),
+    admin.from("products").select(`${PRODUCT_SELECT}, limits`).order("sort_order").order("created_at"),
     admin
       .from("categories")
       .select("id, slug, label_fr, label_ar, parent_id, sort_order")
@@ -85,6 +85,8 @@ export default async function AdminOffresPage({
         durationDays: selected.durationDays,
         isActive: selected.isActive,
         sortOrder: selected.sortOrder,
+        limits: (((prodRes.data ?? []) as unknown as { id: string; limits: { vehicles: number; parts: number } | null }[])
+          .find((r) => r.id === selected.id)?.limits) ?? null,
       }
     : null;
 

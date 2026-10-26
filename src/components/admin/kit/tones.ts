@@ -84,6 +84,10 @@ const STATUS: Record<string, Entry> = {
   verified: { label: "Vérifiée", ar: "موثّق", tone: "info" },
   submitted: { label: "À examiner", ar: "للفحص", tone: "warn" },
   accepted: { label: "Accepté", ar: "مقبول", tone: "ok" },
+  // pro_requests (0196) — pending and rejected read as above
+  approved: { label: "Acceptée", ar: "مقبول", tone: "ok" },
+  cancelled: { label: "Annulée", ar: "ملغى", tone: "neutral" },
+  completed: { label: "Payée", ar: "مدفوع", tone: "info" },
 
   // payment_status — `pending_review` is shared with listings above and means
   // the same thing to an admin: a human has to look at it.

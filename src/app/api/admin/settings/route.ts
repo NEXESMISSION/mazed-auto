@@ -3,6 +3,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
+import { REQUEST_KINDS } from "@/lib/shops/approvals";
 
 /**
  * Réglages — the settings that are NOT prices.
@@ -32,6 +33,9 @@ const MAX_FREE = 50;
 /** Ceilings for the personal limits — beyond these a seller is a shop. */
 const MAX_PERSONAL_VEHICLES = 20;
 const MAX_PERSONAL_PARTS = 100;
+
+/** A month of grace at most: past that, a lapsed shop is simply open for free. */
+const MAX_GRACE_DAYS = 30;
 
 export async function POST(req: NextRequest) {
   const gate = await requireAdmin(req);
@@ -76,6 +80,25 @@ export async function POST(req: NextRequest) {
   if (body.pro_shops && typeof body.pro_shops === "object") {
     const raw = body.pro_shops as { enabled?: unknown };
     rows.push({ key: "pro_shops", value: { enabled: raw.enabled === true }, updated_by: user.id });
+  }
+
+  // What a shop must have approved before it may pay (0196): its opening, a
+  // change of plan, a renewal, a boost. Every key written, so the database
+  // never falls back to a default the admin did not see on this screen.
+  if (body.pro_approvals && typeof body.pro_approvals === "object") {
+    const raw = body.pro_approvals as Record<string, unknown>;
+    rows.push({
+      key: "pro_approvals",
+      value: Object.fromEntries(REQUEST_KINDS.map((k) => [k, raw[k] === true])),
+      updated_by: user.id,
+    });
+  }
+
+  // Days a shop's annonces stay up after its period ends (0191, 0192). Read
+  // when a period is bought or given: a change applies to the next ones.
+  if ("pro_grace_days" in body) {
+    const days = Math.min(Math.max(Math.trunc(Number(body.pro_grace_days) || 0), 0), MAX_GRACE_DAYS);
+    rows.push({ key: "pro_grace_days", value: days, updated_by: user.id });
   }
 
   if (rows.length === 0) {

@@ -5,6 +5,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { shopsGate } from "@/lib/shops/public";
 import { getProContext } from "@/lib/shops/proContext";
 import { plansForSale } from "@/lib/shops/plans";
+import { approvalsSetting } from "@/lib/shops/approvals";
 import { ShopsPreviewBanner } from "../../boutiques/ShopsPreviewBanner";
 import { CreateShopWizard } from "./CreateShopWizard";
 
@@ -36,7 +37,7 @@ export default async function CreateShopPage() {
   if (!gate.visible) notFound();
   if (ctx.kind === "shop") redirect(`/${locale}/pro/dashboard`);
 
-  const plans = await plansForSale(admin);
+  const [plans, approvals] = await Promise.all([plansForSale(admin), approvalsSetting(admin)]);
   const t = await getTranslations("pro.create");
   return (
     <main className="mx-auto max-w-2xl px-4 pb-16 pt-6 lg:pt-10">
@@ -46,7 +47,7 @@ export default async function CreateShopPage() {
       <p className="mt-1.5 text-[13px] text-muted">
         {t("intro")}
       </p>
-      <CreateShopWizard plans={plans} />
+      <CreateShopWizard plans={plans} approval={approvals.opening} />
     </main>
   );
 }

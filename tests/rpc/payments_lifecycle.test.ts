@@ -27,6 +27,7 @@ let vehicleCat: string;
 let starter: { id: string; price: number };
 let business: { id: string; price: number };
 let boost: { id: string; price: number };
+let savedApprovals: unknown;
 const users: TestUser[] = [];
 const shops: string[] = [];
 
@@ -108,9 +109,19 @@ beforeAll(async () => {
   starter = by("plan-starter");
   business = by("plan-business");
   boost = by("boost-7j");
+  // What happens once money is confirmed is this suite's subject; whether a
+  // purchase needed an admin first (0196) is pro_approvals.test.ts's. With the
+  // approvals on, every order here would stop at the request.
+  savedApprovals = (await db.query(`select value from app_settings where key = 'pro_approvals'`)).rows[0]?.value;
+  await db.query(
+    `update app_settings set value = '{"opening": false, "plan_change": false, "renewal": false, "boost": false}' where key = 'pro_approvals'`,
+  );
 });
 
 afterAll(async () => {
+  if (savedApprovals !== undefined) {
+    await db.query(`update app_settings set value = $1 where key = 'pro_approvals'`, [JSON.stringify(savedApprovals)]);
+  }
   for (const s of shops) {
     await db.query(`delete from boosts where shop_id=$1`, [s]);
     await db.query(`delete from listings where shop_id=$1`, [s]);

@@ -40,7 +40,7 @@ export function PostButton({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body ?? {}),
       });
-      const j = (await res.json().catch(() => ({}))) as { redirect?: string; detail?: string; error?: string };
+      const j = (await res.json().catch(() => ({}))) as { redirect?: string; detail?: string; error?: string; message?: string };
       if (!res.ok) {
         toast(j.detail ?? t("failed"), "error");
         return;
@@ -50,7 +50,10 @@ export function PostButton({
         else router.push(j.redirect as never);
         return;
       }
-      if (success) toast(success, "success");
+      // The route's own words when it has some — « demande envoyée » rather
+      // than the caller's generic success.
+      if (j.message) toast(j.message, "success");
+      else if (success) toast(success, "success");
       router.refresh();
     } catch {
       toast(t("network"), "error");

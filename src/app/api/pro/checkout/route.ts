@@ -29,6 +29,12 @@ import { manualPaymentOpen } from "@/lib/payments";
  * webhook or the return page has asked Konnect and it says « completed ».
  * Otherwise the existing transfer / D17 page, where the buyer uploads a
  * receipt and an admin captures it.
+ *
+ * APPROVAL FIRST (0196). When the back office wants to approve this kind of
+ * purchase (an opening, a plan change… `pro_approvals`), there is no order
+ * until an admin has said yes: the click files a request instead, answered
+ * `{ requested: true }`, and the same click after the yes is the order. The
+ * database refuses a payment row without that yes, whatever this route does.
  */
 export async function POST(req: NextRequest) {
   if (!isSameOrigin(req)) {
@@ -49,6 +55,7 @@ export async function POST(req: NextRequest) {
 
   let kind: "subscription" | "promo";
   let shopId: string | null = null;
+  let shopStatus: string | null = null;
   let listingId: string | null = null;
   type Offer = { id: string; slug: string; price: number; name_fr: string; plan_code: string | null };
   let product: Offer | null = null;
@@ -61,9 +68,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "not_shop_member", detail: (await apiTranslations(req, "pro.api"))("notShopMember") }, { status: 403 });
     }
     const { data: shop } = await admin.from("shops").select("status").eq("id", shopId).maybeSingle();
-    if (!shop || ["suspended", "closed", "rejected"].includes(shop.status as string)) {
+    // A refused shop may still ask to open again — that is decided below.
+    if (!shop || ["suspended", "closed"].includes(shop.status as string)) {
       return NextResponse.json({ error: "shop_not_allowed", detail: (await apiTranslations(req, "pro.api"))("shopNotAllowed") }, { status: 409 });
     }
+    shopStatus = shop.status as string;
     const { data } = await admin
       .from("products")
       .select("id, slug, price, name_fr, plan_code")
@@ -127,6 +136,61 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // ── The approval (0196) ──────────────────────────────────────────────────
+  let requestId: string | null = null;
+  if (shopId) {
+    const { data: reqKind } = await admin.rpc("pro_request_kind", { p_shop: shopId, p_product: product.id });
+    let open = admin
+      .from("pro_requests")
+      .select("id, status, product_id")
+      .eq("shop_id", shopId)
+      .in("status", ["pending", "approved"]);
+    open = reqKind === "boost" ? open.eq("kind", "boost").eq("listing_id", listingId ?? "") : open.neq("kind", "boost");
+    const { data: openReq } = reqKind ? await open.maybeSingle() : { data: null };
+    const need = reqKind ? (await admin.rpc("pro_approval_required", { p_kind: reqKind })).data === true : false;
+
+    if (shopStatus === "rejected" && !(need && reqKind === "opening")) {
+      return NextResponse.json({ error: "shop_not_allowed", detail: (await apiTranslations(req, "pro.api"))("shopNotAllowed") }, { status: 409 });
+    }
+    if (openReq?.status === "approved" && openReq.product_id === product.id) {
+      // The yes this click was waiting for: the order carries it.
+      requestId = openReq.id as string;
+    } else if (need) {
+      const t = await apiTranslations(req, "pro.api");
+      if (openReq) {
+        return NextResponse.json(
+          openReq.status === "pending"
+            ? { error: "request_pending", detail: t("requestPending") }
+            : { error: "request_approved_other", detail: t("requestApprovedOther") },
+          { status: 409 },
+        );
+      }
+      const { data: filed, error: reqErr } = await admin
+        .from("pro_requests")
+        .insert({ shop_id: shopId, product_id: product.id, requested_by: user.id, kind: reqKind, listing_id: listingId })
+        .select("id, kind")
+        .single();
+      if (reqErr || !filed) {
+        if (reqErr?.code === "23505") {
+          return NextResponse.json({ error: "request_pending", detail: t("requestPending") }, { status: 409 });
+        }
+        const known = ["shop_not_allowed", "not_published", "not_for_sale"].find((c) => reqErr?.message.includes(c));
+        if (known) {
+          const word = { shop_not_allowed: "shopNotAllowed", not_published: "notPublished", not_for_sale: "notForSale" }[known]!;
+          return NextResponse.json({ error: known, detail: t(word) }, { status: 409 });
+        }
+        return fail("request_create_failed", 500, reqErr);
+      }
+      logAction(req, user, `pro.request.${filed.kind as string}`, { requestId: filed.id, shopId, listingId });
+      return NextResponse.json({
+        requested: true,
+        requestId: filed.id,
+        kind: filed.kind,
+        message: t(`requested.${filed.kind as string}`),
+      });
+    }
+  }
+
   const cfg = body.provider === "manual" ? null : konnectConfig();
   const provider = cfg ? "konnect" : "bank_transfer";
   // Without Konnect the order is paid by transfer or D17: not before the back
@@ -167,6 +231,7 @@ export async function POST(req: NextRequest) {
     plan_code: product.plan_code,
     expected_amount: Number(product.price),
     ...(listingId ? { listing_id: listingId } : {}),
+    ...(requestId ? { request_id: requestId } : {}),
     initiated_at: new Date().toISOString(),
   };
   const { data: pay, error } = await admin
@@ -174,6 +239,13 @@ export async function POST(req: NextRequest) {
     .insert({ user_id: user.id, kind, provider, amount: product.price, status: "pending", shop_id: shopId, metadata })
     .select("id")
     .single();
+  if (error?.message.includes("approval_required")) {
+    // The setting changed between the check above and the order.
+    return NextResponse.json(
+      { error: "approval_required", detail: (await apiTranslations(req, "pro.api"))("approvalRequired") },
+      { status: 409 },
+    );
+  }
   if (error || !pay) return fail("payment_create_failed", 500, error);
 
   if (!cfg) {

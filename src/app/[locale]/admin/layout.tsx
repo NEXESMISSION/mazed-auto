@@ -40,8 +40,11 @@ export default async function AdminLayout({
   const countsPromise = Promise.all([
     head("listings")?.eq("status", "pending_review") ?? Promise.resolve({ count: 0 }),
     head("payments")?.eq("status", "pending_review") ?? Promise.resolve({ count: 0 }),
-    // A shop waiting for an admin: verification asked, or opening to review.
-    head("shops")?.or("verification_status.eq.pending,status.eq.pending_review") ?? Promise.resolve({ count: 0 }),
+    // What a shop asked for and waits on (0196) — an opening is one of these.
+    head("pro_requests")?.eq("status", "pending") ?? Promise.resolve({ count: 0 }),
+    // A shop waiting for an admin's look at its papers. Openings to review are
+    // counted under Demandes, not twice.
+    head("shops")?.eq("verification_status", "pending") ?? Promise.resolve({ count: 0 }),
   ]);
 
   const { locale } = await params;
@@ -50,10 +53,11 @@ export default async function AdminLayout({
   if (!user) redirect({ href: "/login", locale: locale as "fr" });
   if (!isAdmin) redirect({ href: "/", locale: locale as "fr" });
 
-  const [annonces, paiements, boutiques] = await countsPromise;
+  const [annonces, paiements, demandes, boutiques] = await countsPromise;
   const counts: AdminCounts = {
     annonces: annonces.count ?? 0,
     paiements: paiements.count ?? 0,
+    demandes: demandes.count ?? 0,
     boutiques: boutiques.count ?? 0,
   };
 

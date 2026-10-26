@@ -23,8 +23,12 @@ const input =
  * Three choices, then payment. The shop is created as a draft before the plan
  * is paid, so an interrupted payment loses nothing: the dashboard picks up
  * where this left off.
+ *
+ * When the back office approves openings first (`approval`, 0196), the last
+ * step sends a request instead of opening the payment: the dashboard shows it
+ * waiting, then the way to pay once it is accepted.
  */
-export function CreateShopWizard({ plans }: { plans: Plan[] }) {
+export function CreateShopWizard({ plans, approval = false }: { plans: Plan[]; approval?: boolean }) {
   const t = useTranslations("pro.create");
   const tb = useTranslations("pro.bucket");
   const locale = useLocale();
@@ -38,7 +42,12 @@ export function CreateShopWizard({ plans }: { plans: Plan[] }) {
 
   const post = async (url: string, body: unknown) => {
     const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-    return { ok: res.ok, j: (await res.json().catch(() => ({}))) as { id?: string; redirect?: string; detail?: string; shopId?: string } };
+    return {
+      ok: res.ok,
+      j: (await res.json().catch(() => ({}))) as {
+        id?: string; redirect?: string; detail?: string; shopId?: string; requested?: boolean; message?: string;
+      },
+    };
   };
 
   async function finish() {
@@ -52,6 +61,10 @@ export function CreateShopWizard({ plans }: { plans: Plan[] }) {
         return router.push("/pro/dashboard" as never);
       }
       const order = await post("/api/pro/checkout", { shop_id: shopId, plan_code: plan });
+      if (order.ok && order.j.requested) {
+        toast(order.j.message ?? t("sendRequest"), "success");
+        return router.push("/pro/dashboard/abonnement" as never);
+      }
       if (!order.ok || !order.j.redirect) {
         toast(order.j.detail ?? t("payUnavailable"), "error");
         return router.push("/pro/dashboard/abonnement" as never);
@@ -150,6 +163,7 @@ export function CreateShopWizard({ plans }: { plans: Plan[] }) {
             })
           )}
           <p className="text-[11.5px] text-muted">
+            {approval && <>{t("approvalHint")} </>}
             {t("renewHint")}
           </p>
           <div className="flex justify-between pt-1">
@@ -157,7 +171,7 @@ export function CreateShopWizard({ plans }: { plans: Plan[] }) {
             <button type="button" onClick={finish} disabled={busy}
               className="batta-btn-luxe tap-target inline-flex items-center gap-2 px-4 py-2.5 text-[13px] disabled:opacity-60">
               {busy && <Loader2 className="size-4 animate-spin" />}
-              {plans.length === 0 ? t("save") : t("payAndOpen")}
+              {plans.length === 0 ? t("save") : approval ? t("sendRequest") : t("payAndOpen")}
             </button>
           </div>
         </section>

@@ -32,6 +32,8 @@ export type ShopDetailData = {
   periods: { id: string; plan: string; startsAt: string; endsAt: string; graceEndsAt: string; status: string; origin: string }[];
   payments: { id: string; kind: string; amount: number; status: string; provider: string; createdAt: string; receipt: string | null }[];
   listings: Record<string, number>;
+  /** What the shop asked the back office for (0196), newest first. */
+  requests: { id: string; kind: string; status: string; createdAt: string; product: string }[];
   plans: { code: string; label: string }[];
   audit: {
     id: string; at: string; entity: string; action: string; actor: string;
@@ -270,6 +272,25 @@ export function ShopDetail({ shop, backHref }: { shop: ShopDetailData; backHref:
             </ul>
           )}
         </section>
+
+        {s.requests.length > 0 && (
+          <section className="mt-5 border-t border-border pt-4">
+            <h2 className={EYEBROW}>{t("requests.title")}</h2>
+            <ul className="mt-2 divide-y divide-border/70 text-[12.5px]">
+              {s.requests.map((q) => (
+                <li key={q.id}>
+                  <Link href={`/admin/demandes?status=all&a=${q.id}` as "/admin/demandes"} className="flex flex-wrap items-center gap-x-3 py-1.5 hover:text-[var(--gold)]">
+                    <span className="font-medium">
+                      {["opening", "plan_change", "renewal", "boost"].includes(q.kind) ? t(`requests.kind.${q.kind}`) : q.kind} · {q.product}
+                    </span>
+                    <StatusPill status={q.status} />
+                    <span className="text-[11.5px] text-subtle">{dt(q.createdAt)}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         <section className="mt-5 border-t border-border pt-4">
           <h2 className={EYEBROW}>{t("shop.payments")}</h2>

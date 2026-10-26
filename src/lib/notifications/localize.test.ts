@@ -35,6 +35,32 @@ describe("localizeNotification", () => {
     expect(out.body).toContain(ar.kinds.listing_rejected.returned);
   });
 
+  it("re-words a shop's answered request (0196) — the plan's name and the reason kept", () => {
+    // Exactly what admin_decide_pro_request stores.
+    const ok = { kind: "pro_request_approved", title: "Demande acceptée", body: "Votre demande « Starter » est acceptée : vous pouvez payer pour l'activer." };
+    const okAr = localizeNotification(ok, "ar", tAr);
+    expect(okAr.title).toBe(ar.kinds.pro_request_approved.title);
+    expect(okAr.body).toContain("Starter");
+    expect(okAr.body).toMatch(/\p{Script=Arabic}/u);
+
+    const no = {
+      kind: "pro_request_rejected",
+      title: "Demande refusée",
+      body: "Votre demande « Pro » n'a pas été acceptée. Motif : Envoyez d'abord votre patente.",
+    };
+    const noAr = localizeNotification(no, "ar", tAr);
+    expect(noAr.body).toContain("Pro");
+    expect(noAr.body).toContain("Envoyez d'abord votre patente");
+    expect(noAr.body).not.toContain("Motif");
+
+    const back = {
+      kind: "pro_request_revoked",
+      title: "Validation retirée",
+      body: "La validation de votre demande « Business » a été retirée. Motif : Documents à revoir",
+    };
+    expect(localizeNotification(back, "ar", tAr).body).toContain("Documents à revoir");
+  });
+
   it("keeps the stored body when the part it needs is not there", () => {
     const n = { kind: "listing_expired", title: "Annonce expirée", body: "Une annonce n'est plus visible." };
     expect(localizeNotification(n, "ar", tAr)).toEqual({ title: "انتهت صلاحية إعلانك", body: n.body });

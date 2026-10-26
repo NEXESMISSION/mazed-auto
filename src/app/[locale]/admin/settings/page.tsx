@@ -2,6 +2,7 @@ import { getTranslations } from "next-intl/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { AdminPage, EYEBROW } from "@/components/admin/kit";
 import { SiteTabs } from "@/components/admin/kit/SiteTabs";
+import { DEFAULT_APPROVALS, readApprovals, type Approvals } from "@/lib/shops/approvals";
 import {
   SettingsForm,
   type FreeListings,
@@ -37,13 +38,25 @@ export default async function AdminSettingsPage() {
   // The shapes 0189 seeds, for the same reason.
   let personal: PersonalLimits = { vehicles: 1, parts: 5, free: true };
   let proShops = false;
+  // The defaults the database falls back to (0196, 0189).
+  let approvals: Approvals = DEFAULT_APPROVALS;
+  let graceDays = 7;
 
   if (admin) {
     const { data } = await admin
       .from("app_settings")
       .select("key, value")
-      .in("key", ["free_listings", "personal_limits", "pro_shops"]);
+      .in("key", ["free_listings", "personal_limits", "pro_shops", "pro_approvals", "pro_grace_days"]);
     for (const row of data ?? []) {
+      if (row.key === "pro_approvals") {
+        approvals = readApprovals(row.value);
+        continue;
+      }
+      if (row.key === "pro_grace_days") {
+        const n = Number(row.value);
+        graceDays = Number.isFinite(n) ? n : 7;
+        continue;
+      }
       if (row.key === "free_listings") {
         const v = (row.value ?? {}) as { enabled?: boolean; count?: number };
         freeListings = { enabled: v.enabled === true, count: Number(v.count) || 0 };
@@ -78,6 +91,8 @@ export default async function AdminSettingsPage() {
         initialFree={freeListings}
         initialPersonal={personal}
         initialProShops={proShops}
+        initialApprovals={approvals}
+        initialGraceDays={graceDays}
       />
     </AdminPage>
   );
