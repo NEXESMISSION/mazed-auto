@@ -11,57 +11,96 @@
   "terms": {
     "s1": {
       "title": "1. Objet",
-      "body": "Les présentes conditions générales régissent l'utilisation de la plateforme Mazed Auto, place de marché d'enchères et de ventes automobiles en Tunisie. En créant un compte, vous acceptez ces conditions dans leur intégralité."
+      "body": "Mazed Auto est une plateforme de petites annonces pour les voitures, les autres véhicules et les pièces de rechange en Tunisie. Le prix est affiché sur l'annonce et l'acheteur contacte directement le vendeur. Les présentes conditions s'appliquent à toute personne qui utilise le site ; en créant un compte, vous les acceptez."
     },
     "s2": {
-      "title": "2. Compte et vérification",
-      "body": "Vous devez fournir des informations exactes lors de l'inscription. Une vérification d'identité (KYC) est requise avant de pouvoir enchérir ou acheter. Vous êtes responsable de la confidentialité de vos identifiants."
+      "title": "2. Le rôle de Mazed Auto",
+      "body": "Mazed Auto met en relation vendeurs et acheteurs. Nous ne sommes pas le vendeur, nous ne sommes pas partie à la vente et nous n'intervenons ni dans le paiement du véhicule ni dans sa remise. Nous ne détenons aucun fonds et ne prenons aucune commission sur la vente."
     },
     "s3": {
-      "title": "3. Enchères et achats",
-      "body": "Toute enchère constitue un engagement ferme. Une caution peut être exigée pour participer ; elle est remboursée si vous ne remportez pas l'enchère, et peut être retenue en cas de non-respect de vos engagements. Le gagnant s'engage à régler le solde dans les délais indiqués."
+      "title": "3. Votre compte",
+      "body": "Le compte se crée avec un numéro de téléphone, confirmé par un code SMS. Parcourir les annonces et appeler un vendeur ne demandent pas de compte ; publier une annonce ou enregistrer des favoris en demandent un. Vous fournissez des informations exactes et vous gardez votre mot de passe confidentiel : ce qui est fait depuis votre compte est sous votre responsabilité."
     },
     "s4": {
-      "title": "4. Frais",
-      "body": "La publication d'une annonce, les options de mise en avant et les commissions applicables sont affichées avant toute transaction. Les montants sont indiqués en dinars tunisiens (TND)."
+      "title": "4. Publier une annonce",
+      "body": "Vous ne publiez que des biens que vous avez le droit de vendre, avec des informations exactes et des photos réelles du bien. En publiant, vous signez une attestation sur l'exactitude de ce que vous déclarez. Chaque annonce est relue par notre équipe avant sa mise en ligne ; cette relecture ne garantit pas l'état du bien. Nous pouvons refuser une annonce en indiquant le motif (photos inexploitables, informations contradictoires, numéro injoignable, doublon…) ; vous pouvez la corriger et la renvoyer. Une annonce reste en ligne 30 jours et peut être renouvelée depuis « Mes annonces ».",
+      "body2": "Sont interdits : les biens volés ou dont la vente est illégale, les faux documents, les annonces trompeuses, les doublons et les coordonnées d'un tiers sans son accord."
     },
     "s5": {
-      "title": "5. Responsabilités",
-      "body": "Mazed Auto agit en tant qu'intermédiaire. La conformité juridique des biens, l'exactitude des informations fournies par les vendeurs et le bon déroulement des transactions relèvent de la responsabilité des parties. Nous recommandons une expertise indépendante avant d'enchérir."
+      "title": "5. Badges et diagnostic",
+      "body": "Le badge « Vérifié et approuvé » signifie que nos équipes ont inspecté le véhicule ; la fiche de diagnostic publiée sur l'annonce détaille ce qui a été constaté, à la date indiquée. Une annonce sans ce badge a seulement été relue avant publication. Le badge « Vendeur vérifié » est accordé à la main à des vendeurs professionnels après contrôle. Ni la relecture, ni le diagnostic, ni les badges ne constituent une garantie sur l'état du bien ou sur son évolution."
     },
     "s6": {
-      "title": "6. Résiliation",
-      "body": "Nous pouvons suspendre ou clôturer un compte en cas de fraude, d'abus ou de violation des présentes conditions."
+      "title": "6. Acheter",
+      "body": "La vente se conclut directement entre l'acheteur et le vendeur, aux conditions qu'ils fixent. Voyez le véhicule et ses documents avant de payer quoi que ce soit, et privilégiez un lieu public. Le transfert administratif (mutation) se fait selon la réglementation en vigueur."
     },
     "s7": {
-      "title": "7. Modifications",
-      "body": "Ces conditions peuvent évoluer. La version en vigueur est celle publiée sur cette page."
+      "title": "7. Frais",
+      "body": "Parcourir les annonces et contacter un vendeur sont gratuits. La publication d'une annonce est payante selon le tarif affiché au moment de publier ; certaines publications sont gratuites (notamment les pièces de rechange). Les options de mise en avant et les abonnements des boutiques professionnelles sont payants selon les tarifs affichés. Les montants sont en dinars tunisiens (TND). Une annonce refusée ne consomme pas la publication payée. En cas de fausse déclaration, l'annonce est retirée et les frais déjà réglés restent acquis."
+    },
+    "s8": {
+      "title": "8. Boutiques professionnelles",
+      "body": "Une boutique fournit des informations légales exactes (raison sociale, matricule fiscal, RNE…) et les justificatifs demandés ; ces documents servent à la vérification et ne sont pas publiés. La page de la boutique, ses coordonnées et ses annonces sont publiques. La publication des annonces d'une boutique sur ses réseaux sociaux ne se fait qu'avec son accord explicite, publication par publication."
+    },
+    "s9": {
+      "title": "9. Contenus et photos",
+      "body": "Vous restez propriétaire de vos textes et photos. Vous autorisez Mazed Auto à les afficher sur le site et à les utiliser pour présenter vos annonces. Les photos reçoivent la marque Mazed Auto pour limiter leur réutilisation sans autorisation."
+    },
+    "s10": {
+      "title": "10. Signalements, retrait et suspension",
+      "body": "Tout utilisateur peut nous signaler une annonce via la page Contact ; chaque signalement est examiné. Nous pouvons retirer une annonce, et suspendre ou clôturer un compte, en cas de fraude, d'abus, de fausse déclaration ou de non-respect des présentes conditions."
+    },
+    "s11": {
+      "title": "11. Responsabilité",
+      "body": "Les informations d'une annonce relèvent de la responsabilité de son auteur. Mazed Auto ne peut être tenu responsable de l'exactitude des annonces, de l'état des biens ni du déroulement des transactions entre utilisateurs. Nous faisons notre possible pour que le site reste disponible, sans pouvoir garantir une absence totale d'interruption."
+    },
+    "s12": {
+      "title": "12. Modifications et droit applicable",
+      "body": "Ces conditions peuvent évoluer ; la version en vigueur est celle publiée sur cette page, avec sa date de mise à jour. Elles sont régies par le droit tunisien."
     }
   },
   "privacy": {
     "s1": {
-      "title": "1. Données collectées",
-      "body": "Nous collectons les informations que vous fournissez (nom, e-mail, téléphone, gouvernorat, pièces d'identité pour la vérification) ainsi que les données d'usage nécessaires au fonctionnement du service."
+      "title": "1. Qui sommes-nous",
+      "body": "Mazed Auto est responsable des données traitées sur ce site. Pour toute question, écrivez-nous via la page Contact."
     },
     "s2": {
-      "title": "2. Utilisation",
-      "body": "Vos données servent à créer et sécuriser votre compte, vérifier votre identité, traiter les enchères et paiements, et vous envoyer des notifications liées à votre activité."
+      "title": "2. Données que nous collectons",
+      "items": {
+        "account": "Compte : nom, numéro de téléphone, gouvernorat et photo de profil si vous les indiquez, et votre mot de passe, conservé sous forme chiffrée.",
+        "listings": "Annonces : textes, photos, caractéristiques, prix, nom et numéro de contact.",
+        "shops": "Boutiques : informations légales (raison sociale, matricule fiscal, RNE, adresse), justificatifs, coordonnées et horaires.",
+        "payments": "Paiements des frais : montant, moyen, référence et reçu téléversé. Les données de carte bancaire sont traitées par le prestataire de paiement, jamais par nous.",
+        "usage": "Utilisation : pages consultées, adresse IP, type de navigateur, et statistiques de consultation des annonces et des boutiques."
+      }
     },
     "s3": {
-      "title": "3. Partage",
-      "body": "Vos données ne sont pas vendues. Elles peuvent être partagées avec des prestataires strictement nécessaires (paiement, hébergement) et avec les autorités lorsque la loi l'exige."
+      "title": "3. Pourquoi nous les utilisons",
+      "body": "Créer et sécuriser votre compte, relire les annonces avant publication, les afficher, permettre aux acheteurs de joindre le vendeur, traiter les paiements des frais, vous envoyer des SMS et des notifications liés à votre activité, fournir leurs statistiques aux boutiques, prévenir la fraude (par exemple en limitant l'affichage massif de numéros) et améliorer le service."
     },
     "s4": {
-      "title": "4. Conservation et sécurité",
-      "body": "Les documents d'identité sont stockés de manière sécurisée et accessibles uniquement aux fins de vérification. Nous appliquons des mesures techniques pour protéger vos données."
+      "title": "4. Ce qui est public",
+      "body": "Le contenu d'une annonce (titre, photos, prix, caractéristiques, gouvernorat, nom de contact) est public. Le numéro du vendeur s'affiche quand un visiteur le demande. La page d'une boutique (nom, adresse, horaires, téléphone) est publique. Les justificatifs des boutiques ne le sont jamais."
     },
     "s5": {
-      "title": "5. Vos droits",
-      "body": "Vous pouvez demander l'accès, la rectification ou la suppression de vos données en nous contactant à l'adresse indiquée sur la page Contact."
+      "title": "5. Partage",
+      "body": "Nous ne vendons pas vos données. Nous les partageons uniquement avec les prestataires nécessaires au service : hébergement, envoi de SMS, paiement en ligne, et — seulement pour les boutiques qui l'activent — les réseaux sociaux (Facebook, Instagram) et le service d'intelligence artificielle qui rédige un projet de publication à partir de l'annonce. Nous les communiquons aux autorités lorsque la loi l'exige."
     },
     "s6": {
-      "title": "6. Cookies",
-      "body": "Nous utilisons des cookies essentiels au fonctionnement du site et, le cas échéant, des cookies de mesure d'audience."
+      "title": "6. Durée de conservation",
+      "body": "Nous conservons vos données tant que votre compte est actif. L'adresse IP et le navigateur enregistrés dans nos journaux sont effacés après 30 jours ; les journaux de pages consultées après 90 jours ; les autres journaux après un an. Les notifications lues sont supprimées après 90 jours, et les statistiques des boutiques après environ 13 mois."
+    },
+    "s7": {
+      "title": "7. Sécurité",
+      "body": "Nous appliquons des mesures techniques pour protéger vos données : mots de passe chiffrés, accès restreint aux justificatifs (liens temporaires réservés à l'équipe), connexions chiffrées."
+    },
+    "s8": {
+      "title": "8. Vos droits",
+      "body": "Conformément à la loi organique n° 2004-63 du 27 juillet 2004, vous pouvez accéder à vos données, les faire rectifier, vous opposer à leur traitement et demander la suppression de votre compte, en nous écrivant via la page Contact."
+    },
+    "s9": {
+      "title": "9. Cookies",
+      "body": "Nous utilisons uniquement des cookies nécessaires au fonctionnement du site (connexion à votre compte, langue choisie), le stockage local de votre navigateur pour vos favoris et préférences, et une mesure d'audience anonyme, sans cookie publicitaire."
     }
   }
 }

@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { LegalPage } from "@/components/legal/LegalPage";
-import { PrivacyContent } from "@/components/legal/LegalContent";
+import { PrivacyContent, LEGAL_UPDATED } from "@/components/legal/LegalContent";
+import { formatDate } from "@/lib/dates";
 import { localeAlternates } from "@/i18n/alternates";
 
 type Props = { params: Promise<{ locale: string }> };
@@ -24,7 +25,7 @@ export default async function PrivacyPage({ params }: Props) {
   setRequestLocale(locale);
   const t = await getTranslations("legal");
   return (
-    <LegalPage eyebrow={t("page.eyebrow")} title={t("privacyTitle")} updated="2026">
+    <LegalPage eyebrow={t("page.eyebrow")} title={t("privacyTitle")} updated={formatDate(LEGAL_UPDATED, locale)}>
       <PrivacyContent />
     </LegalPage>
   );
