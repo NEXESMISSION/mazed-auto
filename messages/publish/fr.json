@@ -106,7 +106,8 @@
       "fuel": "Carburant",
       "transmission": "Boîte",
       "color": "Couleur",
-      "colorPlaceholder": "Blanc"
+      "colorOther": "Autre couleur",
+      "colorOtherPlaceholder": "Ex. : bicolore, gris métallisé"
     },
     "fitment": {
       "title": "Compatible avec",

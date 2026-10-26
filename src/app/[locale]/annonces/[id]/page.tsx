@@ -7,7 +7,7 @@ import { avatarUrl } from "@/lib/avatar";
 import { currencyLabel, formatTND } from "@/lib/utils";
 import { attributeLabel, attributeOptionLabel, categoryLabel, governorateLabel, unitLabel } from "@/lib/labels";
 import { formatDate } from "@/lib/dates";
-import { CONDITIONS, FUELS, TRANSMISSIONS, optionLabel } from "@/lib/vehicles";
+import { CAR_COLORS, CONDITIONS, FUELS, TRANSMISSIONS, optionLabel } from "@/lib/vehicles";
 import { jsonLdSafe } from "@/lib/jsonld";
 import { PhotoCarousel } from "@/components/listing/PhotoCarousel";
 import { ContactReveal } from "./ContactReveal";
@@ -48,6 +48,7 @@ const KNOWN_OPTIONS: Record<string, readonly { value: string; label: string }[]>
   fuel: FUELS,
   transmission: TRANSMISSIONS,
   condition: CONDITIONS,
+  color: CAR_COLORS,
 };
 
 export async function generateMetadata({

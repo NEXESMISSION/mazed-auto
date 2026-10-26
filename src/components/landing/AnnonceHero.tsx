@@ -8,6 +8,7 @@ import { propertyPhotoUrl } from "@/lib/imageUrl";
 import { ListingImage } from "@/components/media/ListingImage";
 import { currencyLabel, formatTND } from "@/lib/utils";
 import { categoryLabel, governorateLabel, unitLabel, type CategoryNames } from "@/lib/labels";
+import { CAR_COLORS, optionLabel } from "@/lib/vehicles";
 import { HeroMarquee, type MarqueeCard } from "./HeroMarquee";
 import { FeaturedCarousel, CarouselSlide } from "./FeaturedCarousel";
 import { allocate, rankListings } from "@/lib/home/ranking";
@@ -587,7 +588,7 @@ function FeaturedCard({
             {color && (
               <>
                 <span className="h-1 w-1 rounded-full bg-white/40" />
-                <span>{color}</span>
+                <span>{optionLabel(CAR_COLORS, color, locale) ?? color}</span>
               </>
             )}
             {mileage > 0 && (

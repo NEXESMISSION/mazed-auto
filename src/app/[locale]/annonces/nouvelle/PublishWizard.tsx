@@ -12,8 +12,8 @@ import { GOVERNORATES } from "@/lib/governorates";
 import { governorateLabel } from "@/lib/labels";
 import { formatDate } from "@/lib/dates";
 import {
-  CAR_MAKES, MOTO_MAKES, PART_BRANDS, FUELS, TRANSMISSIONS, CONDITIONS,
-  modelsFor, modelYears,
+  CAR_MAKES, MOTO_MAKES, PART_BRANDS, FUELS, TRANSMISSIONS, CONDITIONS, CAR_COLORS,
+  modelsFor, modelYears, optionLabel,
 } from "@/lib/vehicles";
 import type { PublishingNote } from "@/lib/publication";
 import {
@@ -865,11 +865,13 @@ export function PublishWizard({
                 onChange={setCondition}
                 options={CONDITIONS.map((c) => ({ value: c.value, label: t(`options.condition.${c.value}`) }))}
               />
-              <Field
+              <ColorPicker
                 label={t("details.color")}
                 value={attrs.color ?? ""}
                 onChange={(v) => setAttrs((s) => ({ ...s, color: v }))}
-                placeholder={t("details.colorPlaceholder")}
+                otherLabel={t("details.colorOther")}
+                otherPlaceholder={t("details.colorOtherPlaceholder")}
+                locale={locale}
               />
             </div>
           )}
@@ -1391,6 +1393,85 @@ function Picker({
           )}
         />
       </div>
+    </div>
+  );
+}
+
+/**
+ * The body colour as swatches: tapped, not typed. Typed, « noir », « Noir »
+ * and « nwar » were three different colours to anyone filtering, and the
+ * Arabic page could not name any of them. « Autre couleur » keeps free text
+ * for the rest (a two-tone, a wrap).
+ */
+function ColorPicker({
+  label, value, onChange, otherLabel, otherPlaceholder, locale,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  otherLabel: string;
+  otherPlaceholder: string;
+  locale: string;
+}) {
+  const known = CAR_COLORS.some((c) => c.value === value);
+  const [other, setOther] = useState(value !== "" && !known);
+  const chip = (on: boolean) =>
+    cn(
+      "tap-target inline-flex items-center gap-2 rounded-full py-2 ps-2 pe-3.5 text-[13px] font-bold transition",
+      on
+        ? "bg-foreground text-[var(--background)]"
+        : "bg-surface text-muted ring-1 ring-border hover:text-foreground",
+    );
+  // A grey rim, so black reads on the dark page and white on a selected chip.
+  const dot = "size-5 shrink-0 rounded-full ring-1 ring-inset ring-[rgba(128,128,128,0.5)]";
+  return (
+    <div>
+      <Label>{label}</Label>
+      <div className="mt-1.5 flex flex-wrap gap-2">
+        {CAR_COLORS.map((c) => {
+          const on = value === c.value;
+          return (
+            <button
+              key={c.value}
+              type="button"
+              aria-pressed={on}
+              onClick={() => {
+                setOther(false);
+                onChange(on ? "" : c.value);
+              }}
+              className={chip(on)}
+            >
+              <span aria-hidden className={dot} style={{ background: c.hex }} />
+              {optionLabel(CAR_COLORS, c.value, locale)}
+            </button>
+          );
+        })}
+        <button
+          type="button"
+          aria-pressed={other}
+          onClick={() => {
+            setOther(true);
+            if (known) onChange("");
+          }}
+          className={chip(other)}
+        >
+          <span
+            aria-hidden
+            className={dot}
+            style={{ background: "conic-gradient(#c0262d, #e3b928, #2f6b3a, #1f4fa3, #6d1a2a, #c0262d)" }}
+          />
+          {otherLabel}
+        </button>
+      </div>
+      {other && (
+        <input
+          value={known ? "" : value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={otherPlaceholder}
+          aria-label={otherLabel}
+          className="mt-2 w-full rounded-xl border border-border bg-surface px-3 py-3 text-[14px] text-foreground placeholder:text-muted focus:border-gold focus:outline-none"
+        />
+      )}
     </div>
   );
 }

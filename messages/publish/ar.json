@@ -106,7 +106,8 @@
       "fuel": "الوقود",
       "transmission": "علبة السرعة",
       "color": "اللون",
-      "colorPlaceholder": "أبيض"
+      "colorOther": "لون آخر",
+      "colorOtherPlaceholder": "مثال: لونان، رمادي معدني"
     },
     "fitment": {
       "title": "متوافقة مع",

@@ -87,6 +87,27 @@ export const FUELS = [
   { value: "lpg", label: "GPL" },
 ] as const;
 
+/**
+ * Body colours, offered as swatches in the publish form. `value` is what goes
+ * into attributes.color: the French word, as when the colour was typed, so
+ * every place that prints the colour as it was stored keeps working. `hex` is
+ * only the swatch's paint. Anything else is still typed (« Autre couleur »).
+ */
+export const CAR_COLORS = [
+  { value: "Blanc", label: "Blanc", hex: "#f4f4f2" },
+  { value: "Noir", label: "Noir", hex: "#0d0d0d" },
+  { value: "Gris", label: "Gris", hex: "#6f7378" },
+  { value: "Argent", label: "Argent", hex: "#c3c7cc" },
+  { value: "Bleu", label: "Bleu", hex: "#1f4fa3" },
+  { value: "Rouge", label: "Rouge", hex: "#c0262d" },
+  { value: "Bordeaux", label: "Bordeaux", hex: "#6d1a2a" },
+  { value: "Vert", label: "Vert", hex: "#2f6b3a" },
+  { value: "Beige", label: "Beige", hex: "#d8c7a3" },
+  { value: "Marron", label: "Marron", hex: "#6b4a2f" },
+  { value: "Jaune", label: "Jaune", hex: "#e3b928" },
+  { value: "Orange", label: "Orange", hex: "#e07a1f" },
+] as const;
+
 export const TRANSMISSIONS = [
   { value: "manual", label: "Manuelle" },
   { value: "automatic", label: "Automatique" },
@@ -98,8 +119,20 @@ export const CONDITIONS = [
   { value: "refurbished", label: "Reconditionné" },
 ] as const;
 
-/** The Arabic of every value in FUELS, TRANSMISSIONS and CONDITIONS (the values are unique across them). */
+/** The Arabic of every value in FUELS, TRANSMISSIONS, CONDITIONS and CAR_COLORS (the values are unique across them). */
 const OPTION_AR: Record<string, string> = {
+  Blanc: "أبيض",
+  Noir: "أسود",
+  Gris: "رمادي",
+  Argent: "فضّي",
+  Bleu: "أزرق",
+  Rouge: "أحمر",
+  Bordeaux: "عنّابي",
+  Vert: "أخضر",
+  Beige: "بيج",
+  Marron: "بنّي",
+  Jaune: "أصفر",
+  Orange: "برتقالي",
   gasoline: "بنزين",
   diesel: "ديزل",
   hybrid: "هجين",
