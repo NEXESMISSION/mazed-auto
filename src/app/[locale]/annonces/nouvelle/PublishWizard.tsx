@@ -228,6 +228,7 @@ export function PublishWizard({
   // Whose limit it is: a shop's plan (or its missing subscription), or a person's.
   const limitScope: "shop" | "personal" =
     plan?.phrase?.key === "quotaShop" || plan?.phrase?.key === "noteNoSubscription" ? "shop" : "personal";
+  const limitLinks = useLimitLinks(limitScope, cheapestPlan, locale);
 
   const makeList = isMoto ? MOTO_MAKES : CAR_MAKES;
   const models = useMemo(
@@ -449,6 +450,13 @@ export function PublishWizard({
         paymentId?: string; error?: string; detail?: string;
       };
       if (!res.ok) {
+        // The limit, refused at the last step. The dialog is where the seller
+        // is looking, so the way out goes in it too — not only under the
+        // button it covers.
+        if (j.error === "quota_exceeded") {
+          alert({ title: j.detail ?? t("errors.submit"), action: limitLinks.shop });
+          return;
+        }
         toast(j.detail ?? j.error ?? t("errors.submit"), "error");
         return;
       }
@@ -1244,34 +1252,55 @@ function LimitActions({
   cheapestPlan: { price: number; days: number } | null;
   locale: string;
 }) {
-  const t = useTranslations("publish.wizard.limit");
-  const shopLabel = scope === "shop"
-    ? t("myPlan")
-    : cheapestPlan
-      ? t("openShopFrom", {
-          price: formatTND(cheapestPlan.price, locale),
-          currency: currencyLabel(locale),
-          days: cheapestPlan.days,
-        })
-      : t("openShop");
+  const links = useLimitLinks(scope, cheapestPlan, locale);
   return (
     <div className="mt-3 flex flex-wrap gap-2">
       <Link
-        href={scope === "shop" ? "/pro/dashboard/abonnement" : "/pro"}
+        href={links.shop.href}
         className="batta-btn-luxe tap-target inline-flex items-center gap-1.5 px-4 py-2.5 text-[12.5px]"
       >
         <Store className="size-4 shrink-0" strokeWidth={2.2} />
-        {shopLabel}
+        {links.shop.label}
       </Link>
       <Link
-        href={scope === "shop" ? "/pro/dashboard/annonces" : "/account/listings"}
+        href={links.listings.href}
         className="batta-btn-quiet tap-target inline-flex items-center gap-1.5 px-4 py-2.5 text-[12.5px]"
       >
         <ClipboardList className="size-4 shrink-0" strokeWidth={2.2} />
-        {t(scope === "shop" ? "shopListings" : "myListings")}
+        {links.listings.label}
       </Link>
     </div>
   );
+}
+
+/**
+ * Where those two buttons go and what they say — shared with the dialog a
+ * refused « Publier » opens, which carries the first one.
+ */
+function useLimitLinks(
+  scope: "shop" | "personal",
+  cheapestPlan: { price: number; days: number } | null,
+  locale: string,
+) {
+  const t = useTranslations("publish.wizard.limit");
+  return {
+    shop: {
+      href: scope === "shop" ? "/pro/dashboard/abonnement" : "/pro",
+      label: scope === "shop"
+        ? t("myPlan")
+        : cheapestPlan
+          ? t("openShopFrom", {
+              price: formatTND(cheapestPlan.price, locale),
+              currency: currencyLabel(locale),
+              days: cheapestPlan.days,
+            })
+          : t("openShop"),
+    },
+    listings: {
+      href: scope === "shop" ? "/pro/dashboard/annonces" : "/account/listings",
+      label: t(scope === "shop" ? "shopListings" : "myListings"),
+    },
+  } as const;
 }
 
 /* ── Small building blocks ────────────────────────────────────────────────── */

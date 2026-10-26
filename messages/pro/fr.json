@@ -239,7 +239,9 @@
     "sponsored": "Votre annonce est sponsorisée.",
     "active": "Votre abonnement est actif.",
     "pending": "Paiement en cours de vérification. Rien n'est activé tant qu'il n'est pas confirmé ; cette page se met à jour toute seule.",
-    "failed": "Ce paiement n'a pas abouti. Vous pouvez recommencer ci-dessous."
+    "failed": "Ce paiement n'a pas abouti. Vous pouvez recommencer ci-dessous.",
+    "draftWaiting": "Votre annonce enregistrée vous attend : publiez-la maintenant, elle passe par votre boutique.",
+    "publishDraft": "Publier mon annonce"
   },
   "receipt": {
     "title": "Reçu de paiement",

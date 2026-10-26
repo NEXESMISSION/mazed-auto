@@ -5,6 +5,7 @@ import * as React from "react";
 import { createPortal } from "react-dom";
 import { useScrollLock } from "@/lib/scrollLock";
 import { AlertTriangle, XCircle, Info, ArrowRight, X } from "lucide-react";
+import { Link } from "@/i18n/navigation";
 import { useHydrated } from "@/lib/useHydrated";
 
 /**
@@ -46,6 +47,12 @@ export type AlertPayload = {
   variant?: "error" | "warning" | "info";
   /** Label for the dismiss button. Defaults to "J'ai compris". */
   confirmLabel?: string;
+  /**
+   * The way forward, when the user can do something about it — the listing
+   * limit's « open a shop ». The main button, above the dismiss one, which
+   * then turns quiet. Navigates and closes.
+   */
+  action?: { label: string; href: string };
 };
 
 const TONE = {
@@ -209,10 +216,19 @@ export function AlertDialog({
           </ul>
         )}
 
+        {payload.action && (
+          <Link
+            href={payload.action.href as never}
+            onClick={onClose}
+            className="batta-btn-luxe tap-target mt-5 inline-flex min-h-11 w-full items-center justify-center px-4 py-2.5 text-center text-[14px] leading-snug"
+          >
+            {payload.action.label}
+          </Link>
+        )}
         <button
           type="button"
           onClick={onClose}
-          className="batta-btn-luxe tap-target mt-5 inline-flex h-11 w-full items-center justify-center text-[14px]"
+          className={`${payload.action ? "batta-btn-quiet mt-2" : "batta-btn-luxe mt-5"} tap-target inline-flex h-11 w-full items-center justify-center text-[14px]`}
         >
           {payload.confirmLabel ?? t("alert.understood")}
         </button>

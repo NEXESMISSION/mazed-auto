@@ -27,7 +27,7 @@ export default async function ProSubscriptionPage({
 }) {
   const ctx = await getProContext();
   if (ctx.kind !== "shop") return null;
-  const { admin, shop, role } = ctx;
+  const { admin, shop, role, user } = ctx;
   const sp = await searchParams;
   const locale = await getLocale();
   const t = await getTranslations("pro.subscription");
@@ -66,11 +66,28 @@ export default async function ProSubscriptionPage({
     return (locale === "ar" && p?.name_ar ? p.name_ar : p?.name_fr) ?? "—";
   };
   const current = subs.find((s) => new Date(s.starts_at).getTime() <= now && now < new Date(s.ends_at).getTime());
+
+  // Back from paying, perhaps sent here by the listing limit with an annonce
+  // saved but not online. /annonces/nouvelle resumes the latest draft, and
+  // /submit moves a personal one of this shop's activity into the shop
+  // (shopForPersonalDraft) — so point at it, it is what they came to do.
+  let draftWaiting = false;
+  if (sp.payment) {
+    const { data: draft } = await admin
+      .from("listings")
+      .select("shop_id, listing_type")
+      .eq("seller_id", user.id)
+      .eq("status", "draft")
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    draftWaiting = draft != null && draft.shop_id == null && draft.listing_type === shop.activity_type;
+  }
   const currentCode = current ? (Array.isArray(current.product) ? current.product[0]?.plan_code : current.product?.plan_code) : null;
 
   return (
     <div className="space-y-5">
-      {sp.payment && /^[0-9a-f-]{36}$/i.test(sp.payment) && <PaymentStatus paymentId={sp.payment} />}
+      {sp.payment && /^[0-9a-f-]{36}$/i.test(sp.payment) && <PaymentStatus paymentId={sp.payment} draftWaiting={draftWaiting} />}
 
       <section className="rounded-2xl border border-border bg-surface p-4">
         <h2 className="text-[14px] font-extrabold">{t("periods")}</h2>
