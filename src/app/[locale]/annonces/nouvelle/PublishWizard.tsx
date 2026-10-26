@@ -6,6 +6,7 @@ import { useRouter } from "@/i18n/navigation";
 import { useToast } from "@/components/ui/Toast";
 import { PhotoUploader, type UploadedPhoto } from "@/components/listing/PhotoUploader";
 import { ListingImage } from "@/components/media/ListingImage";
+import { SuggestInput } from "@/components/ui/SuggestInput";
 import { formatTND, currencyLabel, cn } from "@/lib/utils";
 import { GOVERNORATES } from "@/lib/governorates";
 import { governorateLabel } from "@/lib/labels";
@@ -1306,23 +1307,31 @@ function Picker({
   compact?: boolean;
 }) {
   const id = useId();
+  // Its own suggestion list, not a <datalist>: see SuggestInput. The label is
+  // a sibling with htmlFor, not a wrapper — inside a <label>, tapping an
+  // option would also re-focus the field and reopen the list it just closed.
   return (
-    <label className="block">
-      {label && <Label>{label} {required && <span className="text-gold">*</span>}</Label>}
-      <input
-        list={id}
-        value={value}
-        placeholder={placeholder}
-        onChange={(e) => onChange(e.target.value)}
-        className={cn(
-          "mt-1 w-full rounded-xl border border-border bg-surface px-3 text-foreground placeholder:text-muted focus:border-gold focus:outline-none",
-          compact ? "py-2.5 text-[13.5px]" : "py-3 text-[14px]",
-        )}
-      />
-      <datalist id={id}>
-        {options.map((o) => <option key={o} value={o} />)}
-      </datalist>
-    </label>
+    <div className="block">
+      {label && (
+        <label htmlFor={id}>
+          <Label>{label} {required && <span className="text-gold">*</span>}</Label>
+        </label>
+      )}
+      <div className="mt-1">
+        <SuggestInput
+          id={id}
+          value={value}
+          onChange={onChange}
+          options={options}
+          placeholder={placeholder}
+          aria-label={label ? undefined : placeholder}
+          className={cn(
+            "w-full rounded-xl border border-border bg-surface px-3 text-foreground placeholder:text-muted focus:border-gold focus:outline-none",
+            compact ? "py-2.5 text-[13.5px]" : "py-3 text-[14px]",
+          )}
+        />
+      </div>
+    </div>
   );
 }
 

@@ -7,6 +7,7 @@ import { useRouter } from "@/i18n/navigation";
 import { useScrollLock } from "@/lib/scrollLock";
 import { cn, formatTND } from "@/lib/utils";
 import { Overlay, LAYER } from "@/components/ui/Overlay";
+import { SuggestInput } from "@/components/ui/SuggestInput";
 import { CAR_MAKES, CONDITIONS, FUELS, TRANSMISSIONS, modelsFor, optionLabel } from "@/lib/vehicles";
 import {
   ArrowDownWideNarrow, Car, Check, LayoutGrid, PlaySquare, Search,
@@ -376,23 +377,21 @@ function FilterBody({
             {t("fitBody")}
           </p>
           <div className="mt-2.5 space-y-2">
-            <input
-              list="cf-makes" placeholder={t("make")} value={f.make}
-              onChange={(e) => pushDebounced({ make: e.target.value, model: "" })}
+            {/* Our own suggestion list, not a <datalist>, which most phone
+                browsers show badly or not at all — see SuggestInput. */}
+            <SuggestInput
+              placeholder={t("make")} aria-label={t("make")} value={f.make}
+              onChange={(v) => pushDebounced({ make: v, model: "" })}
+              options={CAR_MAKES.map((m) => m.name)}
               className={INPUT}
             />
-            <datalist id="cf-makes">
-              {CAR_MAKES.map((m) => <option key={m.name} value={m.name} />)}
-            </datalist>
             <div className="grid grid-cols-2 gap-2">
-              <input
-                list="cf-models" placeholder={t("model")} value={f.model}
-                onChange={(e) => pushDebounced({ model: e.target.value })}
+              <SuggestInput
+                placeholder={t("model")} aria-label={t("model")} value={f.model}
+                onChange={(v) => pushDebounced({ model: v })}
+                options={modelsFor(f.make)}
                 className={INPUT}
               />
-              <datalist id="cf-models">
-                {modelsFor(f.make).map((m) => <option key={m} value={m} />)}
-              </datalist>
               <input
                 placeholder={t("year")} inputMode="numeric" value={f.year}
                 onChange={(e) => setF({ ...f, year: e.target.value })}
