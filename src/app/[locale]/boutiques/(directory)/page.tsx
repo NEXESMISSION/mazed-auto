@@ -7,7 +7,7 @@ import { GOVERNORATES } from "@/lib/governorates";
 import { SHOP_PUBLIC_SELECT, shopMediaUrl, shopsGate, type PublicShop } from "@/lib/shops/public";
 import { ACTIVITY_SLUG, activityLabel, isShopVerified, shopInitials } from "@/lib/shops/format";
 import { BadgeCheck, MapPin, Store } from "lucide-react";
-import { ShopsPreviewBanner } from "./ShopsPreviewBanner";
+import { ShopsPreviewBanner } from "../ShopsPreviewBanner";
 import { jsonLdSafe } from "@/lib/jsonld";
 import { siteUrl } from "@/lib/siteUrl";
 import { OG_IMAGE } from "@/lib/ogImage";
