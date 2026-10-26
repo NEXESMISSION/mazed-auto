@@ -246,26 +246,12 @@ await write(path.join(OUT, "lockup-wide.png"), await wideLockup(240), "lockupWid
 // brushed metal texture is what costs bytes here, not the size.
 await webCopy("lockup", lockupFull, 480, { avif: true });
 
-// The photo watermark: the emblem alone, in grey — lighter where the metal
-// catches the light, darker in its folds, so it reads as a stamp and not as a
-// second, gold logo in the middle of somebody's car. watermark.ts draws it
-// faint with a soft dark shadow; the PNG is the photo backfill's input.
-{
-  const { data, info } = await sharp(markFull).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
-  for (let i = 0; i < data.length; i += 4) {
-    const l = 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
-    data[i] = data[i + 1] = data[i + 2] = Math.round(140 + l * 0.45);
-  }
-  const grey = await sharp(data, { raw: info }).png({ compressionLevel: 9 }).toBuffer();
-  await write(path.join(OUT, "watermark.png"), grey, "watermarkPng");
-  // Photos are capped at 1600px before stamping (imageCompress), and the mark
-  // is at most 20% of the width: 320px. 480px covers that.
-  await write(
-    path.join(OUT, "watermark.webp"),
-    sharp(grey).resize({ width: 480, kernel: "lanczos3" }).webp({ quality: 85, alphaQuality: 90, effort: 6 }),
-    "watermark",
-  );
-}
+// The photo watermark is the emblem itself, in its own gold and silver, small
+// in the top-left corner (lib/watermark.ts). The browser draws this copy:
+// photos are capped at 1600px before stamping (imageCompress) and the mark is
+// 13% of the width, ~210px, which 320px covers. The backfill scripts use
+// mark.png.
+await webCopy("mark", markFull, 320);
 
 // Social preview — Facebook, WhatsApp and X all crop to ~1.91:1. JPEG: the
 // PNG is ~300 KB, the size at which WhatsApp starts dropping previews. The

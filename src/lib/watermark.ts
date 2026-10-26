@@ -1,25 +1,21 @@
 "use client";
 
 /**
- * Stamp the Mazed Auto emblem into the middle of a listing photo.
+ * Stamp the Mazed Auto emblem into the top-left corner of a listing photo.
  *
- * WHY THE MIDDLE. A corner watermark is removed with one crop, and on a
- * classifieds site the photos ARE the product — they get lifted and reposted
- * on Facebook groups and rival boards within hours. Centred, the only way to
- * remove it is to crop away the subject, which is exactly the trade we want to
- * force.
+ * WHERE AND WHAT. The ring emblem, in its own gold and silver, small (13% of
+ * the width), in the top-left corner — the way a channel logo sits on a
+ * picture. It used to be centred, faint and grey, so that cropping it out
+ * meant cropping the car out; on every photo of the catalogue that put a
+ * logo across the middle of somebody's car, and the owner chose the corner.
+ * The trade is known: a corner can be cropped off. The photo still says whose
+ * it is everywhere it is shown untouched, which is most reposts.
  *
- * WHAT IT SHOWS. The logo alone, in grey (`brand/<version>/watermark.webp`,
- * built by scripts/regen-logos.mjs): no caption, no gold. It used to carry
- * « MAZED AUTO · MAZED.TN » under a full-colour emblem, which made a second
- * logo, in gold, the loudest thing in a photo of somebody's car. The owner
- * asked for just the logo, in grey, like a shadow.
+ * It stays in the top-left in Arabic too: the photo is the same file for both
+ * languages.
  *
- * WHY IT IS FAINT. The mark has to survive being stolen, not be the first
- * thing anybody sees. A watermark does not have to be read at a glance to
- * work; it has to be impossible to remove without cropping the subject, and
- * that is a property of WHERE it sits, not how bright it is. Grey carries
- * less than gold did, hence 22% rather than 18%.
+ * Mirrored by scripts/watermark-recipe.mjs, which re-stamps photos already in
+ * storage: a change here must be made there too.
  *
  * WHY IT IS DRAWN, NOT COMPOSITED SERVER-SIDE. Photos go straight from the
  * browser to storage on a signed URL — the bytes never pass through our
@@ -33,19 +29,34 @@
 import { LOGO } from "@/lib/brand";
 
 /** Fraction of the image's WIDTH the mark spans. */
-const MARK_WIDTH_RATIO = 0.3;
+export const MARK_WIDTH_RATIO = 0.13;
+/** A floor so the mark stays a logo on a small upload. */
+export const MIN_MARK_PX = 56;
+/** The gap to the top and left edges, as a fraction of the SHORTER side. */
+export const MARGIN_RATIO = 0.03;
+/** Nearly solid: the logo as it is, not a ghost of it. */
+export const MARK_OPACITY = 0.92;
+/** The emblem in colour, on transparent. */
+const MARK_SRC = LOGO.markWebp.src;
+
 /**
- * Cap on the mark's HEIGHT, as a fraction of the image's width. The emblem is
- * a ring, square: at 30% of the width it would cover over twice the area the
- * old wide monogram did.
+ * Where the mark goes on a photo this size: top-left, inside the margins,
+ * never wider or taller than the photo can hold. Pure, so it is tested.
  */
-const MARK_MAX_HEIGHT_RATIO = 0.2;
-/** A floor so the mark does not vanish entirely on a tiny upload. */
-const MIN_MARK_PX = 96;
-/** How present the mark is. Deliberately low — see the note above. */
-const MARK_OPACITY = 0.22;
-/** The logo in grey, on transparent. */
-const MARK_SRC = LOGO.watermark.src;
+export function cornerRect(
+  width: number,
+  height: number,
+  aspect: number,
+): { x: number; y: number; w: number; h: number } {
+  const margin = Math.round(Math.min(width, height) * MARGIN_RATIO);
+  let w = Math.min(Math.max(MIN_MARK_PX, Math.round(width * MARK_WIDTH_RATIO)), width - 2 * margin);
+  let h = Math.round(w * aspect);
+  if (h > height - 2 * margin) {
+    h = Math.max(1, height - 2 * margin);
+    w = Math.round(h / aspect);
+  }
+  return { x: margin, y: margin, w: Math.max(1, w), h };
+}
 
 /**
  * The decoded mark, fetched once per page rather than per photo.
@@ -73,7 +84,7 @@ function loadMark(src: string): Promise<HTMLImageElement | null> {
 }
 
 /**
- * Draw the mark centred on an already-rendered 2D context.
+ * Draw the mark in the top-left corner of an already-rendered 2D context.
  *
  * Exported separately so a caller that already has a canvas (a future
  * server-side or worker path) can stamp without a second decode.
@@ -84,44 +95,22 @@ export function drawWatermark(
   width: number,
   height: number,
 ): void {
-  const aspect = mark.naturalHeight / mark.naturalWidth;
-
-  // Fit, then centre. The floor is a floor, not a promise that the photo is
-  // big enough to hold it: the catalogue contains a 120x120 thumbnail, and
-  // asking for a mark wider than the image draws a stamp the canvas silently
-  // crops — a photo branded with a fragment of a logo.
-  let markW = Math.min(Math.max(MIN_MARK_PX, Math.round(width * MARK_WIDTH_RATIO)), width);
-  let markH = Math.round(markW * aspect);
-  const maxH = Math.round(width * MARK_MAX_HEIGHT_RATIO);
-  if (markH > maxH) {
-    markH = maxH;
-    markW = Math.round(markH / aspect);
-  }
-  if (markH > height) {
-    markH = height;
-    markW = Math.round(markH / aspect);
-  }
-  const x = Math.round((width - markW) / 2);
-  const y = Math.round((height - markH) / 2);
+  const { x, y, w, h } = cornerRect(width, height, mark.naturalHeight / mark.naturalWidth);
 
   ctx.save();
   ctx.globalAlpha = MARK_OPACITY;
-
-  // A soft dark shadow under the metal. The emblem is bright, so it reads on
-  // its own against a dark photo but disappears into an overexposed sky or a
-  // white studio background — which is most parts photography. The shadow is
-  // what keeps it legible on both without raising the opacity.
-  ctx.shadowColor = "rgba(0, 0, 0, 0.55)";
-  ctx.shadowBlur = Math.max(6, Math.round(markW * 0.035));
+  // A soft dark shadow, so the gold and silver still read on an overexposed
+  // sky or a white studio wall — which is most parts photography.
+  ctx.shadowColor = "rgba(0, 0, 0, 0.35)";
+  ctx.shadowBlur = Math.max(2, Math.round(w * 0.04));
   ctx.shadowOffsetX = 0;
-  ctx.shadowOffsetY = Math.max(1, Math.round(markW * 0.006));
-
-  ctx.drawImage(mark, x, y, markW, markH);
+  ctx.shadowOffsetY = Math.max(1, Math.round(w * 0.01));
+  ctx.drawImage(mark, x, y, w, h);
   ctx.restore();
 }
 
 /**
- * Return a copy of `file` with the emblem stamped in the middle.
+ * Return a copy of `file` with the emblem stamped in its top-left corner.
  *
  * Returns the ORIGINAL file if anything goes wrong — a missing logo, a
  * browser that will not encode, a decode failure. A photo without a watermark

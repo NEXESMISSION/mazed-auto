@@ -1,12 +1,12 @@
 /**
- * Replace the old « MA » watermark with the grey logo on photos whose
+ * Replace the old « MA » watermark with the current one on photos whose
  * unstamped original no longer exists.
  *
  * watermark-existing-photos.mjs re-stamps a photo FROM ITS ORIGINAL. For most
  * of the live catalogue that original sat on the other Supabase project
  * (erosazbplfhelvxweeyz), which has been deleted, so all that is left is the
  * v2 stamped copy. This script takes the mark OUT of that copy and then puts
- * the grey one in.
+ * the current one in (scripts/watermark-recipe.mjs: the colour emblem, top-left).
  *
  * HOW THE OLD MARK COMES OUT. The v2 files were all written by one recipe —
  * watermark-existing-photos.mjs at 4d7a074: the « MA » stamp (with its caption
@@ -29,16 +29,20 @@
  * zoomed, faint traces remain where the strokes were, mostly on white paint.
  *
  * IT NEVER DESTROYS ANYTHING. The new photo goes to a NEW object under
- * `watermarked/v3/`; the v2 object stays where it is. Each row's previous path
- * is written to `scripts/watermark-replace.log.json`, so undoing is pointing
- * the rows back:
+ * `watermarked/<VERSION>/`; the v2 object, and any earlier result, stays where
+ * it is. Each move is written to `scripts/watermark-replace.log.json` (the
+ * row's previous path, and the v2 file it was made from), so undoing is
+ * pointing the rows back one step:
  *
  *   node scripts/watermark-replace-old-mark.mjs            # report only
  *   node scripts/watermark-replace-old-mark.mjs --limit 3  # try a few, no writes
  *   node scripts/watermark-replace-old-mark.mjs --commit [--limit N]
  *   node scripts/watermark-replace-old-mark.mjs --undo --commit
  *
- * Only photos of PUBLISHED listings that are still on v2 are touched.
+ * Every row made from a v2 file is redone from that v2 file whenever the
+ * recipe's VERSION moves on — never from a previous result, which would carry
+ * its mark along. The first run (v3, the grey logo) did published listings
+ * only; v4 does them all.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -46,6 +50,7 @@ import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 import { config as loadEnv } from "dotenv";
+import { VERSION, stampCorner } from "./watermark-recipe.mjs";
 
 loadEnv({ path: ".env.local" });
 
@@ -53,7 +58,7 @@ const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const LOG = path.join(ROOT, "scripts", "watermark-replace.log.json");
 const BUCKET = "properties";
 const FROM = "watermarked/v2/";
-const TO = "watermarked/v3/";
+const TO = `watermarked/${VERSION}/`;
 
 const args = process.argv.slice(2);
 const COMMIT = args.includes("--commit");
@@ -74,14 +79,8 @@ const fromGit = (file) => execFileSync("git", ["show", `${V2.commit}:${file}`], 
 const V2_STAMP = fromGit("public/logo-stamp.png");
 const V2_PLAIN = fromGit("public/logo-mark.png");
 
-// ── The current recipe: must match watermark-existing-photos.mjs and lib/watermark ──
-const V3 = { ratio: 0.3, maxH: 0.2, min: 96, opacity: 0.22 };
-const BRAND_DIR = (() => {
-  const m = fs.readFileSync(path.join(ROOT, "src", "lib", "brand.ts"), "utf8").match(/BRAND_DIR = "\/(brand\/[^"]+)"/);
-  if (!m) throw new Error("src/lib/brand.ts has no BRAND_DIR: run node scripts/regen-logos.mjs first");
-  return path.join(ROOT, "public", ...m[1].split("/"));
-})();
-const V3_MARK = path.join(BRAND_DIR, "watermark.png");
+// The current watermark: scripts/watermark-recipe.mjs, shared with the
+// other backfill and mirroring src/lib/watermark.ts.
 
 /** Where a pixel is this dark under the old mark, its original is treated as lost. */
 const LOST = 0.08;
@@ -204,33 +203,6 @@ async function removeOldMark(stamped) {
   return { raw: out, W, H: Hh };
 }
 
-/** The grey logo, stamped as watermark-existing-photos.mjs stamps it. */
-async function greyStamp(raw, W, Hh) {
-  const meta = await sharp(V3_MARK).metadata();
-  const aspect = meta.height / meta.width;
-  let w = Math.min(Math.max(V3.min, Math.round(W * V3.ratio)), W);
-  const maxH = Math.round(W * V3.maxH);
-  if (Math.round(w * aspect) > maxH) w = Math.round(maxH / aspect);
-  if (Math.round(w * aspect) > Hh) w = Math.round(Hh / aspect);
-  const resized = await sharp(V3_MARK).resize({ width: w }).ensureAlpha().png().toBuffer();
-  const { data, info } = await sharp(resized).raw().toBuffer({ resolveWithObject: true });
-  const scaled = Buffer.from(data);
-  for (let i = 3; i < scaled.length; i += 4) scaled[i] = Math.round(scaled[i] * V3.opacity);
-  const mark = await sharp(scaled, { raw: { width: info.width, height: info.height, channels: 4 } }).png().toBuffer();
-  const blur = Math.max(6, Math.round(w * 0.035));
-  const shadowAlpha = await sharp(resized).extractChannel(3).blur(blur / 2).linear(0.55 * V3.opacity, 0).toBuffer();
-  const shadow = await sharp({ create: { width: info.width, height: info.height, channels: 3, background: "#000" } })
-    .joinChannel(shadowAlpha).png().toBuffer();
-  const x = Math.round((W - w) / 2), y = Math.round((Hh - info.height) / 2);
-  return sharp(raw, { raw: { width: W, height: Hh, channels: 3 } })
-    .composite([
-      { input: shadow, left: x, top: y + Math.max(1, Math.round(w * 0.006)) },
-      { input: mark, left: x, top: y },
-    ])
-    .webp({ quality: 90 })
-    .toBuffer();
-}
-
 async function rest(pathAndQuery, init = {}) {
   const r = await fetch(`${SB_URL}/rest/v1/${pathAndQuery}`, { ...init, headers: { ...H, ...(init.headers ?? {}) } });
   if (!r.ok) throw new Error(`${init.method ?? "GET"} ${pathAndQuery}: ${r.status} ${await r.text()}`);
@@ -257,9 +229,12 @@ async function upload(objectPath, body) {
 const log = fs.existsSync(LOG) ? JSON.parse(fs.readFileSync(LOG, "utf8")) : [];
 
 if (UNDO) {
-  // Point every row this script moved back at the photo it had before.
-  const todo = log.filter((e) => !e.undone);
-  console.log(`${todo.length} rows to point back at their v2 photo${COMMIT ? "" : " (DRY RUN)"}`);
+  // One step back: each row this script moved returns to the photo it had
+  // before its LATEST move (v4 -> v3, and a second --undo v3 -> v2).
+  const latest = new Map();
+  for (const e of log) if (!e.undone) latest.set(e.id, e);
+  const todo = [...latest.values()];
+  console.log(`${todo.length} rows to point back one step${COMMIT ? "" : " (DRY RUN)"}`);
   let n = 0;
   for (const e of todo.slice(0, LIMIT === Infinity ? undefined : LIMIT)) {
     if (COMMIT) {
@@ -273,17 +248,21 @@ if (UNDO) {
   process.exit(0);
 }
 
-const live = new Set(
-  (await rest("listings?select=id&status=eq.published&limit=10000")).map((l) => l.id),
-);
 const photos = [];
 for (let offset = 0; ; offset += 1000) {
   const page = await rest(`listing_photos?select=id,listing_id,storage_path&order=id&limit=1000&offset=${offset}`);
   photos.push(...page);
   if (page.length < 1000) break;
 }
-const todo = photos.filter((p) => live.has(p.listing_id) && p.storage_path?.startsWith(FROM));
-console.log(`${live.size} live listings, ${todo.length} of their photos still carry the old mark (v2)`);
+// The v2 file each row's photo comes from: the row itself while it is still
+// on v2, or the first move this script made of it.
+const v2Of = new Map();
+for (const e of log) if (!v2Of.has(e.id) && (e.source ?? e.from).startsWith(FROM)) v2Of.set(e.id, e.source ?? e.from);
+const todo = photos
+  .filter((p) => p.storage_path && !p.storage_path.startsWith(TO))
+  .map((p) => ({ ...p, source: p.storage_path.startsWith(FROM) ? p.storage_path : v2Of.get(p.id) }))
+  .filter((p) => p.source);
+console.log(`${todo.length} photos made from a v2 file are not on ${VERSION} yet`);
 if (!COMMIT) console.log("DRY RUN — pass --commit to write.\n");
 
 let done = 0, failed = 0;
@@ -291,19 +270,19 @@ const planned = todo.slice(0, LIMIT === Infinity ? undefined : LIMIT);
 for (const row of planned) {
   const dest = `${TO}${row.listing_id}/${row.id}.webp`;
   try {
-    const r = await fetch(`${SB_URL}/storage/v1/object/public/${BUCKET}/${row.storage_path}`);
+    const r = await fetch(`${SB_URL}/storage/v1/object/public/${BUCKET}/${row.source}`);
     if (!r.ok) throw new Error(`source ${r.status}`);
     const cleaned = await removeOldMark(Buffer.from(await r.arrayBuffer()));
-    const stamped = await greyStamp(cleaned.raw, cleaned.W, cleaned.H);
+    const stamped = await stampCorner(cleaned.raw, { width: cleaned.W, height: cleaned.H, channels: 3 });
     if (COMMIT) {
       await upload(dest, stamped);
       await repoint(row.id, dest);
-      log.push({ id: row.id, listing_id: row.listing_id, from: row.storage_path, to: dest, at: new Date().toISOString() });
+      log.push({ id: row.id, listing_id: row.listing_id, from: row.storage_path, source: row.source, to: dest, at: new Date().toISOString() });
       if (done % 10 === 0) fs.writeFileSync(LOG, JSON.stringify(log, null, 2));
     }
     done += 1;
     if (done % 25 === 0 || done === planned.length || !COMMIT) {
-      console.log(`  ${done}/${planned.length}  ${row.storage_path} -> ${dest}`);
+      console.log(`  ${done}/${planned.length}  ${row.source} -> ${dest}`);
     }
   } catch (err) {
     failed += 1;

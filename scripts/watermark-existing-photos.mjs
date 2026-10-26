@@ -26,7 +26,8 @@
  * 0.3 and 0.1 over the same input all produce a byte-identical result. It fails
  * silently, so a backfill written the obvious way would have burnt a fully
  * opaque logo into all 536 photos and nothing would have complained. The alpha
- * channel is multiplied directly instead, which is what globalAlpha does.
+ * channel is multiplied directly instead, which is what globalAlpha does
+ * (scripts/watermark-recipe.mjs, which both backfills share).
  *
  *   node scripts/watermark-existing-photos.mjs            # report only
  *   node scripts/watermark-existing-photos.mjs --limit 3  # try a few
@@ -38,28 +39,13 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import sharp from "sharp";
 import { config as loadEnv } from "dotenv";
+import { VERSION, stampCorner } from "./watermark-recipe.mjs";
 
 loadEnv({ path: ".env.local" });
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-/** The current logo folder, as scripts/regen-logos.mjs wrote it into src/lib/brand.ts. */
-const BRAND_DIR = (() => {
-  const m = fs.readFileSync(path.join(ROOT, "src", "lib", "brand.ts"), "utf8").match(/BRAND_DIR = "\/(brand\/[^"]+)"/);
-  if (!m) throw new Error("src/lib/brand.ts has no BRAND_DIR: run node scripts/regen-logos.mjs first");
-  return path.join(ROOT, "public", ...m[1].split("/"));
-})();
-/** The logo in grey — the same mark lib/watermark stamps on new uploads. */
-const MARK = path.join(BRAND_DIR, "watermark.png");
 const LOG = path.join(ROOT, "scripts", "watermark-backfill.log.json");
-
-// Must match src/lib/watermark.ts. Drift here shows up as a visible mismatch
-// between an old photo and a freshly uploaded one on the same page.
-const MARK_WIDTH_RATIO = 0.3;
-const MARK_MAX_HEIGHT_RATIO = 0.2;
-const MIN_MARK_PX = 96;
-const MARK_OPACITY = 0.22;
 
 const BUCKET = "properties";
 /**
@@ -72,8 +58,8 @@ const BUCKET = "properties";
  * pointing the rows back at it.
  */
 const PREFIX = "watermarked/";
-// v3: the grey logo alone (v2 was the « MA » monogram under its caption).
-const VERSION = "v3";
+// The version comes with the recipe: v4 is the colour emblem in the corner
+// (v3 the grey logo in the middle, v2 the « MA » monogram over its caption).
 const CURRENT = `${PREFIX}${VERSION}/`;
 
 const args = process.argv.slice(2);
@@ -106,76 +92,6 @@ async function allPhotos() {
 function sourceUrl(storagePath) {
   if (/^https?:\/\//.test(storagePath)) return storagePath;
   return `${SB_URL}/storage/v1/object/public/${BUCKET}/${storagePath.replace(/^\/+/, "")}`;
-}
-
-let stampCache = null;
-async function stampAt(file, width) {
-  if (stampCache?.width === width && stampCache?.file === file) return stampCache;
-
-  const resized = await sharp(file).resize({ width }).ensureAlpha().png().toBuffer();
-  const { data, info } = await sharp(resized).raw().toBuffer({ resolveWithObject: true });
-
-  const scaled = Buffer.from(data);
-  for (let i = 3; i < scaled.length; i += 4) scaled[i] = Math.round(scaled[i] * MARK_OPACITY);
-  const mark = await sharp(scaled, {
-    raw: { width: info.width, height: info.height, channels: 4 },
-  })
-    .png()
-    .toBuffer();
-
-  // The canvas shadow, under the same globalAlpha: a blurred silhouette at 0.55
-  // alpha. Without it the pale grey vanishes into an overexposed sky.
-  const blur = Math.max(6, Math.round(width * 0.035));
-  const shadowAlpha = await sharp(resized)
-    .extractChannel(3)
-    .blur(blur / 2)
-    .linear(0.55 * MARK_OPACITY, 0)
-    .toBuffer();
-  const shadow = await sharp({
-    create: { width: info.width, height: info.height, channels: 3, background: "#000" },
-  })
-    .joinChannel(shadowAlpha)
-    .png()
-    .toBuffer();
-
-  stampCache = { file, mark, shadow, width: info.width, height: info.height };
-  return stampCache;
-}
-
-/**
- * The mark's width, clamped so it always fits inside the photo.
- *
- * `MIN_MARK_PX` is a floor on legibility, not a promise that the photo is big
- * enough to hold it. The catalogue contains a 120x120 thumbnail; asking for a
- * 160px mark on it made sharp refuse the whole composite ("Image to composite
- * must have same dimensions or smaller") and the browser, which does not
- * refuse, would have branded it with a cropped fragment of a logo.
- */
-async function fittedWidth(file, width, height) {
-  const meta = await sharp(file).metadata();
-  const aspect = meta.height / meta.width;
-  let w = Math.min(Math.max(MIN_MARK_PX, Math.round(width * MARK_WIDTH_RATIO)), width);
-  // Height cap, as in drawWatermark: the square ring emblem would otherwise
-  // cover twice the area the old wide mark did.
-  const maxH = Math.round(width * MARK_MAX_HEIGHT_RATIO);
-  if (Math.round(w * aspect) > maxH) w = Math.round(maxH / aspect);
-  return Math.round(w * aspect) > height ? Math.round(height / aspect) : w;
-}
-
-async function stamp(photo) {
-  const meta = await sharp(photo).metadata();
-  const file = MARK;
-  const markW = await fittedWidth(file, meta.width, meta.height);
-  const { mark, shadow, height: markH } = await stampAt(file, markW);
-  const x = Math.round((meta.width - markW) / 2);
-  const y = Math.round((meta.height - markH) / 2);
-  return sharp(photo)
-    .composite([
-      { input: shadow, left: x, top: y + Math.max(1, Math.round(markW * 0.006)) },
-      { input: mark, left: x, top: y },
-    ])
-    .webp({ quality: 90 })
-    .toBuffer();
 }
 
 async function upload(objectPath, body) {
@@ -277,7 +193,7 @@ for (const row of planned) {
     const res = await fetch(sourceUrl(from));
     if (!res.ok) throw new Error(`source ${res.status}`);
     const original = Buffer.from(await res.arrayBuffer());
-    const stamped = await stamp(original);
+    const stamped = await stampCorner(original);
 
     if (COMMIT) {
       await upload(dest, stamped);
