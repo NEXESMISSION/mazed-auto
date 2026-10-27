@@ -90,6 +90,9 @@ describe("payment methods — filled in for the back office to check", () => {
     expect(ribKeyOk(RIB)).toBe(true);
     expect(ribKeyOk("08006000671000123451")).toBe(false);
     expect(ribKeyOk("123")).toBe(false);
+    // Typed once, wrong once: the IBAN made from it is not blamed as well.
+    const typo = withRib(EMPTY_METHODS.bank_transfer, "08006000671000123451");
+    expect(bankProblems({ ...typo, enabled: true })).toEqual(["ribKey"]);
   });
 
   it("fills the IBAN and the bank as the RIB is typed, never over what was written", () => {

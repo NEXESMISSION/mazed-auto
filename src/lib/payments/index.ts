@@ -202,7 +202,9 @@ export function bankProblems(m: BankMethod): MethodProblem[] {
   const rib = digits(m.rib);
   if (rib.length !== 20) out.push("rib");
   else if (!ribKeyOk(rib)) out.push("ribKey");
-  if (m.iban) {
+  // An IBAN made from a RIB whose key is wrong fails for that same reason: the
+  // RIB's message says it once.
+  if (m.iban && !(out.includes("ribKey") && alnum(m.iban) === ibanFromRib(rib))) {
     const iban = alnum(m.iban);
     if (!/^TN\d{22}$/.test(iban) || !ibanChecksumOk(iban)) out.push("iban");
     else if (rib.length === 20 && iban.slice(4) !== rib) out.push("ibanRib");
