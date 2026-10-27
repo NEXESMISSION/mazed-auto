@@ -150,10 +150,22 @@ function useFilters(current: FilterState) {
   // a chip cleared elsewhere). During render, not in an effect: the inputs
   // then show the new values on the SAME paint as the results they describe,
   // instead of lagging them by a frame.
+  //
+  // Only what the URL changed is taken, not the whole of it: copying it all
+  // over the draft erased whatever was being typed elsewhere — fill « Min »,
+  // move to « Max », and when the results for « Min » arrived they wiped the
+  // « Max » just typed. Clearing all, Back and a removed chip still land,
+  // since each changes the keys it is about.
   const [prevCurrent, setPrevCurrent] = useState(current);
   if (prevCurrent !== current) {
     setPrevCurrent(current);
-    setF(current);
+    setF((draft) => {
+      const next = { ...draft };
+      for (const k of Object.keys(current) as (keyof FilterState)[]) {
+        if (current[k] !== prevCurrent[k]) next[k] = current[k];
+      }
+      return next;
+    });
   }
   useEffect(() => () => { if (debounce.current) clearTimeout(debounce.current); }, []);
 
@@ -438,7 +450,9 @@ function FilterBody({
       {activeCount > 0 && (
         <button
           type="button"
-          onClick={() => router.push("/annonces" as never)}
+          // The fields too, not only the URL: a range held back as backwards
+          // was never in the URL, so clearing the URL alone left it on screen.
+          onClick={() => { setF(EMPTY); router.push("/annonces" as never); }}
           className="inline-flex items-center gap-1.5 text-[12.5px] font-bold text-muted hover:text-foreground"
         >
           <X className="size-3.5" /> {t("clearAll")}
