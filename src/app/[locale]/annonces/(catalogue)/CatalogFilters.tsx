@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { RouteProgress, useFilteringFlag } from "@/components/ui/RouteProgress";
 import { useRouter } from "@/i18n/navigation";
@@ -9,6 +9,7 @@ import { cn, formatTND } from "@/lib/utils";
 import { Overlay, LAYER } from "@/components/ui/Overlay";
 import { SuggestInput } from "@/components/ui/SuggestInput";
 import { CAR_MAKES, CONDITIONS, FUELS, TRANSMISSIONS, modelsFor, optionLabel } from "@/lib/vehicles";
+import { rangeProblems } from "@/lib/catalog/ranges";
 import {
   ArrowDownWideNarrow, Car, Check, LayoutGrid, PlaySquare, Search,
   SlidersHorizontal, Wrench, X,
@@ -120,8 +121,12 @@ function useChips() {
       out.push({ key: "boite", label: optionLabel(TRANSMISSIONS, f.boite, locale) ?? f.boite });
     }
     if (f.make) {
-      const bits = [f.make, f.model, f.year].filter(Boolean).join(" ");
-      out.push({ key: "make", label: t("compatible", { car: bits }) });
+      // On a part, make/model/year say which car it fits; on a car, which car
+      // it is — « compatible avec Renault » read like a spare part.
+      const label = f.kind === "part"
+        ? t("compatible", { car: [f.make, f.model, f.year].filter(Boolean).join(" ") })
+        : f.model ? `${f.make} ${f.model}` : t("make", { car: f.make });
+      out.push({ key: "make", label });
     }
     return out;
   };
@@ -153,6 +158,10 @@ function useFilters(current: FilterState) {
   useEffect(() => () => { if (debounce.current) clearTimeout(debounce.current); }, []);
 
   function commit(merged: FilterState) {
+    // A minimum above its maximum is held back: applied, it would answer « no
+    // results » for a typo. The fields say what is wrong (FilterBody) and every
+    // other criterion stays as it was until the range is put right.
+    if (rangeProblems(merged).length > 0) return;
     const qs = toQuery(merged);
     startTransition(() => {
       // replace, not push: a filter is not a page you meant to visit, and
@@ -208,6 +217,9 @@ function FilterBody({
   const isPart = f.kind === "part";
   const activeCount = chipsFor(f, categories, governorates).length;
   const visibleCats = categories.filter((c) => !f.kind || c.kind === f.kind);
+  const bad = rangeProblems(f);
+  const priceErrId = useId();
+  const yearErrId = useId();
 
   // Everything is on screen. Folding marque/année/kilométrage/carburant behind
   // "Plus de filtres" hid exactly the controls that decide a used car, so the
@@ -244,14 +256,14 @@ function FilterBody({
       </Group>
 
       <Group label={t("category")}>
-        <select value={f.cat} onChange={(e) => push({ cat: e.target.value })} className={INPUT}>
+        <select value={f.cat} onChange={(e) => push({ cat: e.target.value })} aria-label={t("category")} className={INPUT}>
           <option value="">{t("allCategories")}</option>
           {visibleCats.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
         </select>
       </Group>
 
       <Group label={t("governorate")}>
-        <select value={f.gov} onChange={(e) => push({ gov: e.target.value })} className={INPUT}>
+        <select value={f.gov} onChange={(e) => push({ gov: e.target.value })} aria-label={t("governorate")} className={INPUT}>
           <option value="">{t("allTunisia")}</option>
           {governorates.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
         </select>
@@ -261,6 +273,9 @@ function FilterBody({
         <div className="grid grid-cols-2 gap-2">
           <input
             type="number" inputMode="numeric" placeholder={t("min")}
+            aria-label={`${t("budget")} · ${t("min")}`}
+            aria-invalid={bad.includes("price") || undefined}
+            aria-describedby={bad.includes("price") ? priceErrId : undefined}
             value={f.min}
             onChange={(e) => pushDebounced({ min: e.target.value })}
             onBlur={() => push({})}
@@ -269,6 +284,9 @@ function FilterBody({
           />
           <input
             type="number" inputMode="numeric" placeholder={t("max")}
+            aria-label={`${t("budget")} · ${t("max")}`}
+            aria-invalid={bad.includes("price") || undefined}
+            aria-describedby={bad.includes("price") ? priceErrId : undefined}
             value={f.max}
             onChange={(e) => pushDebounced({ max: e.target.value })}
             onBlur={() => push({})}
@@ -276,6 +294,7 @@ function FilterBody({
             className={INPUT}
           />
         </div>
+        {bad.includes("price") && <RangeError id={priceErrId}>{t("rangePrice")}</RangeError>}
       </Group>
 
       {!isPart && (
@@ -290,6 +309,7 @@ function FilterBody({
             <select
               value={f.make}
               onChange={(e) => push({ make: e.target.value, model: "" })}
+              aria-label={t("make")}
               className={INPUT}
             >
               <option value="">{t("allMakes")}</option>
@@ -304,6 +324,7 @@ function FilterBody({
               <select
                 value={f.model}
                 onChange={(e) => push({ model: e.target.value })}
+                aria-label={t("model")}
                 className={INPUT}
               >
                 <option value="">{t("allModels")}</option>
@@ -323,12 +344,16 @@ function FilterBody({
               <input
                 inputMode="numeric" placeholder={t("from")} value={f.year_min}
                 aria-label={t("yearMin")}
+                aria-invalid={bad.includes("year") || undefined}
+                aria-describedby={bad.includes("year") ? yearErrId : undefined}
                 onChange={(e) => pushDebounced({ year_min: e.target.value.replace(/\D/g, "").slice(0, 4) })}
                 className={INPUT}
               />
               <input
                 inputMode="numeric" placeholder={t("to")} value={f.year_max}
                 aria-label={t("yearMax")}
+                aria-invalid={bad.includes("year") || undefined}
+                aria-describedby={bad.includes("year") ? yearErrId : undefined}
                 onChange={(e) => pushDebounced({ year_max: e.target.value.replace(/\D/g, "").slice(0, 4) })}
                 className={INPUT}
               />
@@ -339,6 +364,7 @@ function FilterBody({
                 className={INPUT}
               />
             </div>
+            {bad.includes("year") && <RangeError id={yearErrId}>{t("rangeYear")}</RangeError>}
           </Group>
 
           {/* First of the vehicle groups: « neuf ou occasion » is the
@@ -393,7 +419,7 @@ function FilterBody({
                 className={INPUT}
               />
               <input
-                placeholder={t("year")} inputMode="numeric" value={f.year}
+                placeholder={t("year")} aria-label={t("year")} inputMode="numeric" value={f.year}
                 onChange={(e) => setF({ ...f, year: e.target.value })}
                 className={INPUT}
               />
@@ -452,6 +478,7 @@ export function CatalogToolbar({
   const chipsFor = useChips();
   const { f, push, pushDebounced, pending } = useFilters(current);
   const [sheet, setSheet] = useState(false);
+  const sheetTitleId = useId();
   const isPart = f.kind === "part";
   const chips = chipsFor(f, categories, governorates);
   const activeCount = chips.length;
@@ -479,6 +506,7 @@ export function CatalogToolbar({
             type="button"
             onClick={() => push({ view: o.v })}
             aria-pressed={on}
+            aria-label={o.label}
             className={cn(
               "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-bold transition",
               on
@@ -487,7 +515,9 @@ export function CatalogToolbar({
             )}
           >
             <o.Icon className="size-3.5" />
-            {o.label}
+            {/* Icons alone on the narrowest phones: with the words, the toggle
+                and the sort pushed the row ~50px past a 320px screen. */}
+            <span className="hidden min-[360px]:inline">{o.label}</span>
           </button>
         );
       })}
@@ -498,10 +528,10 @@ export function CatalogToolbar({
   // JSX rather than duplicated: two copies of the filter body is how the grid
   // and the feed would end up filtering differently.
   const sheetNode = (
-    <Overlay open onClose={() => setSheet(false)} z={LAYER.modal} className="max-w-lg p-0 lg:hidden">
+    <Overlay open onClose={() => setSheet(false)} z={LAYER.modal} labelledBy={sheetTitleId} className="max-w-lg p-0 lg:hidden">
       <div className="flex max-h-[calc(100dvh-4rem)] flex-col">
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
-          <span className="text-[15px] font-extrabold">{t("title")}</span>
+          <h2 id={sheetTitleId} className="text-[15px] font-extrabold">{t("title")}</h2>
           <button
             onClick={() => setSheet(false)}
             aria-label={tShared("close")}
@@ -600,6 +630,7 @@ export function CatalogToolbar({
             // Enter still commits immediately for anyone who expects it to.
             onKeyDown={(e) => e.key === "Enter" && push({})}
             placeholder={isPart ? t("searchParts") : t("searchCars")}
+            aria-label={t("search")}
             className="h-12 w-full rounded-xl border border-border bg-surface ps-9 pe-3 text-[14px] text-foreground placeholder:text-muted focus:border-gold focus:outline-none"
           />
         </label>
@@ -622,13 +653,14 @@ export function CatalogToolbar({
           )}
           <span className={pending ? "text-muted" : undefined}>{countLabel}</span>
         </p>
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
           {viewToggle}
-          <label className="inline-flex items-center gap-1.5 text-[12.5px] text-muted">
-            <ArrowDownWideNarrow className="size-3.5" />
+          <label className="inline-flex min-w-0 items-center gap-1.5 text-[12.5px] text-muted">
+            <ArrowDownWideNarrow className="size-3.5 shrink-0" />
             <select
               value={f.sort}
               onChange={(e) => push({ sort: e.target.value })}
+              aria-label={t("sortBy")}
               className="cursor-pointer rounded-lg border border-border bg-surface px-2 py-1.5 text-[12.5px] font-semibold text-foreground focus:border-gold focus:outline-none"
             >
               {SORTS.map((s) => <option key={s.v || "recent"} value={s.v}>{t(`sort.${s.key}`)}</option>)}
@@ -670,6 +702,15 @@ export function CatalogToolbar({
 
 const INPUT =
   "h-10 w-full rounded-lg border border-border bg-surface px-2.5 text-[13px] text-foreground placeholder:text-muted transition-colors focus:border-gold focus:outline-none";
+
+/** Said next to the fields it is about, and read out when it appears. */
+function RangeError({ id, children }: { id: string; children: React.ReactNode }) {
+  return (
+    <p id={id} role="alert" className="mt-1.5 text-[11.5px] font-semibold leading-snug text-[var(--tone-warn)]">
+      {children}
+    </p>
+  );
+}
 
 function Group({ label, children }: { label: string; children: React.ReactNode }) {
   return (

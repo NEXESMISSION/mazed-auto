@@ -12,6 +12,7 @@
   "next": "Suivant",
   "filters": {
     "title": "Filtres",
+    "search": "Rechercher une annonce",
     "lookingFor": "Je cherche",
     "all": "Tout",
     "vehicles": "Véhicules",
@@ -23,6 +24,7 @@
     "budget": "Budget (TND)",
     "min": "Min",
     "max": "Max",
+    "rangePrice": "Le minimum dépasse le maximum : corrigez l'un des deux.",
     "make": "Marque",
     "allMakes": "Toutes les marques",
     "model": "Modèle",
@@ -33,6 +35,7 @@
     "km": "km",
     "yearMin": "Année minimum",
     "yearMax": "Année maximum",
+    "rangeYear": "L'année de début est après l'année de fin : corrigez l'une des deux.",
     "kmMax": "Kilométrage maximum",
     "condition": "État",
     "fuel": "Carburant",
@@ -56,13 +59,15 @@
       "priceAsc": "Prix croissant",
       "priceDesc": "Prix décroissant"
     },
+    "sortBy": "Trier par",
     "chips": {
       "from": "à partir de {amount} TND",
       "upTo": "jusqu'à {amount} TND",
       "since": "Depuis {year}",
       "until": "Jusqu'à {year}",
       "kmMax": "≤ {km} km",
-      "compatible": "compatible {car}"
+      "compatible": "compatible avec {car}",
+      "make": "Marque {car}"
     }
   },
   "reels": {

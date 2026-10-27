@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import dynamic from "next/dynamic";
-import { useState, useTransition } from "react";
+import { Suspense, useEffect, useState, useTransition } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { activeTabFor, TAB_HREFS, type TabId } from "@/lib/nav/tabs";
@@ -62,6 +63,19 @@ function isActive(pathname: string, href: string): boolean {
   const tab = (Object.keys(TAB_HREFS) as TabId[]).find((id) => TAB_HREFS[id] === href);
   if (tab) return activeTabFor(pathname) === tab;
   return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+/**
+ * Keeps the header's search box on what the catalogue is searching for. It
+ * used to keep whatever was last typed: clearing the filters, or going Back,
+ * emptied the catalogue's own box and left « Sportage » up here.
+ */
+function FollowCatalogQuery({ onQuery }: { onQuery: (q: string) => void }) {
+  const pathname = usePathname();
+  const sp = useSearchParams();
+  const urlQ = pathname === "/annonces" ? (sp.get("q") ?? "") : "";
+  useEffect(() => onQuery(urlQ), [urlQ, onQuery]);
+  return null;
 }
 
 export function DesktopNav() {
@@ -135,6 +149,11 @@ export function DesktopNav() {
         </div>
 
         {/* ── Center zone: real search — submits to the explore surface ── */}
+        {/* Its own Suspense: reading the query string must not make every
+            static page render on demand. */}
+        <Suspense fallback={null}>
+          <FollowCatalogQuery onQuery={setQ} />
+        </Suspense>
         <form onSubmit={submitSearch} className="flex flex-1 justify-center" role="search">
           <div className="relative flex w-full max-w-md items-center overflow-hidden rounded-full">
             <SearchIcon

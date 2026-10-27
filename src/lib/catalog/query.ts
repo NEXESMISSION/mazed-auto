@@ -1,6 +1,7 @@
 import { CONDITIONS, FUELS, TRANSMISSIONS, optionLabel } from "@/lib/vehicles";
 import { categoryLabel, governorateLabel, unitLabel } from "@/lib/labels";
 import { formatTND } from "@/lib/utils";
+import { ordered } from "./ranges";
 
 /**
  * The catalog query, in one place.
@@ -118,12 +119,16 @@ export function applyCatalogFilters<T>(
 
   if (sp.gov) q = q.eq("governorate", sp.gov);
   if (sp.q) q = q.ilike("search_text", `%${sp.q.trim().toLowerCase()}%`);
-  if (sp.min && Number(sp.min) > 0) q = q.gte("price", Number(sp.min));
-  if (sp.max && Number(sp.max) > 0) q = q.lte("price", Number(sp.max));
+  // A range typed backwards (a shared link can still carry one: the panel holds
+  // them back) is read the right way round rather than as « nothing matches ».
+  const [pMin, pMax] = ordered(Number(sp.min) > 0 ? Number(sp.min) : null, Number(sp.max) > 0 ? Number(sp.max) : null);
+  if (pMin) q = q.gte("price", pMin);
+  if (pMax) q = q.lte("price", pMax);
 
   // Ranges over the jsonb the seller filled in. `->` (not `->>`) keeps the
   // comparison numeric — as text, "9" would sort after "10 000".
-  const yMin = num(sp.year_min), yMax = num(sp.year_max), kMax = num(sp.km_max);
+  const [yMin, yMax] = ordered(num(sp.year_min) || null, num(sp.year_max) || null);
+  const kMax = num(sp.km_max);
   if (yMin) q = q.filter("attributes->year", "gte", yMin);
   if (yMax) q = q.filter("attributes->year", "lte", yMax);
   if (kMax) q = q.filter("attributes->mileage", "lte", kMax);

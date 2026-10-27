@@ -154,7 +154,7 @@ export default async function FavorisPage() {
                   </div>
 
                   <div className="self-start">
-                    <FavoriteButton listingId={l.id} initialSaved loggedIn size="sm" />
+                    <FavoriteButton listingId={l.id} initialSaved loggedIn size="sm" refreshOnRemove />
                   </div>
                 </article>
               );
@@ -203,7 +203,7 @@ export default async function FavorisPage() {
                       to REMOVE things, and hunting for that control is the one
                       thing it must not make you do. */}
                   <div className="absolute end-2 top-2">
-                    <FavoriteButton listingId={l.id} initialSaved loggedIn size="sm" />
+                    <FavoriteButton listingId={l.id} initialSaved loggedIn size="sm" refreshOnRemove />
                   </div>
 
                   <div className="p-3">

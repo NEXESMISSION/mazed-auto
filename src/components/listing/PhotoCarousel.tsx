@@ -111,8 +111,11 @@ export function PhotoCarousel({
   return (
     <div>
       <div className="batta-photo-overlay relative">
+        {/* 4:3 on phones too: car photos are landscape, and a 4:5 frame round
+            them was ~190px of black bands pushing the price and the seller's
+            contact below the fold. */}
         <div
-          className="relative aspect-[4/5] overflow-hidden bg-surface-2 sm:aspect-[4/3]"
+          className="relative aspect-[4/3] overflow-hidden bg-surface-2"
           style={{ touchAction: "pan-y" }}
           onTouchStart={(e) => {
             touchX.current = e.touches[0].clientX;

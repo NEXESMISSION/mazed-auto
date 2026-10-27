@@ -39,12 +39,19 @@ export function FavoriteButton({
   loggedIn,
   size = "md",
   className,
+  refreshOnRemove = false,
 }: {
   listingId: string;
   initialSaved: boolean;
   loggedIn: boolean;
   size?: "sm" | "md";
   className?: string;
+  /**
+   * On the favourites page the list and its count are the server's: once a
+   * removal is saved, ask for them again. Without it the card stayed, its
+   * heart empty, under « 1 annonce », until the page was reloaded.
+   */
+  refreshOnRemove?: boolean;
 }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -111,6 +118,8 @@ export function FavoriteButton({
           res.status === 401 ? t("sessionExpired") : t("failed"),
           res.status === 401 ? "warning" : "error",
         );
+      } else if (!next && refreshOnRemove) {
+        router.refresh();
       }
     } catch {
       setSaved(!next);
