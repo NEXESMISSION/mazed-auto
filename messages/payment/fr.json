@@ -9,6 +9,25 @@
   "checkout": {
     "label": "Frais d'annonce",
     "body": "Frais de publication + options choisies. Votre annonce part en vérification dès validation du reçu.",
+    "kinds": {
+      "subscription": {
+        "label": "Abonnement boutique",
+        "days": "{days} jours",
+        "quota": "{count, plural, one {# annonce} other {# annonces}}",
+        "body": "Votre boutique s'ouvre dès que notre équipe a validé le reçu.",
+        "after": "Votre boutique s'ouvre et votre abonnement démarre."
+      },
+      "promo": {
+        "label": "Option Boost",
+        "body": "Votre annonce est mise en avant dès que notre équipe a validé le reçu.",
+        "after": "Votre annonce est mise en avant."
+      },
+      "other": {
+        "label": "Paiement",
+        "body": "Votre commande est confirmée dès que notre équipe a validé le reçu.",
+        "after": "Votre commande est confirmée."
+      }
+    },
     "copyFailed": "Impossible de copier.",
     "maxFiles": "Maximum {max} images.",
     "maxFilesIgnored": "Maximum {max} images — fichiers en trop ignorés.",
@@ -48,18 +67,18 @@
       "title": "Reçu transmis",
       "received": "Justificatif de <b>{amount}</b> bien reçu.",
       "receivedFor": "Justificatif de <b>{amount}</b> pour <b>{title}</b> bien reçu.",
-      "step1": "Notre équipe vérifie votre reçu (moins de 24 h).",
-      "step2": "Vous recevez une notification : validé ou correction demandée.",
+      "step1": "Notre équipe vérifie votre reçu, en général sous 24 à 48 h.",
+      "step2": "Vous recevez une notification : validé, ou refusé avec le motif.",
       "step3": "Votre annonce part en vérification, puis passe en ligne.",
       "subscription": "Mon abonnement",
       "listings": "Mes annonces",
       "viewListing": "Voir l'annonce"
     },
     "editListing": "← Modifier l'annonce",
-    "previousRejected": "Reçu précédent refusé — vérifiez les coordonnées et renvoyez un nouveau justificatif.",
     "stepMethod": "Choisissez le mode de paiement",
     "stepPay": "Payez avec ces coordonnées",
     "stepUpload": "Téléversez le reçu du virement",
+    "stepUploadD17": "Téléversez la confirmation D17",
     "bankTransfer": "Virement (RIB)",
     "d17": "D17 mobile",
     "copied": "Copié",
@@ -76,6 +95,14 @@
     "closed": {
       "title": "Le paiement n'est pas encore ouvert",
       "body": "Notre équipe finalise les moyens de paiement. Votre commande est gardée : vous pourrez la régler ici dès qu'ils seront ouverts. Une question ? Écrivez-nous."
+    },
+    "review": {
+      "eyebrow": "Reçu en vérification",
+      "title": "Votre reçu est entre les mains de l'équipe",
+      "sentOn": "Envoyé le {date}.",
+      "body": "Nous le vérifions, en général sous 24 à 48 heures, et vous recevez une notification : validé, ou refusé avec le motif. Vous n'avez rien d'autre à faire.",
+      "replace": "Remplacer le justificatif",
+      "replaceHint": "Seulement si vous avez envoyé le mauvais fichier : le nouveau remplace l'ancien."
     }
   },
   "instructions": {
@@ -131,7 +158,7 @@
       "failed": {
         "eyebrow": "Paiement refusé",
         "title": "Ce paiement n'a pas abouti",
-        "body": "Rien n'a été confirmé et votre annonce n'a pas été publiée. Reprenez le paiement depuis « Mes annonces », ou contactez-nous si vous pensez qu'il s'agit d'une erreur."
+        "body": "Rien n'a été confirmé. Reprenez le paiement là où vous l'aviez commencé, ou contactez-nous si vous pensez qu'il s'agit d'une erreur."
       },
       "refunded": {
         "eyebrow": "Paiement remboursé",
@@ -141,7 +168,7 @@
       "pending_review": {
         "eyebrow": "Reçu en cours de vérification",
         "title": "Nous vérifions votre reçu",
-        "body": "Votre virement est entre nos mains. Nous confirmons sous 24 h en général, et vous recevez un message dès que c'est validé — vous n'avez rien d'autre à faire."
+        "body": "Votre reçu est entre nos mains. Nous le vérifions en général sous 24 à 48 heures, et vous recevez un message dès que c'est fait — vous n'avez rien d'autre à faire."
       },
       "authorized": {
         "eyebrow": "En attente de confirmation",
@@ -174,7 +201,8 @@
       "amount": "Montant",
       "object": "Objet",
       "date": "Date",
-      "status": "Statut"
+      "status": "Statut",
+      "reason": "Motif"
     },
     "redirecting": "Redirection automatique…",
     "ref": "Réf · {id}"

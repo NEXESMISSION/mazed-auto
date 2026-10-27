@@ -67,7 +67,7 @@
       "inspections": "Mes expertises",
       "inspectionsBody": "Vos rapports d'expertise.",
       "payments": "Paiements",
-      "paymentsBody": "Dépôts, commissions, remboursements.",
+      "paymentsBody": "Abonnements, options et reçus.",
       "language": "Langue"
     },
     "guestExplore": "Explorer sans compte",
@@ -317,7 +317,7 @@
     "myInspections": "Mes expertises",
     "myInspectionsBody": "Vos rapports d'expertise.",
     "payments": "Paiements",
-    "paymentsBody": "Dépôts, commissions, remboursements.",
+    "paymentsBody": "Abonnements, options et reçus.",
     "adminLink": "Console admin",
     "adminLinkBody": "Annonces, KYC, experts.",
     "partnerLink": "Dashboard partenaire",

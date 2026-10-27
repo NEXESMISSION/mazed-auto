@@ -23,15 +23,20 @@ type PaymentRow = {
   created_at: string;
   metadata: { listing_id?: string } | null;
   admin_notes: string | null;
+  shop_id: string | null;
 };
 
 type Photo = { storage_path: string; sort_order: number };
 type Entity = { title: string | null; governorate: string | null; coverUrl: string | null };
 
-/** Buyer-spend kinds that count toward "Total dépensé" once captured.
- *  `deposit_lock` is excluded — a locked caution is tracked separately and
- *  shouldn't be double-counted as spend. */
-const SPEND_KINDS = new Set(["buy_now", "final_payment", "inspection_fee", "listing_fee"]);
+/** Kinds that count toward « Total dépensé » once captured: everything the
+ *  site charges (a 79 DT subscription was left out of the total), and the
+ *  auction-era purchases for old rows. Not `deposit_lock`: a caution was
+ *  money held, not spent. */
+const SPEND_KINDS = new Set([
+  "subscription", "promo", "badge", "listing_fee", "listing_pack", "renewal",
+  "buy_now", "final_payment", "inspection_fee",
+]);
 
 function coverFrom(photos: Photo[] | null | undefined): string | null {
   const cover = (photos ?? []).slice().sort((a, b) => a.sort_order - b.sort_order)[0];
@@ -56,7 +61,7 @@ export default async function MyPaymentsPage({
   const { data } = await supabase
     .from("payments")
     .select(
-      "id, kind, provider, amount, status, receipt_url, created_at, metadata, admin_notes",
+      "id, kind, provider, amount, status, receipt_url, created_at, metadata, admin_notes, shop_id",
     )
     .eq("user_id", user!.id)
     .order("created_at", { ascending: false })
@@ -152,6 +157,7 @@ export default async function MyPaymentsPage({
       adminNotes: p.admin_notes ?? null,
       receiptUrl: signed.get(p.id) ?? null,
       auctionId: null,
+      shopId: p.shop_id ?? null,
       title: entity?.title ?? null,
       governorate: entity?.governorate ?? null,
       coverUrl: entity?.coverUrl ?? null,
@@ -173,9 +179,8 @@ export default async function MyPaymentsPage({
     if (p.status === "captured" && SPEND_KINDS.has(p.kind)) spentTotal += Number(p.amount);
   }
   // Cautions were the only thing that could be "locked" or "refunded", and
-  // they went with the auction product. Kept at zero rather than removed from
-  // the summary shape: the client renders these tiles conditionally on > 0, so
-  // they simply stop appearing.
+  // they went with the auction product. Kept at zero in the summary shape; the
+  // « Caution bloquée » tile that showed this 0 to everyone is gone.
   const lockedTotal = 0;
   const refundedTotal = 0;
 

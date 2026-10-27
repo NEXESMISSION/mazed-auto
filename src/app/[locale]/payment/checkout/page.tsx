@@ -7,7 +7,11 @@ import { CheckoutClient } from "./CheckoutClient";
 
 export const dynamic = "force-dynamic";
 
-export type CheckoutKind = "listing_fee";
+/** What the payment buys — it decides the page's title, its explanation and what happens once the receipt is accepted. */
+export type CheckoutKind = "listing_fee" | "subscription" | "promo" | "other";
+
+/** A shop plan, as the subscription checkout describes it. */
+export type CheckoutPlan = { name: string; days: number | null; quota: number | null };
 
 /**
  * Manual-receipt checkout — the one place a seller pays for a publication.
@@ -63,7 +67,7 @@ export default async function CheckoutEntry({
   // a 404 — which is exactly how a stale column reference stays invisible.
   const { data: pay, error } = await supabase
     .from("payments")
-    .select("id, user_id, kind, amount, status, metadata, shop_id")
+    .select("id, user_id, kind, amount, status, metadata, shop_id, receipt_uploaded_at")
     .eq("id", paymentParam)
     .maybeSingle();
 
@@ -74,9 +78,11 @@ export default async function CheckoutEntry({
     redirect(`/${locale}/payment/success?id=${pay.id}`);
   }
 
-  const listing = await fetchListingSummary(
-    (pay.metadata as { listing_id?: string } | null)?.listing_id,
-  );
+  const meta = (pay.metadata ?? {}) as { listing_id?: string; product_id?: string };
+  const listing = await fetchListingSummary(meta.listing_id);
+  const kind: CheckoutKind =
+    pay.kind === "listing_fee" || pay.kind === "subscription" || pay.kind === "promo" ? pay.kind : "other";
+  const plan = kind === "subscription" ? await fetchPlan(meta.product_id, locale) : null;
 
   return (
     <CheckoutClient
@@ -91,7 +97,13 @@ export default async function CheckoutEntry({
         label: (key) => tl(key),
       })}
       locale={locale}
-      reupload={pay.status === "pending_review"}
+      kind={kind}
+      plan={plan}
+      // A receipt is already with the team: the page says so first, and the
+      // upload is a « replace » the seller opens on purpose. It used to show a
+      // red « Reçu précédent refusé » here — for a receipt nobody had refused.
+      underReview={pay.status === "pending_review"}
+      receiptAt={(pay.receipt_uploaded_at as string | null) ?? null}
       shopOrder={pay.shop_id != null}
       // A rejected receipt is often a rejected LISTING in disguise, so the
       // seller can go back and fix the annonce before paying again.
@@ -100,6 +112,24 @@ export default async function CheckoutEntry({
       }
     />
   );
+}
+
+/** The plan a subscription payment buys: its name, length and listing quota. */
+async function fetchPlan(productId: string | undefined, locale: string): Promise<CheckoutPlan | null> {
+  if (!productId) return null;
+  const supabase = await getServerSupabase();
+  const { data } = await supabase
+    .from("products")
+    .select("name_fr, name_ar, duration_days, listing_quota")
+    .eq("id", productId)
+    .maybeSingle();
+  if (!data) return null;
+  const p = data as { name_fr: string; name_ar: string | null; duration_days: number | null; listing_quota: number | null };
+  return {
+    name: locale === "ar" && p.name_ar ? p.name_ar : p.name_fr,
+    days: p.duration_days,
+    quota: p.listing_quota,
+  };
 }
 
 /**

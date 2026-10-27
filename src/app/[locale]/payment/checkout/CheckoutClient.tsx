@@ -13,8 +13,8 @@ import {
   Loader2,
   ArrowRight,
   ArrowLeft,
-  AlertCircle,
   Clock,
+  RefreshCw,
   FileText,
   X,
 } from "lucide-react";
@@ -22,6 +22,8 @@ import { useToast } from "@/components/ui/Toast";
 import { formatTND, currencyLabel, cn } from "@/lib/utils";
 import { propertyPhotoUrl, isStaticSeedPath } from "@/lib/imageUrl";
 import { compressImage } from "@/lib/imageCompress";
+import { formatDateTime } from "@/lib/dates";
+import type { CheckoutKind, CheckoutPlan } from "./page";
 import { withTimeout, isTimeout } from "@/lib/withTimeout";
 import type { ProviderInstructions } from "@/lib/payments";
 import type { PaymentProvider } from "@/lib/payments/types";
@@ -43,8 +45,17 @@ interface Props {
   } | null;
   instructions: ProviderInstructions[];
   locale: string;
-  /** True when re-uploading after a rejection (or a refresh). */
-  reupload: boolean;
+  /** What the payment buys: the title, the explanation and what follows acceptance. */
+  kind: CheckoutKind;
+  /** For a subscription: the plan's name, length and quota. */
+  plan: CheckoutPlan | null;
+  /**
+   * A receipt is already with the team (`pending_review`). The page then
+   * says so first, and the upload is a deliberate « replace ».
+   */
+  underReview: boolean;
+  /** When that receipt was sent. */
+  receiptAt: string | null;
   /** When set (listing-fee payments), shows a "Modifier l'annonce" link so the
    *  seller can go back and fix the listing before paying. Full locale-prefixed
    *  href to the edit page (which returns here after saving). */
@@ -217,12 +228,18 @@ export function CheckoutClient({
   listing,
   instructions,
   locale,
-  reupload,
+  kind,
+  plan,
+  underReview,
+  receiptAt,
   editHref,
   shopOrder = false,
 }: Props) {
   const t = useTranslations("payment");
   const tc = useTranslations("payment.checkout");
+  // `listing_fee` keeps the original wording; the others say what they buy.
+  const kindKey = kind === "listing_fee" ? null : kind;
+  const [replacing, setReplacing] = useState(false);
   const cur = currencyLabel(locale);
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -516,7 +533,7 @@ export function CheckoutClient({
     // "passe en ligne automatiquement" was wrong even before the pivot: a
     // captured fee moves the annonce to `pending_review`, not to `published`.
     // Paying buys a publication, not a way past moderation.
-    const steps = [tc("done.step1"), tc("done.step2"), tc("done.step3")];
+    const steps = [tc("done.step1"), tc("done.step2"), kindKey ? tc(`kinds.${kindKey}.after`) : tc("done.step3")];
     const bold = (chunks: React.ReactNode) => <span className="font-bold text-foreground">{chunks}</span>;
     const amountText = `${formatTND(amount, locale)} ${cur}`;
     return (
@@ -654,11 +671,22 @@ export function CheckoutClient({
             </div>
           )}
           <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--gold)]">
-            {tc("label")}
+            {kindKey ? tc(`kinds.${kindKey}.label`) : tc("label")}
           </div>
           {listing && (
             <div className="mt-0.5 text-[14px] font-bold leading-tight line-clamp-1">
               {listing.title}
+            </div>
+          )}
+          {/* A subscription has no annonce: it buys a plan, and the page says
+              which — it used to read « Frais d'annonce » for a 79 DT plan. */}
+          {!listing && plan && (
+            <div className="mt-0.5 text-[14px] font-bold leading-tight">
+              {[
+                plan.name,
+                plan.days ? tc("kinds.subscription.days", { days: plan.days }) : null,
+                plan.quota ? tc("kinds.subscription.quota", { count: plan.quota }) : null,
+              ].filter(Boolean).join(" · ")}
             </div>
           )}
           <div className="batta-tabular gradient-gold-text mt-3 text-[40px] font-extrabold leading-none">
@@ -668,7 +696,7 @@ export function CheckoutClient({
             </span>
           </div>
           <p className="mx-auto mt-2 max-w-xs text-[11.5px] leading-snug text-[var(--foreground-muted)]">
-            {tc("body")}
+            {kindKey ? tc(`kinds.${kindKey}.body`) : tc("body")}
           </p>
           {editHref && (
             // Made a mistake? Go back and fix the listing before paying — saving
@@ -682,16 +710,36 @@ export function CheckoutClient({
           )}
         </section>
 
-        {reupload && (
-          <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-[12px] text-red-900">
-            <AlertCircle className="mt-0.5 size-4 shrink-0" />
-            <span>{tc("previousRejected")}</span>
-          </div>
-        )}
         </div>
 
         {/* RIGHT (desktop) / BELOW (mobile) — payment steps */}
         <div className="mt-4 space-y-4 lg:mt-0">
+        {underReview && !replacing ? (
+          // Where the receipt stands, before anything else. The steps below
+          // are for paying; someone whose receipt is being checked has nothing
+          // to pay, and showing them the upload again read as « refused ».
+          <section className="rounded-2xl border border-[var(--gold-soft)] bg-[var(--gold-faint)]/40 p-5">
+            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--gold)]">
+              <Clock className="size-3.5" strokeWidth={2.4} />
+              {tc("review.eyebrow")}
+            </div>
+            <h2 className="mt-2 text-[17px] font-extrabold leading-snug text-foreground">{tc("review.title")}</h2>
+            <p className="mt-1.5 text-[12.5px] leading-relaxed text-[var(--foreground-muted)]">
+              {receiptAt && <>{tc("review.sentOn", { date: formatDateTime(receiptAt, locale) })} </>}
+              {tc("review.body")}
+            </p>
+            <button
+              type="button"
+              onClick={() => setReplacing(true)}
+              className="tap-target mt-4 inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[12.5px] font-bold text-foreground ring-1 ring-[var(--border)] transition hover:ring-[var(--gold-soft)]"
+            >
+              <RefreshCw className="size-3.5" strokeWidth={2.4} />
+              {tc("review.replace")}
+            </button>
+            <p className="mt-1.5 text-[11px] text-[var(--foreground-subtle)]">{tc("review.replaceHint")}</p>
+          </section>
+        ) : (
+        <>
         {/* ── STEP 1: choose method (big toggles) ── */}
         <Step n={1} title={tc("stepMethod")} />
         <div className={cn("grid gap-2.5", instructions.length > 1 ? "grid-cols-2" : "grid-cols-1")}>
@@ -779,7 +827,7 @@ export function CheckoutClient({
         )}
 
         {/* ── STEP 3: upload receipt ── */}
-        <Step n={3} title={tc("stepUpload")} />
+        <Step n={3} title={provider === "d17" ? tc("stepUploadD17") : tc("stepUpload")} />
         <div className="space-y-2.5">
           {files.map((f, i) => (
             <div key={`${f.name}-${i}`} className="flex items-center gap-3 rounded-2xl border border-[var(--gold-soft)] bg-[var(--gold-faint)]/40 p-3.5">
@@ -861,6 +909,8 @@ export function CheckoutClient({
           <p className="text-center text-[11px] text-[var(--foreground-muted)]">
             {files.length > 0 ? tc("validationHint") : tc("uploadFirst")}
           </p>
+        )}
+        </>
         )}
 
         {/* Support escape hatch — v1's checkout pattern. */}

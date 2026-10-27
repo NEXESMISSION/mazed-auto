@@ -86,6 +86,9 @@ function viewFor(t: T, status: string, kind: string): View {
   }
 }
 
+/** How a payment the user cancelled themselves is marked (api/payments/[id]/cancel). */
+const CANCELLED_NOTE = "Annulé par l'utilisateur";
+
 /** The status word itself — it was printing the raw enum. */
 const STATUSES = new Set(["captured", "pending", "pending_review", "authorized", "refunded", "failed"]);
 
@@ -131,7 +134,7 @@ export default async function PaymentSuccess({
 
   const { data: payment } = await supabase
     .from("payments")
-    .select("id, kind, amount, status, currency, created_at, auction_id, shop_id")
+    .select("id, kind, amount, status, currency, created_at, auction_id, shop_id, admin_notes")
     .eq("id", id)
     .maybeSingle();
 
@@ -251,6 +254,13 @@ export default async function PaymentSuccess({
               {STATUSES.has(status) ? t(`status.${status}`) : status}
             </span>
           </Row>
+          {/* Why it was refused — what the team wrote, so the seller knows what
+              to fix instead of guessing. Not the user's own cancellation. */}
+          {status === "failed" && payment.admin_notes && payment.admin_notes !== CANCELLED_NOTE && (
+            <Row label={t("rows.reason")}>
+              <span className="text-[12px] text-foreground">{payment.admin_notes}</span>
+            </Row>
+          )}
         </dl>
 
         {view.autoRedirect && (

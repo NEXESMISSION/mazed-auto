@@ -141,7 +141,7 @@
     },
     "actions": {
       "upload": "Téléverser le reçu",
-      "fix": "Voir / corriger le reçu",
+      "fix": "Voir le reçu",
       "retry": "Reprendre le paiement"
     },
     "cancelFailed": "Annulation impossible.",
@@ -149,13 +149,11 @@
     "tabs": {
       "all": "Tout",
       "action": "À traiter",
-      "deposits": "Cautions",
-      "purchases": "Achats & frais",
+      "purchases": "Frais & abonnements",
       "refunds": "Remboursements"
     },
     "stats": {
       "action": "À traiter",
-      "locked": "Caution bloquée",
       "spent": "Total dépensé",
       "review": "En vérification"
     },
@@ -238,7 +236,7 @@
     "off": "SMS importants désactivés.",
     "failed": "Échec de la mise à jour. Réessayez.",
     "title": "SMS pour les alertes importantes",
-    "body": "Un SMS quand vous gagnez, êtes surenchéri ou qu'un paiement est dû. Le détail reste dans l'application et par e-mail.",
+    "body": "Un SMS quand votre annonce est publiée, refusée ou arrive à expiration, et quand un paiement est validé ou refusé. Le détail reste dans l'application et par e-mail.",
     "toggle": "Activer les SMS pour les alertes importantes"
   }
 }

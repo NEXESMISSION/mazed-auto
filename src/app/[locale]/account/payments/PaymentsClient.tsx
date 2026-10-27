@@ -46,6 +46,8 @@ export type PaymentVM = {
   /** Signed, time-limited URL for the uploaded receipt (private bucket). */
   receiptUrl: string | null;
   auctionId: string | null;
+  /** Set on a shop's order (subscription, Boost): its page is where it is paid again. */
+  shopId: string | null;
   title: string | null;
   governorate: string | null;
   coverUrl: string | null;
@@ -114,14 +116,19 @@ function providerLabel(t: T, provider: string): string {
 }
 
 /** Where the primary action button leads:
- *  - pending / pending_review → resume the existing checkout (upload / fix receipt)
- *  - failed → re-initiate through the typed checkout entry (a new pending row)  */
+ *  - pending / pending_review → the existing checkout (upload, or see where
+ *    the receipt stands and replace it)
+ *  - failed → where that order is placed again: a shop's subscription page,
+ *    or the seller's annonces. It used to need an auction id, which no
+ *    payment has any more, so a refused payment led nowhere.  */
 function actionHref(p: PaymentVM): string | null {
   if (isCancelled(p)) return null;
   if (p.status === "pending" || p.status === "pending_review") {
     return `/payment/checkout?payment=${p.id}`;
   }
   if (p.status === "failed") {
+    if (p.shopId || p.kind === "subscription") return "/pro/dashboard/abonnement";
+    if (p.kind === "listing_fee" || p.kind === "renewal" || p.kind === "promo") return "/account/listings";
     const type = KIND_TO_CHECKOUT[p.kind];
     if (type && p.auctionId) return `/payment/checkout?type=${type}&auction=${p.auctionId}`;
     return p.auctionId ? `/auctions/${p.auctionId}` : null;
@@ -135,10 +142,14 @@ function actionLabel(t: T, p: PaymentVM): string {
   return t("actions.retry");
 }
 
-type FilterKey = "all" | "action" | "deposits" | "purchases" | "refunds";
+// No « Cautions » tab: deposits went with the auctions, and the tab was always
+// empty. « Frais & abonnements » holds what the site charges today.
+type FilterKey = "all" | "action" | "purchases" | "refunds";
 
-const DEPOSIT_KINDS = new Set(["deposit_lock", "deposit_release"]);
-const PURCHASE_KINDS = new Set(["buy_now", "final_payment", "inspection_fee", "listing_fee"]);
+const PURCHASE_KINDS = new Set([
+  "subscription", "promo", "badge", "listing_fee", "listing_pack", "renewal",
+  "buy_now", "final_payment", "inspection_fee",
+]);
 
 function matchesFilter(p: PaymentVM, key: FilterKey): boolean {
   switch (key) {
@@ -149,8 +160,6 @@ function matchesFilter(p: PaymentVM, key: FilterKey): boolean {
         (p.status === "pending" || p.status === "pending_review" || p.status === "failed") &&
         !isCancelled(p)
       );
-    case "deposits":
-      return DEPOSIT_KINDS.has(p.kind);
     case "purchases":
       return PURCHASE_KINDS.has(p.kind);
     case "refunds":
@@ -203,7 +212,7 @@ export function PaymentsClient({
   );
 
   const counts = useMemo(() => {
-    const c: Record<FilterKey, number> = { all: 0, action: 0, deposits: 0, purchases: 0, refunds: 0 };
+    const c: Record<FilterKey, number> = { all: 0, action: 0, purchases: 0, refunds: 0 };
     for (const p of payments) {
       (Object.keys(c) as FilterKey[]).forEach((k) => {
         if (matchesFilter(p, k)) c[k] += 1;
@@ -215,26 +224,19 @@ export function PaymentsClient({
   const visible = useMemo(() => payments.filter((p) => matchesFilter(p, filter)), [payments, filter]);
 
   const TABS: { key: FilterKey; label: string }[] = (
-    ["all", "action", "deposits", "purchases", "refunds"] as const
+    ["all", "action", "purchases", "refunds"] as const
   ).map((key) => ({ key, label: t(`tabs.${key}`) }));
 
   return (
     <div className="mt-6">
       {/* ── Summary cards — the four signals that matter, at a glance. ── */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
         <StatCard
           label={t("stats.action")}
           value={String(summary.actionCount)}
           Icon={AlertTriangle}
           tone={summary.actionCount > 0 ? "text-amber-600" : "text-foreground/50"}
           highlight={summary.actionCount > 0}
-        />
-        <StatCard
-          label={t("stats.locked")}
-          value={formatTND(summary.lockedTotal, locale)}
-          suffix={cur}
-          Icon={Wallet}
-          tone="text-gold"
         />
         <StatCard
           label={t("stats.spent")}
