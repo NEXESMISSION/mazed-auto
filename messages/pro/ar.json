@@ -126,7 +126,9 @@
       "draftApproval": "اختر باقة وأرسل طلب فتح متجرك: يراجعه فريقنا، ثم تدفع.",
       "requestPending": "طلب فتح متجرك ({plan}) قيد المراجعة من فريقنا.",
       "requestApproved": "قُبل طلبك: ادفع باقة {plan} لفتح متجرك.",
-      "shopRefused": "رُفض طلب فتح المتجر: {reason}"
+      "shopRefused": "رُفض طلب فتح المتجر: {reason}",
+      "receiptReview": "وصلك قيد التحقق: يُفتح متجرك فور قبوله من فريقنا.",
+      "receiptMissing": "دفعتك تنتظر الوصل: أرسله لفتح متجرك."
     },
     "cta": {
       "choose": "اختر",
@@ -136,7 +138,8 @@
       "complete": "أكمل",
       "see": "عرض",
       "pay": "ادفع",
-      "askAgain": "أعد الطلب"
+      "askAgain": "أعد الطلب",
+      "sendReceipt": "أرسل الوصل"
     },
     "online": "الإعلانات المنشورة",
     "onlineHint": "قيد المراجعة أو منشورة. المسودّات والإعلانات المسحوبة لا تُحتسب.",
@@ -163,7 +166,24 @@
     "countPublished": "{count, plural, zero {لا إعلانات منشورة} one {إعلان منشور} two {إعلانان منشوران} few {{count} منشورة} many {{count} منشورًا} other {{count} منشور}}",
     "countReview": "{count} قيد المراجعة",
     "countDrafts": "{count, plural, zero {لا مسودّات} one {مسودّة واحدة} two {مسودّتان} few {{count} مسودّات} many {{count} مسودّة} other {{count} مسودّة}}",
-    "countExpired": "{count, plural, zero {لا إعلانات منتهية} one {إعلان منتهٍ} two {إعلانان منتهيان} few {{count} منتهية} many {{count} منتهيًا} other {{count} منتهٍ}}"
+    "countExpired": "{count, plural, zero {لا إعلانات منتهية} one {إعلان منتهٍ} two {إعلانان منتهيان} few {{count} منتهية} many {{count} منتهيًا} other {{count} منتهٍ}}",
+    "notYet": "غير منشورة بعد",
+    "notYetHint": "تُفتح صفحتك للعموم مع فتح متجرك. جهّزها من الآن في « متجري ».",
+    "publicNoPlanHint": "تبقى صفحتك ظاهرة، لكن دون اشتراك جارٍ لا يمكن نشر إعلاناتك.",
+    "offline": "خارج الموقع",
+    "offlineHint": "متجرك موقوف أو مغلق: لم تعد صفحته ظاهرة.",
+    "waiting": {
+      "title": "دون اشتراك جارٍ",
+      "now": "ممكن من الآن",
+      "nowPage": "أكمل صفحتك: الشعار، الوصف، الهاتف",
+      "nowDocs": "أرسل وثائقك للحصول على شارة « موثّق »",
+      "nowDrafts": "جهّز إعلاناتك كمسودّات",
+      "later": "عند فتح المتجر",
+      "laterReceipt": "فور قبول وصلك",
+      "laterPublish": "نشر إعلاناتك في حدود باقتك",
+      "laterDirectory": "صفحتك في دليل المتاجر",
+      "laterStats": "إحصائيات الزيارات والاتصالات"
+    }
   },
   "listings": {
     "status": {

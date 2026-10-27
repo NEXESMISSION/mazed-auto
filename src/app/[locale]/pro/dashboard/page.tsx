@@ -23,7 +23,7 @@ export default async function ProSummaryPage() {
   if (ctx.kind !== "shop") return null; // the layout already answered
   const { admin, user, shop } = ctx;
 
-  const [quota, subRes, countRes, gate, approvals, requests] = await Promise.all([
+  const [quota, subRes, countRes, gate, approvals, requests, payingRes] = await Promise.all([
     quotaStatus(admin, user.id, shop.id, shop.activity_type as ListingType),
     admin
       .from("subscriptions")
@@ -37,6 +37,16 @@ export default async function ProSummaryPage() {
     shopsGate(admin),
     approvalsSetting(admin),
     shopRequests(admin, shop.id),
+    // A plan paid by transfer or D17 and not confirmed yet: what the shop waits on.
+    admin
+      .from("payments")
+      .select("id, status, provider")
+      .eq("shop_id", shop.id)
+      .eq("kind", "subscription")
+      .in("status", ["pending", "pending_review"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   const locale = await getLocale();
@@ -63,12 +73,24 @@ export default async function ProSummaryPage() {
   // The opening the back office is looking at, or has answered (0196).
   const opening = requests.open.find((r) => r.kind === "opening") ?? null;
   const openingPlan = opening ? requestProductName(opening, locale) : "";
+  // No period running: nothing can be published yet, whatever else is ready.
+  const noPeriod = !current && !inGrace;
+  // A plan paid by transfer / D17 waiting on its receipt (a Konnect page left
+  // open is not a payment anyone is waiting on).
+  const paying = payingRes.data as { id: string; status: string; provider: string } | null;
+  const receipt = noPeriod && paying
+    ? paying.status === "pending_review" ? "review" : paying.provider !== "konnect" ? "missing" : null
+    : null;
 
   // What needs doing, most urgent first.
   const alerts: { tone: "bad" | "warn"; text: string; href?: string; cta?: string }[] = [];
   if (shop.status === "suspended") {
     // The reason is the admin's own words, shown as written.
     alerts.push({ tone: "bad", text: shop.rejection_reason ? t("alerts.suspendedBecause", { reason: shop.rejection_reason }) : t("alerts.suspended") });
+  } else if (receipt === "review") {
+    alerts.push({ tone: "warn", text: t("alerts.receiptReview") });
+  } else if (receipt === "missing") {
+    alerts.push({ tone: "warn", text: t("alerts.receiptMissing"), href: `/payment/checkout?payment=${paying!.id}`, cta: t("cta.sendReceipt") });
   } else if (opening?.status === "approved") {
     alerts.push({ tone: "warn", text: t("alerts.requestApproved", { plan: openingPlan }), href: "/pro/dashboard/abonnement", cta: t("cta.pay") });
   } else if (opening?.status === "pending") {
@@ -113,6 +135,20 @@ export default async function ProSummaryPage() {
     alerts.push({ tone: "warn", text: t("alerts.rejected", { count: counts.rejected }), href: "/pro/dashboard/annonces", cta: t("cta.see") });
   }
 
+  // Where the shop's page actually stands: shown to the public only when shop
+  // pages are open AND this shop is open (the storefront reads both) — not
+  // merely because the switch is on, which is how a draft read « Publique ».
+  const page = !gate.enabled
+    ? "soon"
+    : shop.status === "active"
+      ? noPeriod ? "publicNoPlan" : "public"
+      : shop.status === "suspended" || shop.status === "closed" ? "offline" : "notYet";
+  const pageTitle = { soon: t("notPublic"), public: t("public"), publicNoPlan: t("public"), notYet: t("notYet"), offline: t("offline") }[page];
+  const pageHint = {
+    soon: t("notPublicHint"), public: t("publicHint"), publicNoPlan: t("publicNoPlanHint"),
+    notYet: t("notYetHint"), offline: t("offlineHint"),
+  }[page];
+
   return (
     <div className="space-y-4">
       {alerts.length > 0 && (
@@ -134,6 +170,34 @@ export default async function ProSummaryPage() {
             </li>
           ))}
         </ul>
+      )}
+
+      {/* No period running (QA report): an empty dashboard said nothing of
+          what can be done already and what has to wait for the opening. */}
+      {noPeriod && shop.status !== "suspended" && shop.status !== "closed" && (
+        <section className="rounded-2xl border border-gold-soft bg-surface p-4">
+          <h2 className="text-[14px] font-extrabold">{t("waiting.title")}</h2>
+          <div className="mt-3 grid gap-4 sm:grid-cols-2">
+            <div>
+              <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[var(--tone-ok)]">{t("waiting.now")}</p>
+              <ul className="mt-2 space-y-1.5 text-[12.5px]">
+                <li><Link href={"/pro/dashboard/boutique" as never} className="font-bold text-gold hover:underline">{t("waiting.nowPage")}</Link></li>
+                <li><Link href={"/pro/dashboard/boutique#justificatifs" as never} className="font-bold text-gold hover:underline">{t("waiting.nowDocs")}</Link></li>
+                <li><Link href={"/annonces/nouvelle" as never} className="font-bold text-gold hover:underline">{t("waiting.nowDrafts")}</Link></li>
+              </ul>
+            </div>
+            <div>
+              <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-muted">
+                {receipt === "review" ? t("waiting.laterReceipt") : t("waiting.later")}
+              </p>
+              <ul className="mt-2 space-y-1.5 text-[12.5px] text-muted">
+                <li>{t("waiting.laterPublish")}</li>
+                <li>{t("waiting.laterDirectory")}</li>
+                <li>{t("waiting.laterStats")}</li>
+              </ul>
+            </div>
+          </div>
+        </section>
       )}
 
       <div className="grid gap-3 sm:grid-cols-2">
@@ -208,10 +272,10 @@ export default async function ProSummaryPage() {
             <Eye className="size-3.5" /> {t("yourPage")}
           </h2>
           <p className="mt-2 text-[14px] font-bold">
-            {gate.enabled ? t("public") : t("notPublic")}
+            {pageTitle}
           </p>
           <p className="mt-1 text-[11.5px] leading-relaxed text-muted">
-            {gate.enabled ? t("publicHint") : t("notPublicHint")}
+            {pageHint}
           </p>
           {shop.status === "active" && (
             <Link href={`/boutiques/${shop.slug}` as never} className="mt-2 inline-block text-[12.5px] font-bold text-gold hover:underline">

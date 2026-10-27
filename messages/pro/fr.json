@@ -126,7 +126,9 @@
       "draftApproval": "Choisissez une formule et envoyez votre demande d'ouverture : notre équipe la valide, puis vous payez.",
       "requestPending": "Votre demande d'ouverture ({plan}) est en cours de validation par notre équipe.",
       "requestApproved": "Demande acceptée : payez votre formule {plan} pour ouvrir votre boutique.",
-      "shopRefused": "Demande d'ouverture refusée : {reason}"
+      "shopRefused": "Demande d'ouverture refusée : {reason}",
+      "receiptReview": "Votre reçu est en vérification : votre boutique ouvre dès qu'il est accepté par notre équipe.",
+      "receiptMissing": "Votre paiement attend son reçu : envoyez-le pour ouvrir votre boutique."
     },
     "cta": {
       "choose": "Choisir",
@@ -136,7 +138,8 @@
       "complete": "Compléter",
       "see": "Voir",
       "pay": "Payer",
-      "askAgain": "Refaire une demande"
+      "askAgain": "Refaire une demande",
+      "sendReceipt": "Envoyer le reçu"
     },
     "online": "Annonces en ligne",
     "onlineHint": "En vérification ou publiées. Les brouillons et les annonces retirées ne comptent pas.",
@@ -163,7 +166,24 @@
     "countPublished": "{count, plural, one {# publiée} other {# publiées}}",
     "countReview": "{count} en vérification",
     "countDrafts": "{count, plural, one {# brouillon} other {# brouillons}}",
-    "countExpired": "{count, plural, one {# expirée} other {# expirées}}"
+    "countExpired": "{count, plural, one {# expirée} other {# expirées}}",
+    "notYet": "Pas encore en ligne",
+    "notYetHint": "Votre page s'ouvre au public avec votre boutique. Préparez-la dès maintenant dans « Ma boutique ».",
+    "publicNoPlanHint": "Votre page reste visible, mais sans abonnement en cours vos annonces ne peuvent pas être mises en ligne.",
+    "offline": "Hors ligne",
+    "offlineHint": "Votre boutique est suspendue ou fermée : sa page n'est plus visible.",
+    "waiting": {
+      "title": "Sans abonnement en cours",
+      "now": "Déjà possible",
+      "nowPage": "Compléter votre page : logo, description, téléphone",
+      "nowDocs": "Envoyer vos justificatifs pour le badge « vérifiée »",
+      "nowDrafts": "Préparer vos annonces en brouillon",
+      "later": "Dès l'ouverture",
+      "laterReceipt": "Dès votre reçu accepté",
+      "laterPublish": "Publier vos annonces, dans la limite de votre formule",
+      "laterDirectory": "Votre page dans l'annuaire des boutiques",
+      "laterStats": "Les statistiques de visites et de contacts"
+    }
   },
   "listings": {
     "status": {
