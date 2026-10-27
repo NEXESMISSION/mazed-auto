@@ -719,7 +719,7 @@
           },
           "promo_code": {
             "label": "Code promo",
-            "placeholder": "BATTA2026"
+            "placeholder": "MAZED2026"
           }
         }
       },
@@ -840,6 +840,7 @@
     "description": "Les coordonnées que l'acheteur reçoit pour payer, moyen par moyen. Un moyen n'est proposé qu'une fois ouvert ici avec des coordonnées complètes ; sans aucun moyen ouvert, aucune commande par virement ou D17 n'est créée.",
     "offer": "Proposer aux acheteurs",
     "offerHint": "Vous pouvez enregistrer les coordonnées d'abord, et ouvrir plus tard.",
+    "holderHint": "Mazed Auto par défaut : le nom de la société sur ses comptes.",
     "status": {
       "open": "Proposé",
       "incomplete": "Incomplet",
@@ -850,8 +851,9 @@
       "body": "L'acheteur vire le montant sur ce compte, puis envoie la photo de son ordre de virement.",
       "holder": "Titulaire du compte",
       "bank": "Banque",
-      "ribHint": "20 chiffres.",
-      "ibanHint": "Facultatif. TN + 22 chiffres, le même compte que le RIB."
+      "bankHint": "Proposée d'après le RIB.",
+      "ribHint": "20 chiffres. L'IBAN et la banque se remplissent à partir du RIB : vérifiez-les.",
+      "ibanHint": "Rempli à partir du RIB (TN59 + RIB). À changer seulement s'il diffère."
     },
     "d17": {
       "title": "D17 · La Poste",
@@ -876,6 +878,7 @@
         "holder": "Indiquez le titulaire du compte.",
         "bank": "Indiquez la banque.",
         "rib": "Le RIB doit compter 20 chiffres.",
+        "ribKey": "Ce RIB ne passe pas sa clé de contrôle (les 2 derniers chiffres) : vérifiez la saisie.",
         "iban": "Cet IBAN n'est pas valide (TN + 22 chiffres, clé de contrôle).",
         "ibanRib": "L'IBAN et le RIB ne désignent pas le même compte.",
         "sample": "Ce sont les coordonnées d'exemple du code d'origine : saisissez les vôtres.",
@@ -885,6 +888,7 @@
         "holder": "Indiquez le titulaire du compte D17.",
         "bank": "Banque manquante.",
         "rib": "RIB manquant.",
+        "ribKey": "RIB invalide.",
         "iban": "IBAN invalide.",
         "ibanRib": "IBAN et RIB différents.",
         "number": "Le numéro D17 doit être un mobile tunisien à 8 chiffres.",

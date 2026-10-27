@@ -52,12 +52,26 @@ export type PaymentMethods = { bank_transfer: BankMethod; d17: D17Method };
 /** The one setting that holds them. The old `payee_*` keys are no longer read. */
 export const PAYMENT_METHODS_KEY = "payment_methods";
 
+/**
+ * Who the buyer pays: the company, by its name. It is a société, but the name
+ * on its accounts is « Mazed Auto ». Filled in for every method until the back
+ * office writes another, so the form starts with it and the checkout and the
+ * receipts never show an empty beneficiary — or the forked project's.
+ */
+export const DEFAULT_HOLDER = "Mazed Auto";
+
 export const EMPTY_METHODS: PaymentMethods = {
-  bank_transfer: { enabled: false, holder: "", bank: "", rib: "", iban: "" },
-  d17: { enabled: false, holder: "", number: "" },
+  bank_transfer: { enabled: false, holder: DEFAULT_HOLDER, bank: "", rib: "", iban: "" },
+  d17: { enabled: false, holder: DEFAULT_HOLDER, number: "" },
 };
 
 const str = (v: unknown, max = 120) => (typeof v === "string" ? v.trim().slice(0, max) : "");
+
+/** The holder as stored, or the company when it is empty or a sample. */
+function holderOf(v: unknown): string {
+  const h = str(v);
+  return h && !SAMPLES.names.includes(h.toLowerCase()) ? h : DEFAULT_HOLDER;
+}
 
 /** The stored value, whatever its state, as a full shape — off when unsure. */
 export function readPaymentMethods(value: unknown): PaymentMethods {
@@ -67,12 +81,12 @@ export function readPaymentMethods(value: unknown): PaymentMethods {
   return {
     bank_transfer: {
       enabled: b.enabled === true,
-      holder: str(b.holder),
+      holder: holderOf(b.holder),
       bank: str(b.bank),
       rib: str(b.rib, 40),
       iban: str(b.iban, 40),
     },
-    d17: { enabled: d.enabled === true, holder: str(d.holder), number: str(d.number, 20) },
+    d17: { enabled: d.enabled === true, holder: holderOf(d.holder), number: str(d.number, 20) },
   };
 }
 
@@ -109,6 +123,62 @@ export function formatD17(n: string): string {
   return d.length === 8 ? `${d.slice(0, 2)} ${d.slice(2, 5)} ${d.slice(5)}` : n.trim();
 }
 
+/**
+ * A RIB's key is its last two digits, chosen so the whole 20-digit number is a
+ * multiple of 97: a mistyped digit almost always breaks it.
+ */
+export function ribKeyOk(rib: string): boolean {
+  const d = digits(rib);
+  return d.length === 20 && BigInt(d) % BigInt(97) === BigInt(0);
+}
+
+/**
+ * The IBAN of a Tunisian account: TN59 and the RIB. The check digits are 59
+ * for every account, because a RIB whose key is right is a multiple of 97.
+ * Empty until the RIB has its 20 digits.
+ */
+export function ibanFromRib(rib: string): string {
+  const d = digits(rib);
+  return d.length === 20 ? `TN59${d}` : "";
+}
+
+/** The bank a RIB's first two digits name (codes of the Banque centrale de Tunisie). */
+const TN_BANKS: Record<string, string> = {
+  "01": "ATB",
+  "03": "BNA",
+  "04": "Attijari bank",
+  "05": "Banque de Tunisie",
+  "07": "Amen Bank",
+  "08": "BIAT",
+  "10": "STB",
+  "11": "UBCI",
+  "12": "UIB",
+  "14": "BH Bank",
+  "17": "La Poste Tunisienne",
+  "20": "BTK",
+  "25": "Banque Zitouna",
+};
+
+/** The bank for this RIB, as a suggestion to check — empty when the code is not one we know. */
+export function bankFromRib(rib: string): string {
+  return TN_BANKS[digits(rib).slice(0, 2)] ?? "";
+}
+
+/**
+ * The bank method once a RIB is typed: the IBAN and the bank follow the RIB,
+ * for as long as nobody has written their own over the suggestion.
+ */
+export function withRib(m: BankMethod, rib: string): BankMethod {
+  const ownIban = m.iban !== "" && alnum(m.iban) !== ibanFromRib(m.rib);
+  const ownBank = m.bank !== "" && m.bank !== bankFromRib(m.rib);
+  return {
+    ...m,
+    rib,
+    iban: ownIban ? m.iban : ibanFromRib(rib),
+    bank: ownBank ? m.bank : bankFromRib(rib),
+  };
+}
+
 /** ISO 13616: move the first four characters to the end, letters to numbers, mod 97 = 1. */
 function ibanChecksumOk(iban: string): boolean {
   const s = alnum(iban);
@@ -123,7 +193,7 @@ function ibanChecksumOk(iban: string): boolean {
 
 /** What is wrong with a method's details — empty when it may be offered. */
 export type MethodProblem =
-  | "holder" | "bank" | "rib" | "iban" | "ibanRib" | "number" | "sample";
+  | "holder" | "bank" | "rib" | "ribKey" | "iban" | "ibanRib" | "number" | "sample";
 
 export function bankProblems(m: BankMethod): MethodProblem[] {
   const out: MethodProblem[] = [];
@@ -131,6 +201,7 @@ export function bankProblems(m: BankMethod): MethodProblem[] {
   if (m.bank.length < 2) out.push("bank");
   const rib = digits(m.rib);
   if (rib.length !== 20) out.push("rib");
+  else if (!ribKeyOk(rib)) out.push("ribKey");
   if (m.iban) {
     const iban = alnum(m.iban);
     if (!/^TN\d{22}$/.test(iban) || !ibanChecksumOk(iban)) out.push("iban");
@@ -197,7 +268,7 @@ export async function manualPaymentOpen(supabase: any): Promise<boolean> {
  */
 export function receiptIssuer(m: PaymentMethods): string {
   const holder = m.bank_transfer.holder;
-  return holder && !SAMPLES.names.includes(holder.toLowerCase()) ? holder : "Mazed Auto";
+  return holder && !SAMPLES.names.includes(holder.toLowerCase()) ? holder : DEFAULT_HOLDER;
 }
 
 // ── What the checkout shows ────────────────────────────────────────────────

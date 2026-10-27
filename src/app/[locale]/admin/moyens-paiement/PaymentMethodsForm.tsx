@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { AdminButton } from "@/components/admin/AdminButton";
 import { TextField, FieldGrid, ToggleField, useAdminAction, EYEBROW } from "@/components/admin/kit";
 import {
-  bankProblems, d17Problems, formatD17, formatIban, formatRib, type PaymentMethods,
+  DEFAULT_HOLDER, bankProblems, d17Problems, formatD17, formatIban, formatRib, withRib, type PaymentMethods,
 } from "@/lib/payments";
 import { Building2, CheckCircle2, CircleDashed, CreditCard, Save, Smartphone } from "lucide-react";
 
@@ -25,8 +25,9 @@ export function PaymentMethodsForm({ initial, konnect }: { initial: PaymentMetho
   const bankIssues = bankProblems(bank);
   const d17Issues = d17Problems(d17);
   // What is missing is worth saying once someone has started, or switched it on.
-  const bankStarted = bank.enabled || Boolean(bank.holder || bank.bank || bank.rib || bank.iban);
-  const d17Started = d17.enabled || Boolean(d17.holder || d17.number);
+  // The holder comes filled in with the company, which is not a start.
+  const bankStarted = bank.enabled || bank.holder !== DEFAULT_HOLDER || Boolean(bank.bank || bank.rib || bank.iban);
+  const d17Started = d17.enabled || d17.holder !== DEFAULT_HOLDER || Boolean(d17.number);
   const dirty = JSON.stringify(m) !== JSON.stringify(initial);
   // Switching on is refused by the server too; saying it here saves a round trip.
   const blocked = (bank.enabled && bankIssues.length > 0) || (d17.enabled && d17Issues.length > 0);
@@ -35,6 +36,9 @@ export function PaymentMethodsForm({ initial, konnect }: { initial: PaymentMetho
     setM((s) => ({ ...s, bank_transfer: { ...s.bank_transfer, [k]: v } }));
   const setD17 = (k: keyof PaymentMethods["d17"]) => (v: string | boolean) =>
     setM((s) => ({ ...s, d17: { ...s.d17, [k]: v } }));
+  // The RIB is typed once: the IBAN (TN59 + RIB) and the bank its first two
+  // digits name follow it.
+  const setRib = (rib: string) => setM((s) => ({ ...s, bank_transfer: withRib(s.bank_transfer, rib) }));
 
   return (
     <div className="mt-7 space-y-8">
@@ -53,12 +57,12 @@ export function PaymentMethodsForm({ initial, konnect }: { initial: PaymentMetho
           ...(bank.iban ? [["IBAN", formatIban(bank.iban)] as [string, string]] : []),
         ]}
       >
-        <TextField label={t("bank.holder")} value={bank.holder} onChange={setBank("holder")} placeholder="Mazed Auto SARL" />
-        <TextField label={t("bank.bank")} value={bank.bank} onChange={setBank("bank")} placeholder="BIAT, STB, Attijari…" />
+        <TextField label={t("bank.holder")} value={bank.holder} onChange={setBank("holder")} placeholder={DEFAULT_HOLDER} hint={t("holderHint")} />
         <FieldGrid>
-          <TextField label="RIB" value={bank.rib} onChange={setBank("rib")} dir="ltr" hint={t("bank.ribHint")} />
-          <TextField label="IBAN" value={bank.iban} onChange={setBank("iban")} dir="ltr" hint={t("bank.ibanHint")} />
+          <TextField label="RIB" value={bank.rib} onChange={setRib} dir="ltr" hint={t("bank.ribHint")} />
+          <TextField label={t("bank.bank")} value={bank.bank} onChange={setBank("bank")} placeholder="BIAT, STB, Attijari…" hint={t("bank.bankHint")} />
         </FieldGrid>
+        <TextField label="IBAN" value={bank.iban} onChange={setBank("iban")} dir="ltr" hint={t("bank.ibanHint")} />
       </Method>
 
       <Method
@@ -76,7 +80,7 @@ export function PaymentMethodsForm({ initial, konnect }: { initial: PaymentMetho
       >
         <FieldGrid>
           <TextField label={t("d17.number")} value={d17.number} onChange={setD17("number")} type="tel" placeholder="98 123 456" />
-          <TextField label={t("d17.holder")} value={d17.holder} onChange={setD17("holder")} />
+          <TextField label={t("d17.holder")} value={d17.holder} onChange={setD17("holder")} placeholder={DEFAULT_HOLDER} hint={t("holderHint")} />
         </FieldGrid>
       </Method>
 
