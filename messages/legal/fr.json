@@ -23,7 +23,7 @@
     },
     "s4": {
       "title": "4. Publier une annonce",
-      "body": "Vous ne publiez que des biens que vous avez le droit de vendre, avec des informations exactes et des photos réelles du bien. En publiant, vous signez une attestation sur l'exactitude de ce que vous déclarez. Chaque annonce est relue par notre équipe avant sa mise en ligne ; cette relecture ne garantit pas l'état du bien. Nous pouvons refuser une annonce en indiquant le motif (photos inexploitables, informations contradictoires, numéro injoignable, doublon…) ; vous pouvez la corriger et la renvoyer. Une annonce reste en ligne 30 jours et peut être renouvelée depuis « Mes annonces ».",
+      "body": "Vous ne publiez que des biens que vous avez le droit de vendre, avec des informations exactes et des photos réelles du bien. En publiant, vous signez une attestation sur l'exactitude de ce que vous déclarez. Chaque annonce est relue par notre équipe avant sa mise en ligne ; cette relecture ne garantit pas l'état du bien. Nous pouvons refuser une annonce en indiquant le motif (photos inexploitables, informations contradictoires, numéro injoignable, doublon…) ; vous pouvez la corriger et la renvoyer. Une annonce reste en ligne pendant la durée indiquée sur la page Tarifs et peut être renouvelée depuis « Mes annonces ».",
       "body2": "Sont interdits : les biens volés ou dont la vente est illégale, les faux documents, les annonces trompeuses, les doublons et les coordonnées d'un tiers sans son accord."
     },
     "s5": {
@@ -40,7 +40,8 @@
     },
     "s8": {
       "title": "8. Boutiques professionnelles",
-      "body": "Une boutique fournit des informations légales exactes (raison sociale, matricule fiscal, RNE…) et les justificatifs demandés ; ces documents servent à la vérification et ne sont pas publiés. La page de la boutique, ses coordonnées et ses annonces sont publiques. La publication des annonces d'une boutique sur ses réseaux sociaux ne se fait qu'avec son accord explicite, publication par publication."
+      "body": "Une boutique fournit des informations légales exactes (raison sociale, matricule fiscal, RNE…) et les justificatifs demandés ; ces documents servent à la vérification et ne sont pas publiés. La page de la boutique, ses coordonnées et ses annonces sont publiques. La publication des annonces d'une boutique sur ses réseaux sociaux ne se fait qu'avec son accord explicite, publication par publication.",
+      "body2": "Une boutique a un seul abonnement à la fois. Certaines demandes (ouverture, changement de formule) sont d'abord validées par notre équipe, avant tout paiement. L'abonnement n'est pas prélevé automatiquement : la boutique le renouvelle elle-même, à partir de 7 jours avant la date de renouvellement. Une montée de formule prend effet dès que le paiement est confirmé ; seule la différence de prix est due, au prorata des jours restants jusqu'à la date de renouvellement, qui ne change pas. Une baisse de formule prend effet à la date de renouvellement ; jusque-là, la formule en cours et ses avantages restent entiers. La résiliation arrête le renouvellement : la formule reste active jusqu'à la fin de la période payée. Ni la résiliation ni une baisse de formule ne donnent lieu à un remboursement ou à un avoir."
     },
     "s9": {
       "title": "9. Contenus et photos",

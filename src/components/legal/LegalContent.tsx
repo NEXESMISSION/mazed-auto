@@ -11,17 +11,24 @@ import { useTranslations } from "next-intl";
  * the buyer calls the seller, every annonce read before it goes live — and was
  * approved by the owner on 2026-10-26 in both languages. It is not a
  * substitute for a lawyer's review.
+ *
+ * 2026-10-27, published at the owner's request: an annonce lasts the duration
+ * the Tarifs page shows (a setting now, D-B5), and § 8 says how a shop's one
+ * subscription is renewed, upgraded, downgraded and cancelled (0198).
  */
 
-/** The date the texts below last changed, shown under the page titles. */
+/** The date the privacy policy last changed, shown under its title. */
 export const LEGAL_UPDATED = "2026-10-26";
+
+/** The date the terms of use last changed, shown under their title. */
+export const TERMS_UPDATED = "2026-10-27";
 
 type Part = { id: string; paragraphs?: readonly string[]; items?: readonly string[] };
 
 const TERMS: readonly Part[] = [
   { id: "s1" }, { id: "s2" }, { id: "s3" },
   { id: "s4", paragraphs: ["body", "body2"] },
-  { id: "s5" }, { id: "s6" }, { id: "s7" }, { id: "s8" }, { id: "s9" },
+  { id: "s5" }, { id: "s6" }, { id: "s7" }, { id: "s8", paragraphs: ["body", "body2"] }, { id: "s9" },
   { id: "s10" }, { id: "s11" }, { id: "s12" },
 ];
 
