@@ -43,6 +43,7 @@
       "make": "Choisissez la marque.",
       "model": "Choisissez le modèle.",
       "year": "Indiquez l'année.",
+      "mileage": "Le kilométrage doit être un nombre entier de 0 à 2 000 000.",
       "title": "Donnez un titre à votre annonce.",
       "price": "Indiquez un prix, ou cochez « prix sur demande ».",
       "phone": "Un numéro joignable est obligatoire.",
@@ -241,6 +242,9 @@
     "contactRequiredRenew": "Ajoutez un numéro joignable avant de renouveler.",
     "notWithdrawable": "Cette annonce n'est ni en ligne ni en vérification.",
     "changed": "L'annonce a changé d'état entre-temps.",
+    "editPriceInvalid": "Indiquez un prix valide, ou « Prix sur demande ».",
+    "editSellerOnly": "Seul le vendeur qui l'a publiée peut en modifier le contenu.",
+    "editNotPublished": "Seule une annonce en ligne se modifie ici.",
     "notif": {
       "submittedTitle": "Annonce envoyée à la vérification",
       "subscription": "« {title} » est en cours de vérification. Elle est incluse dans l'abonnement de {shop}.",

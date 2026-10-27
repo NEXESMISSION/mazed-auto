@@ -600,8 +600,10 @@ export function CheckoutClient({
   }
 
   // No method open yet (D-B1): the back office has not set the details buyers
-  // pay to. Say so plainly — no numbers, no upload — and keep the order.
-  if (instructions.length === 0) {
+  // pay to. Say so plainly — no numbers, no upload — and keep the order. Not
+  // for a receipt already sent: where it stands matters more, and « not open
+  // yet » read as if it had been lost.
+  if (instructions.length === 0 && !underReview) {
     return (
       <div className="grid min-h-dvh place-items-center bg-background">
         <main className="mx-auto w-full max-w-md px-4 py-10">
@@ -728,6 +730,8 @@ export function CheckoutClient({
               {receiptAt && <>{tc("review.sentOn", { date: formatDateTime(receiptAt, locale) })} </>}
               {tc("review.body")}
             </p>
+            {instructions.length > 0 && (
+            <>
             <button
               type="button"
               onClick={() => setReplacing(true)}
@@ -737,6 +741,8 @@ export function CheckoutClient({
               {tc("review.replace")}
             </button>
             <p className="mt-1.5 text-[11px] text-[var(--foreground-subtle)]">{tc("review.replaceHint")}</p>
+            </>
+            )}
           </section>
         ) : (
         <>

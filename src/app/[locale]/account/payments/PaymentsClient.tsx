@@ -155,11 +155,11 @@ function matchesFilter(p: PaymentVM, key: FilterKey): boolean {
   switch (key) {
     case "all":
       return true;
+    // What the user has to do: upload, or redo a refusal. A receipt under
+    // review is the team's to do — counted here, it made the tab say 1 under
+    // a « À traiter : 0 » tile.
     case "action":
-      return (
-        (p.status === "pending" || p.status === "pending_review" || p.status === "failed") &&
-        !isCancelled(p)
-      );
+      return (p.status === "pending" || p.status === "failed") && !isCancelled(p);
     case "purchases":
       return PURCHASE_KINDS.has(p.kind);
     case "refunds":

@@ -24,7 +24,8 @@ export function formatDate(
 
 /** Date and time, short: « 24 oct. 2026, 14:05 ». */
 export function formatDateTime(date: DateInput, locale: string): string {
-  return formatDate(date, locale, { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  // h23 spelled out: « fr-TN » defaults to a 12-hour clock (« 09:01 AM »).
+  return formatDate(date, locale, { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
 }
 
 /** « il y a 3 heures » / « منذ 3 ساعات », from the largest unit that fits. */

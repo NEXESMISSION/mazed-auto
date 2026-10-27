@@ -36,7 +36,20 @@ export const dynamic = "force-dynamic";
  * these numbers are money and must not be a client's opinion: what publishing
  * costs in each category, and how many publications the seller already owns.
  */
-export default async function NewListingPage() {
+/** Statuses the wizard may reopen: what the draft route accepts as editable. */
+const REOPENABLE = ["draft", "rejected", "pending_payment"];
+
+export default async function NewListingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ draft?: string }>;
+}) {
+  // `?draft=<id>`: that annonce — a draft among several, one sent back for
+  // correction, or a live one the seller reopened to edit. Links have pointed
+  // here for a while (« Modifier l'annonce » at checkout) while the page only
+  // ever loaded the newest draft.
+  const { draft: draftParam } = await searchParams;
+  const wanted = draftParam && /^[0-9a-f-]{36}$/i.test(draftParam) ? draftParam : null;
   const locale = await getLocale();
   const supabase = await getServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
@@ -71,19 +84,7 @@ export default async function NewListingPage() {
     // The draft this seller left behind, if any. Publishing a car takes long
     // enough that a phone call, a dead battery or a mistaken back gesture will
     // interrupt it — and until now that threw the whole form away.
-    admin
-      .from("listings")
-      .select(
-        `id, category_id, title, description, price, price_on_request, negotiable,
-         condition, governorate, attributes, contact_name, contact_phone, updated_at,
-         photos:listing_photos (storage_path, sort_order),
-         fitments:listing_fitments (make, model, year_from, year_to)`,
-      )
-      .eq("seller_id", user.id)
-      .eq("status", "draft")
-      .order("updated_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
+    loadDraft(admin, user!.id, wanted),
   ]);
 
   type CatRow = {
@@ -194,4 +195,38 @@ export default async function NewListingPage() {
       locale={locale}
     />
   );
+}
+
+const DRAFT_SELECT = `id, category_id, title, description, price, price_on_request, negotiable,
+  condition, governorate, attributes, contact_name, contact_phone, updated_at,
+  photos:listing_photos (storage_path, sort_order),
+  fitments:listing_fitments (make, model, year_from, year_to)`;
+
+/**
+ * The annonce the wizard opens: the one asked for, when it is this seller's
+ * and still editable, else the newest draft they left behind.
+ */
+async function loadDraft(
+  admin: NonNullable<ReturnType<typeof getServiceSupabase>>,
+  sellerId: string,
+  wanted: string | null,
+) {
+  if (wanted) {
+    const asked = await admin
+      .from("listings")
+      .select(DRAFT_SELECT)
+      .eq("id", wanted)
+      .eq("seller_id", sellerId)
+      .in("status", REOPENABLE)
+      .maybeSingle();
+    if (asked.data) return asked;
+  }
+  return admin
+    .from("listings")
+    .select(DRAFT_SELECT)
+    .eq("seller_id", sellerId)
+    .eq("status", "draft")
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
 }

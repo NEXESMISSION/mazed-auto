@@ -62,7 +62,10 @@ const TABS = [
   { key: "",             label: "all",    statuses: null,                                   tone: "text-foreground" },
   { key: "en-ligne",     label: "live",   statuses: ["published"],                          tone: "text-emerald-400" },
   { key: "verification", label: "review", statuses: ["pending_payment", "pending_review"],  tone: "text-amber-400" },
-  { key: "a-corriger",   label: "fix",    statuses: ["rejected", "draft"],                  tone: "text-[var(--danger)]" },
+  // Drafts apart from refusals: a draft nobody has sent was sitting under
+  // « À corriger » as if the team had refused it.
+  { key: "a-corriger",   label: "fix",    statuses: ["rejected"],                           tone: "text-[var(--danger)]" },
+  { key: "brouillons",   label: "drafts", statuses: ["draft"],                              tone: "text-muted" },
   { key: "terminees",    label: "done",   statuses: ["expired", "archived", "sold", "paused"], tone: "text-muted" },
 ] as const;
 
@@ -205,8 +208,8 @@ export default async function MyListingsPage({
 
   /**
    * The one action a row implies. Every branch points at a route that exists:
-   * resuming a draft relies on /annonces/nouvelle loading the seller's own
-   * draft, which is what it already does.
+   * a draft or a refused annonce opens in the wizard by its id
+   * (/annonces/nouvelle?draft=…), a live one in « Modifier ».
    */
   function Action({ l, block = false }: { l: Row; block?: boolean }) {
     const cls = block
@@ -220,10 +223,10 @@ export default async function MyListingsPage({
         </Link>
       );
     }
-    if (l.status === "draft") {
+    if (l.status === "draft" || l.status === "rejected") {
       return (
-        <Link href={"/annonces/nouvelle" as never} className={cls}>
-          <PencilLine className="size-3.5" /> {t("listings.resume")}
+        <Link href={`/annonces/nouvelle?draft=${l.id}` as never} className={cls}>
+          <PencilLine className="size-3.5" /> {l.status === "draft" ? t("listings.resume") : t("listings.correct")}
         </Link>
       );
     }
@@ -243,10 +246,19 @@ export default async function MyListingsPage({
       </Link>
     );
     // Live or in review: the seller can take it down — and free its place.
+    // Live: change it too (the price at once, the rest through review).
     if (l.status === "published" || l.status === "pending_review") {
       return (
         <div className={block ? "space-y-2" : "flex flex-wrap items-center gap-3"}>
           {view}
+          {l.status === "published" && (
+            <Link
+              href={`/account/listings/${l.id}/modifier` as never}
+              className="tap-target inline-flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-[12px] font-bold text-foreground transition hover:border-gold-soft"
+            >
+              <PencilLine className="size-3.5" /> {t("listings.edit.button")}
+            </Link>
+          )}
           <WithdrawButton listingId={l.id} title={l.title} />
         </div>
       );

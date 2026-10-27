@@ -27,6 +27,7 @@
       "live": "En ligne",
       "review": "En cours",
       "fix": "À corriger",
+      "drafts": "Brouillons",
       "done": "Terminées"
     },
     "renewFee": {
@@ -35,7 +36,27 @@
     },
     "pay": "Payer",
     "resume": "Reprendre",
+    "correct": "Corriger",
     "view": "Voir",
+    "edit": {
+      "button": "Modifier",
+      "title": "Modifier l'annonce",
+      "back": "Mes annonces",
+      "quickTitle": "Prix et numéro — tout de suite",
+      "quickBody": "Ces changements s'appliquent immédiatement : l'annonce reste en ligne.",
+      "price": "Prix (TND)",
+      "onRequest": "Prix sur demande",
+      "negotiable": "Prix négociable",
+      "showPhone": "Afficher mon numéro aux acheteurs",
+      "save": "Enregistrer",
+      "saved": "Modifications enregistrées.",
+      "failed": "Enregistrement impossible.",
+      "contentTitle": "Titre, description, photos, caractéristiques",
+      "contentBody": "Ces changements repassent par la vérification de notre équipe : l'annonce est retirée du site jusqu'à sa validation, en général sous 24 h.",
+      "contentButton": "Modifier le contenu",
+      "contentConfirm": "« {title} » sera retirée du site le temps que notre équipe valide vos modifications. Continuer ?",
+      "contentFailed": "Impossible d'ouvrir l'annonce pour la modifier."
+    },
     "expiresToday": "Expire aujourd'hui",
     "daysLeft": "{count, plural, one {Encore # jour en ligne} other {Encore # jours en ligne}}",
     "today": "aujourd'hui",
@@ -99,7 +120,7 @@
   "payments": {
     "eyebrow": "Historique",
     "title": "Mes paiements",
-    "subtitle": "Frais de publication, packs et remboursements.",
+    "subtitle": "Abonnements, options et leurs reçus.",
     "none": "Aucun paiement pour le moment.",
     "kinds": {
       "deposit_lock": "Caution de participation",

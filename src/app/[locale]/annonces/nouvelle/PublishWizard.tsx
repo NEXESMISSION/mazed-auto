@@ -11,6 +11,7 @@ import { formatTND, currencyLabel, cn } from "@/lib/utils";
 import { GOVERNORATES } from "@/lib/governorates";
 import { governorateLabel } from "@/lib/labels";
 import { formatDate } from "@/lib/dates";
+import { MAX_MILEAGE, mileageOk } from "@/lib/mileage";
 import {
   CAR_MAKES, MOTO_MAKES, PART_BRANDS, FUELS, TRANSMISSIONS, CONDITIONS, CAR_COLORS,
   modelsFor, modelYears, optionLabel,
@@ -272,6 +273,9 @@ export function PublishWizard({
     } else if (!attrs.year) {
       missing.push({ label: t("missing.year"), fieldId: "f-details" });
     }
+  }
+  if (!isPart && !mileageOk(attrs.mileage)) {
+    missing.push({ label: t("missing.mileage"), fieldId: "f-details" });
   }
   if (title.trim().length < 3) {
     missing.push({ label: t("missing.title"), fieldId: "f-title" });
@@ -860,6 +864,9 @@ export function PublishWizard({
                   type="number"
                   value={attrs.mileage ?? ""}
                   onChange={(v) => setAttrs((s) => ({ ...s, mileage: v }))}
+                  min={0}
+                  max={MAX_MILEAGE}
+                  invalid={!mileageOk(attrs.mileage)}
                   placeholder="120000"
                   suffix={t("details.km")}
                 />
@@ -968,6 +975,8 @@ export function PublishWizard({
                 <input
                   type="number"
                   inputMode="decimal"
+                  min={0}
+                  aria-label={isRental ? t("price.perDay") : t("price.price")}
                   value={price}
                   disabled={onRequest}
                   onChange={(e) => setPrice(e.target.value)}
@@ -1025,6 +1034,7 @@ export function PublishWizard({
                 <select
                   value={governorate}
                   onChange={(e) => setGovernorate(e.target.value)}
+                  aria-label={t("contact.governorate")}
                   className="w-full appearance-none rounded-xl border border-border bg-surface py-3 ps-9 pe-3 text-[14px] text-foreground focus:border-gold focus:outline-none"
                 >
                   {GOVERNORATES.map((g) => <option key={g} value={g}>{governorateLabel(g, locale)}</option>)}
@@ -1348,7 +1358,7 @@ function Label({ children }: { children: React.ReactNode }) {
 }
 
 function Field({
-  label, value, onChange, placeholder, type = "text", required, suffix, compact, ltr,
+  label, value, onChange, placeholder, type = "text", required, suffix, compact, ltr, min, max, invalid,
 }: {
   label?: string;
   value: string;
@@ -1360,6 +1370,11 @@ function Field({
   compact?: boolean;
   /** A phone number or a reference: typed left to right in Arabic too. */
   ltr?: boolean;
+  /** Bounds for a number, so the keyboard and the browser know them too. */
+  min?: number;
+  max?: number;
+  /** Outlined, and announced as invalid, while the value is out of bounds. */
+  invalid?: boolean;
 }) {
   return (
     <label className="block">
@@ -1369,11 +1384,15 @@ function Field({
           type={type}
           inputMode={type === "number" ? "numeric" : type === "tel" ? "tel" : undefined}
           dir={ltr ? "ltr" : undefined}
+          min={min}
+          max={max}
+          aria-invalid={invalid || undefined}
           value={value}
           placeholder={placeholder}
           onChange={(e) => onChange(e.target.value)}
           className={cn(
             "w-full rounded-xl border border-border bg-surface px-3 text-foreground placeholder:text-muted focus:border-gold focus:outline-none",
+            invalid && "border-[var(--danger)]",
             ltr && "rtl:text-end",
             compact ? "py-2.5 text-[13.5px]" : "py-3 text-[14px]",
             suffix ? "pe-12" : "",

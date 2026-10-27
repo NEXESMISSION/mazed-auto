@@ -9,6 +9,7 @@ import { localizeRefusal, pickScope, publicationErrorFromDb, type ListingKind, t
 import { refusalResponse as sendRefusal } from "@/lib/http/refusal";
 import { apiTranslations, localeFromRequest } from "@/i18n/api";
 import { sanitizeRentalAttributes } from "@/lib/rental";
+import { withoutBadMileage } from "@/lib/mileage";
 import { memberShops } from "@/lib/shops/server";
 
 /**
@@ -162,7 +163,8 @@ export async function POST(req: NextRequest) {
   if ("attributes" in body && body.attributes && typeof body.attributes === "object") {
     // Rental conditions are typed here (numbers in range, availability one of
     // two words); every other attribute passes as before.
-    fields.attributes = sanitizeRentalAttributes(body.attributes as Record<string, unknown>);
+    // A negative or absurd mileage is dropped (lib/mileage); the form flags it.
+    fields.attributes = withoutBadMileage(sanitizeRentalAttributes(body.attributes as Record<string, unknown>));
   }
   if ("contact_name" in body) fields.contact_name = text(body.contact_name, 80);
   if ("contact_phone" in body) fields.contact_phone = phone(body.contact_phone);
