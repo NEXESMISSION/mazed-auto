@@ -194,7 +194,7 @@ async function loadRequest(admin: Admin, id: string, t: T, locale: string): Prom
     admin.from("shop_documents").select("status").eq("shop_id", shop.id),
     admin
       .from("subscriptions")
-      .select("ends_at, status, product:products (name_fr, name_ar)")
+      .select("ends_at, status, product:products!subscriptions_product_id_fkey (name_fr, name_ar)")
       .eq("shop_id", shop.id)
       .neq("status", "cancelled")
       .gt("ends_at", nowIso)

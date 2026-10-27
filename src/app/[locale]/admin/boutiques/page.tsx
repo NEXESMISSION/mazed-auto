@@ -294,7 +294,7 @@ async function loadShop(admin: Admin, id: string, t: T, locale: string): Promise
     admin.from("profiles").select("full_name, phone").eq("id", s.owner_id).maybeSingle(),
     admin.from("shop_private").select("legal_name, tax_id, rne_number, legal_address, contact_email").eq("shop_id", id).maybeSingle(),
     admin.from("shop_documents").select("id, kind, status, note, created_at, reviewed_at").eq("shop_id", id).order("created_at", { ascending: false }),
-    admin.from("subscriptions").select("id, starts_at, ends_at, grace_ends_at, status, reason, payment_id, product:products (name_fr, name_ar)").eq("shop_id", id).order("starts_at", { ascending: false }).limit(12),
+    admin.from("subscriptions").select("id, starts_at, ends_at, grace_ends_at, status, reason, payment_id, product:products!subscriptions_product_id_fkey (name_fr, name_ar)").eq("shop_id", id).order("starts_at", { ascending: false }).limit(12),
     admin.from("payments").select("id, kind, amount, status, provider, created_at, receipt_number").eq("shop_id", id).order("created_at", { ascending: false }).limit(12),
     admin.from("listings").select("status").eq("shop_id", id),
     admin.from("products").select("plan_code, name_fr, name_ar, is_active").eq("kind", "subscription").not("plan_code", "is", null).order("sort_order"),

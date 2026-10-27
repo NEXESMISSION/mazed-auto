@@ -43,7 +43,7 @@ export default async function ProSubscriptionPage({
     plansForSale(admin),
     admin
       .from("subscriptions")
-      .select("id, starts_at, ends_at, grace_ends_at, status, reason, limits, product:products (name_fr, name_ar, plan_code)")
+      .select("id, starts_at, ends_at, grace_ends_at, status, reason, limits, product:products!subscriptions_product_id_fkey (name_fr, name_ar, plan_code)")
       .eq("shop_id", shop.id)
       .order("starts_at", { ascending: false })
       .limit(12),

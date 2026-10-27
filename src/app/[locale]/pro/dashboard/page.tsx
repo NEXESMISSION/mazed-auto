@@ -27,7 +27,7 @@ export default async function ProSummaryPage() {
     quotaStatus(admin, user.id, shop.id, shop.activity_type as ListingType),
     admin
       .from("subscriptions")
-      .select("starts_at, ends_at, grace_ends_at, status, reason, product:products (name_fr, name_ar)")
+      .select("starts_at, ends_at, grace_ends_at, status, reason, product:products!subscriptions_product_id_fkey (name_fr, name_ar)")
       .eq("shop_id", shop.id)
       .neq("status", "cancelled")
       .order("ends_at", { ascending: false })

@@ -31,7 +31,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
   const [{ data: priv }, methods, { data: sub }, { data: listing }] = await Promise.all([
     admin.from("shop_private").select("legal_name, tax_id, legal_address").eq("shop_id", shop.id).maybeSingle(),
     fetchPaymentMethods(admin),
-    admin.from("subscriptions").select("starts_at, ends_at, product:products (name_fr, name_ar)").eq("payment_id", pay.id).maybeSingle(),
+    admin.from("subscriptions").select("starts_at, ends_at, product:products!subscriptions_product_id_fkey (name_fr, name_ar)").eq("payment_id", pay.id).maybeSingle(),
     meta.listing_id
       ? admin.from("listings").select("title, reference").eq("id", meta.listing_id).maybeSingle()
       : Promise.resolve({ data: null }),
