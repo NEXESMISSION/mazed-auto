@@ -4,6 +4,8 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { apiTranslations } from "@/i18n/api";
 
+const KONNECT_SETTLING_MS = 2 * 3600_000;
+
 /**
  * User-initiated cancellation of a pending payment.
  *
@@ -12,6 +14,10 @@ import { apiTranslations } from "@/i18n/api";
  * Allowed only when:
  *   - caller is the payment owner
  *   - status is 'pending' (no receipt uploaded yet)
+ *   - for an online (Konnect) payment, two hours have passed: before that
+ *     the buyer may be paying on Konnect's page, and a payment completed
+ *     there after we marked it failed would be money taken for nothing
+ *     (the link itself lives 30 minutes)
  *
  * Once a receipt is uploaded the row moves to 'pending_review' and the
  * cancel button disappears from the UI — at that point the admin queue
@@ -37,7 +43,7 @@ export async function POST(
 
   const { data: pay } = await supabase
     .from("payments")
-    .select("id, user_id, status, receipt_url")
+    .select("id, user_id, status, receipt_url, provider, created_at")
     .eq("id", paymentId)
     .single();
   if (!pay) {
@@ -55,6 +61,11 @@ export async function POST(
       },
       { status: 409 },
     );
+  }
+
+  if (pay.provider === "konnect" && Date.now() - new Date(pay.created_at as string).getTime() < KONNECT_SETTLING_MS) {
+    const t = await apiTranslations(req, "payment.api");
+    return NextResponse.json({ error: "online_in_progress", detail: t("onlineInProgress") }, { status: 409 });
   }
 
   // payments has no UPDATE policy for the owner — flip status via the

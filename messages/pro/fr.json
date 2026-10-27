@@ -279,6 +279,61 @@
       "pay": "Payer {price} {currency}",
       "cancel": "Annuler la demande",
       "confirmCancel": "Annuler cette demande ?"
+    },
+    "manage": {
+      "title": "Mon abonnement",
+      "status": {
+        "active": "Actif",
+        "grace": "Période de grâce",
+        "cancelled": "Résilié"
+      },
+      "plan": "Formule {plan}",
+      "renewsOn": "Prochain renouvellement le {date} : {price} {currency}.",
+      "renewsLower": "Prochain renouvellement le {date}, avec la formule {plan} : {price} {currency}. D'ici là, votre formule actuelle reste entière.",
+      "endsOn": "Prend fin le {date}, sans renouvellement. Vos avantages restent entiers jusque-là ; rien n'est remboursé.",
+      "graceUntil": "Votre période est terminée : vos annonces restent en ligne jusqu'au {date}, mais vous ne pouvez plus en publier. Renouvelez pour continuer.",
+      "nextPaid": "Période suivante déjà réglée : {plan}, du {start} au {end}.",
+      "noAuto": "Rien n'est prélevé automatiquement : le renouvellement se règle depuis cette page, à partir de 7 jours avant la date, et nous vous le rappelons.",
+      "orderOpen": "Un paiement est en cours pour votre abonnement : réglez-le ou annulez-le (dans « Paiements » ci-dessous) avant tout autre changement.",
+      "ask": "Demander : {what}",
+      "renew": {
+        "title": "Renouveler",
+        "button": "Renouveler {plan} : {price} {currency}",
+        "line": "Du {start} au {end}.",
+        "confirm": "Renouveler la formule {plan} pour {price} {currency}, du {start} au {end} ?",
+        "opensOn": "Le renouvellement s'ouvre le {date}.",
+        "paid": "Le renouvellement est déjà réglé."
+      },
+      "upgrade": {
+        "title": "Monter en formule (immédiat)",
+        "button": "Passer à {plan} : {amount} {currency}",
+        "line": "Actif dès le paiement confirmé. Vous payez la différence pour les jours restants jusqu'au {date} ; ensuite {price} {currency} à chaque renouvellement.",
+        "confirm": "Passer à la formule {plan} maintenant pour {amount} {currency} (différence au prorata jusqu'au {date}) ? Le renouvellement du {date} sera à {price} {currency}.",
+        "withdraws": "La baisse programmée sera annulée.",
+        "keepsCancel": "Votre résiliation reste programmée : l'abonnement prendra fin le {date}.",
+        "blockedNext": "La période suivante est déjà réglée : la montée de formule sera possible quand elle aura commencé."
+      },
+      "downgrade": {
+        "title": "Baisser de formule (au renouvellement)",
+        "button": "Passer à {plan} au renouvellement",
+        "change": "Choisir {plan} à la place",
+        "scheduled": "{plan} programmée",
+        "line": "À partir du {date} : {price} {currency} / {days} jours. D'ici là, votre formule et ses avantages restent entiers ; rien n'est remboursé.",
+        "confirm": "Programmer le passage à la formule {plan} le {date} ({price} {currency} par période) ? Votre formule actuelle reste active jusque-là, sans remboursement ni avoir.",
+        "replacesCancel": "Votre résiliation sera annulée : l'abonnement continuera avec cette formule."
+      },
+      "undo": "Garder la formule {plan}",
+      "undoConfirm": "Annuler la baisse programmée et renouveler avec la formule {plan} ?",
+      "cancel": {
+        "button": "Résilier l'abonnement",
+        "confirm": "Résilier ? Votre formule reste active jusqu'au {date}, puis l'abonnement prend fin sans renouvellement. Aucun remboursement. Vous pourrez revenir sur votre décision d'ici là."
+      },
+      "resume": {
+        "button": "Reprendre l'abonnement",
+        "confirm": "Reprendre l'abonnement ? Il pourra de nouveau être renouvelé le {date}."
+      },
+      "cancelOrder": "Annuler",
+      "cancelOrderConfirm": "Annuler ce paiement ? Ne le faites pas si vous avez déjà envoyé l'argent : téléversez plutôt le reçu."
     }
   },
   "paymentStatus": {
@@ -427,6 +482,32 @@
     "requestNotFound": "Demande introuvable.",
     "requestClosed": "Cette demande est déjà traitée.",
     "requestPaying": "Un paiement est en cours pour cette demande : attendez sa vérification.",
-    "requestCancelled": "Demande annulée."
+    "requestCancelled": "Demande annulée.",
+    "subscription": {
+      "subscription_exists": "Votre boutique a déjà un abonnement : renouvelez-le, montez ou baissez de formule depuis « Abonnement ».",
+      "no_subscription": "Votre boutique n'a pas d'abonnement en cours.",
+      "subscription_cancelled": "Votre abonnement est résilié : reprenez-le d'abord pour le renouveler.",
+      "renewal_already_paid": "La période suivante est déjà réglée.",
+      "renewal_not_open": "Le renouvellement s'ouvre le {date}.",
+      "renewal_plan_mismatch": "Le renouvellement se fait avec votre formule, ou la formule inférieure programmée. Pour une formule supérieure, montez de formule ; pour une inférieure, programmez la baisse.",
+      "no_current_period": "Aucune période en cours à faire évoluer : renouvelez d'abord.",
+      "next_period_paid": "La période suivante est déjà réglée : la montée de formule sera possible quand elle aura commencé.",
+      "not_an_upgrade": "Cette formule n'est pas supérieure à la vôtre : programmez plutôt une baisse pour le renouvellement.",
+      "not_a_downgrade": "Cette formule n'est pas inférieure à la vôtre.",
+      "renew_instead": "La date de renouvellement est passée : renouvelez directement avec la formule de votre choix.",
+      "order_open": "Un paiement est déjà en cours pour votre abonnement : réglez-le ou annulez-le d'abord.",
+      "upgrade_period_over": "La période sur laquelle ce changement était calculé est terminée.",
+      "upgrade_stale": "Votre formule a changé depuis cette commande.",
+      "not_for_sale": "Cette offre n'est pas encore en vente.",
+      "plan_change_not_allowed": "Un changement de formule se fait par une montée (immédiate) ou une baisse (au renouvellement), jamais par un second abonnement.",
+      "bad_intent": "Cette action n'est pas possible pour votre abonnement.",
+      "done": {
+        "cancel": "Abonnement résilié : votre formule reste active jusqu'au {date}.",
+        "resume": "Abonnement repris : il se renouvelle le {date}.",
+        "downgrade": "Baisse de formule programmée pour le {date}.",
+        "undo_downgrade": "Baisse annulée : vous gardez votre formule."
+      }
+    },
+    "orderStarting": "Votre paiement en ligne se prépare : vous allez être redirigé."
   }
 }

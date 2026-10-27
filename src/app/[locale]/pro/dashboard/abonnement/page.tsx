@@ -10,6 +10,8 @@ import { planLimitFor, planName, plansForSale } from "@/lib/shops/plans";
 import { approvalsSetting, isolated, planKind, requestProductName, shopRequests } from "@/lib/shops/approvals";
 import { PostButton } from "../PostButton";
 import { PaymentStatus } from "./PaymentStatus";
+import { ManageSubscription, type LiveSubscription, type PlanOption } from "./ManageSubscription";
+import { quoteFor, type Intent } from "@/lib/shops/subscription";
 import { CreditCard, FileText } from "lucide-react";
 
 // The words are under `pro.subscription.payStatus` / `.provider`.
@@ -17,9 +19,15 @@ const PAY_STATUS = ["pending", "pending_review", "captured", "failed", "refunded
 const PROVIDER = ["konnect", "bank_transfer", "manual"];
 
 /**
- * Abonnement — the shop's periods, the plans it can buy next, and every
- * payment it made, with its receipt. Renewal is explicit: buying a plan
- * while a period is running adds the next period after it (0191).
+ * Abonnement — the shop's ONE subscription (0198) and what can be done with
+ * it, its periods, and every payment it made, with its receipt.
+ *
+ * Without a subscription the plans are offered to subscribe. With one, they
+ * are never a second purchase: « Mon abonnement » renews it, upgrades it now
+ * (prorated, same renewal date), schedules a downgrade or a cancellation for
+ * the renewal date — each with its price and date before the confirmation.
+ * The prices come from the database (`subscription_quote`), the one that
+ * charges them.
  *
  * What the back office has to approve first (0196) is asked for from the same
  * buttons, labelled « Demander »; the requests sit at the top, with the way to
@@ -43,7 +51,11 @@ export default async function ProSubscriptionPage({
     plansForSale(admin),
     admin
       .from("subscriptions")
-      .select("id, starts_at, ends_at, grace_ends_at, status, reason, limits, product:products!subscriptions_product_id_fkey (name_fr, name_ar, plan_code)")
+      .select(
+        "id, starts_at, ends_at, grace_ends_at, status, reason, limits, scheduled_change, "
+        + "product:products!subscriptions_product_id_fkey (id, name_fr, name_ar, plan_code, price), "
+        + "scheduled:products!subscriptions_scheduled_product_id_fkey (name_fr, name_ar, plan_code, price, duration_days)",
+      )
       .eq("shop_id", shop.id)
       .order("starts_at", { ascending: false })
       .limit(12),
@@ -64,9 +76,12 @@ export default async function ProSubscriptionPage({
   type Sub = {
     id: string; starts_at: string; ends_at: string; grace_ends_at: string; status: string; reason: string | null;
     limits: { vehicles: number; parts: number };
+    scheduled_change: "cancel" | "downgrade" | null;
     product: SubProduct | SubProduct[] | null;
+    scheduled: SubProduct | SubProduct[] | null;
   };
-  type SubProduct = { name_fr: string; name_ar: string | null; plan_code: string };
+  type SubProduct = { id?: string; name_fr: string; name_ar: string | null; plan_code: string; price: number; duration_days?: number };
+  const one = <T,>(x: T | T[] | null): T | null => (Array.isArray(x) ? x[0] ?? null : x);
   // The 12 latest periods, read in the order they run.
   const subs = ((subRes.data ?? []) as unknown as Sub[]).reverse();
   const now = Date.now();
@@ -76,6 +91,12 @@ export default async function ProSubscriptionPage({
     return (locale === "ar" && p?.name_ar ? p.name_ar : p?.name_fr) ?? "—";
   };
   const current = subs.find((s) => new Date(s.starts_at).getTime() <= now && now < new Date(s.ends_at).getTime());
+  // The live subscription: periods not past their grace, the last of which
+  // carries the renewal date and what is scheduled for it.
+  const liveSubs = subs.filter((s) => ["active", "grace"].includes(s.status) && now < new Date(s.grace_ends_at).getTime());
+  const last = liveSubs.length ? liveSubs.reduce((a, b) => (new Date(b.ends_at) > new Date(a.ends_at) ? b : a)) : null;
+  const nextPaid = liveSubs.find((s) => new Date(s.starts_at).getTime() > now) ?? null;
+  const openOrder = (payRes.data ?? []).find((p) => p.kind === "subscription" && ["pending", "pending_review"].includes(p.status as string));
 
   // Back from paying, perhaps sent here by the listing limit with an annonce
   // saved but not online. /annonces/nouvelle resumes the latest draft, and
@@ -93,7 +114,6 @@ export default async function ProSubscriptionPage({
       .maybeSingle();
     draftWaiting = draft != null && draft.shop_id == null && draft.listing_type === shop.activity_type;
   }
-  const currentCode = current ? (Array.isArray(current.product) ? current.product[0]?.plan_code : current.product?.plan_code) : null;
 
   // What each plan button would be — opening, renewal or change — and whether
   // the back office approves that first (the same rule as pro_request_kind).
@@ -103,6 +123,43 @@ export default async function ProSubscriptionPage({
   const needsApproval = (code: string) => approvals[planKind(latestCode, periods.length > 0, code)];
   const openPlan = requests.open.find((r) => r.kind !== "boost") ?? null;
   const anyApproval = plans.some((p) => needsApproval(p.code));
+
+  // What each plan is for the live subscription, priced by the database.
+  let live: LiveSubscription | null = null;
+  let options: PlanOption[] = [];
+  if (last) {
+    const lastProduct = one(last.product);
+    const sched = one(last.scheduled);
+    const inGrace = new Date(last.ends_at).getTime() <= now;
+    const curProduct = one(current?.product ?? null);
+    const curPrice = curProduct ? Number(curProduct.price) : null;
+    const lastPrice = Number(lastProduct?.price ?? 0);
+    const renewCode = sched?.plan_code ?? lastProduct?.plan_code;
+    live = {
+      planName: name(current ?? last),
+      planCode: lastProduct?.plan_code ?? "",
+      price: lastPrice,
+      renewsAt: last.ends_at,
+      graceEndsAt: last.grace_ends_at,
+      inGrace,
+      scheduledChange: last.scheduled_change,
+      scheduled: sched
+        ? { name: locale === "ar" && sched.name_ar ? sched.name_ar : sched.name_fr, code: sched.plan_code, price: Number(sched.price), days: Number(sched.duration_days ?? 30) }
+        : null,
+      nextPaid: nextPaid ? { name: name(nextPaid), start: nextPaid.starts_at, end: nextPaid.ends_at } : null,
+    };
+    const wanted: { plan: (typeof plans)[number]; action: PlanOption["action"] }[] = [];
+    for (const p of plans) {
+      if (curPrice != null && p.price > curPrice && !inGrace) wanted.push({ plan: p, action: "upgrade" });
+      else if (inGrace || p.code === renewCode) wanted.push({ plan: p, action: "renew" });
+      else if (p.price < lastPrice) wanted.push({ plan: p, action: "downgrade" });
+    }
+    options = await Promise.all(wanted.map(async (w) => ({
+      ...w,
+      quote: w.action === "downgrade" ? null : await quoteFor(admin, shop.id, w.plan.id, w.action as Intent),
+      approval: needsApproval(w.plan.code),
+    })));
+  }
 
   return (
     <div className="space-y-5">
@@ -191,16 +248,26 @@ export default async function ProSubscriptionPage({
         )}
       </section>
 
+      {live ? (
+        <ManageSubscription
+          shopId={shop.id}
+          locale={locale}
+          currency={tnd}
+          live={live}
+          options={options}
+          canAct={canBuy}
+          orderOpen={Boolean(openOrder)}
+          date={date}
+        />
+      ) : (
       <section className="rounded-2xl border border-border bg-surface p-4">
-        <h2 className="text-[14px] font-extrabold">{current ? t("renewOrChange") : t("choose")}</h2>
+        <h2 className="text-[14px] font-extrabold">{t("choose")}</h2>
         <p className="mt-1 text-[11.5px] leading-relaxed text-muted">
-          {current
-            ? t("renewHint")
-            : ["draft", "pending_review", "rejected"].includes(shop.status)
-              ? approvals.opening ? t("draftHintApproval") : t("draftHint")
-              : t("startHint")}{" "}
+          {["draft", "pending_review", "rejected"].includes(shop.status)
+            ? approvals.opening ? t("draftHintApproval") : t("draftHint")
+            : t("startHint")}{" "}
           {/* The opening sentence already says it when the shop is not open yet. */}
-          {anyApproval && (current || shop.status === "active" || !approvals.opening) && <>{t("approvalHint")} </>}
+          {anyApproval && (shop.status === "active" || !approvals.opening) && <>{t("approvalHint")} </>}
           {t("noDebit")}
         </p>
         {plans.length === 0 ? (
@@ -214,22 +281,20 @@ export default async function ProSubscriptionPage({
             {plans.map((p) => {
               const lim = planLimitFor(p, shop.activity_type);
               return (
-                <div key={p.code} className={`rounded-xl border p-3 ${currentCode === p.code ? "border-gold-soft" : "border-border"}`}>
-                  <p className="font-extrabold">{planName(p, locale)}{currentCode === p.code && <span className="ms-1 text-[11px] font-bold text-gold">{t("currentPlan")}</span>}</p>
+                <div key={p.code} className="rounded-xl border border-border p-3">
+                  <p className="font-extrabold">{planName(p, locale)}</p>
                   <p className="batta-tabular text-[18px] font-black">{formatTND(p.price, locale)} {tnd}</p>
                   <p className="text-[11.5px] text-muted">{t("planLine", { count: formatTND(lim.n, locale), bucket: tb(lim.bucket), days: p.durationDays })}</p>
-                  {canBuy && (
+                  {canBuy && !openOrder && (
                     <PostButton
                       url="/api/pro/checkout"
-                      body={{ shop_id: shop.id, plan_code: p.code }}
+                      body={{ shop_id: shop.id, plan_code: p.code, intent: "subscribe" }}
                       className="batta-btn-luxe tap-target mt-2 inline-flex w-full items-center justify-center gap-1.5 px-3 py-2 text-[12.5px]"
                     >
                       <CreditCard className="size-3.5" />{" "}
                       {openPlan?.status === "approved" && openPlan.product.planCode === p.code
                         ? t("requests.pay", { price: formatTND(p.price, locale), currency: tnd })
-                        : needsApproval(p.code)
-                          ? t("ask")
-                          : current && currentCode === p.code ? t("renew") : t("pick")}
+                        : needsApproval(p.code) ? t("ask") : t("pick")}
                     </PostButton>
                   )}
                 </div>
@@ -238,6 +303,7 @@ export default async function ProSubscriptionPage({
           </div>
         )}
       </section>
+      )}
 
       <section className="rounded-2xl border border-border bg-surface p-4">
         <h2 className="text-[14px] font-extrabold">{t("payments")}</h2>
@@ -262,6 +328,17 @@ export default async function ProSubscriptionPage({
                   )}
                   {p.status === "pending" && p.provider !== "konnect" && (
                     <Link href={`/payment/checkout?payment=${p.id}` as never} className="font-bold text-gold hover:underline">{t("settle")}</Link>
+                  )}
+                  {/* An abandoned order holds the shop's one order slot (0198): it can be let go — an online one
+                      only once Konnect's link has long expired. */}
+                  {canBuy && p.status === "pending" && (p.provider !== "konnect" || now - new Date(p.created_at as string).getTime() > 2 * 3600_000) && (
+                    <PostButton
+                      url={`/api/payments/${p.id as string}/cancel`}
+                      confirm={t("manage.cancelOrderConfirm")}
+                      className="font-bold text-muted hover:text-foreground"
+                    >
+                      {t("manage.cancelOrder")}
+                    </PostButton>
                   )}
                 </span>
               </li>

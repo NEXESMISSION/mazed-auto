@@ -226,6 +226,7 @@
     "underReview": "Le reçu est déjà en revue. Contactez l'administration pour annuler.",
     "notCancellable": "Le paiement n'est plus annulable.",
     "changed": "Le paiement a changé d'état entre-temps.",
-    "closed": "Le paiement par virement ou D17 n'est pas encore ouvert. Contactez-nous : nous vous dirons quand il le sera."
+    "closed": "Le paiement par virement ou D17 n'est pas encore ouvert. Contactez-nous : nous vous dirons quand il le sera.",
+    "onlineInProgress": "Un paiement en ligne vient d'être lancé : s'il n'aboutit pas, vous pourrez l'annuler deux heures après."
   }
 }

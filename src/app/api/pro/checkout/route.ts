@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { apiTranslations } from "@/i18n/api";
+import { apiTranslations, localeFromRequest } from "@/i18n/api";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
@@ -11,12 +11,15 @@ import { CAN_EDIT_SHOP, memberRole } from "@/lib/shops/server";
 import { konnectInitPayment } from "@/lib/payments/konnect";
 import { konnectForCheckout } from "@/lib/payments/konnectAccount";
 import { manualPaymentOpen } from "@/lib/payments";
+import { formatDate } from "@/lib/dates";
+import { quoteFor, resolveIntent, subscriptionError, type Intent, type Quote } from "@/lib/shops/subscription";
 
 /**
  * POST /api/pro/checkout — order a plan for a shop, or a 7-day boost for an
  * annonce, and say where to pay it.
  *
- *   { shop_id, plan_code }            → a subscription period
+ *   { shop_id, plan_code, intent? }   → the shop's subscription: subscribe,
+ *                                       renew or upgrade it (0198)
  *   { listing_id, product: "boost-7j" } → a boost
  *   (+ provider: "manual" to pay by transfer even when Konnect is on)
  *
@@ -31,6 +34,14 @@ import { manualPaymentOpen } from "@/lib/payments";
  * return page has asked Konnect and it says « completed ».
  * Otherwise the existing transfer / D17 page, where the buyer uploads a
  * receipt and an admin captures it.
+ *
+ * ONE SUBSCRIPTION (0198). A shop never buys a second subscription beside
+ * its own: a plan button is a subscription (none yet), its renewal (same
+ * plan, or the lower one scheduled) or an upgrade (prorated, now). The
+ * database prices it and places the order (`create_subscription_order`),
+ * under a lock on the shop: two clicks find one order, and an order for
+ * something else while one is open is refused. Downgrades and cancellations
+ * are not bought — /api/pro/subscription schedules them.
  *
  * APPROVAL FIRST (0196). When the back office wants to approve this kind of
  * purchase (an opening, a plan change… `pro_approvals`), there is no order
@@ -52,7 +63,7 @@ export async function POST(req: NextRequest) {
   if (await overLimit(admin, `checkout:${user.id}`, 20, 3600)) return tooMany();
 
   const body = (await req.json().catch(() => ({}))) as {
-    shop_id?: unknown; plan_code?: unknown; listing_id?: unknown; product?: unknown; provider?: unknown;
+    shop_id?: unknown; plan_code?: unknown; listing_id?: unknown; product?: unknown; provider?: unknown; intent?: unknown;
   };
 
   let kind: "subscription" | "promo";
@@ -138,6 +149,17 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // ── What this is for the shop's one subscription (0198) ─────────────────
+  // Checked before an approval is asked for: nobody files a request for
+  // something that could not be paid afterwards.
+  let intent: Intent | null = null;
+  let quote: Quote | null = null;
+  if (kind === "subscription" && shopId) {
+    intent = await resolveIntent(admin, shopId, product.id, body.intent);
+    quote = await quoteFor(admin, shopId, product.id, intent);
+    if (quote.error) return refusal(req, quote.error, quote);
+  }
+
   // ── The approval (0196) ──────────────────────────────────────────────────
   let requestId: string | null = null;
   if (shopId) {
@@ -205,66 +227,109 @@ export async function POST(req: NextRequest) {
   }
   const site = (process.env.NEXT_PUBLIC_SITE_URL || req.nextUrl.origin).replace(/\/$/, "");
 
-  // An order already open for the same thing is the order.
-  let q = admin
-    .from("payments")
-    .select("id, provider, status, metadata")
-    .eq("user_id", user.id)
-    .eq("kind", kind)
-    .in("status", ["pending", "pending_review"])
-    .eq("provider", provider)
-    .contains("metadata", { product_id: product.id, ...(listingId ? { listing_id: listingId } : {}) })
-    .gte("created_at", new Date(Date.now() - 2 * 3600_000).toISOString())
-    .order("created_at", { ascending: false })
-    .limit(1);
-  if (shopId) q = q.eq("shop_id", shopId);
-  const { data: open } = await q;
-  const reuse = open?.[0] as { id: string; provider: string; metadata: { pay_url?: string } } | undefined;
-  if (reuse) {
-    const redirect = reuse.provider === "konnect" && reuse.metadata?.pay_url
-      ? reuse.metadata.pay_url
-      : `/payment/checkout?payment=${reuse.id}`;
-    return NextResponse.json({ paymentId: reuse.id, provider: reuse.provider, redirect, reused: true });
-  }
+  // ── The order ────────────────────────────────────────────────────────────
+  let paymentId: string;
+  let amount: number;
+  let metadata: Record<string, unknown>;
+  if (kind === "subscription" && shopId && intent) {
+    const { data: placed, error: orderErr } = await admin.rpc("create_subscription_order", {
+      p_shop: shopId, p_user: user.id, p_product: product.id, p_intent: intent, p_provider: provider, p_request: requestId,
+    });
+    if (orderErr) {
+      if (orderErr.message.includes("approval_required")) {
+        return NextResponse.json(
+          { error: "approval_required", detail: (await apiTranslations(req, "pro.api"))("approvalRequired") },
+          { status: 409 },
+        );
+      }
+      const known = subscriptionError(orderErr.message);
+      if (known) return refusal(req, known, quote ?? {});
+      return fail("payment_create_failed", 500, orderErr);
+    }
+    const o = placed as { payment_id: string; amount: number; reused: boolean; pay_url?: string | null };
+    if (o.reused) {
+      // The same order, clicked again: back to where it is paid. An online
+      // order whose Konnect link the first click is still creating has no
+      // page yet — that click is the one that will get there.
+      if (provider === "konnect" && !o.pay_url) {
+        return NextResponse.json({ error: "order_starting", detail: (await apiTranslations(req, "pro.api"))("orderStarting") }, { status: 409 });
+      }
+      const redirect = provider === "konnect" ? o.pay_url! : `/payment/checkout?payment=${o.payment_id}`;
+      return NextResponse.json({ paymentId: o.payment_id, provider, redirect, reused: true });
+    }
+    paymentId = o.payment_id;
+    amount = Number(o.amount);
+    const { data: row } = await admin.from("payments").select("metadata").eq("id", paymentId).single();
+    metadata = (row?.metadata ?? {}) as Record<string, unknown>;
+  } else {
+    // A boost: an order already open for the same thing is the order.
+    let q = admin
+      .from("payments")
+      .select("id, provider, status, metadata")
+      .eq("user_id", user.id)
+      .eq("kind", kind)
+      .in("status", ["pending", "pending_review"])
+      .eq("provider", provider)
+      .contains("metadata", { product_id: product.id, ...(listingId ? { listing_id: listingId } : {}) })
+      .gte("created_at", new Date(Date.now() - 2 * 3600_000).toISOString())
+      .order("created_at", { ascending: false })
+      .limit(1);
+    if (shopId) q = q.eq("shop_id", shopId);
+    const { data: open } = await q;
+    const reuse = open?.[0] as { id: string; provider: string; metadata: { pay_url?: string } } | undefined;
+    if (reuse) {
+      const redirect = reuse.provider === "konnect" && reuse.metadata?.pay_url
+        ? reuse.metadata.pay_url
+        : `/payment/checkout?payment=${reuse.id}`;
+      return NextResponse.json({ paymentId: reuse.id, provider: reuse.provider, redirect, reused: true });
+    }
 
-  const metadata = {
-    product_id: product.id,
-    product_slug: product.slug,
-    plan_code: product.plan_code,
-    expected_amount: Number(product.price),
-    ...(listingId ? { listing_id: listingId } : {}),
-    ...(requestId ? { request_id: requestId } : {}),
-    initiated_at: new Date().toISOString(),
-  };
-  const { data: pay, error } = await admin
-    .from("payments")
-    .insert({ user_id: user.id, kind, provider, amount: product.price, status: "pending", shop_id: shopId, metadata })
-    .select("id")
-    .single();
-  if (error?.message.includes("approval_required")) {
-    // The setting changed between the check above and the order.
-    return NextResponse.json(
-      { error: "approval_required", detail: (await apiTranslations(req, "pro.api"))("approvalRequired") },
-      { status: 409 },
-    );
+    metadata = {
+      product_id: product.id,
+      product_slug: product.slug,
+      plan_code: product.plan_code,
+      expected_amount: Number(product.price),
+      ...(listingId ? { listing_id: listingId } : {}),
+      ...(requestId ? { request_id: requestId } : {}),
+      initiated_at: new Date().toISOString(),
+    };
+    const { data: pay, error } = await admin
+      .from("payments")
+      .insert({ user_id: user.id, kind, provider, amount: product.price, status: "pending", shop_id: shopId, metadata })
+      .select("id")
+      .single();
+    if (error?.message.includes("approval_required")) {
+      // The setting changed between the check above and the order.
+      return NextResponse.json(
+        { error: "approval_required", detail: (await apiTranslations(req, "pro.api"))("approvalRequired") },
+        { status: 409 },
+      );
+    }
+    if (error || !pay) return fail("payment_create_failed", 500, error);
+    paymentId = pay.id as string;
+    amount = Number(product.price);
   }
-  if (error || !pay) return fail("payment_create_failed", 500, error);
 
   if (!cfg) {
-    logAction(req, user, `checkout.${kind}`, { paymentId: pay.id, provider, shopId });
-    return NextResponse.json({ paymentId: pay.id, provider, redirect: `/payment/checkout?payment=${pay.id}` });
+    logAction(req, user, `checkout.${kind}`, { paymentId, provider, shopId, intent });
+    return NextResponse.json({ paymentId, provider, redirect: `/payment/checkout?payment=${paymentId}` });
   }
 
   try {
     // Back where the buyer can see the answer: the shop's subscription page,
     // or a private seller's annonces.
     const back = shopId
-      ? `${site}/fr/pro/dashboard/abonnement?payment=${pay.id}`
-      : `${site}/fr/account/listings?payment=${pay.id}`;
+      ? `${site}/fr/pro/dashboard/abonnement?payment=${paymentId}`
+      : `${site}/fr/account/listings?payment=${paymentId}`;
     const { payUrl, paymentRef } = await konnectInitPayment(cfg, {
-      amountTnd: Number(product.price),
-      orderId: pay.id as string,
-      description: kind === "subscription" ? `Mazed Auto — formule ${product.name_fr}` : "Mazed Auto — boost 7 jours",
+      // What the order says — for an upgrade, the prorated difference.
+      amountTnd: amount,
+      orderId: paymentId,
+      description: kind !== "subscription"
+        ? "Mazed Auto — boost 7 jours"
+        : intent === "upgrade"
+          ? `Mazed Auto — passage à la formule ${product.name_fr}`
+          : `Mazed Auto — formule ${product.name_fr}`,
       webhookUrl: `${site}/api/payments/konnect/webhook`,
       successUrl: back,
       failUrl: back,
@@ -272,14 +337,22 @@ export async function POST(req: NextRequest) {
     await admin
       .from("payments")
       .update({ provider_ref: paymentRef, metadata: { ...metadata, pay_url: payUrl } })
-      .eq("id", pay.id);
-    logAction(req, user, `checkout.${kind}`, { paymentId: pay.id, provider, shopId });
-    return NextResponse.json({ paymentId: pay.id, provider, redirect: payUrl });
+      .eq("id", paymentId);
+    logAction(req, user, `checkout.${kind}`, { paymentId, provider, shopId, intent });
+    return NextResponse.json({ paymentId, provider, redirect: payUrl });
   } catch (e) {
     await admin
       .from("payments")
       .update({ status: "failed", admin_notes: "Konnect indisponible à la création" })
-      .eq("id", pay.id);
+      .eq("id", paymentId);
     return fail("konnect_unavailable", 502, e);
   }
+}
+
+/** A purchase the shop's subscription does not allow, said in the reader's language. */
+async function refusal(req: NextRequest, code: string, quote: Quote) {
+  const t = await apiTranslations(req, "pro.api.subscription");
+  const known = subscriptionError(code) ?? "bad_intent";
+  const date = quote.opens_at ? formatDate(quote.opens_at, localeFromRequest(req)) : "";
+  return NextResponse.json({ error: known, detail: t(known, { date }) }, { status: 409 });
 }
