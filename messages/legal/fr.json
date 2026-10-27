@@ -36,7 +36,7 @@
     },
     "s7": {
       "title": "7. Frais",
-      "body": "Parcourir les annonces et contacter un vendeur sont gratuits. La publication d'une annonce est payante selon le tarif affiché au moment de publier ; certaines publications sont gratuites (notamment les pièces de rechange). Les options de mise en avant et les abonnements des boutiques professionnelles sont payants selon les tarifs affichés. Les montants sont en dinars tunisiens (TND). Une annonce refusée ne consomme pas la publication payée. En cas de fausse déclaration, l'annonce est retirée et les frais déjà réglés restent acquis."
+      "body": "Parcourir les annonces et contacter un vendeur sont gratuits. Un particulier publie ses annonces gratuitement, dans la limite du nombre d'annonces en ligne à la fois indiquée sur la page Tarifs. Les abonnements des boutiques professionnelles et l'option Boost (mise en avant d'une annonce pendant 7 jours) sont payants selon les tarifs affichés. Les montants sont en dinars tunisiens (TND). Une annonce refusée ne compte pas dans le nombre d'annonces en ligne. En cas de fausse déclaration, l'annonce est retirée et les sommes déjà réglées (abonnement, options) restent acquises."
     },
     "s8": {
       "title": "8. Boutiques professionnelles",
@@ -70,13 +70,13 @@
         "account": "Compte : nom, numéro de téléphone, gouvernorat et photo de profil si vous les indiquez, et votre mot de passe, conservé sous forme chiffrée.",
         "listings": "Annonces : textes, photos, caractéristiques, prix, nom et numéro de contact.",
         "shops": "Boutiques : informations légales (raison sociale, matricule fiscal, RNE, adresse), justificatifs, coordonnées et horaires.",
-        "payments": "Paiements des frais : montant, moyen, référence et reçu téléversé. Les données de carte bancaire sont traitées par le prestataire de paiement, jamais par nous.",
+        "payments": "Paiements des abonnements et des options : montant, moyen, référence et reçu téléversé. Si vous payez par carte en ligne, lorsque ce moyen est proposé, vos données de carte sont traitées par notre prestataire de paiement (Konnect) et ne nous parviennent jamais.",
         "usage": "Utilisation : pages consultées, adresse IP, type de navigateur, et statistiques de consultation des annonces et des boutiques."
       }
     },
     "s3": {
       "title": "3. Pourquoi nous les utilisons",
-      "body": "Créer et sécuriser votre compte, relire les annonces avant publication, les afficher, permettre aux acheteurs de joindre le vendeur, traiter les paiements des frais, vous envoyer des SMS et des notifications liés à votre activité, fournir leurs statistiques aux boutiques, prévenir la fraude (par exemple en limitant l'affichage massif de numéros) et améliorer le service."
+      "body": "Créer et sécuriser votre compte, relire les annonces avant publication, les afficher, permettre aux acheteurs de joindre le vendeur, traiter les paiements des abonnements et des options, vous envoyer des SMS et des notifications liés à votre activité, fournir leurs statistiques aux boutiques, prévenir la fraude (par exemple en limitant l'affichage massif de numéros) et améliorer le service."
     },
     "s4": {
       "title": "4. Ce qui est public",
@@ -84,7 +84,7 @@
     },
     "s5": {
       "title": "5. Partage",
-      "body": "Nous ne vendons pas vos données. Nous les partageons uniquement avec les prestataires nécessaires au service : hébergement, envoi de SMS, paiement en ligne, et — seulement pour les boutiques qui l'activent — les réseaux sociaux (Facebook, Instagram) et le service d'intelligence artificielle qui rédige un projet de publication à partir de l'annonce. Nous les communiquons aux autorités lorsque la loi l'exige."
+      "body": "Nous ne vendons pas vos données. Nous les partageons uniquement avec les prestataires nécessaires au service : hébergement, envoi de SMS, paiement par carte en ligne lorsqu'il est proposé, et — seulement pour les boutiques qui l'activent — les réseaux sociaux (Facebook, Instagram) et le service d'intelligence artificielle qui rédige un projet de publication à partir de l'annonce. Nous les communiquons aux autorités lorsque la loi l'exige."
     },
     "s6": {
       "title": "6. Durée de conservation",

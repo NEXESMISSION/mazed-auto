@@ -20,7 +20,7 @@
     "storyTitle": "Notre histoire",
     "story1": "L'idée est née d'un constat simple : le marché tunisien des voitures d'occasion souffrait de comptes fictifs, de photos volées et d'informations trompeuses. Nous voulions une solution qui place la confiance au cœur de tout.",
     "story2": "C'est ainsi qu'est née Mazed Auto : chaque annonce est relue par notre équipe avant d'être publiée, le vendeur signe une attestation sur l'exactitude de ce qu'il déclare, et les voitures que nous inspectons nous-mêmes portent le badge « Vérifié et approuvé » avec la fiche de diagnostic qui va avec.",
-    "story3": "Nous sommes l'intermédiaire, pas le vendeur. L'annonce porte les coordonnées de son propriétaire : vous l'appelez, vous voyez la voiture, vous convenez du prix entre vous. Nous ne prenons rien sur la vente — seule la publication est payante, et elle est gratuite pour les pièces de rechange.",
+    "story3": "Nous sommes l'intermédiaire, pas le vendeur. L'annonce porte les coordonnées de son propriétaire : vous l'appelez, vous voyez la voiture, vous convenez du prix entre vous. Nous ne prenons rien sur la vente — les particuliers publient gratuitement, dans la limite indiquée sur la page Tarifs ; seuls l'abonnement des boutiques professionnelles et l'option Boost sont payants.",
     "cta": "Parcourir les annonces"
   },
   "contact": {
@@ -46,7 +46,7 @@
   },
   "help": {
     "metaTitle": "Centre d'aide — Mazed Auto",
-    "metaDescription": "Questions fréquentes sur Mazed Auto : acheter au prix affiché, contacter le vendeur, publier une annonce, frais de publication, pièces de rechange et support.",
+    "metaDescription": "Questions fréquentes sur Mazed Auto : acheter au prix affiché, contacter le vendeur, publier une annonce gratuitement, abonnement boutique et Boost, pièces de rechange et support.",
     "eyebrow": "Aide",
     "title": "Centre d'aide",
     "intro": "Tout ce que vous devez savoir sur Mazed Auto : compte, achat, publication d'annonces, paiements et remise du véhicule.",
@@ -80,7 +80,7 @@
         },
         "pay": {
           "q": "Dois-je payer quelque chose pour acheter ?",
-          "a": "Non. Parcourir les annonces, afficher un numéro et contacter un vendeur sont gratuits. Le seul paiement sur la plateforme est celui de la <b>publication</b>, réglé par le vendeur."
+          "a": "Non. Parcourir les annonces, afficher un numéro et contacter un vendeur sont gratuits. Les seuls paiements sur la plateforme concernent les vendeurs : l'<b>abonnement</b> d'une boutique professionnelle et l'option <b>Boost</b>."
         },
         "badge": {
           "q": "Que veut dire le badge « Vérifié et approuvé » ?",
@@ -98,11 +98,11 @@
       "vendre": {
         "publish": {
           "q": "Comment publier une annonce ?",
-          "a": "Depuis <publish>Publier une annonce</publish> : catégorie, photos, caractéristiques, prix et vos coordonnées. Vous signez une attestation sur l'exactitude des informations, vous réglez la publication, puis notre équipe vérifie l'annonce avant de la mettre en ligne."
+          "a": "Depuis <publish>Publier une annonce</publish> : catégorie, photos, caractéristiques, prix et vos coordonnées. Vous signez une attestation sur l'exactitude des informations, puis notre équipe vérifie l'annonce avant de la mettre en ligne. Pour un particulier, la publication est gratuite."
         },
         "cost": {
           "q": "Combien coûte une publication ?",
-          "a": "Un montant fixe par annonce, affiché au moment de publier — le prix peut différer selon la catégorie. Les <b>pièces de rechange sont gratuites</b>. Si vous publiez beaucoup, des forfaits permettent d'acheter plusieurs publications d'avance ; écrivez-nous pour en obtenir un."
+          "a": "<b>Rien, pour un particulier</b> : vous publiez gratuitement, dans la limite du nombre d'annonces en ligne à la fois indiquée sur la page Tarifs. Pour publier davantage et disposer de leur propre page, les professionnels ouvrent une <b>boutique</b> avec un abonnement. En option, le <b>Boost</b> met votre annonce en avant pendant 7 jours."
         },
         "contactShown": {
           "q": "Pourquoi mes coordonnées apparaissent-elles sur l'annonce ?",
@@ -114,17 +114,17 @@
         },
         "refused": {
           "q": "Mon annonce a été refusée, pourquoi ?",
-          "a": "Le motif vous est envoyé et s'affiche sur l'annonce : photos inexploitables, informations contradictoires, numéro injoignable, doublon. Corrigez et renvoyez-la — <b>un refus ne consomme pas votre publication</b>, elle vous est rendue."
+          "a": "Le motif vous est envoyé et s'affiche sur l'annonce : photos inexploitables, informations contradictoires, numéro injoignable, doublon. Corrigez et renvoyez-la — <b>une annonce refusée ne compte pas dans votre limite d'annonces</b>."
         },
         "false": {
           "q": "Que se passe-t-il si je déclare quelque chose de faux ?",
-          "a": "En publiant, vous attestez que les informations sont exactes. Une fausse déclaration nous autorise à retirer l'annonce et à conserver les frais déjà réglés — et l'acheteur reste en droit de se retourner contre vous."
+          "a": "En publiant, vous attestez que les informations sont exactes. Une fausse déclaration nous autorise à retirer l'annonce, sans remboursement de l'abonnement ou des options déjà réglés — et l'acheteur reste en droit de se retourner contre vous."
         }
       },
       "paiements": {
         "methods": {
           "q": "Quels moyens de paiement acceptez-vous ?",
-          "a": "Pour les frais de publication : virement bancaire et D17. Vous téléversez le reçu, et l'annonce part en vérification dès que notre équipe l'a validé."
+          "a": "Pour un abonnement boutique ou une option : virement bancaire ou D17 au nom de « Mazed Auto », puis vous téléversez le reçu, que notre équipe vérifie, en général sous 24 à 48 heures. Lorsque le paiement par carte en ligne est proposé, il passe par Konnect : vos données de carte ne nous parviennent jamais."
         },
         "carPrice": {
           "q": "Le prix de la voiture passe-t-il par Mazed Auto ?",
@@ -132,7 +132,7 @@
         },
         "invoice": {
           "q": "Puis-je obtenir une facture ?",
-          "a": "Oui, pour les frais de publication. Vos paiements sont listés dans <payments>Mes paiements</payments> ; demandez la facture via la page <contact>Contact</contact>."
+          "a": "Oui, pour un abonnement ou une option. Vos paiements sont listés dans <payments>Mes paiements</payments> ; demandez la facture via la page <contact>Contact</contact>."
         }
       },
       "remise": {
@@ -211,8 +211,8 @@
         "text": "Vous confirmez que les informations sont exactes. Une fausse déclaration nous autorise à refuser ou à retirer l'annonce."
       },
       "s4": {
-        "title": "Réglez la publication",
-        "text": "Un montant fixe par annonce, ou une publication décomptée de votre forfait. Les pièces de rechange sont publiées gratuitement."
+        "title": "Publiez gratuitement",
+        "text": "Pour un particulier, la publication ne coûte rien, dans la limite indiquée sur la page Tarifs. Pour publier davantage, les professionnels ouvrent une boutique avec un abonnement."
       },
       "s5": {
         "title": "Nous vérifions, puis c'est en ligne",
@@ -258,7 +258,7 @@
     "includedTitle": "Ce qui est compris",
     "included": {
       "photos": "Jusqu'à 12 photos par annonce",
-      "contact": "Vos coordonnées visibles par les acheteurs vérifiés",
+      "contact": "Votre numéro, affiché à la demande de l'acheteur",
       "review": "Vérification de chaque annonce avant sa mise en ligne",
       "edit": "Modification et retrait à tout moment"
     },
