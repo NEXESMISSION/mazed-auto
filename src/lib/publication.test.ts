@@ -9,6 +9,7 @@ import {
   quotaMessage,
   quotaPhrase,
   shopForPersonalDraft,
+  waitingShopFor,
   type QuotaStatus,
   type ShopSummary,
 } from "./publication";
@@ -136,6 +137,30 @@ describe("pickScope — which scope a new annonce is filed under", () => {
       .toMatchObject({ kind: "refused", error: "rental_requires_shop" });
     expect(pickScope([dealer], "vehicle", { as: "personal", listingType: "location_auto" }))
       .toMatchObject({ kind: "refused", error: "rental_requires_shop" });
+  });
+});
+
+describe("waitingShopFor — the unpaid shop the limit button activates", () => {
+  it("finds a seller's car shop still waiting for its subscription", () => {
+    const draft = { ...dealer, status: "draft" };
+    expect(waitingShopFor([draft], "vehicle")).toBe(draft);
+    expect(waitingShopFor([{ ...dealer, status: "pending_review" }], "vehicle")?.id).toBe(dealer.id);
+  });
+
+  it("matches the kind: a parts shop for a part, not for a car", () => {
+    const parts = { ...partsShop, status: "draft" };
+    expect(waitingShopFor([parts], "part")).toBe(parts);
+    expect(waitingShopFor([parts], "vehicle")).toBeNull();
+  });
+
+  it("stays out of the way when an active shop already takes the annonce", () => {
+    expect(waitingShopFor([dealer, { ...rental, status: "draft" }], "vehicle")).toBeNull();
+  });
+
+  it("ignores a shop that cannot be paid for", () => {
+    expect(waitingShopFor([{ ...dealer, status: "suspended" }], "vehicle")).toBeNull();
+    expect(waitingShopFor([{ ...dealer, status: "rejected" }], "vehicle")).toBeNull();
+    expect(waitingShopFor([], "vehicle")).toBeNull();
   });
 });
 

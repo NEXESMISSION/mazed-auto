@@ -213,6 +213,7 @@
     "limit": {
       "openShop": "افتح متجرك",
       "openShopFrom": "افتح متجرك — ابتداءً من {price} {currency} لكل {days} يومًا",
+      "activateShop": "فعّل اشتراك {name}",
       "myListings": "إدارة إعلاناتي",
       "myPlan": "اشتراكي",
       "shopListings": "إعلانات المتجر"

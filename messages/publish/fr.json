@@ -213,6 +213,7 @@
     "limit": {
       "openShop": "Ouvrir ma boutique",
       "openShopFrom": "Ouvrir ma boutique — dès {price} {currency} / {days} jours",
+      "activateShop": "Activer l'abonnement de {name}",
       "myListings": "Gérer mes annonces",
       "myPlan": "Mon abonnement",
       "shopListings": "Annonces de la boutique"

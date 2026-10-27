@@ -189,6 +189,26 @@ export function shopForPersonalDraft(
   return shops.find((s) => s.status === "active" && s.activityType === listingType) ?? null;
 }
 
+/**
+ * A shop of this seller's, fit for this kind of annonce, that is not open yet
+ * because it has no subscription: still a draft, or waiting for validation.
+ *
+ * At the personal limit the wizard used to offer « Ouvrir ma boutique » to a
+ * seller who already had one, unpaid — sending them to create a second. With
+ * such a shop the button activates its subscription instead. Only when no
+ * active shop fits: one that does is already where the annonce goes
+ * (`pickScope`), and its own limit is the one shown.
+ */
+const WAITING_SHOP = ["draft", "pending_review"];
+
+export function waitingShopFor(shops: ShopSummary[], kind: ListingKind): ShopSummary | null {
+  const fits = (s: ShopSummary) =>
+    kind === "part" ? s.activityType === "pieces_auto" : s.activityType !== "pieces_auto";
+  if (shops.some((s) => s.status === "active" && fits(s))) return null;
+  const waiting = shops.filter((s) => WAITING_SHOP.includes(s.status) && fits(s));
+  return waiting.find((s) => s.activityType === "vente_auto") ?? waiting[0] ?? null;
+}
+
 /** How an annonce that is ready to go out gets paid for — or why it cannot. */
 export function decidePublication(input: {
   shopId: string | null;

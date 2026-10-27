@@ -16,7 +16,7 @@ import {
   CAR_MAKES, MOTO_MAKES, PART_BRANDS, FUELS, TRANSMISSIONS, CONDITIONS, CAR_COLORS,
   modelsFor, modelYears, optionLabel,
 } from "@/lib/vehicles";
-import type { PublishingNote } from "@/lib/publication";
+import type { ListingKind, PublishingNote } from "@/lib/publication";
 import {
   Car, Wrench, Check, Tag, Camera, Wallet, Phone,
   ClipboardList, Loader2, MapPin, Plus, Trash2, Gift, Ticket, ImageOff, TriangleAlert, KeyRound, Store,
@@ -127,6 +127,7 @@ export function PublishWizard({
   freeLeft,
   publishing,
   cheapestPlan = null,
+  waitingShops,
   rentalVehicles = false,
   defaultContactName,
   defaultContactPhone,
@@ -142,6 +143,12 @@ export function PublishWizard({
   publishing: Record<"vehicle" | "part", PublishingNote>;
   /** The cheapest shop plan on sale, for the « open a shop » button at the limit. */
   cheapestPlan?: { price: number; days: number } | null;
+  /**
+   * Per kind, the seller's own shop that is not open yet for want of a
+   * subscription (lib/publication `waitingShopFor`): at the limit, the button
+   * activates it rather than offering to open another.
+   */
+  waitingShops?: Record<ListingKind, { name: string } | null>;
   /** A vehicle annonce goes to this person's RENTAL shop: priced per day, with conditions. */
   rentalVehicles?: boolean;
   defaultContactName: string;
@@ -229,7 +236,8 @@ export function PublishWizard({
   // Whose limit it is: a shop's plan (or its missing subscription), or a person's.
   const limitScope: "shop" | "personal" =
     plan?.phrase?.key === "quotaShop" || plan?.phrase?.key === "noteNoSubscription" ? "shop" : "personal";
-  const limitLinks = useLimitLinks(limitScope, cheapestPlan, locale);
+  const waitingShop = category ? (waitingShops?.[category.kind] ?? null) : null;
+  const limitLinks = useLimitLinks(limitScope, cheapestPlan, locale, waitingShop);
 
   const makeList = isMoto ? MOTO_MAKES : CAR_MAKES;
   const models = useMemo(
@@ -700,7 +708,7 @@ export function PublishWizard({
             {/* Said here, before the form is filled, and again under the
                 button at the end. */}
             {category && blocked && (
-              <LimitActions scope={limitScope} cheapestPlan={cheapestPlan} locale={locale} />
+              <LimitActions scope={limitScope} cheapestPlan={cheapestPlan} locale={locale} waitingShop={waitingShop} />
             )}
           </div>
 
@@ -1250,7 +1258,7 @@ export function PublishWizard({
         </p>
         {blocked && (
           <div className="flex justify-center">
-            <LimitActions scope={limitScope} cheapestPlan={cheapestPlan} locale={locale} />
+            <LimitActions scope={limitScope} cheapestPlan={cheapestPlan} locale={locale} waitingShop={waitingShop} />
           </div>
         )}
       </div>
@@ -1266,13 +1274,14 @@ export function PublishWizard({
  * into the shop once there is one (see `shopForPersonalDraft`).
  */
 function LimitActions({
-  scope, cheapestPlan, locale,
+  scope, cheapestPlan, locale, waitingShop,
 }: {
   scope: "shop" | "personal";
   cheapestPlan: { price: number; days: number } | null;
   locale: string;
+  waitingShop: { name: string } | null;
 }) {
-  const links = useLimitLinks(scope, cheapestPlan, locale);
+  const links = useLimitLinks(scope, cheapestPlan, locale, waitingShop);
   return (
     <div className="mt-3 flex flex-wrap gap-2">
       <Link
@@ -1301,14 +1310,18 @@ function useLimitLinks(
   scope: "shop" | "personal",
   cheapestPlan: { price: number; days: number } | null,
   locale: string,
+  /** The seller's shop waiting for its subscription: activate it, don't open another. */
+  waitingShop: { name: string } | null = null,
 ) {
   const t = useTranslations("publish.wizard.limit");
   return {
     shop: {
-      href: scope === "shop" ? "/pro/dashboard/abonnement" : "/pro",
+      href: scope === "shop" || waitingShop ? "/pro/dashboard/abonnement" : "/pro",
       label: scope === "shop"
         ? t("myPlan")
-        : cheapestPlan
+        : waitingShop
+          ? t("activateShop", { name: waitingShop.name })
+          : cheapestPlan
           ? t("openShopFrom", {
               price: formatTND(cheapestPlan.price, locale),
               currency: currencyLabel(locale),

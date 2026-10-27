@@ -20,8 +20,10 @@ import {
   listingTypeFor,
   phraseText,
   pickScope,
+  waitingShopFor,
   type ListingKind,
   type PublishingNote,
+  type ShopSummary,
 } from "@/lib/publication";
 import { memberShops, quotaStatus } from "@/lib/shops/server";
 import { plansForSale } from "@/lib/shops/plans";
@@ -185,6 +187,10 @@ export default async function NewListingPage({
       freeLeft={freeLeft}
       publishing={publishing}
       cheapestPlan={cheapestPlan}
+      waitingShops={{
+        vehicle: shopName(waitingShopFor(shops, "vehicle")),
+        part: shopName(waitingShopFor(shops, "part")),
+      }}
       rentalVehicles={(() => {
         const s = pickScope(shops, "vehicle");
         return !("kind" in s) && s.listingType === "location_auto";
@@ -196,6 +202,9 @@ export default async function NewListingPage({
     />
   );
 }
+
+/** What the limit button needs to know of an unpaid shop: what to call it. */
+const shopName = (s: ShopSummary | null) => (s ? { name: s.name } : null);
 
 const DRAFT_SELECT = `id, category_id, title, description, price, price_on_request, negotiable,
   condition, governorate, attributes, contact_name, contact_phone, updated_at,
