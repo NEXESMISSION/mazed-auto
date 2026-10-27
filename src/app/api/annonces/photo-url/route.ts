@@ -3,6 +3,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { log } from "@/lib/log";
+import { LISTING_RULES_BOUNDS } from "@/lib/listingRules";
 
 /**
  * Signed upload URLs for annonce photos.
@@ -32,7 +33,9 @@ import { log } from "@/lib/log";
  * POST { exts: string[] } → { uploads: [{ path, signedUrl }] }
  */
 
-const MAX_PER_REQUEST = 12;
+// The most photos an annonce may ever carry (Réglages caps it lower, D-B5):
+// signing upload slots is not where the limit is kept.
+const MAX_PER_REQUEST = LISTING_RULES_BOUNDS.maxPhotos.max;
 const SAFE_EXT = /^[a-z0-9]{1,5}$/;
 
 export async function POST(req: NextRequest) {

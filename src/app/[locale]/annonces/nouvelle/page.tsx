@@ -27,6 +27,7 @@ import {
 } from "@/lib/publication";
 import { memberShops, quotaStatus } from "@/lib/shops/server";
 import { plansForSale } from "@/lib/shops/plans";
+import { fetchListingRules } from "@/lib/listingRules";
 import { categoryLabel } from "@/lib/labels";
 
 export const dynamic = "force-dynamic";
@@ -70,7 +71,7 @@ export default async function NewListingPage({
     );
   }
 
-  const [catRes, prodRes, creditRes, profRes, draftRes] = await Promise.all([
+  const [catRes, prodRes, creditRes, profRes, draftRes, rules] = await Promise.all([
     admin
       .from("categories")
       .select("id, parent_id, slug, label_fr, label_ar, kind, sort_order")
@@ -87,6 +88,8 @@ export default async function NewListingPage({
     // enough that a phone call, a dead battery or a mistaken back gesture will
     // interrupt it — and until now that threw the whole form away.
     loadDraft(admin, user!.id, wanted),
+    // How many photos an annonce may carry (Réglages, D-B5).
+    fetchListingRules(admin),
   ]);
 
   type CatRow = {
@@ -187,6 +190,7 @@ export default async function NewListingPage({
       freeLeft={freeLeft}
       publishing={publishing}
       cheapestPlan={cheapestPlan}
+      maxPhotos={rules.maxPhotos}
       waitingShops={{
         vehicle: shopName(waitingShopFor(shops, "vehicle")),
         part: shopName(waitingShopFor(shops, "part")),

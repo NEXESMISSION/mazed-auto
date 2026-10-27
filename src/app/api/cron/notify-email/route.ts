@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { secretMatches } from "@/lib/cron/auth";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { sendEmail, isEmailConfigured } from "@/lib/email";
+import { fetchNotificationChannels } from "@/lib/notifications/channels";
 import { log } from "@/lib/log";
 import { fail } from "@/lib/http/errors";
 import { getTranslations } from "next-intl/server";
@@ -148,6 +149,12 @@ async function run(req: NextRequest) {
   if (!isEmailConfigured()) {
     await stampHeartbeat();
     return NextResponse.json({ ok: true, skipped: "email_not_configured" });
+  }
+  // Switched off in « Fonctions » (D-B4): same no-op; LOOKBACK_DAYS bounds
+  // what a later switch-on sends.
+  if (!(await fetchNotificationChannels(db)).email) {
+    await stampHeartbeat();
+    return NextResponse.json({ ok: true, skipped: "email_switched_off" });
   }
 
   const sinceIso = new Date(Date.now() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();

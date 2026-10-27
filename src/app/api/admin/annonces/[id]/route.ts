@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { apiTranslations } from "@/i18n/api";
+import { fetchListingRules } from "@/lib/listingRules";
 
 /**
  * Everything an admin can do to one annonce.
@@ -14,29 +15,31 @@ import { apiTranslations } from "@/i18n/api";
  *   POST { action: "mark_paid" }            → capture the receipt, queue for review
  *   POST { action: "waive_fee" }            → comp it, queue for review
  *   POST { action: "republish" }            → expired/archived/rejected → live again
- *   POST { action: "extend", days? }        → push `expires_at` out (default 30)
+ *   POST { action: "extend", days? }        → push `expires_at` out (default 30, the « +30 j » button)
  *   POST { action: "feature", days? }       → put it on the home page
  *   POST { action: "unfeature" }            → take it off
  *   POST { action: "mark_sold" }            → the car is gone, keep the record
  *   POST { action: "edit", fields }         → fix what the seller typed
  *   POST { action: "delete" }               → remove it entirely (guarded)
  *
- * Approving is where a listing gets its `published_at` / `expires_at`, taken
- * from the product that paid for it — so changing the standard duration in
- * Tarifs changes the next publication, with no code involved.
+ * Approving is where a listing gets its `published_at` / `expires_at`: the
+ * duration its payment bought, if one did, else the duration set in Réglages
+ * (`listing_rules`, D-B5) — so changing it there changes the next publication,
+ * with no code involved.
  *
  * Rejecting RETURNS THE CREDIT. A seller whose listing is refused has not had a
  * publication; charging them for our "no" would be indefensible, and they will
  * (rightly) ask for it back.
  */
 
-const DEFAULT_DURATION_DAYS = 30;
 const DEFAULT_FEATURE_DAYS = 30;
+/** What « +30 j » adds — a fixed step of the console, not the publication length. */
+const DEFAULT_EXTEND_DAYS = 30;
 
 type Admin = NonNullable<ReturnType<typeof getServiceSupabase>>;
 
-/** How long a publication lasts: what its payment bought, else the active
- *  `listing_single` product, else 30 days. Never a constant in a caller. */
+/** How long a publication lasts: what its payment bought, else the duration
+ *  set in Réglages (D-B5). Never a constant in a caller. */
 async function publicationDays(admin: Admin, feePaymentId: string | null): Promise<number> {
   if (feePaymentId) {
     const { data: pay } = await admin
@@ -47,15 +50,7 @@ async function publicationDays(admin: Admin, feePaymentId: string | null): Promi
     const d = Number((pay?.metadata as { duration_days?: unknown } | null)?.duration_days);
     if (Number.isFinite(d) && d > 0) return d;
   }
-  const { data: prod } = await admin
-    .from("products")
-    .select("duration_days")
-    .eq("kind", "listing_single")
-    .eq("is_active", true)
-    .limit(1)
-    .maybeSingle();
-  const d = Number(prod?.duration_days);
-  return Number.isFinite(d) && d > 0 ? d : DEFAULT_DURATION_DAYS;
+  return (await fetchListingRules(admin)).validityDays;
 }
 
 /** Clamp a caller-supplied day count. Unbounded input here would let a typo
@@ -281,7 +276,7 @@ export async function POST(
         { status: 409 },
       );
     }
-    const d = days(body.days, DEFAULT_DURATION_DAYS);
+    const d = days(body.days, DEFAULT_EXTEND_DAYS);
     const from = Math.max(Date.now(), new Date(listing.expires_at ?? 0).getTime());
     const expires = new Date(from + d * 86_400_000);
 

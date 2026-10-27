@@ -8,6 +8,7 @@ import { SMS_KINDS, CAPPED_KINDS } from "@/lib/sms-kinds";
 import { getTranslations } from "next-intl/server";
 import { languagesOf } from "@/lib/notifications/language";
 import { localizeNotification } from "@/lib/notifications/localize";
+import { fetchNotificationChannels } from "@/lib/notifications/channels";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -114,6 +115,12 @@ async function run(req: NextRequest) {
   if (!isSmsConfigured()) {
     await stampHeartbeat();
     return NextResponse.json({ ok: true, skipped: "sms_not_configured" });
+  }
+  // Switched off in « Fonctions » (D-B4): same no-op. Rows stay unsent, and
+  // LOOKBACK_DAYS keeps a later switch-on from texting an old backlog.
+  if (!(await fetchNotificationChannels(db)).sms) {
+    await stampHeartbeat();
+    return NextResponse.json({ ok: true, skipped: "sms_switched_off" });
   }
 
   const sinceIso = new Date(Date.now() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();

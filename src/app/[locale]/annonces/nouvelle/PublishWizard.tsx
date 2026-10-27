@@ -127,6 +127,7 @@ export function PublishWizard({
   freeLeft,
   publishing,
   cheapestPlan = null,
+  maxPhotos = 12,
   waitingShops,
   rentalVehicles = false,
   defaultContactName,
@@ -143,6 +144,8 @@ export function PublishWizard({
   publishing: Record<"vehicle" | "part", PublishingNote>;
   /** The cheapest shop plan on sale, for the « open a shop » button at the limit. */
   cheapestPlan?: { price: number; days: number } | null;
+  /** How many photos an annonce may carry (Réglages, D-B5). */
+  maxPhotos?: number;
   /**
    * Per kind, the seller's own shop that is not open yet for want of a
    * subscription (lib/publication `waitingShopFor`): at the limit, the button
@@ -725,6 +728,7 @@ export function PublishWizard({
               photos={photos}
               onChange={setPhotos}
               onPendingChange={setPhotosUploading}
+              max={maxPhotos}
             />
           </div>
         </section>

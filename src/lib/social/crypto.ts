@@ -1,4 +1,5 @@
-import { createCipheriv, createDecipheriv, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
+import { keyFromEnv, seal, unseal } from "@/lib/secrets";
 
 /**
  * Secrets of the Social Publisher (D-S3).
@@ -14,14 +15,7 @@ import { createCipheriv, createDecipheriv, createHmac, randomBytes, timingSafeEq
  * callback cannot be replayed into another shop or another browser.
  */
 
-const VERSION = "v1";
-
-function key(): Buffer | null {
-  const raw = process.env.SOCIAL_TOKEN_KEY?.trim();
-  if (!raw) return null;
-  const k = Buffer.from(raw, "base64");
-  return k.length === 32 ? k : null;
-}
+const key = () => keyFromEnv("SOCIAL_TOKEN_KEY");
 
 export function isSocialCryptoConfigured(): boolean {
   return key() !== null;
@@ -30,24 +24,12 @@ export function isSocialCryptoConfigured(): boolean {
 export function encryptToken(plain: string): string {
   const k = key();
   if (!k) throw new Error("SOCIAL_TOKEN_KEY missing or not 32 bytes");
-  const iv = randomBytes(12);
-  const cipher = createCipheriv("aes-256-gcm", k, iv);
-  const body = Buffer.concat([cipher.update(plain, "utf8"), cipher.final()]);
-  return `${VERSION}:${Buffer.concat([iv, cipher.getAuthTag(), body]).toString("base64")}`;
+  return seal(k, plain);
 }
 
 /** The token, or null if it cannot be read (other key, tampered, empty). */
 export function decryptToken(stored: string | null | undefined): string | null {
-  const k = key();
-  if (!k || !stored?.startsWith(`${VERSION}:`)) return null;
-  try {
-    const raw = Buffer.from(stored.slice(VERSION.length + 1), "base64");
-    const decipher = createDecipheriv("aes-256-gcm", k, raw.subarray(0, 12));
-    decipher.setAuthTag(raw.subarray(12, 28));
-    return Buffer.concat([decipher.update(raw.subarray(28)), decipher.final()]).toString("utf8");
-  } catch {
-    return null;
-  }
+  return unseal(key(), stored);
 }
 
 export type OAuthState = { shopId: string; userId: string; nonce: string; exp: number };

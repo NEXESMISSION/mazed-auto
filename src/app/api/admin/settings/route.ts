@@ -4,6 +4,10 @@ import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { REQUEST_KINDS } from "@/lib/shops/approvals";
+import { revalidatePath } from "next/cache";
+import { apiTranslations } from "@/i18n/api";
+import { PAGES_SHOWING_SETTINGS, readListingRules, toStoredListingRules } from "@/lib/listingRules";
+import { formatPhone, readSiteContact, siteContactProblems } from "@/lib/siteContact";
 
 /**
  * Réglages — the settings that are NOT prices.
@@ -101,12 +105,44 @@ export async function POST(req: NextRequest) {
     rows.push({ key: "pro_grace_days", value: days, updated_by: user.id });
   }
 
+  // How long an annonce stays online and how many photos it carries (D-B5).
+  // Clamped to the bounds the form shows rather than refused.
+  if (body.listing_rules && typeof body.listing_rules === "object") {
+    rows.push({ key: "listing_rules", value: toStoredListingRules(readListingRules(body.listing_rules)), updated_by: user.id });
+  }
+
+  // How people reach the team (D-B3): the contact and help pages print these.
+  // Checked, because a mistyped number is a support line nobody answers.
+  if (body.site_contact && typeof body.site_contact === "object") {
+    const contact = readSiteContact(body.site_contact);
+    const problems = siteContactProblems(contact);
+    if (problems.length > 0) {
+      const t = await apiTranslations(req, "admin.settings.form.contact.problems");
+      return NextResponse.json({ error: "invalid_contact", detail: problems.map((k) => t(k)).join(" ") }, { status: 400 });
+    }
+    rows.push({
+      key: "site_contact",
+      value: {
+        email: contact.email,
+        phone: formatPhone(contact.phone),
+        whatsapp: contact.whatsapp ? formatPhone(contact.whatsapp) : "",
+        address: contact.address,
+      },
+      updated_by: user.id,
+    });
+  }
+
   if (rows.length === 0) {
     return NextResponse.json({ ok: true, updated: 0 });
   }
 
   const { error } = await admin.from("app_settings").upsert(rows, { onConflict: "key" });
   if (error) return fail("settings_update_failed", 500, error);
+
+  // The static pages that print these are regenerated now, not in an hour.
+  if (rows.some((r) => r.key === "listing_rules" || r.key === "site_contact")) {
+    for (const page of PAGES_SHOWING_SETTINGS) revalidatePath(page, "page");
+  }
 
   logAction(req, user, "admin.settings.update", { keys: rows.map((r) => r.key) });
   return NextResponse.json({ ok: true, updated: rows.length });

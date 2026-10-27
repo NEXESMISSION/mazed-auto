@@ -55,9 +55,12 @@ export function ManualListingForm({
    * still has to share a screen — it stays a teaser until asked for.
    */
   standalone = false,
+  maxPhotos = 12,
 }: {
   categories: AdminCategory[];
   standalone?: boolean;
+  /** How many photos an annonce may carry (Réglages, D-B5). */
+  maxPhotos?: number;
 }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -405,7 +408,7 @@ export function ManualListingForm({
         <div>
           <Label>{t("create.photos")}</Label>
           <div className="mt-1">
-            <PhotoUploader photos={photos} onChange={setPhotos} disabled={busy} />
+            <PhotoUploader photos={photos} onChange={setPhotos} disabled={busy} max={maxPhotos} />
           </div>
         </div>
 

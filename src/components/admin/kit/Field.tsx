@@ -73,7 +73,8 @@ export function TextField({
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
-  type?: "text" | "tel" | "email" | "url";
+  /** "password": a key typed once, never filled in by the browser. */
+  type?: "text" | "tel" | "email" | "url" | "password";
   /** Text direction of the value. Phone numbers, e-mails and URLs are
    *  left-to-right in an Arabic console too; pass "ltr" for an IBAN or a RIB. */
   dir?: "ltr" | "rtl" | "auto";
@@ -85,6 +86,7 @@ export function TextField({
         id={id}
         type={type}
         dir={dir ?? (type === "text" ? undefined : "ltr")}
+        autoComplete={type === "password" ? "new-password" : undefined}
         value={value}
         disabled={rest.disabled}
         required={rest.required}

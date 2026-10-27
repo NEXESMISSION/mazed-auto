@@ -78,7 +78,8 @@
       "broadcasts": "Diffusions",
       "settings": "Réglages",
       "journal": "Journal",
-      "payments": "Paiement"
+      "payments": "Paiement",
+      "modules": "Fonctions"
     }
   },
   "action": {
@@ -190,6 +191,10 @@
         "label": "Moyens de paiement",
         "description": "Virement et D17 : les coordonnées que l'acheteur reçoit, et ce qui est proposé.",
         "unit": "proposés"
+      },
+      "modules": {
+        "label": "Fonctions",
+        "description": "Chaque module en marche ou non, ce qu'il lui manque, et son interrupteur."
       }
     }
   },
@@ -233,7 +238,7 @@
   "settings": {
     "eyebrow": "Site",
     "title": "Réglages",
-    "description": "Les coordonnées que le vendeur voit au moment de payer. Les prix ne sont pas ici — ils vivent dans Offres & prix, et nulle part ailleurs.",
+    "description": "Les règles du site qui ne sont pas des prix : contact, annonces, boutiques, approbations. Les prix vivent dans Offres & prix, les coordonnées de paiement dans Moyens de paiement.",
     "form": {
       "save": "Enregistrer",
       "saved": "Enregistré",
@@ -305,6 +310,40 @@
         "queue": "Les demandes à valider sont dans",
         "openQueue": "Demandes",
         "success": "Règles pro enregistrées."
+      },
+      "listingRules": {
+        "title": "Durée et photos des annonces",
+        "body": "Combien de temps une annonce reste en ligne une fois publiée, et combien de photos elle peut porter. Les pages Aide, Comment ça marche et Tarifs affichent cette durée.",
+        "days": "Jours en ligne",
+        "photos": "Photos au plus",
+        "summary": "Une annonce reste en ligne {days, plural, one {# jour} other {# jours}}, avec jusqu'à {photos, plural, one {# photo} other {# photos}}.",
+        "bounds": "Entre {minDays} et {maxDays} jours, entre {minPhotos} et {maxPhotos} photos.",
+        "outOfBounds": "Hors des limites permises.",
+        "hint": "Les annonces déjà en ligne gardent leur date de fin et leurs photos ; les nouvelles règles valent pour ce qui est publié ensuite.",
+        "success": "Règles des annonces enregistrées. Les pages publiques sont mises à jour."
+      },
+      "contact": {
+        "title": "Contact du site",
+        "body": "Comment les acheteurs et les vendeurs joignent l'équipe. Les pages Contact et Aide affichent ces coordonnées.",
+        "email": "E-mail",
+        "phone": "Téléphone",
+        "whatsapp": "WhatsApp (facultatif)",
+        "address": "Adresse (facultative)",
+        "placeholders": {
+          "email": "contact@mazedauto.com",
+          "phone": "98 120 622",
+          "whatsapp": "Vide : pas de WhatsApp affiché",
+          "address": "Vide : « Sfax, Tunisie »"
+        },
+        "hint": "Numéros tunisiens à 8 chiffres, avec ou sans +216.",
+        "shownOn": "Affiché sur la page Contact et dans l'Aide.",
+        "see": "Voir la page",
+        "success": "Coordonnées enregistrées. Les pages Contact et Aide sont mises à jour.",
+        "problems": {
+          "email": "L'e-mail n'est pas valide.",
+          "phone": "Le téléphone doit être un numéro tunisien à 8 chiffres.",
+          "whatsapp": "Le WhatsApp doit être un numéro tunisien à 8 chiffres, ou rester vide."
+        }
       }
     }
   },
@@ -449,7 +488,7 @@
       "duration": "Durée de publication",
       "daysSuffix": "jours",
       "badgeHint": "Renouvelable, et révocable à tout moment.",
-      "durationHint": "Combien de temps l'annonce reste en ligne. Vide = 30 jours.",
+      "durationHint": "Combien de temps l'annonce reste en ligne. Vide = la durée fixée dans Réglages.",
       "availability": "Disponibilité",
       "onSale": "En vente",
       "onSaleHint": "Désactivée, l'offre disparaît de la page Tarifs mais reste liée aux paiements déjà faits.",
@@ -907,15 +946,34 @@
     },
     "konnect": {
       "title": "Paiement en ligne (Konnect)",
-      "on": "Configuré",
-      "off": "Non configuré",
-      "body": "Carte bancaire et e-dinar par Konnect. Ses clés se saisiront ici à l'étape suivante ; pour l'instant elles sont réglées sur le serveur."
+      "body": "Carte bancaire et e-dinar par Konnect. L'acheteur paie sur la page de Konnect ; rien n'est activé avant que Konnect lui-même confirme le paiement.",
+      "mode": "Passerelle",
+      "modes": {
+        "test": "Test (sandbox)",
+        "live": "Production"
+      },
+      "modeHint": "En test, seuls les comptes admin se voient proposer Konnect : la sandbox accepte des cartes de test.",
+      "wallet": "Identifiant du wallet",
+      "walletHint": "24 caractères, dans votre espace Konnect.",
+      "key": "Clé API",
+      "keySaved": "Clé enregistrée : •••• {last4}. Laissez vide pour la garder ; chiffrée, jamais réaffichée.",
+      "keyNone": "Aucune clé enregistrée. Elle sera chiffrée sur le serveur et jamais réaffichée.",
+      "keyUnreadable": "La clé enregistrée ne peut plus être lue (la clé de chiffrement du serveur a changé) : saisissez-la à nouveau.",
+      "noSecretKey": "Le serveur n'a pas encore de clé de chiffrement (SETTINGS_SECRET_KEY) : aucune clé ne peut être enregistrée.",
+      "forget": "Oublier la clé enregistrée",
+      "forgetUndo": "Garder la clé",
+      "forgetting": "La clé enregistrée sera supprimée à l'enregistrement.",
+      "env": "Le serveur fournit aussi des clés Konnect (variables d'environnement) : elles servent tant qu'aucun wallet ni clé n'est saisi ici.",
+      "previewTitle": "Compte utilisé"
     },
     "preview": {
       "title": "Ce que l'acheteur verra",
       "beneficiary": "Bénéficiaire",
       "bank": "Banque",
-      "d17Number": "Numéro D17"
+      "d17Number": "Numéro D17",
+      "gateway": "Passerelle",
+      "wallet": "Wallet",
+      "key": "Clé API"
     },
     "problems": {
       "bank": {
@@ -937,6 +995,12 @@
         "ibanRib": "IBAN et RIB différents.",
         "number": "Le numéro D17 doit être un mobile tunisien à 8 chiffres.",
         "sample": "C'est le numéro d'exemple du code d'origine : saisissez le vôtre."
+      },
+      "konnect": {
+        "wallet": "Indiquez l'identifiant du wallet Konnect (24 caractères).",
+        "key": "Saisissez la clé API Konnect.",
+        "keyFormat": "Cette clé API n'a pas le format attendu.",
+        "noSecretKey": "Le serveur n'a pas de clé de chiffrement (SETTINGS_SECRET_KEY) : la clé n'a pas été enregistrée."
       }
     },
     "save": "Enregistrer",
@@ -946,5 +1010,86 @@
     "blocked": "Complétez les coordonnées du moyen ouvert, ou fermez-le.",
     "summaryOpen": "Les acheteurs ne voient que les moyens proposés.",
     "summaryClosed": "Aucun moyen proposé : les acheteurs lisent que le paiement n'est pas encore ouvert."
+  },
+  "modules": {
+    "eyebrow": "Site",
+    "title": "Fonctions",
+    "description": "Chaque fonction du site : en marche ou non, et ce qu'il lui manque. Une fonction qui attend une clé serveur ne s'allume qu'une fois cette clé ajoutée sur Vercel.",
+    "startReady": "Démarrer les fonctions prêtes",
+    "nothingToStart": "Aucune fonction prête n'est arrêtée.",
+    "summary": "{running} sur {total} en marche.",
+    "startedAll": "{count, plural, =0 {Rien à démarrer.} one {# fonction démarrée.} other {# fonctions démarrées.}}",
+    "switchedOn": "{name} : en marche.",
+    "switchedOff": "{name} : arrêté.",
+    "notReady": "Il manque encore ce qu'il faut à cette fonction : voyez sa ligne.",
+    "open": "Régler",
+    "missingEnv": "À ajouter sur Vercel :",
+    "missing": {
+      "konnect_account": "Wallet et clé API à saisir dans Moyens de paiement."
+    },
+    "state": {
+      "running": "En marche",
+      "waiting": "Allumé, en attente de clés",
+      "ready": "Prêt, arrêté",
+      "missing": "Clés manquantes",
+      "off": "Arrêté"
+    },
+    "confirm": {
+      "startTitle": "Démarrer les fonctions prêtes ?",
+      "startBody": "Ces fonctions vont être allumées :",
+      "onTitle": "Allumer « {name} » ?",
+      "offTitle": "Arrêter « {name} » ?",
+      "on": "Allumer",
+      "off": "Arrêter"
+    },
+    "items": {
+      "shops": {
+        "label": "Boutiques pro",
+        "body": "L'annuaire, les pages des boutiques et les liens boutique sur les annonces. Arrêté, seuls les admins les voient.",
+        "effectOn": "L'annuaire et les pages des boutiques deviennent publics.",
+        "effectOff": "Les pages des boutiques ne sont plus visibles que des admins. Les abonnements continuent."
+      },
+      "approvals": {
+        "label": "Approbations pro",
+        "body": "Ce que le back-office approuve avant qu'une boutique paie : ouverture, changement de formule, renouvellement, boost.",
+        "detail": "Approbation demandée pour {count} cas sur {total}."
+      },
+      "manual": {
+        "label": "Virement et D17",
+        "body": "Paiement hors ligne avec un reçu, validé par un admin.",
+        "detail": "{count, plural, =0 {Aucun moyen proposé.} one {# moyen proposé.} other {# moyens proposés.}}"
+      },
+      "konnect": {
+        "label": "Paiement en ligne (Konnect)",
+        "body": "Carte bancaire et e-dinar ; la formule s'active quand Konnect lui-même confirme le paiement.",
+        "detail": "{mode, select, live {Passerelle : production.} other {Passerelle : test, proposée aux admins seulement.}}",
+        "effectOn": "Konnect est proposé pour payer les formules et les boosts (en test : aux admins seulement).",
+        "effectOff": "Plus de paiement en ligne : les vendeurs paient par virement ou D17. Les paiements déjà faits sont toujours vérifiés."
+      },
+      "social": {
+        "label": "Social Publisher",
+        "body": "Les boutiques publient leurs annonces sur Facebook et Instagram. Arrêté, seuls les admins le voient.",
+        "optional": "Facultatif, pour les textes rédigés par l'IA :",
+        "effectOn": "Les boutiques voient le Social Publisher et peuvent connecter leurs pages.",
+        "effectOff": "Le Social Publisher n'est plus visible que des admins."
+      },
+      "sms": {
+        "label": "Notifications par SMS",
+        "body": "Les avis importants (paiement, refus, échéance) envoyés aussi par SMS. Le code de connexion n'est jamais concerné.",
+        "effectOn": "Les avis importants repartent aussi par SMS (ceux des 2 derniers jours au plus).",
+        "effectOff": "Plus de SMS de notification ; la cloche et les e-mails continuent. Le code de connexion par SMS n'est pas touché."
+      },
+      "email": {
+        "label": "Notifications par e-mail",
+        "body": "Chaque notification envoyée aussi par e-mail, dont les avis de paiement.",
+        "effectOn": "Les notifications repartent aussi par e-mail (celles des 7 derniers jours au plus).",
+        "effectOff": "Plus d'e-mails de notification, avis de paiement compris ; la cloche continue."
+      },
+      "freeListings": {
+        "label": "Annonces offertes",
+        "body": "Les premières publications payantes offertes aux nouveaux vendeurs.",
+        "detail": "Réglé sur {count, plural, =0 {aucune annonce} one {# annonce} other {# annonces}} par vendeur."
+      }
+    }
   }
 }

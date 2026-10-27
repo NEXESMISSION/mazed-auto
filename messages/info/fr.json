@@ -33,7 +33,8 @@
     "address": "Adresse",
     "hours": "Horaires",
     "addressValue": "Sfax, Tunisie",
-    "hoursValue": "Lun – Ven, 9h – 17h"
+    "hoursValue": "Lun – Ven, 9h – 17h",
+    "whatsapp": "WhatsApp"
   },
   "offline": {
     "metaTitle": "Vous êtes hors ligne — Mazed Auto",
@@ -110,7 +111,7 @@
         },
         "duration": {
           "q": "Combien de temps mon annonce reste-t-elle en ligne ?",
-          "a": "<b>30 jours.</b> Nous vous prévenons avant l'expiration, et une annonce expirée se renouvelle depuis <listings>Mes annonces</listings>. Une durée limitée évite que le catalogue se remplisse de voitures vendues depuis longtemps."
+          "a": "<b>{days} jours.</b> Nous vous prévenons avant l'expiration, et une annonce expirée se renouvelle depuis <listings>Mes annonces</listings>. Une durée limitée évite que le catalogue se remplisse de voitures vendues depuis longtemps."
         },
         "refused": {
           "q": "Mon annonce a été refusée, pourquoi ?",
@@ -216,7 +217,7 @@
       },
       "s5": {
         "title": "Nous vérifions, puis c'est en ligne",
-        "text": "Notre équipe contrôle l'annonce avant sa publication. Elle reste visible 30 jours, et vous pouvez la renouveler ensuite."
+        "text": "Notre équipe contrôle l'annonce avant sa publication. Elle reste visible {days} jours, et vous pouvez la renouveler ensuite."
       }
     },
     "trustTitle": "Un <gold>système de confiance</gold> à chaque étape",
@@ -243,8 +244,8 @@
     "free": "Gratuit",
     "vehicleCard": {
       "title": "Voiture, moto, utilitaire",
-      "noteFree": "{vehicles} en ligne à la fois, 30 jours après validation, renouvelable gratuitement.",
-      "notePaid": "Par annonce, en ligne 30 jours après validation."
+      "noteFree": "{vehicles} en ligne à la fois, {days} jours après validation, renouvelable gratuitement.",
+      "notePaid": "Par annonce, en ligne {days} jours après validation."
     },
     "partCard": {
       "title": "Pièce de rechange",

@@ -8,7 +8,8 @@ import { overLimit, tooMany } from "@/lib/http/rateLimit";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { CAN_EDIT_SHOP, memberRole } from "@/lib/shops/server";
-import { konnectConfig, konnectInitPayment } from "@/lib/payments/konnect";
+import { konnectInitPayment } from "@/lib/payments/konnect";
+import { konnectForCheckout } from "@/lib/payments/konnectAccount";
 import { manualPaymentOpen } from "@/lib/payments";
 
 /**
@@ -24,9 +25,10 @@ import { manualPaymentOpen } from "@/lib/payments";
  * (0191). An order still open for the same thing is reused rather than
  * duplicated.
  *
- * WHERE TO PAY. Konnect when it is configured: the order gets Konnect's
- * reference and the buyer is sent to its page; nothing is activated until the
- * webhook or the return page has asked Konnect and it says « completed ».
+ * WHERE TO PAY. Konnect when the back office has switched it on (D-B2; in
+ * test mode, for admins only): the order gets Konnect's reference and the
+ * buyer is sent to its page; nothing is activated until the webhook or the
+ * return page has asked Konnect and it says « completed ».
  * Otherwise the existing transfer / D17 page, where the buyer uploads a
  * receipt and an admin captures it.
  *
@@ -191,7 +193,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const cfg = body.provider === "manual" ? null : konnectConfig();
+  const cfg = body.provider === "manual" ? null : await konnectForCheckout(admin, user.id);
   const provider = cfg ? "konnect" : "bank_transfer";
   // Without Konnect the order is paid by transfer or D17: not before the back
   // office has opened one of them with real details (D-B1).

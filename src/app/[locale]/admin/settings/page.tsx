@@ -3,6 +3,8 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { AdminPage, EYEBROW } from "@/components/admin/kit";
 import { SiteTabs } from "@/components/admin/kit/SiteTabs";
 import { DEFAULT_APPROVALS, readApprovals, type Approvals } from "@/lib/shops/approvals";
+import { DEFAULT_LISTING_RULES, readListingRules, type ListingRules } from "@/lib/listingRules";
+import { DEFAULT_SITE_CONTACT, readSiteContact, type SiteContact } from "@/lib/siteContact";
 import {
   SettingsForm,
   type FreeListings,
@@ -41,13 +43,24 @@ export default async function AdminSettingsPage() {
   // The defaults the database falls back to (0196, 0189).
   let approvals: Approvals = DEFAULT_APPROVALS;
   let graceDays = 7;
+  // What the pages said until these became settings (D-B5, D-B3).
+  let listingRules: ListingRules = DEFAULT_LISTING_RULES;
+  let contact: SiteContact = DEFAULT_SITE_CONTACT;
 
   if (admin) {
     const { data } = await admin
       .from("app_settings")
       .select("key, value")
-      .in("key", ["free_listings", "personal_limits", "pro_shops", "pro_approvals", "pro_grace_days"]);
+      .in("key", ["free_listings", "personal_limits", "pro_shops", "pro_approvals", "pro_grace_days", "listing_rules", "site_contact"]);
     for (const row of data ?? []) {
+      if (row.key === "listing_rules") {
+        listingRules = readListingRules(row.value);
+        continue;
+      }
+      if (row.key === "site_contact") {
+        contact = readSiteContact(row.value);
+        continue;
+      }
       if (row.key === "pro_approvals") {
         approvals = readApprovals(row.value);
         continue;
@@ -93,6 +106,8 @@ export default async function AdminSettingsPage() {
         initialProShops={proShops}
         initialApprovals={approvals}
         initialGraceDays={graceDays}
+        initialListingRules={listingRules}
+        initialContact={contact}
       />
     </AdminPage>
   );

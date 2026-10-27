@@ -1,6 +1,7 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getServiceSupabase } from "@/lib/supabase/admin";
+import { fetchListingRules } from "@/lib/listingRules";
 import { attributeLabel, attributeOptionLabel, categoryLabel, unitLabel } from "@/lib/labels";
 import { PageHeader } from "@/components/admin/kit";
 import { adminBtn } from "@/components/admin/AdminButton";
@@ -53,7 +54,7 @@ export default async function AdminNewListingPage() {
   // /api/admin/vendeurs/search as you type, so this page loads the categories
   // it needs and nothing else — it used to pull 500 profiles on every visit to
   // populate a list that was then rendered in full before anyone had typed.
-  const [catRes, attrRes] = await Promise.all([
+  const [catRes, attrRes, rules] = await Promise.all([
     admin
       .from("categories")
       .select("id, parent_id, slug, label_fr, label_ar, kind, sort_order")
@@ -63,6 +64,7 @@ export default async function AdminNewListingPage() {
       .from("category_attributes")
       .select("category_id, field_key, label, data_type, options, unit, required, sort_order")
       .order("sort_order"),
+    fetchListingRules(admin),
   ]);
 
 
@@ -118,7 +120,7 @@ export default async function AdminNewListingPage() {
       />
 
       <div className="mt-6">
-        <ManualListingForm categories={categories} standalone />
+        <ManualListingForm categories={categories} standalone maxPhotos={rules.maxPhotos} />
       </div>
     </div>
   );

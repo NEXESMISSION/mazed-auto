@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { apiTranslations } from "@/i18n/api";
+import { fetchListingRules } from "@/lib/listingRules";
 
 /**
  * POST /api/admin/annonces — publish an annonce ON BEHALF OF a seller.
@@ -42,8 +43,6 @@ type Body = {
   publish?: unknown;
   note?: unknown;
 };
-
-const DEFAULT_DURATION_DAYS = 30;
 
 function text(v: unknown, max: number): string | null {
   if (typeof v !== "string") return null;
@@ -124,7 +123,9 @@ export async function POST(req: NextRequest) {
   }
 
   const now = new Date();
-  const expires = new Date(now.getTime() + DEFAULT_DURATION_DAYS * 86_400_000);
+  // As long as any other annonce: the duration set in Réglages (D-B5).
+  const rules = await fetchListingRules(admin);
+  const expires = new Date(now.getTime() + rules.validityDays * 86_400_000);
   const condition = text(body.condition, 20);
 
   const { data: created, error } = await admin
@@ -166,7 +167,7 @@ export async function POST(req: NextRequest) {
 
   if (Array.isArray(body.photos) && body.photos.length > 0) {
     const rows = body.photos
-      .slice(0, 12)
+      .slice(0, rules.maxPhotos)
       .map((p, i) => {
         const path = text((p as Record<string, unknown>)?.storage_path, 300);
         return path ? { listing_id: listingId, storage_path: path, sort_order: i } : null;

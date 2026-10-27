@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { LegalPage } from "@/components/legal/LegalPage";
 import { localeAlternates } from "@/i18n/alternates";
-import { Mail, Phone, MapPin, Clock } from "lucide-react";
+import { getServiceSupabase } from "@/lib/supabase/admin";
+import { fetchSiteContact, formatPhone, telHref, whatsappHref } from "@/lib/siteContact";
+import { Mail, Phone, MapPin, Clock, MessageCircle } from "lucide-react";
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -17,20 +19,29 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 // request. NOT `dynamic = "force-static"`: under it next-intl lost the locale
 // that setRequestLocale sets, and /ar rendered this page — and the site's bars
 // around it — in French.
+//
+// The details come from Réglages (D-B3): saving them there regenerates this
+// page at once (revalidatePath); the hour is only a safety net.
+export const revalidate = 3600;
 
-/** `ltr`: kept in Latin reading order whatever the page's direction (an e-mail, a number). */
-const ITEMS = [
-  { Icon: Mail, key: "email", value: "contact@mazedauto.com", href: "mailto:contact@mazedauto.com", ltr: true },
-  { Icon: Phone, key: "phone", value: "+216 98 120 622", href: "tel:+21698120622", ltr: true },
-  { Icon: MapPin, key: "address", value: null, href: null, ltr: false },
-  { Icon: Clock, key: "hours", value: null, href: null, ltr: false },
-] as const;
+type Item = { Icon: typeof Mail; key: string; value: string | null; href: string | null; ltr: boolean };
 
 export default async function ContactPage({ params }: Props) {
   const { locale } = await params;
   // Static page: next-intl must be told the locale, it cannot read a header.
   setRequestLocale(locale);
   const t = await getTranslations("info.contact");
+  const contact = await fetchSiteContact(getServiceSupabase());
+  /** `ltr`: kept in Latin reading order whatever the page's direction (an e-mail, a number). */
+  const ITEMS: Item[] = [
+    { Icon: Mail, key: "email", value: contact.email, href: `mailto:${contact.email}`, ltr: true },
+    { Icon: Phone, key: "phone", value: formatPhone(contact.phone), href: telHref(contact.phone), ltr: true },
+    ...(contact.whatsapp
+      ? [{ Icon: MessageCircle, key: "whatsapp", value: formatPhone(contact.whatsapp), href: whatsappHref(contact.whatsapp), ltr: true }]
+      : []),
+    { Icon: MapPin, key: "address", value: contact.address || null, href: null, ltr: false },
+    { Icon: Clock, key: "hours", value: null, href: null, ltr: false },
+  ];
   return (
     <LegalPage eyebrow={t("eyebrow")} title={t("title")}>
       <p className="text-[13.5px] leading-relaxed text-foreground/80">
@@ -48,7 +59,7 @@ export default async function ContactPage({ params }: Props) {
                   {t(it.key)}
                 </div>
                 <div className="mt-0.5 text-[14px] font-bold text-foreground">
-                  {it.ltr ? <span className="ltr-island">{it.value}</span> : t(`${it.key}Value`)}
+                  {it.ltr ? <span className="ltr-island">{it.value}</span> : it.value ?? t(`${it.key}Value`)}
                 </div>
               </div>
             </>

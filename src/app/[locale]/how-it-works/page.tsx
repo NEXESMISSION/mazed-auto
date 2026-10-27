@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { localeAlternates } from "@/i18n/alternates";
+import { getServiceSupabase } from "@/lib/supabase/admin";
+import { fetchListingRules } from "@/lib/listingRules";
 import {
   ChevronLeft,
   Search,
@@ -34,6 +36,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 // request. NOT `dynamic = "force-static"`: under it next-intl lost the locale
 // that setRequestLocale sets, and /ar rendered this page — and the site's bars
 // around it — in French.
+//
+// The publication length it states comes from Réglages (D-B5): saving it
+// there regenerates this page at once; the hour is only a safety net.
+export const revalidate = 3600;
 
 type Icon = React.ComponentType<{ className?: string }>;
 
@@ -66,6 +72,7 @@ export default async function HowItWorksPage({ params }: Props) {
   // Static page: next-intl must be told the locale, it cannot read a header.
   setRequestLocale(locale);
   const t = await getTranslations("info");
+  const { validityDays: days } = await fetchListingRules(getServiceSupabase());
   const gold = (c: React.ReactNode) => <span className="gradient-gold-text">{c}</span>;
 
   return (
@@ -120,7 +127,7 @@ export default async function HowItWorksPage({ params }: Props) {
               num={i + 1}
               icon={<s.Icon className="size-5" />}
               title={t(`howItWorks.seller.${s.key}.title`)}
-              text={t(`howItWorks.seller.${s.key}.text`)}
+              text={t(`howItWorks.seller.${s.key}.text`, { days })}
             />
           ))}
         </div>

@@ -47,7 +47,15 @@ export type ProviderInstructions = {
 
 export type BankMethod = { enabled: boolean; holder: string; bank: string; rib: string; iban: string };
 export type D17Method = { enabled: boolean; holder: string; number: string };
-export type PaymentMethods = { bank_transfer: BankMethod; d17: D17Method };
+/**
+ * Online payment (D-B2): the switch, which Konnect gateway, and the wallet
+ * paid into. The API key is not here — it is encrypted in `app_secrets`
+ * (src/lib/secrets.ts) and never sent to a browser. In « test » mode the
+ * sandbox takes test cards, so only admins are offered it (konnect.ts).
+ */
+export type KonnectMode = "test" | "live";
+export type KonnectMethod = { enabled: boolean; mode: KonnectMode; wallet: string };
+export type PaymentMethods = { bank_transfer: BankMethod; d17: D17Method; konnect: KonnectMethod };
 
 /** The one setting that holds them. The old `payee_*` keys are no longer read. */
 export const PAYMENT_METHODS_KEY = "payment_methods";
@@ -63,6 +71,7 @@ export const DEFAULT_HOLDER = "Mazed Auto";
 export const EMPTY_METHODS: PaymentMethods = {
   bank_transfer: { enabled: false, holder: DEFAULT_HOLDER, bank: "", rib: "", iban: "" },
   d17: { enabled: false, holder: DEFAULT_HOLDER, number: "" },
+  konnect: { enabled: false, mode: "test", wallet: "" },
 };
 
 const str = (v: unknown, max = 120) => (typeof v === "string" ? v.trim().slice(0, max) : "");
@@ -75,9 +84,12 @@ function holderOf(v: unknown): string {
 
 /** The stored value, whatever its state, as a full shape — off when unsure. */
 export function readPaymentMethods(value: unknown): PaymentMethods {
-  const v = (value ?? {}) as { bank_transfer?: Record<string, unknown>; d17?: Record<string, unknown> };
+  const v = (value ?? {}) as {
+    bank_transfer?: Record<string, unknown>; d17?: Record<string, unknown>; konnect?: Record<string, unknown>;
+  };
   const b = v.bank_transfer ?? {};
   const d = v.d17 ?? {};
+  const k = v.konnect ?? {};
   return {
     bank_transfer: {
       enabled: b.enabled === true,
@@ -87,6 +99,7 @@ export function readPaymentMethods(value: unknown): PaymentMethods {
       iban: str(b.iban, 40),
     },
     d17: { enabled: d.enabled === true, holder: holderOf(d.holder), number: str(d.number, 20) },
+    konnect: { enabled: k.enabled === true, mode: k.mode === "live" ? "live" : "test", wallet: str(k.wallet, 40) },
   };
 }
 
@@ -223,6 +236,19 @@ export function d17Problems(m: D17Method): MethodProblem[] {
   const n = digits(m.number).replace(/^216(?=\d{8}$)/, "");
   if (!/^[2-9]\d{7}$/.test(n)) out.push("number");
   if (SAMPLES.d17.includes(n) || SAMPLES.names.includes(m.holder.toLowerCase())) out.push("sample");
+  return out;
+}
+
+/**
+ * What stops Konnect from being switched on: a wallet id (24 hexadecimal
+ * characters, as Konnect shows it) and a saved key. `keyReady` comes from the
+ * server — the key itself never reaches the form.
+ */
+export type KonnectProblem = "wallet" | "key";
+export function konnectProblems(k: KonnectMethod, keyReady: boolean): KonnectProblem[] {
+  const out: KonnectProblem[] = [];
+  if (!/^[0-9a-f]{24}$/i.test(k.wallet)) out.push("wallet");
+  if (!keyReady) out.push("key");
   return out;
 }
 

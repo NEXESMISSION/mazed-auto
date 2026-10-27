@@ -6,13 +6,25 @@ import { Link } from "@/i18n/navigation";
 import { AdminButton } from "@/components/admin/AdminButton";
 import { useAdminAction, EYEBROW } from "@/components/admin/kit";
 import { REQUEST_KINDS, type Approvals } from "@/lib/shops/approvals";
-import { Save, ArrowRight, Gift, Store, ClipboardCheck } from "lucide-react";
+import { LISTING_RULES_BOUNDS, toStoredListingRules, type ListingRules } from "@/lib/listingRules";
+import { formatPhone, type SiteContact } from "@/lib/siteContact";
+import { Save, ArrowRight, Gift, Store, ClipboardCheck, CalendarClock, Contact } from "lucide-react";
 
 /** The welcome allowance: the first `count` paid publications are offered. */
 export type FreeListings = { enabled: boolean; count: number };
 
 /** What a private seller may have live at once, and whether it is free (D-P1, 0189). */
 export type PersonalLimits = { vehicles: number; parts: number; free: boolean };
+
+/** The four details the contact and help pages print; email and phone are required. */
+const CONTACT_FIELDS: { key: keyof SiteContact; type: "email" | "tel" | "text" }[] = [
+  { key: "email", type: "email" },
+  { key: "phone", type: "tel" },
+  { key: "whatsapp", type: "tel" },
+  { key: "address", type: "text" },
+];
+
+const within = (n: number, { min, max }: { min: number; max: number }) => n >= min && n <= max;
 
 /**
  * The rules that are not prices. The bank and D17 details buyers pay to have
@@ -25,6 +37,8 @@ export function SettingsForm({
   initialProShops,
   initialApprovals,
   initialGraceDays,
+  initialListingRules,
+  initialContact,
 }: {
   initialFree: FreeListings;
   initialPersonal: PersonalLimits;
@@ -33,6 +47,10 @@ export function SettingsForm({
   initialApprovals: Approvals;
   /** Days a lapsed shop's annonces stay up (0191). */
   initialGraceDays: number;
+  /** How long an annonce stays online, how many photos it carries (D-B5). */
+  initialListingRules: ListingRules;
+  /** How people reach the team, as the contact and help pages print it (D-B3). */
+  initialContact: SiteContact;
 }) {
   const t = useTranslations("admin.settings.form");
   const [free, setFree] = useState<FreeListings>(initialFree);
@@ -50,6 +68,18 @@ export function SettingsForm({
     personal.vehicles !== initialPersonal.vehicles
     || personal.parts !== initialPersonal.parts
     || personal.free !== initialPersonal.free;
+  const [listingRules, setListingRules] = useState<ListingRules>(initialListingRules);
+  const listingAction = useAdminAction();
+  const listingDirty =
+    listingRules.validityDays !== initialListingRules.validityDays
+    || listingRules.maxPhotos !== initialListingRules.maxPhotos;
+  // The server clamps too; refusing here says why instead of saving another number.
+  const listingRulesValid =
+    within(listingRules.validityDays, LISTING_RULES_BOUNDS.validityDays)
+    && within(listingRules.maxPhotos, LISTING_RULES_BOUNDS.maxPhotos);
+  const [contact, setContact] = useState<SiteContact>(initialContact);
+  const contactAction = useAdminAction();
+  const contactDirty = CONTACT_FIELDS.some(({ key }) => contact[key].trim() !== initialContact[key]);
   const whole = (v: string) => Math.max(0, Math.trunc(Number(v) || 0));
 
   return (
@@ -66,6 +96,70 @@ export function SettingsForm({
           {t("payee.open")}
           <ArrowRight className="size-3.5 rtl:-scale-x-100" strokeWidth={2.2} />
         </Link>
+      </section>
+
+      <section className="mt-8 border-t border-border pt-5">
+        <h2 className={EYEBROW}>{t("contact.title")}</h2>
+        <p className="mt-1.5 max-w-xl text-[12.5px] text-subtle">
+          {t("contact.body")}
+        </p>
+
+        <div className="mt-4 grid max-w-xl gap-3 sm:grid-cols-2">
+          {CONTACT_FIELDS.map(({ key, type }) => (
+            <label key={key} className={key === "address" ? "sm:col-span-2" : undefined}>
+              <span className="mb-1 block text-[12.5px] text-subtle">{t(`contact.${key}`)}</span>
+              <input
+                type={type}
+                dir={type === "text" ? undefined : "ltr"}
+                value={contact[key]}
+                maxLength={key === "address" ? 200 : key === "email" ? 120 : 30}
+                placeholder={t(`contact.placeholders.${key}`)}
+                onChange={(e) => setContact((c) => ({ ...c, [key]: e.target.value }))}
+                className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-[13px] text-foreground focus:border-[var(--gold)] focus:outline-none"
+              />
+            </label>
+          ))}
+        </div>
+        <p className="mt-2 max-w-xl text-[12px] text-subtle">{t("contact.hint")}</p>
+
+        <p className="mt-3 inline-flex items-center gap-1.5 text-[12px] text-subtle">
+          <Contact className="size-3.5 shrink-0" />
+          {t("contact.shownOn")}
+          <Link href={"/contact" as never} className="font-medium text-[var(--gold)] hover:underline">
+            {t("contact.see")}
+          </Link>
+        </p>
+
+        <div className="mt-4 flex items-center gap-3">
+          <AdminButton
+            variant="primary"
+            size="md"
+            pending={contactAction.pending}
+            done={contactAction.done}
+            doneLabel={t("saved")}
+            disabled={!contactDirty}
+            disabledReason={t("unchanged")}
+            icon={<Save className="size-3.5" strokeWidth={2.4} />}
+            onClick={() =>
+              contactAction.run({
+                url: "/api/admin/settings",
+                method: "POST",
+                body: { site_contact: contact },
+                success: t("contact.success"),
+                // As the server stores them, so the form reads as saved.
+                onSuccess: () =>
+                  setContact((c) => ({
+                    email: c.email.trim(),
+                    phone: formatPhone(c.phone),
+                    whatsapp: c.whatsapp.trim() ? formatPhone(c.whatsapp) : "",
+                    address: c.address.trim(),
+                  })),
+              })
+            }
+          >
+            {t("save")}
+          </AdminButton>
+        </div>
       </section>
 
       <section className="mt-8 border-t border-border pt-5">
@@ -196,6 +290,74 @@ export function SettingsForm({
                 method: "POST",
                 body: { personal_limits: personal },
                 success: t("personal.success"),
+              })
+            }
+          >
+            {t("save")}
+          </AdminButton>
+        </div>
+      </section>
+
+      <section className="mt-8 border-t border-border pt-5">
+        <h2 className={EYEBROW}>{t("listingRules.title")}</h2>
+        <p className="mt-1.5 max-w-xl text-[12.5px] text-subtle">
+          {t("listingRules.body")}
+        </p>
+
+        <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-4">
+          <label className="inline-flex items-center gap-2.5">
+            <span className="text-[12.5px] text-subtle">{t("listingRules.days")}</span>
+            <input
+              type="number"
+              min={LISTING_RULES_BOUNDS.validityDays.min}
+              max={LISTING_RULES_BOUNDS.validityDays.max}
+              value={listingRules.validityDays}
+              onChange={(e) => setListingRules((r) => ({ ...r, validityDays: whole(e.target.value) }))}
+              className="w-20 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-[13px] tabular-nums text-foreground focus:border-[var(--gold)] focus:outline-none"
+            />
+          </label>
+          <label className="inline-flex items-center gap-2.5">
+            <span className="text-[12.5px] text-subtle">{t("listingRules.photos")}</span>
+            <input
+              type="number"
+              min={LISTING_RULES_BOUNDS.maxPhotos.min}
+              max={LISTING_RULES_BOUNDS.maxPhotos.max}
+              value={listingRules.maxPhotos}
+              onChange={(e) => setListingRules((r) => ({ ...r, maxPhotos: whole(e.target.value) }))}
+              className="w-20 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-[13px] tabular-nums text-foreground focus:border-[var(--gold)] focus:outline-none"
+            />
+          </label>
+        </div>
+
+        <p className="mt-3 inline-flex items-center gap-1.5 text-[12px] text-subtle">
+          <CalendarClock className="size-3.5 shrink-0" />
+          {listingRulesValid
+            ? t("listingRules.summary", { days: listingRules.validityDays, photos: listingRules.maxPhotos })
+            : t("listingRules.bounds", {
+                minDays: LISTING_RULES_BOUNDS.validityDays.min,
+                maxDays: LISTING_RULES_BOUNDS.validityDays.max,
+                minPhotos: LISTING_RULES_BOUNDS.maxPhotos.min,
+                maxPhotos: LISTING_RULES_BOUNDS.maxPhotos.max,
+              })}
+        </p>
+        <p className="mt-1.5 max-w-xl text-[12px] text-subtle">{t("listingRules.hint")}</p>
+
+        <div className="mt-4 flex items-center gap-3">
+          <AdminButton
+            variant="primary"
+            size="md"
+            pending={listingAction.pending}
+            done={listingAction.done}
+            doneLabel={t("saved")}
+            disabled={!listingDirty || !listingRulesValid}
+            disabledReason={listingDirty ? t("listingRules.outOfBounds") : t("unchanged")}
+            icon={<Save className="size-3.5" strokeWidth={2.4} />}
+            onClick={() =>
+              listingAction.run({
+                url: "/api/admin/settings",
+                method: "POST",
+                body: { listing_rules: toStoredListingRules(listingRules) },
+                success: t("listingRules.success"),
               })
             }
           >

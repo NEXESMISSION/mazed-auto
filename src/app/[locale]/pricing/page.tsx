@@ -4,6 +4,7 @@ import { Check, ArrowRight } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { localeAlternates } from "@/i18n/alternates";
 import { getServiceSupabase } from "@/lib/supabase/admin";
+import { fetchListingRules } from "@/lib/listingRules";
 import { PRODUCT_SELECT, toProduct, type Product } from "@/lib/products";
 import { currencyLabel } from "@/lib/utils";
 
@@ -44,6 +45,8 @@ export default async function PricingPage({ params }: Props) {
   const { locale } = await params;
   const t = await getTranslations("info.pricing");
   const admin = getServiceSupabase();
+  // How long an annonce stays online (Réglages, D-B5).
+  const { validityDays: days } = await fetchListingRules(admin);
   let products: Product[] = [];
   let personal = { vehicles: 1, parts: 5, free: true };
   let shopsOpen = false;
@@ -98,7 +101,7 @@ export default async function PricingPage({ params }: Props) {
         <PriceCard
           title={t("vehicleCard.title")}
           price={personal.free ? t("free") : price(standard)}
-          note={personal.free ? t("vehicleCard.noteFree", { vehicles }) : t("vehicleCard.notePaid")}
+          note={personal.free ? t("vehicleCard.noteFree", { vehicles, days }) : t("vehicleCard.notePaid", { days })}
           highlight
         />
         <PriceCard

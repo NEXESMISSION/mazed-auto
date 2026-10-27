@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { NavIcon } from "./LinkPending";
 import {
-  LayoutTemplate, MessageSquare, FileText, Bell, Settings2, Activity, Wallet,
+  LayoutTemplate, MessageSquare, FileText, Bell, Settings2, Activity, Wallet, Power,
   type LucideIcon,
 } from "lucide-react";
 
@@ -30,6 +30,7 @@ const TABS: Tab[] = [
   { key: "broadcasts", href: "/admin/notifications", Icon: Bell },
   { key: "settings", href: "/admin/settings", Icon: Settings2 },
   { key: "payments", href: "/admin/moyens-paiement", Icon: Wallet },
+  { key: "modules", href: "/admin/fonctions", Icon: Power },
   { key: "journal", href: "/admin/activity", Icon: Activity },
 ];
 

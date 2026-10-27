@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { localeAlternates } from "@/i18n/alternates";
+import { getServiceSupabase } from "@/lib/supabase/admin";
+import { fetchListingRules } from "@/lib/listingRules";
+import { fetchSiteContact, formatPhone, telHref } from "@/lib/siteContact";
 import {
   ChevronDown,
   ChevronLeft,
@@ -31,6 +34,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 // request. NOT `dynamic = "force-static"`: under it next-intl lost the locale
 // that setRequestLocale sets, and /ar rendered this page — and the site's bars
 // around it — in French.
+//
+// The publication length it states comes from Réglages (D-B5): saving it
+// there regenerates this page at once; the hour is only a safety net.
+export const revalidate = 3600;
 
 type Group = {
   /** Anchor id, and the key under `info.help.groups` / `info.help.faq`. */
@@ -67,6 +74,10 @@ export default async function HelpPage({ params }: Props) {
   // Static page: next-intl must be told the locale, it cannot read a header.
   setRequestLocale(locale);
   const t = await getTranslations("info");
+  const [{ validityDays: days }, contact] = await Promise.all([
+    fetchListingRules(getServiceSupabase()),
+    fetchSiteContact(getServiceSupabase()),
+  ]);
 
   return (
     <div className="mx-auto max-w-[var(--max-w)] px-5 py-6 lg:max-w-[var(--max-w-content)] lg:py-10">
@@ -113,7 +124,7 @@ export default async function HelpPage({ params }: Props) {
                     <ChevronDown className="size-4 shrink-0 text-muted transition-transform group-open:rotate-180" />
                   </summary>
                   <div className="px-4 pb-4 text-[13px] leading-relaxed text-muted">
-                    {t.rich(`help.faq.${g.id}.${key}.a`, RICH)}
+                    {t.rich(`help.faq.${g.id}.${key}.a`, { ...RICH, days })}
                   </div>
                 </details>
               ))}
@@ -142,18 +153,18 @@ export default async function HelpPage({ params }: Props) {
             {t("help.contactCta")}
           </Link>
           <a
-            href="mailto:contact@mazedauto.com"
+            href={`mailto:${contact.email}`}
             className="inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-4 py-2 text-[12px] font-bold text-foreground ring-1 ring-border transition hover:ring-gold-soft/60"
           >
             <Mail className="size-4 text-gold" strokeWidth={2} />
-            contact@mazedauto.com
+            {contact.email}
           </a>
           <a
-            href="tel:+21698120622"
+            href={telHref(contact.phone) ?? undefined}
             className="inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-4 py-2 text-[12px] font-bold text-foreground ring-1 ring-border transition hover:ring-gold-soft/60"
           >
             <Phone className="size-4 text-gold" strokeWidth={2} />
-            <span className="ltr-island">+216 98 120 622</span>
+            <span className="ltr-island">{formatPhone(contact.phone)}</span>
           </a>
         </div>
       </section>

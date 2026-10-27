@@ -5,7 +5,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { availableMethods, fetchPaymentMethods } from "@/lib/payments";
 import { AdminPage, EYEBROW } from "@/components/admin/kit";
 import {
-  LayoutTemplate, MessageSquare, FileText, Bell, Settings2, Activity, Wallet,
+  LayoutTemplate, MessageSquare, FileText, Bell, Settings2, Activity, Wallet, Power,
   ArrowRight, type LucideIcon,
 } from "lucide-react";
 
@@ -101,6 +101,12 @@ export default async function AdminSiteHub() {
       description: t("cards.payments.description"),
       count: availableMethods(methods).length,
       unit: t("cards.payments.unit"),
+    },
+    {
+      label: t("cards.modules.label"),
+      href: "/admin/fonctions",
+      Icon: Power,
+      description: t("cards.modules.description"),
     },
     {
       label: t("cards.activity.label"),

@@ -11,6 +11,7 @@ import { apiTranslations, localeFromRequest } from "@/i18n/api";
 import { sanitizeRentalAttributes } from "@/lib/rental";
 import { withoutBadMileage } from "@/lib/mileage";
 import { memberShops } from "@/lib/shops/server";
+import { fetchListingRules } from "@/lib/listingRules";
 
 /**
  * POST /api/annonces — create or update the seller's draft listing.
@@ -54,7 +55,6 @@ type Body = {
   listing_type?: unknown;  // "location_auto" for a rental
 };
 
-const MAX_PHOTOS = 12;
 const MAX_FITMENTS = 20;
 
 function text(v: unknown, max: number): string | null {
@@ -250,9 +250,11 @@ export async function POST(req: NextRequest) {
   }
 
   // ── Photos: the wizard uploads to storage first, then sends the paths ─────
+  // As many as Réglages allows (D-B5); the form stops at the same number.
   if (Array.isArray(body.photos)) {
+    const { maxPhotos } = await fetchListingRules(admin);
     const rows = body.photos
-      .slice(0, MAX_PHOTOS)
+      .slice(0, maxPhotos)
       .map((p, i) => {
         const o = (p ?? {}) as Record<string, unknown>;
         const path = text(o.storage_path, 300);

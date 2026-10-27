@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_HOLDER, EMPTY_METHODS, availableMethods, bankFromRib, bankProblems, d17Problems, formatD17, formatIban,
-  formatRib, ibanFromRib, paymentInstructions, readPaymentMethods, receiptIssuer, ribKeyOk, withRib,
+  formatRib, ibanFromRib, konnectProblems, paymentInstructions, readPaymentMethods, receiptIssuer, ribKeyOk, withRib,
   type PaymentMethods,
 } from "./index";
 
@@ -16,6 +16,7 @@ const IBAN = "TN5908006000671000123450"; // checksum-valid, embeds RIB
 const set = (over: Partial<{ bank: Partial<PaymentMethods["bank_transfer"]>; d17: Partial<PaymentMethods["d17"]> }>): PaymentMethods => ({
   bank_transfer: { ...EMPTY_METHODS.bank_transfer, ...over.bank },
   d17: { ...EMPTY_METHODS.d17, ...over.d17 },
+  konnect: EMPTY_METHODS.konnect,
 });
 const bank = { enabled: true, holder: "Mazed Auto SARL", bank: "BIAT", rib: RIB, iban: IBAN };
 
@@ -112,5 +113,27 @@ describe("payment methods — filled in for the back office to check", () => {
     expect(bankFromRib("10006035183598478831")).toBe("STB");
     expect(bankFromRib("99")).toBe("");
     expect(bankFromRib("")).toBe("");
+  });
+});
+
+describe("Konnect in « Moyens de paiement » (D-B2)", () => {
+  it("reads off, on the test gateway, until the back office says otherwise", () => {
+    expect(readPaymentMethods(null).konnect).toEqual({ enabled: false, mode: "test", wallet: "" });
+    expect(readPaymentMethods({ konnect: { enabled: "yes", mode: "prod" } }).konnect).toMatchObject({ enabled: false, mode: "test" });
+    expect(readPaymentMethods({ konnect: { enabled: true, mode: "live", wallet: " 5f7a209aeb3f76490ac4a3d1 " } }).konnect)
+      .toEqual({ enabled: true, mode: "live", wallet: "5f7a209aeb3f76490ac4a3d1" });
+  });
+
+  it("needs a wallet id and a key before it can be switched on", () => {
+    const k = { enabled: true, mode: "live" as const, wallet: "5f7a209aeb3f76490ac4a3d1" };
+    expect(konnectProblems(k, true)).toEqual([]);
+    expect(konnectProblems(k, false)).toEqual(["key"]);
+    expect(konnectProblems({ ...k, wallet: "my-wallet" }, true)).toEqual(["wallet"]);
+    expect(konnectProblems({ ...k, wallet: "" }, false)).toEqual(["wallet", "key"]);
+  });
+
+  it("is never a manual method: no instructions, no transfer order", () => {
+    const on = { ...set({}), konnect: { enabled: true, mode: "live" as const, wallet: "5f7a209aeb3f76490ac4a3d1" } };
+    expect(availableMethods(on)).toEqual([]);
   });
 });

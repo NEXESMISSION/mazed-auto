@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { konnectConfig, konnectGetPayment, verifyKonnectPayment } from "@/lib/payments/konnect";
+import { konnectGetPayment, verifyKonnectPayment } from "@/lib/payments/konnect";
+import { konnectForLookup } from "@/lib/payments/konnectAccount";
 import { log } from "@/lib/log";
 
 export type CheckOutcome =
@@ -25,7 +26,7 @@ export async function checkKonnectPayment(
   source: "webhook" | "return" | "reconcile",
 ): Promise<CheckOutcome> {
   if (payment.status === "captured") return "already_captured";
-  const cfg = konnectConfig();
+  const cfg = await konnectForLookup(admin);
   if (!cfg || !payment.provider_ref) return "not_configured";
 
   let raw: unknown;

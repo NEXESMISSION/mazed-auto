@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { apiTranslations } from "@/i18n/api";
+import { fetchListingRules } from "@/lib/listingRules";
 
 /**
  * The same moderation actions, applied to a selection.
@@ -70,18 +71,8 @@ export async function POST(req: NextRequest) {
   const skipped: { id: string; title: string; why: string }[] = [];
 
   if (action === "approve") {
-    // One product lookup for the whole batch rather than one per row.
-    const { data: prod } = await admin
-      .from("products")
-      .select("duration_days")
-      .eq("kind", "listing_single")
-      .eq("is_active", true)
-      .limit(1)
-      .maybeSingle();
-    const fallbackDays =
-      Number.isFinite(Number(prod?.duration_days)) && Number(prod?.duration_days) > 0
-        ? Number(prod!.duration_days)
-        : 30;
+    // One read for the whole batch: the duration set in Réglages (D-B5).
+    const fallbackDays = (await fetchListingRules(admin)).validityDays;
 
     const now = new Date();
     for (const r of found) {
