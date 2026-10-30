@@ -28,6 +28,7 @@ let starter: string;
 let pro: string;
 let boost: string;
 let savedSetting: unknown;
+let savedActive: { id: string; is_active: boolean }[] = [];
 const users: TestUser[] = [];
 const shops: string[] = [];
 
@@ -89,7 +90,12 @@ beforeAll(async () => {
   vehicleCat = (await db.query(
     `select id from categories where kind='vehicle' and parent_id is not null and is_active order by sort_order limit 1`,
   )).rows[0].id;
-  const ids = (await db.query(`select slug, id from products where slug in ('plan-starter', 'plan-pro', 'boost-7j')`)).rows;
+  const ids = (await db.query(`select slug, id, is_active from products where slug in ('plan-starter', 'plan-pro', 'boost-7j')`)).rows;
+  // The plans and the boost ship switched off (0188) until an admin turns them
+  // on in /admin/offres; a switched-off one is `not_for_sale`. Turn them on,
+  // and put them back as they were afterwards.
+  savedActive = ids.map((r) => ({ id: r.id, is_active: r.is_active }));
+  await db.query(`update products set is_active = true where slug in ('plan-starter', 'plan-pro', 'boost-7j')`);
   starter = ids.find((r) => r.slug === "plan-starter").id;
   pro = ids.find((r) => r.slug === "plan-pro").id;
   boost = ids.find((r) => r.slug === "boost-7j").id;
@@ -109,6 +115,7 @@ afterAll(async () => {
   if (savedSetting !== undefined) {
     await db.query(`update app_settings set value = $1 where key = 'pro_approvals'`, [JSON.stringify(savedSetting)]);
   }
+  for (const p of savedActive) await db.query(`update products set is_active = $2 where id = $1`, [p.id, p.is_active]);
   for (const s of shops) {
     await db.query(`delete from pro_requests where shop_id = $1`, [s]);
     await db.query(`delete from boosts where shop_id = $1`, [s]).catch(() => {});

@@ -14,6 +14,7 @@
 //   SUPABASE_URL  (or NEXT_PUBLIC_SUPABASE_URL)         — http://127.0.0.1:54321
 //   SUPABASE_SERVICE_ROLE_KEY                           — local service-role JWT
 //   SUPABASE_ANON_KEY (or NEXT_PUBLIC_SUPABASE_ANON_KEY)— local anon JWT
+//   SUPABASE_DB_URL                                     — postgres :54322 (KYC seeding)
 //
 // The service-role client bypasses RLS and both payment guards, so it is the
 // only thing allowed to seed `captured` payments — exactly mirroring the
@@ -22,8 +23,10 @@
 // through per-user signed-in clients so auth.uid() / auth.jwt() resolve.
 // ============================================================================
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { Client } from "pg";
 import { randomUUID } from "node:crypto";
 
+const DSN = process.env.SUPABASE_DB_URL ?? "postgresql://postgres:postgres@127.0.0.1:54322/postgres";
 const url =
   process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
@@ -93,14 +96,27 @@ export async function createUser(
   }
   const id = data.user.id;
 
-  // KYC is admin-only in prod; here we set it directly via service-role so the
+  // KYC is admin-only in prod, and the profile guard (0015) refuses it to the
+  // service role too: that key carries no admin JWT. Set it the way trusted
+  // server code does — through the guard's bypass, in one transaction — so the
   // user can clear place_bid's kyc_required gate.
   if (opts.kyc === "verified") {
-    const { error: kErr } = await svc
-      .from("profiles")
-      .update({ kyc_status: "verified", kyc_verified_at: new Date().toISOString() })
-      .eq("id", id);
-    if (kErr) throw new Error(`set kyc_verified failed: ${kErr.message}`);
+    const db = new Client({ connectionString: DSN });
+    await db.connect();
+    try {
+      await db.query("begin");
+      await db.query(`select set_config('app.bypass_profile_guard', 'on', true)`);
+      await db.query(
+        `update profiles set kyc_status = 'verified', kyc_verified_at = now() where id = $1`,
+        [id],
+      );
+      await db.query("commit");
+    } catch (e) {
+      await db.query("rollback").catch(() => {});
+      throw new Error(`set kyc_verified failed: ${(e as Error).message}`);
+    } finally {
+      await db.end().catch(() => {});
+    }
   }
 
   const client = createClient(env.url, env.anonKey, {
