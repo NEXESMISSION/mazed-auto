@@ -164,7 +164,8 @@ describe("tick_auctions — settlement engine", () => {
     const { auctionId } = await seedAuction(svc, {
       ownerId: seller.id, type: "english", status: "sixth_offer_window",
       openingPrice: 100_000, currentPrice: 150_000,
-      winnerUserId: winner.id, winnerAmount: 150_000, endsInSeconds: -86_400,
+      winnerUserId: winner.id, winnerAmount: 150_000,
+      startsInSeconds: -172_800, endsInSeconds: -86_400,
     });
     // Deadline already elapsed; no sixth_offers exist.
     await setAuction(svc, auctionId, {

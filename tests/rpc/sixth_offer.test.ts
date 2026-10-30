@@ -64,7 +64,7 @@ describe("place_sixth_offer — +1/6 challenge window", () => {
       p_auction_id: auctionId,
       p_amount: minSixth,
     });
-    expect(error, error?.message).toBeUndefined();
+    expect(error?.message).toBeUndefined();
 
     const { count } = await svc
       .from("sixth_offers")

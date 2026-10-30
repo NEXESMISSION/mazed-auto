@@ -14,6 +14,7 @@
 //   SUPABASE_URL  (or NEXT_PUBLIC_SUPABASE_URL)         — http://127.0.0.1:54321
 //   SUPABASE_SERVICE_ROLE_KEY                           — local service-role JWT
 //   SUPABASE_ANON_KEY (or NEXT_PUBLIC_SUPABASE_ANON_KEY)— local anon JWT
+//   SUPABASE_DB_URL                                     — postgres :54322 (KYC seeding)
 //
 // The service-role client bypasses RLS and both payment guards, so it is the
 // only thing allowed to seed `captured` payments — exactly mirroring the
@@ -22,8 +23,10 @@
 // through per-user signed-in clients so auth.uid() / auth.jwt() resolve.
 // ============================================================================
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { Client } from "pg";
 import { randomUUID } from "node:crypto";
 
+const DSN = process.env.SUPABASE_DB_URL ?? "postgresql://postgres:postgres@127.0.0.1:54322/postgres";
 const url =
   process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
@@ -72,7 +75,7 @@ export type TestUser = {
 /**
  * Create a confirmed auth user (the on_auth_user_created trigger mirrors the
  * public.profiles row), then sign in a dedicated client for it. `role: 'admin'`
- * also lands an app_metadata.role=admin claim so is_admin() is true on the JWT.
+ * sets profiles.role, which is_admin() reads for the signed-in user.
  */
 export async function createUser(
   svc: SupabaseClient,
@@ -84,23 +87,40 @@ export async function createUser(
     email,
     password: PASSWORD,
     email_confirm: true,
-    // The on_auth_user_created trigger reads raw_user_meta_data.role; passing
-    // role=admin also mirrors app_metadata.role=admin → is_admin() === true.
-    user_metadata: { full_name: "RPC Test", role: opts.role ?? "individual" },
+    user_metadata: { full_name: "RPC Test" },
   });
   if (error || !data.user) {
     throw new Error(`createUser failed: ${error?.message ?? "no user"}`);
   }
   const id = data.user.id;
 
-  // KYC is admin-only in prod; here we set it directly via service-role so the
-  // user can clear place_bid's kyc_required gate.
-  if (opts.kyc === "verified") {
-    const { error: kErr } = await svc
-      .from("profiles")
-      .update({ kyc_status: "verified", kyc_verified_at: new Date().toISOString() })
-      .eq("id", id);
-    if (kErr) throw new Error(`set kyc_verified failed: ${kErr.message}`);
+  // Role and KYC are admin-only in prod. Signup never reads a role from its
+  // metadata (0066), and the profile guard (0015) refuses both columns to the
+  // service role too: that key carries no admin JWT. Set them the way trusted
+  // server code does — through the guard's bypass, in one transaction — so an
+  // admin passes is_admin() and a verified user clears place_bid's KYC gate.
+  if (opts.kyc === "verified" || opts.role === "admin") {
+    const db = new Client({ connectionString: DSN });
+    await db.connect();
+    try {
+      await db.query("begin");
+      await db.query(`select set_config('app.bypass_profile_guard', 'on', true)`);
+      if (opts.role === "admin") {
+        await db.query(`update profiles set role = 'admin' where id = $1`, [id]);
+      }
+      if (opts.kyc === "verified") {
+        await db.query(
+          `update profiles set kyc_status = 'verified', kyc_verified_at = now() where id = $1`,
+          [id],
+        );
+      }
+      await db.query("commit");
+    } catch (e) {
+      await db.query("rollback").catch(() => {});
+      throw new Error(`set role/kyc failed: ${(e as Error).message}`);
+    } finally {
+      await db.end().catch(() => {});
+    }
   }
 
   const client = createClient(env.url, env.anonKey, {

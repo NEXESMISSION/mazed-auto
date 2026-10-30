@@ -55,7 +55,7 @@ describe("place_bid — sealed auction", () => {
     await captureDeposit(svc, { userId: bidder.id, auctionId, amount: 10_000 });
 
     const first = await bid(bidder, auctionId, opening);
-    expect(first.error, first.error?.message).toBeUndefined();
+    expect(first.error?.message).toBeUndefined();
 
     const second = await bid(bidder, auctionId, opening + 50_000);
     expect(second.error, "a sealed bidder gets exactly one bid").toBeTruthy();
