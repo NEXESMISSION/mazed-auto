@@ -176,14 +176,19 @@ export function PaymentDetail({
       <footer className="flex shrink-0 flex-wrap items-center gap-1.5 border-t border-border px-5 py-3">
         {open ? (
           <>
-            <AdminButton
-              variant="primary"
-              pending={pending}
-              icon={<Check className="size-3.5" strokeWidth={2.8} />}
-              onClick={() => setConfirm("accept")}
-            >
-              {t("payment.accept")}
-            </AdminButton>
+            {/* Konnect confirms its own payments; the server refuses a manual accept. */}
+            {p.provider === "konnect" ? (
+              <span className="me-1 max-w-xs text-[11.5px] text-subtle">{t("payment.konnectNote")}</span>
+            ) : (
+              <AdminButton
+                variant="primary"
+                pending={pending}
+                icon={<Check className="size-3.5" strokeWidth={2.8} />}
+                onClick={() => setConfirm("accept")}
+              >
+                {t("payment.accept")}
+              </AdminButton>
+            )}
             <AdminButton
               variant="danger"
               icon={<X className="size-3.5" strokeWidth={2.6} />}

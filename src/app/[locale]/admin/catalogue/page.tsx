@@ -6,6 +6,7 @@ import { FullBleed, EmptyState, EYEBROW } from "@/components/admin/kit";
 import { ROW_BASE, ROW_IDLE, ROW_SELECTED, ROW_FOCUS } from "@/components/admin/kit/surface";
 import { AttributeEditor, type Attribute } from "./AttributeEditor";
 import { FolderTree } from "lucide-react";
+import { requireAdminPage } from "@/lib/admin/session";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -30,6 +31,7 @@ export default async function AdminCataloguePage({
 }: {
   searchParams: Promise<{ a?: string }>;
 }) {
+  await requireAdminPage();
   const sp = await searchParams;
   const t = await getTranslations("admin.catalogue");
   const locale = await getLocale();

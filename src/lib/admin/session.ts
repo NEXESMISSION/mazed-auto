@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { notFound } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { getServerSupabase } from "@/lib/supabase/server";
 
@@ -39,9 +40,29 @@ export const getAdminSession = cache(async (): Promise<AdminSession> => {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select("role, banned_at")
     .eq("id", user.id)
     .single();
 
-  return { supabase, user, isAdmin: profile?.role === "admin" };
+  // A banned admin is not an admin: the ban is how a compromised or departed
+  // account is shut out, and the role alone used to outlive it.
+  return { supabase, user, isAdmin: profile?.role === "admin" && !profile?.banned_at };
 });
+
+/**
+ * The first line of every admin PAGE — not only the admin layout.
+ *
+ * A layout is not a gate on its own: on a client-side navigation Next renders
+ * only the segments below the ones the browser says it already has, so a
+ * request can name the admin layout as « already shown » and get a page
+ * rendered without it. Each page reads with the service role, so each page
+ * checks for itself. Non-admins get a 404: nothing tells them what is here.
+ *
+ * Shares `getAdminSession`'s per-request cache with the layout, so it adds no
+ * round trip.
+ */
+export async function requireAdminPage(): Promise<AdminSession & { user: User }> {
+  const session = await getAdminSession();
+  if (!session.user || !session.isAdmin) notFound();
+  return session as AdminSession & { user: User };
+}

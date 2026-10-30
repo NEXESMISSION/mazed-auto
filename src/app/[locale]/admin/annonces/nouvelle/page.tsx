@@ -8,6 +8,7 @@ import { adminBtn } from "@/components/admin/AdminButton";
 import { ManualListingForm, type AdminCategory } from "../ManualListingForm";
 import type { ListingAttribute } from "@/components/listing/fields";
 import { ArrowLeft } from "lucide-react";
+import { requireAdminPage } from "@/lib/admin/session";
 
 /** `category_attributes.data_type` is a free-text column; the renderer takes a
  *  closed union. Anything unrecognised falls back to a text box rather than
@@ -37,6 +38,7 @@ export const revalidate = 0;
  * tick the sworn-accuracy statement — someone typed the car in from a call.
  */
 export default async function AdminNewListingPage() {
+  await requireAdminPage();
   const admin = getServiceSupabase();
   const t = await getTranslations("adminOps");
   const locale = await getLocale();

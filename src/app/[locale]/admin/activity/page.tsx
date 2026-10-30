@@ -6,6 +6,7 @@ import { SiteTabs } from "@/components/admin/kit/SiteTabs";
 import { AdminPager } from "@/components/admin/AdminPager";
 import { actionLabel } from "@/lib/admin/actions";
 import { Activity } from "lucide-react";
+import { requireAdminPage } from "@/lib/admin/session";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -35,6 +36,7 @@ export default async function AdminActivityPage({
 }: {
   searchParams: Promise<{ status?: string; q?: string; page?: string }>;
 }) {
+  await requireAdminPage();
   const sp = await searchParams;
   const t = await getTranslations("admin.activity");
   const locale = await getLocale();

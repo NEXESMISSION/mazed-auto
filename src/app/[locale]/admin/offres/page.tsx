@@ -9,6 +9,7 @@ import { ProductEditor, type EditableProduct } from "./ProductEditor";
 import { PRODUCT_SELECT, toProduct, type ProductKind } from "@/lib/products";
 import { currencyLabel, formatTND } from "@/lib/utils";
 import { Tag, Plus } from "lucide-react";
+import { requireAdminPage } from "@/lib/admin/session";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -43,6 +44,7 @@ export default async function AdminOffresPage({
 }: {
   searchParams: Promise<{ a?: string }>;
 }) {
+  await requireAdminPage();
   const sp = await searchParams;
   const t = await getTranslations("admin.offres");
   const locale = await getLocale();

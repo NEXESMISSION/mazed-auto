@@ -10,6 +10,7 @@ import {
   type FreeListings,
   type PersonalLimits,
 } from "./SettingsForm";
+import { requireAdminPage } from "@/lib/admin/session";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -30,6 +31,7 @@ export const revalidate = 0;
  * free-text field never had.
  */
 export default async function AdminSettingsPage() {
+  await requireAdminPage();
   const t = await getTranslations("admin.settings");
   const admin = getServiceSupabase();
 

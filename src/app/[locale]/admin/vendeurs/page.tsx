@@ -10,6 +10,7 @@ import {
 import { ROW_BASE, ROW_IDLE, ROW_SELECTED, ROW_FOCUS } from "@/components/admin/kit/surface";
 import { SellerDetail, type SellerDetailData } from "./SellerDetail";
 import { Users, BadgeCheck } from "lucide-react";
+import { requireAdminPage } from "@/lib/admin/session";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -33,6 +34,7 @@ export default async function AdminVendeursPage({
 }: {
   searchParams: Promise<{ status?: string; q?: string; page?: string; a?: string }>;
 }) {
+  await requireAdminPage();
   const sp = await searchParams;
   const admin = getServiceSupabase();
   const t = await getTranslations("adminOps");

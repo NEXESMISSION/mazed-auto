@@ -10,6 +10,7 @@ import { FullBleed, Toolbar, EmptyState, QueueKeys, StatusPill, EYEBROW, type Ta
 import { ROW_BASE, ROW_IDLE, ROW_SELECTED, ROW_FOCUS } from "@/components/admin/kit/surface";
 import { ShopDetail, type ShopDetailData } from "./ShopDetail";
 import { AlertTriangle, BadgeCheck, Store } from "lucide-react";
+import { requireAdminPage } from "@/lib/admin/session";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -41,6 +42,7 @@ export default async function AdminBoutiquesPage({
 }: {
   searchParams: Promise<{ status?: string; q?: string; page?: string; a?: string }>;
 }) {
+  await requireAdminPage();
   const sp = await searchParams;
   const admin = getServiceSupabase();
   const t = await getTranslations("adminOps");

@@ -8,6 +8,7 @@ import {
   LayoutTemplate, MessageSquare, FileText, Bell, Settings2, Activity, Wallet, Power,
   ArrowRight, type LucideIcon,
 } from "lucide-react";
+import { requireAdminPage } from "@/lib/admin/session";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -34,6 +35,7 @@ type Card = {
 };
 
 export default async function AdminSiteHub() {
+  await requireAdminPage();
   const t = await getTranslations("admin.site");
   const sb = await getServerSupabase();
   const head = (t: string) => sb.from(t).select("*", { count: "exact", head: true });

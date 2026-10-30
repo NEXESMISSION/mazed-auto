@@ -3,6 +3,7 @@ import sharp from "sharp";
 import { getServerSupabase } from "@/lib/supabase/server";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { fail } from "@/lib/http/errors";
+import { getServiceSupabase } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,11 +38,16 @@ export async function POST(req: NextRequest) {
   // CPU denial-of-wallet vector. 120 / 5 min is generous for a real listing's
   // photo burst but caps sustained abuse across all serverless instances.
   // Fail-open (only block on an explicit true) — availability over strictness.
-  const { data: limited } = await supabase.rpc("check_rate_limit", {
-    p_key: `optimize-image:${user.id}`,
-    p_max: 120,
-    p_window_secs: 300,
-  });
+  // With the service role: the limiter is server-only (0199) — a user who
+  // could call it could also reset their own counter.
+  const service = getServiceSupabase();
+  const { data: limited } = service
+    ? await service.rpc("check_rate_limit", {
+        p_key: `optimize-image:${user.id}`,
+        p_max: 120,
+        p_window_secs: 300,
+      })
+    : { data: false };
   if (limited === true) {
     return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   }

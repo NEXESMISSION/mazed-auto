@@ -16,6 +16,7 @@ import { DIAGNOSTIC_SELECT, toDiagnostic } from "@/lib/diagnostics";
 import { currencyLabel, formatTND } from "@/lib/utils";
 import { attributeLabel, attributeOptionLabel, categoryLabel, governorateLabel, unitLabel } from "@/lib/labels";
 import { Inbox, Plus } from "lucide-react";
+import { requireAdminPage } from "@/lib/admin/session";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -92,6 +93,7 @@ export default async function AdminAnnoncesPage({
 }: {
   searchParams: Promise<{ status?: string; q?: string; page?: string; a?: string }>;
 }) {
+  await requireAdminPage();
   const sp = await searchParams;
   const admin = getServiceSupabase();
   const t = await getTranslations("adminOps");

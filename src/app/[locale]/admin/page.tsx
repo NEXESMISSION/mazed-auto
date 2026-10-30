@@ -11,6 +11,7 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { AdminPage, EYEBROW } from "@/components/admin/kit";
 import { actionLabel } from "@/lib/admin/actions";
 import { AlertTriangle, ArrowRight } from "lucide-react";
+import { requireAdminPage } from "@/lib/admin/session";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -34,6 +35,7 @@ const OVERDUE_MS = 48 * 3_600_000;
 const EXPIRING_MS = 7 * 24 * 3_600_000;
 
 export default async function AdminDashboard() {
+  await requireAdminPage();
   const t = await getTranslations("admin.dashboard");
   const tr = await getTranslations("admin.relative");
   const locale = await getLocale();

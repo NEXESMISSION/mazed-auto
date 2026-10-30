@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { getServerSupabase } from "@/lib/supabase/server";
 import type { Popup } from "@/lib/popups/schema";
 import { PopupForm } from "../../PopupForm";
+import { requireAdminPage } from "@/lib/admin/session";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,7 @@ export default async function EditPopupPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await requireAdminPage();
   const { id } = await params;
   const t = await getTranslations("admin.popups");
   const supabase = await getServerSupabase();

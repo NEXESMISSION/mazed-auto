@@ -4,6 +4,7 @@ import type { PropertyType } from "@/lib/types";
 import { LegalDocsEditor, type LegalDocKindRow } from "./LegalDocsEditor";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { SiteTabs } from "@/components/admin/kit/SiteTabs";
+import { requireAdminPage } from "@/lib/admin/session";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -14,6 +15,7 @@ const PROPERTY_TYPES: PropertyType[] = [
 ];
 
 export default async function AdminLegalDocsPage() {
+  await requireAdminPage();
   const t = await getTranslations("admin.legalDocs");
   const supabase = await getServerSupabase();
   const { data } = await supabase

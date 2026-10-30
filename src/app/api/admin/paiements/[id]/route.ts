@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/admin/guard";
 import { logAction } from "@/lib/activity";
 import { fail } from "@/lib/http/errors";
 import { apiTranslations } from "@/i18n/api";
+import { subscriptionError } from "@/lib/shops/subscription";
 
 /**
  * Receipt review — the v3 money queue.
@@ -61,7 +62,7 @@ export async function POST(
 
   const { data: pay } = await admin
     .from("payments")
-    .select("id, user_id, kind, status, amount, metadata")
+    .select("id, user_id, kind, status, amount, metadata, provider")
     .eq("id", id)
     .maybeSingle();
   if (!pay) return NextResponse.json({ error: "not_found" }, { status: 404 });
@@ -84,6 +85,13 @@ export async function POST(
 
   // ── Accept ────────────────────────────────────────────────────────────────
   if (action === "accept") {
+    // An online payment is confirmed by Konnect itself (webhook, return page,
+    // reconciliation — all asking Konnect), never by hand: an order still
+    // « pending » there is usually one nobody paid, and accepting it gave the
+    // plan away. Refusing it stays possible.
+    if (pay.provider === "konnect") {
+      return NextResponse.json({ error: "konnect_not_manual", detail: t("konnectNotManual") }, { status: 409 });
+    }
     const { error } = await admin
       .from("payments")
       .update({
@@ -96,7 +104,16 @@ export async function POST(
       // Re-assert the state we read: two admins on the queue at once must not
       // both capture the same receipt.
       .in("status", ["pending", "pending_review"]);
-    if (error) return fail("capture_failed", 500, error);
+    if (error) {
+      // The database refuses a capture that no longer fits the shop's
+      // subscription (0198: renewal already paid, upgrade on a changed plan…).
+      // Say which, instead of a bare failure.
+      const known = subscriptionError(error.message) ?? (error.message.includes("amount_mismatch") ? "amount_mismatch" : null);
+      if (known) {
+        return NextResponse.json({ error: "capture_refused", detail: t("captureRefused", { reason: known }) }, { status: 409 });
+      }
+      return fail("capture_failed", 500, error);
+    }
 
     const meta = (pay.metadata ?? {}) as { product_id?: string };
     let granted: string | null = null;

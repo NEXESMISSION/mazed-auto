@@ -39,6 +39,8 @@ export function ForgotPasswordForm() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [phone, setPhone] = useState<string | null>(null); // normalized E.164
   const [otpCode, setOtpCode] = useState("");
+  // The one-time proof the code earned (0199), sent with the new password.
+  const [proof, setProof] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -126,8 +128,10 @@ export function ForgotPasswordForm() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ phone, code: clean }),
         });
-        const j = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+        const j = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string; proof?: string };
         if (res.ok && j.ok) {
+          // The server asks for this proof with the new password (0199).
+          setProof(j.proof ?? "");
           setPhase("password");
           return;
         }
@@ -176,7 +180,7 @@ export function ForgotPasswordForm() {
         const res = await fetch("/api/auth/reset-password", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ phone, password }),
+          body: JSON.stringify({ phone, password, proof }),
         });
         const j = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
         if (res.ok && j.ok) {

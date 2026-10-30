@@ -9,29 +9,7 @@ import { PhoneInput } from "./PhoneInput";
 import { PasswordInput } from "./PasswordInput";
 import { normalizeE164, validatePhone } from "@/lib/tunisia";
 import { usePhoneProblem } from "./usePhoneProblem";
-
-/**
- * Reject anything that, despite starting with "/", could be parsed by
- * the browser as a foreign origin:
- *   - `//evil.com` and `/\evil.com` are protocol-relative (browser
- *     treats them as host).
- *   - URLs with embedded `:` (scheme), or already-absolute URLs.
- *   - `\` in any position (Windows-style separator confuses some
- *     normalizers).
- * The current code prepends `/${locale}` which neutralizes the obvious
- * cases, but we still defence-in-depth here so a future refactor doesn't
- * accidentally make this an open redirect.
- */
-function safeNextPath(raw: string | null): string {
-  if (!raw) return "/";
-  if (!raw.startsWith("/")) return "/";
-  if (raw.startsWith("//") || raw.startsWith("/\\")) return "/";
-  if (raw.includes("\\")) return "/";
-  // Bare scheme-relative or absolute URL via a creative encoding
-  // (very rare, but cheap to block).
-  if (/^\/+[a-z][a-z0-9+.-]*:/i.test(raw)) return "/";
-  return raw;
-}
+import { safeNextPath } from "@/lib/safeNext";
 
 /**
  * Phone-only sign-in. Email auth was removed — the only identity is the phone

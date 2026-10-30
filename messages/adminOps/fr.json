@@ -499,7 +499,8 @@
     "rejectTitle": "Refuser ce reçu ?",
     "rejectBody": "Le vendeur reçoit le motif et peut en envoyer un autre.",
     "rejectPlaceholder": "Montant différent, reçu illisible, virement introuvable…",
-    "rejected": "Reçu refusé."
+    "rejected": "Reçu refusé.",
+    "konnectNote": "Paiement en ligne : Konnect le confirme lui-même dès qu'il est payé. Ici, vous pouvez seulement le refuser s'il n'a pas abouti."
   },
   "diag": {
     "starter": {
@@ -612,7 +613,9 @@
       "request_already_decided": "Cette demande a déjà reçu une réponse.",
       "payment_in_progress": "Un paiement est en cours pour cette demande : décidez-en d'abord dans Paiements.",
       "bad_decision": "Décision inconnue."
-    }
+    },
+    "konnectNotManual": "Un paiement en ligne est confirmé par Konnect lui-même, jamais à la main : s'il n'a pas abouti, refusez-le.",
+    "captureRefused": "Ce paiement ne peut pas être appliqué à l'abonnement de la boutique ({reason}). Vérifiez son abonnement, puis refusez ce paiement ou contactez la boutique."
   },
   "requests": {
     "title": "Demandes",

@@ -5,6 +5,7 @@ import { LOCALE_COOKIE, routing } from "./i18n/routing";
 import { log } from "./lib/log";
 import { logActivity } from "./lib/activity";
 import { AUCTIONS_VISIBLE } from "./lib/features";
+import { safeNextPath } from "@/lib/safeNext";
 
 const intlMiddleware = createIntlMiddleware(routing);
 
@@ -237,10 +238,7 @@ export async function middleware(req: NextRequest) {
     //
     // Relative paths only, and never protocol-relative: `next` comes off the
     // query string, and //evil.example is a redirect off this site.
-    const wanted = req.nextUrl.searchParams.get("next");
-    const safe =
-      wanted && wanted.startsWith("/") && !wanted.startsWith("//") ? wanted : null;
-    const target = new URL(safe ?? `/${authPageMatch[1]}`, req.url);
+    const target = new URL(safeNextPath(req.nextUrl.searchParams.get("next"), `/${authPageMatch[1]}`), req.url);
     mwLog.info(`auth-gate ${pathname} → ${target.pathname}`);
     return NextResponse.redirect(target, 307);
   }
@@ -260,6 +258,20 @@ export async function middleware(req: NextRequest) {
       req.url,
     );
     mwLog.info(`account-gate ${pathname} → ${target.pathname}`);
+    return NextResponse.redirect(target, 307);
+  }
+
+  // Admin gate — a second line only. Each admin page checks the role itself
+  // (requireAdminPage): this keeps anonymous visitors from reaching the admin
+  // screens at all, but router prefetches skip this middleware above, so it
+  // cannot be the only check.
+  const adminMatch = pathname.match(/^\/(fr|ar|en)\/admin(?:\/.*)?$/);
+  if (adminMatch && !authUserId && !authUnknown) {
+    const target = new URL(
+      `/${adminMatch[1]}/login?next=${encodeURIComponent(`${pathname}${search}`)}`,
+      req.url,
+    );
+    mwLog.info(`admin-gate ${pathname} → ${target.pathname}`);
     return NextResponse.redirect(target, 307);
   }
 

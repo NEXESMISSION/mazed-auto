@@ -6,6 +6,7 @@ import { currencyLabel, formatTND } from "@/lib/utils";
 import { formatDate } from "@/lib/dates";
 import { categoryLabel, governorateLabel, type CategoryNames } from "@/lib/labels";
 import { Eye, Heart, Phone, RotateCcw, Users } from "lucide-react";
+import { requireAdminPage } from "@/lib/admin/session";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -86,6 +87,7 @@ export default async function AdminAnalyticsPage({
 }: {
   searchParams: Promise<{ sort?: string; scope?: string }>;
 }) {
+  await requireAdminPage();
   const sp = await searchParams;
   const t = await getTranslations("admin.analytics");
   const locale = await getLocale();

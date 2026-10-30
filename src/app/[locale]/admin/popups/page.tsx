@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { SiteTabs } from "@/components/admin/kit/SiteTabs";
 import { TONE_CLASS } from "@/components/admin/kit/tones";
+import { requireAdminPage } from "@/lib/admin/session";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -31,6 +32,7 @@ export const revalidate = 0;
 type T = Awaited<ReturnType<typeof getTranslations>>;
 
 export default async function AdminPopupsPage() {
+  await requireAdminPage();
   const t = await getTranslations("admin.popups");
   const locale = await getLocale();
   const supabase = await getServerSupabase();

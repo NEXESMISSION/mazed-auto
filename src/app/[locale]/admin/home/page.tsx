@@ -3,6 +3,7 @@ import { getServiceSupabase } from "@/lib/supabase/admin";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { HomeCurator, type CuratorRow } from "./HomeCurator";
 import { SiteTabs } from "@/components/admin/kit/SiteTabs";
+import { requireAdminPage } from "@/lib/admin/session";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -17,6 +18,7 @@ export const revalidate = 0;
  * this is where they are made.
  */
 export default async function AdminHomePage() {
+  await requireAdminPage();
   const t = await getTranslations("admin.home");
   const admin = getServiceSupabase();
   if (!admin) {

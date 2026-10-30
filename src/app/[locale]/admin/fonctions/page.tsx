@@ -4,6 +4,7 @@ import { AdminPage, EYEBROW } from "@/components/admin/kit";
 import { SiteTabs } from "@/components/admin/kit/SiteTabs";
 import { readModules } from "@/lib/modules";
 import { ModulesBoard } from "./ModulesBoard";
+import { requireAdminPage } from "@/lib/admin/session";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -15,6 +16,7 @@ export const revalidate = 0;
  * les fonctions prêtes » turns on all the ready ones at once.
  */
 export default async function AdminModulesPage() {
+  await requireAdminPage();
   const t = await getTranslations("admin.modules");
   const admin = getServiceSupabase();
   const modules = admin ? await readModules(admin) : [];

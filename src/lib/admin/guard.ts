@@ -40,10 +40,11 @@ export async function requireAdmin(
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select("role, banned_at")
     .eq("id", user.id)
     .single();
-  if (profile?.role !== "admin") {
+  // A banned admin is shut out like anyone banned (see getAdminSession).
+  if (profile?.role !== "admin" || profile?.banned_at) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 

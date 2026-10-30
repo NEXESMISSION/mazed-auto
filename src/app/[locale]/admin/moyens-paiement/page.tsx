@@ -6,6 +6,7 @@ import { EMPTY_METHODS, fetchPaymentMethods } from "@/lib/payments";
 import { konnectStatus, type KonnectStatus } from "@/lib/payments/konnectAccount";
 import { appSecretsReady } from "@/lib/secrets";
 import { PaymentMethodsForm } from "./PaymentMethodsForm";
+import { requireAdminPage } from "@/lib/admin/session";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -21,6 +22,7 @@ export const revalidate = 0;
  * shows again.
  */
 export default async function AdminPaymentMethodsPage() {
+  await requireAdminPage();
   const t = await getTranslations("admin.payments");
   const admin = getServiceSupabase();
   const methods = admin ? await fetchPaymentMethods(admin) : EMPTY_METHODS;

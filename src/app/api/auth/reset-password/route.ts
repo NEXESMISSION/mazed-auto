@@ -4,11 +4,12 @@ import { isSameOrigin } from "@/lib/sameOrigin";
 import { assertSupabaseRef } from "@/lib/supabase/guard";
 import { clientIp } from "@/lib/clientIp";
 import { isSmsConfigured } from "@/lib/winsms";
+import { hashProof } from "@/lib/otp";
 
 /**
  * Phone-OTP password reset — fully server-side.
  *
- *   Body: { phone: "+216…" (E.164), password }
+ *   Body: { phone: "+216…" (E.164), password, proof }
  *   200:  { ok: true }   (password updated; user can sign in with it)
  *   400:  { ok:false, error:"invalid_phone" | "weak_password" | "bad_request" | "reset_failed" }
  *   403:  { ok:false, error:"phone_not_verified" }   (no fresh OTP proof)
@@ -16,10 +17,10 @@ import { isSmsConfigured } from "@/lib/winsms";
  *   429:  { ok:false, error:"rate_limited" }
  *   503:  { ok:false, error:"sms_not_configured" }
  *
- * The caller must FIRST pass /api/auth/phone/send + /api/auth/phone/verify,
- * which stamp a short-lived `verified_at` proof on phone_otps. This route
- * re-checks that proof server-side (the client never holds a recovery token),
- * resolves phone→user, admin-updates the password, then consumes the proof.
+ * The caller must FIRST pass /api/auth/phone/send + /api/auth/phone/verify.
+ * A correct code earns a one-time proof that only the verifying browser gets
+ * (0199); this route consumes it — once, within 15 minutes — before it
+ * resolves phone→user and admin-updates the password.
  *
  * Reset is SMS-only: a phone-only account has no other ownership channel, so
  * with SMS off this returns 503 (there is nothing to verify against).
@@ -34,10 +35,12 @@ export async function POST(req: NextRequest) {
 
   let phone = "";
   let password = "";
+  let proof = "";
   try {
     const body = (await req.json()) as Record<string, unknown>;
     if (typeof body.phone === "string") phone = body.phone.trim();
     if (typeof body.password === "string") password = body.password;
+    if (typeof body.proof === "string") proof = body.proof;
   } catch {
     return NextResponse.json({ ok: false, error: "bad_request" }, { status: 400 });
   }
@@ -76,14 +79,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429 });
   }
 
-  // Require a fresh OTP proof stamped by /api/auth/phone/verify.
-  const { data: otp } = await admin
-    .from("phone_otps")
-    .select("verified_at")
-    .eq("phone", phone)
-    .maybeSingle();
-  const verifiedMs = otp?.verified_at ? new Date(otp.verified_at as string).getTime() : 0;
-  if (!verifiedMs || Date.now() - verifiedMs > VERIFY_WINDOW_MS) {
+  // The one-time proof /api/auth/phone/verify gave the browser that typed the
+  // code (0199). A phone merely « verified a moment ago » is not enough: that
+  // let anyone set the password while its owner was on the next screen.
+  // Consumed here, whatever happens next.
+  const { data: proven } = await admin.rpc("phone_otp_consume", {
+    p_phone: phone,
+    p_proof_hash: proof ? hashProof(phone, proof) : "",
+    p_window_secs: VERIFY_WINDOW_MS / 1000,
+  });
+  if (proven !== true) {
     return NextResponse.json({ ok: false, error: "phone_not_verified" }, { status: 403 });
   }
 
@@ -100,7 +105,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "reset_failed" }, { status: 400 });
   }
 
-  // Consume the proof so it can't be reused for another reset.
-  await admin.from("phone_otps").delete().eq("phone", phone);
   return NextResponse.json({ ok: true });
 }

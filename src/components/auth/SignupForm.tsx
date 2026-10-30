@@ -61,7 +61,7 @@ export function SignupForm() {
   // when SMS isn't configured). Server-side: /api/auth/signup creates the
   // account with a synthetic pre-confirmed email AND signs the user in (sets
   // the auth cookie on its response), so on success we just hard-navigate.
-  async function performSignup(normalizedPhone: string) {
+  async function performSignup(normalizedPhone: string, proof?: string) {
     try {
       const res = await fetch("/api/auth/signup", {
         method: "POST",
@@ -70,6 +70,8 @@ export function SignupForm() {
           phone: normalizedPhone,
           password,
           full_name: fullName,
+          // From /api/auth/phone/verify: the server asks for it when SMS is on (0199).
+          proof,
         }),
       });
       const j = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
@@ -190,9 +192,9 @@ export function SignupForm() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ phone: verifiedPhone, code: clean }),
         });
-        const j = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+        const j = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string; proof?: string };
         if (res.ok && j.ok) {
-          await performSignup(verifiedPhone);
+          await performSignup(verifiedPhone, j.proof);
           return;
         }
         setOtpError(to(otpErrorKey(j.error)));

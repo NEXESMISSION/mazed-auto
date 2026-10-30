@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServiceSupabase } from "@/lib/supabase/admin";
 import { isSameOrigin } from "@/lib/sameOrigin";
 import { clientIp } from "@/lib/clientIp";
-import { hashCode } from "@/lib/otp";
+import { hashCode, hashProof, newOtpProof } from "@/lib/otp";
 
 const MAX_ATTEMPTS = 5;
 
@@ -44,38 +44,20 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   }
 
-  const { data: row } = await admin
-    .from("phone_otps")
-    .select("code_hash, expires_at, attempts")
-    .eq("phone", phone)
-    .maybeSingle();
-
-  if (!row) {
-    return NextResponse.json({ error: "no_code" }, { status: 400 });
-  }
-  if (new Date(row.expires_at as string).getTime() < Date.now()) {
-    await admin.from("phone_otps").delete().eq("phone", phone);
-    return NextResponse.json({ error: "expired" }, { status: 400 });
-  }
-  if ((row.attempts as number) >= MAX_ATTEMPTS) {
-    return NextResponse.json({ error: "too_many_attempts" }, { status: 429 });
-  }
-
-  if (hashCode(phone, code) !== row.code_hash) {
-    await admin
-      .from("phone_otps")
-      .update({ attempts: (row.attempts as number) + 1 })
-      .eq("phone", phone);
-    return NextResponse.json({ error: "wrong_code" }, { status: 400 });
-  }
-
-  // Correct — stamp a short-lived verification proof that the signup route
-  // checks (audit #2: signup must fail closed when SMS is on), and clear the
-  // code so it can't be re-verified. The signup route deletes the row once it
-  // consumes the proof; a fresh /phone/send upserts a new code + nulls this.
-  await admin
-    .from("phone_otps")
-    .update({ verified_at: new Date().toISOString(), code_hash: "", attempts: 0 })
-    .eq("phone", phone);
-  return NextResponse.json({ ok: true });
+  // One locked step in the database (0199): expiry, the attempt counter and
+  // the comparison happen under a row lock, so parallel guesses are counted
+  // one by one instead of all reading the same count. A correct code earns a
+  // one-time proof that only this response carries; signup and password reset
+  // must present it, so a « verified » phone is useless to anyone else.
+  const proof = newOtpProof();
+  const { data: outcome, error } = await admin.rpc("phone_otp_try", {
+    p_phone: phone,
+    p_code_hash: hashCode(phone, code),
+    p_proof_hash: hashProof(phone, proof),
+    p_max: MAX_ATTEMPTS,
+  });
+  if (error) return NextResponse.json({ error: "verify_failed" }, { status: 500 });
+  if (outcome === "ok") return NextResponse.json({ ok: true, proof });
+  const status = outcome === "too_many_attempts" ? 429 : 400;
+  return NextResponse.json({ error: outcome as string }, { status });
 }

@@ -6,6 +6,7 @@ import { isSameOrigin } from "@/lib/sameOrigin";
 import { assertSupabaseRef } from "@/lib/supabase/guard";
 import { clientIp } from "@/lib/clientIp";
 import { isSmsConfigured } from "@/lib/winsms";
+import { hashProof } from "@/lib/otp";
 
 /**
  * Phone-only signup — fully server-side.
@@ -61,11 +62,13 @@ export async function POST(req: NextRequest) {
 
   let phone = "";
   let password = "";
+  let proof = "";
   let fullName = "";
   try {
     const body = (await req.json()) as Record<string, unknown>;
     if (typeof body.phone === "string") phone = body.phone.trim();
     if (typeof body.password === "string") password = body.password;
+    if (typeof body.proof === "string") proof = body.proof;
     if (typeof body.full_name === "string") fullName = body.full_name.trim();
   } catch {
     return NextResponse.json({ ok: false, error: "bad_request" }, { status: 400 });
@@ -108,14 +111,16 @@ export async function POST(req: NextRequest) {
   // proof (audit #2 — the OTP gate was client-only + fail-open, so a script
   // could POST here and register any phone). When SMS is OFF (today), skip —
   // accounts are unverified by design until SMS is wired, which is acceptable.
+  // The proof must be the one /api/auth/phone/verify gave THIS browser (0199),
+  // and it is used up here: a phone verified by someone else cannot be
+  // registered by a third party in the minutes that follow.
   if (isSmsConfigured()) {
-    const { data: otp } = await admin
-      .from("phone_otps")
-      .select("verified_at")
-      .eq("phone", phone)
-      .maybeSingle();
-    const verifiedMs = otp?.verified_at ? new Date(otp.verified_at as string).getTime() : 0;
-    if (!verifiedMs || Date.now() - verifiedMs > 15 * 60 * 1000) {
+    const { data: proven } = await admin.rpc("phone_otp_consume", {
+      p_phone: phone,
+      p_proof_hash: proof ? hashProof(phone, proof) : "",
+      p_window_secs: 15 * 60,
+    });
+    if (proven !== true) {
       return NextResponse.json({ ok: false, error: "phone_not_verified" }, { status: 403 });
     }
   }
@@ -158,7 +163,5 @@ export async function POST(req: NextRequest) {
     // The account exists; the client can fall back to logging in by phone.
     return NextResponse.json({ ok: false, error: "signin_failed" }, { status: 500 });
   }
-  // Consume the verification proof so it can't be reused for another signup.
-  await admin.from("phone_otps").delete().eq("phone", phone);
   return NextResponse.json({ ok: true });
 }
