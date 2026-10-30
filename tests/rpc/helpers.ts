@@ -75,7 +75,7 @@ export type TestUser = {
 /**
  * Create a confirmed auth user (the on_auth_user_created trigger mirrors the
  * public.profiles row), then sign in a dedicated client for it. `role: 'admin'`
- * also lands an app_metadata.role=admin claim so is_admin() is true on the JWT.
+ * sets profiles.role, which is_admin() reads for the signed-in user.
  */
 export async function createUser(
   svc: SupabaseClient,
@@ -87,33 +87,37 @@ export async function createUser(
     email,
     password: PASSWORD,
     email_confirm: true,
-    // The on_auth_user_created trigger reads raw_user_meta_data.role; passing
-    // role=admin also mirrors app_metadata.role=admin → is_admin() === true.
-    user_metadata: { full_name: "RPC Test", role: opts.role ?? "individual" },
+    user_metadata: { full_name: "RPC Test" },
   });
   if (error || !data.user) {
     throw new Error(`createUser failed: ${error?.message ?? "no user"}`);
   }
   const id = data.user.id;
 
-  // KYC is admin-only in prod, and the profile guard (0015) refuses it to the
-  // service role too: that key carries no admin JWT. Set it the way trusted
-  // server code does — through the guard's bypass, in one transaction — so the
-  // user can clear place_bid's kyc_required gate.
-  if (opts.kyc === "verified") {
+  // Role and KYC are admin-only in prod. Signup never reads a role from its
+  // metadata (0066), and the profile guard (0015) refuses both columns to the
+  // service role too: that key carries no admin JWT. Set them the way trusted
+  // server code does — through the guard's bypass, in one transaction — so an
+  // admin passes is_admin() and a verified user clears place_bid's KYC gate.
+  if (opts.kyc === "verified" || opts.role === "admin") {
     const db = new Client({ connectionString: DSN });
     await db.connect();
     try {
       await db.query("begin");
       await db.query(`select set_config('app.bypass_profile_guard', 'on', true)`);
-      await db.query(
-        `update profiles set kyc_status = 'verified', kyc_verified_at = now() where id = $1`,
-        [id],
-      );
+      if (opts.role === "admin") {
+        await db.query(`update profiles set role = 'admin' where id = $1`, [id]);
+      }
+      if (opts.kyc === "verified") {
+        await db.query(
+          `update profiles set kyc_status = 'verified', kyc_verified_at = now() where id = $1`,
+          [id],
+        );
+      }
       await db.query("commit");
     } catch (e) {
       await db.query("rollback").catch(() => {});
-      throw new Error(`set kyc_verified failed: ${(e as Error).message}`);
+      throw new Error(`set role/kyc failed: ${(e as Error).message}`);
     } finally {
       await db.end().catch(() => {});
     }
